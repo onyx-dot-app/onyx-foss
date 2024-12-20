@@ -99,20 +99,23 @@ class ConfluenceConnector(LoadConnector, PollConnector, SlimConnector):
         # Remove trailing slash from wiki_base if present
         self.wiki_base = wiki_base.rstrip("/")
 
-        # if nothing is provided, we will fetch all pages
+        """
+        If nothing is provided, we default to fetching all pages
+        Only one or none of the following options should be specified so
+            the order shouldn't matter
+        However, we use elif to ensure that only of the following is enforced
+        """
         base_cql_page_query = "type=page"
         if cql_query:
-            # if a cql_query is provided, we will use it to fetch the pages
             base_cql_page_query = cql_query
         elif page_id:
-            # if a cql_query is not provided, we will use the page_id to fetch the page
             if index_recursively:
-                base_cql_page_query += f" and ancestor='{page_id}'"
+                base_cql_page_query += f" and (ancestor='{page_id}' or id='{page_id}')"
             else:
                 base_cql_page_query += f" and id='{page_id}'"
         elif space:
-            # if no cql_query or page_id is provided, we will use the space to fetch the pages
-            base_cql_page_query += f" and space='{quote(space)}'"
+            uri_safe_space = quote(space)
+            base_cql_page_query += f" and space='{uri_safe_space}'"
 
         self.base_cql_page_query = base_cql_page_query
 
