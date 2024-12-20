@@ -61,7 +61,7 @@ const Page = async (props: {
   }
 
   return (
-    <AuthFlowContainer>
+    <AuthFlowContainer authState="signup">
       <HealthCheckBanner />
 
       <>
@@ -94,21 +94,6 @@ const Page = async (props: {
             shouldVerify={authTypeMetadata?.requiresVerification}
             nextUrl={nextUrl}
           />
-
-          <div className="flex">
-            <Text className="mt-4 mx-auto">
-              Already have an account?{" "}
-              <Link
-                href={{
-                  pathname: "/auth/login",
-                  query: { ...searchParams },
-                }}
-                className="text-link font-medium"
-              >
-                Log In
-              </Link>
-            </Text>
-          </div>
         </div>
       </>
     </AuthFlowContainer>
