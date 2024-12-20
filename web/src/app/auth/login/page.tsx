@@ -141,17 +141,6 @@ const Page = async (props: {
           )}
         </div>
       </AuthFlowContainer>
-      <Text className="mt-4 ">
-        Don&apos;t have an account?{" "}
-        <Link
-          href={`/auth/signup${
-            searchParams?.next ? `?next=${searchParams.next}` : ""
-          }`}
-          className="text-link font-medium"
-        >
-          Create an account
-        </Link>
-      </Text>
     </div>
   );
 };
