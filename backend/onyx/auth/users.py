@@ -708,11 +708,12 @@ async def optional_user(
 
 async def double_check_user(
     user: User | None,
+    optional: bool = DISABLE_AUTH,
     include_expired: bool = False,
     allow_anonymous_access: bool = False,
 ) -> User | None:
-    if DISABLE_AUTH:
-        return None
+    if optional:
+        return user
 
     if user is not None:
         # If user attempted to authenticate, verify them, do not default

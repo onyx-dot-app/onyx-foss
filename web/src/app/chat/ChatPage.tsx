@@ -183,15 +183,7 @@ export function ChatPage({
 
   const [userSettingsToggled, setUserSettingsToggled] = useState(false);
 
-  const {
-    assistants: availableAssistants,
-    finalAssistants,
-    hiddenAssistants,
-    visibleAssistants,
-  } = useAssistants();
-  console.log("visibleAssistants", visibleAssistants);
-  console.log("availableAssistants", availableAssistants);
-  console.log("hiddenAssistants", hiddenAssistants);
+  const { assistants: availableAssistants, finalAssistants } = useAssistants();
 
   const [showApiKeyModal, setShowApiKeyModal] = useState(
     !shouldShowWelcomeModal
