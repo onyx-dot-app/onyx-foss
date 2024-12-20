@@ -63,6 +63,7 @@ export default async function RootLayout({
     getCurrentUserSS(),
   ]);
 
+  console.log("assistantsData", assistantsData);
   const productGating =
     combinedSettings?.settings.product_gating ?? GatingType.NONE;
 

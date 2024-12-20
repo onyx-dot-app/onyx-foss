@@ -17,6 +17,8 @@ import { getSecondsUntilExpiration } from "@/lib/time";
 import AuthFlowContainer from "@/components/auth/AuthFlowContainer";
 import CardSection from "@/components/admin/CardSection";
 import { NEXT_PUBLIC_FORGOT_PASSWORD_ENABLED } from "@/lib/constants";
+import { SettingsContext } from "@/components/settings/SettingsProvider";
+import { useContext } from "react";
 
 const Page = async (props: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -147,6 +149,23 @@ const Page = async (props: {
               </Text>
             </div>
           </CardSection>
+        )}
+        {currentUser?.is_anonymous_user && (
+          <div className="mt-4 w-full justify-center">
+            <Text className="mt-4 mx-auto">
+              You are currently logged in as an anonymous user. You can access
+              the chat experience{" "}
+              <Link
+                href={`/auth/login${
+                  searchParams?.next ? `?next=${searchParams.next}` : ""
+                }`}
+                className="text-link font-medium"
+              >
+                here
+              </Link>
+              .
+            </Text>
+          </div>
         )}
       </div>
     </AuthFlowContainer>
