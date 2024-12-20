@@ -133,15 +133,3 @@ Looking to contribute? Please check out the [Contribution Guide](CONTRIBUTING.md
 ## ⭐Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=onyx-dot-app/onyx&type=Date)](https://star-history.com/#onyx-dot-app/onyx&Date)
-
-## ✨Contributors
-
-<a href="https://github.com/onyx-dot-app/onyx/graphs/contributors">
-  <img alt="contributors" src="https://contrib.rocks/image?repo=onyx-dot-app/onyx"/>
-</a>
-
-<p align="right" style="font-size: 14px; color: #555; margin-top: 20px;">
-    <a href="#readme-top" style="text-decoration: none; color: #007bff; font-weight: bold;">
-        ↑ Back to Top ↑
-    </a>
-</p>
