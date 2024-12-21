@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timezone
 from http import HTTPStatus
 from time import sleep
+from typing import cast
 
 import redis
 import sentry_sdk
@@ -100,12 +101,36 @@ class IndexingCallback(IndexingHeartbeatInterface):
             self.last_lock_reacquire = datetime.now(timezone.utc)
         except LockError:
             logger.exception(
-                f"IndexingCallback - lock.reacquire exceptioned. "
+                f"IndexingCallback - lock.reacquire exceptioned: "
                 f"lock_timeout={self.redis_lock.timeout} "
                 f"start={self.started} "
                 f"last_tag={self.last_tag} "
                 f"last_reacquired={self.last_lock_reacquire} "
                 f"now={datetime.now(timezone.utc)}"
+            )
+
+            # diagnostic logging for lock errors
+            name = self.redis_lock.name
+            ttl = self.redis_client.ttl(name)
+            locked = self.redis_lock.locked()
+            owned = self.redis_lock.owned()
+            local_token: str | None = self.redis_lock.local.token  # type: ignore
+
+            remote_token_raw = self.redis_client.get(self.redis_lock.name)
+            if remote_token_raw:
+                remote_token_bytes = cast(bytes, remote_token_raw)
+                remote_token = remote_token_bytes.decode("utf-8")
+            else:
+                remote_token = None
+
+            logger.warning(
+                f"IndexingCallback - lock diagnostics: "
+                f"name={name} "
+                f"locked={locked} "
+                f"owned={owned} "
+                f"local_token={local_token} "
+                f"remote_token={remote_token} "
+                f"ttl={ttl}"
             )
             raise
 
@@ -325,7 +350,6 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
             # tasks can be in the queue in redis, in reserved tasks (prefetched by the worker),
             # or be currently executing
             try:
-                task_logger.info("Validating indexing fences...")
                 validate_indexing_fences(
                     tenant_id, self.app, redis_client, redis_client_celery, lock_beat
                 )
@@ -363,7 +387,7 @@ def validate_indexing_fences(
     lock_beat: RedisLock,
 ) -> None:
     reserved_indexing_tasks = celery_get_unacked_task_ids(
-        "connector_indexing", r_celery
+        OnyxCeleryQueues.CONNECTOR_INDEXING, r_celery
     )
 
     # validate all existing indexing jobs
