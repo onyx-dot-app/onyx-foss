@@ -103,12 +103,14 @@ export const LogoIcon = ({
   className = defaultTailwindCSS,
   src,
 }: LogoIconProps) => (
-  <div
+  <Image
     style={{ width: `${size}px`, height: `${size}px` }}
     className={`w-[${size}px] h-[${size}px] ` + className}
-  >
-    <Image src={src} alt="Logo" width="96" height="96" />
-  </div>
+    src={src}
+    alt="Logo"
+    width="96"
+    height="96"
+  />
 );
 
 export const AssistantsIconSkeleton = ({
