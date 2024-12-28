@@ -48,7 +48,17 @@ class UserCreate(schemas.BaseUserCreate):
     tenant_id: str | None = None
 
 
+class UserUpdateWithRoleForManager(schemas.BaseUserUpdate):
+    """
+    This schema is used internally by the UserManager class when creating or updating users
+    that require role updates. It allows passing the role without exposing it in all default endpoints.
+    """
+
+    role: UserRole
+
+
 class UserUpdate(schemas.BaseUserUpdate):
-    # Role updates are not allowed through the user update endpoint for security reasons
-    # Role changes should be handled through a separate, admin-only process
-    pass
+    """
+    Role updates are not allowed through the user update endpoint for security reasons
+    Role changes should be handled through a separate, admin-only process
+    """
