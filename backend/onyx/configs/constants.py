@@ -142,6 +142,7 @@ class DocumentSource(str, Enum):
     FRESHDESK = "freshdesk"
     FIREFLIES = "fireflies"
     EGNYTE = "egnyte"
+    AIRTABLE = "airtable"
 
 
 DocumentSourceRequiringTenantContext: list[DocumentSource] = [DocumentSource.FILE]
