@@ -88,7 +88,7 @@ logger = setup_logger()
     trail=False,
     bind=True,
 )
-def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> None:
+def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> bool | None:
     """Runs periodically to check if any document needs syncing.
     Generates sets of tasks for Celery if syncing is needed."""
     time_start = time.monotonic()
@@ -103,7 +103,7 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> None:
     try:
         # these tasks should never overlap
         if not lock_beat.acquire(blocking=False):
-            return
+            return None
 
         with get_session_with_tenant(tenant_id) as db_session:
             try_generate_stale_document_sync_tasks(
@@ -166,7 +166,7 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> None:
 
     time_elapsed = time.monotonic() - time_start
     task_logger.debug(f"check_for_vespa_sync_task finished: elapsed={time_elapsed:.2f}")
-    return
+    return True
 
 
 def try_generate_stale_document_sync_tasks(

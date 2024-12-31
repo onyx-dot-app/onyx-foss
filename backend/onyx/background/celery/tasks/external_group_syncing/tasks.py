@@ -94,7 +94,7 @@ def _is_external_group_sync_due(cc_pair: ConnectorCredentialPair) -> bool:
     soft_time_limit=JOB_TIMEOUT,
     bind=True,
 )
-def check_for_external_group_sync(self: Task, *, tenant_id: str | None) -> None:
+def check_for_external_group_sync(self: Task, *, tenant_id: str | None) -> bool | None:
     r = get_redis_client(tenant_id=tenant_id)
 
     lock_beat: RedisLock = r.lock(
@@ -105,7 +105,7 @@ def check_for_external_group_sync(self: Task, *, tenant_id: str | None) -> None:
     try:
         # these tasks should never overlap
         if not lock_beat.acquire(blocking=False):
-            return
+            return None
 
         cc_pair_ids_to_sync: list[int] = []
         with get_session_with_tenant(tenant_id) as db_session:
@@ -148,6 +148,8 @@ def check_for_external_group_sync(self: Task, *, tenant_id: str | None) -> None:
     finally:
         if lock_beat.owned():
             lock_beat.release()
+
+    return True
 
 
 def try_creating_external_group_sync_task(
