@@ -359,6 +359,7 @@ class WebConnector(LoadConnector):
                     continue
 
                 parsed_html = web_html_cleanup(soup, self.mintlify_cleanup)
+
                 doc_batch.append(
                     Document(
                         id=current_url,
