@@ -272,7 +272,6 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
                 if not user.role.is_web_login() and user_create.role.is_web_login():
                     user_update = UserUpdate(
                         password=user_create.password,
-                        role=user_create.role,
                         is_verified=user_create.is_verified,
                     )
                     user = await self.update(user_update, user)
