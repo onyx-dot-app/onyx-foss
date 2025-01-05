@@ -30,7 +30,8 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
     FENCE_PREFIX = PREFIX + "_fence"
     TASKSET_PREFIX = PREFIX + "_taskset"
 
-    SYNCING_HASH = PREFIX + ":vespa_syncing"
+    # SYNCING_HASH = PREFIX + ":vespa_syncing"
+    SYNCING_PREFIX = PREFIX + ":vespa_syncing"
 
     def __init__(self, tenant_id: str | None, id: int) -> None:
         super().__init__(tenant_id, str(id))
@@ -57,6 +58,10 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
         # documents that should be skipped. Note that this classes updates
         # the list on the fly
         self.skip_docs = skip_docs
+
+    @staticmethod
+    def make_redis_syncing_key(doc_id: str) -> str:
+        return f"{RedisConnectorCredentialPair.SYNCING_PREFIX}:{doc_id}"
 
     def generate_tasks(
         self,
@@ -98,7 +103,11 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
                 continue
 
             # is the document sync already queued?
-            if redis_client.hexists(doc.id):
+            # if redis_client.hexists(doc.id):
+            #     continue
+
+            redis_syncing_key = self.make_redis_syncing_key(doc.id)
+            if redis_client.exists(redis_syncing_key):
                 continue
 
             # celery's default task id format is "dd32ded3-00aa-4884-8b21-42f8332e7fac"
@@ -114,9 +123,11 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
             )
 
             # track the doc.id in redis so that we don't resubmit it repeatedly
-            redis_client.hset(
-                self.SYNCING_HASH, doc.id, custom_task_id, ex=SYNC_EXPIRATION
-            )
+            # redis_client.hset(
+            #     self.SYNCING_HASH, doc.id, custom_task_id
+            # )
+
+            redis_client.set(redis_syncing_key, custom_task_id, ex=SYNC_EXPIRATION)
 
             # Priority on sync's triggered by new indexing should be medium
             result = celery_app.send_task(
