@@ -68,6 +68,7 @@ from onyx.redis.redis_connector_index import RedisConnectorIndex
 from onyx.redis.redis_connector_prune import RedisConnectorPrune
 from onyx.redis.redis_document_set import RedisDocumentSet
 from onyx.redis.redis_pool import get_redis_client
+from onyx.redis.redis_pool import redis_lock_dump
 from onyx.redis.redis_usergroup import RedisUserGroup
 from onyx.utils.logger import setup_logger
 from onyx.utils.variable_functionality import fetch_versioned_implementation
@@ -111,6 +112,7 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> bool | No
             )
 
         # region document set scan
+        lock_beat.reacquire()
         document_set_ids: list[int] = []
         with get_session_with_tenant(tenant_id) as db_session:
             # check if any document sets are not synced
@@ -122,6 +124,7 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> bool | No
                 document_set_ids.append(document_set.id)
 
         for document_set_id in document_set_ids:
+            lock_beat.reacquire()
             with get_session_with_tenant(tenant_id) as db_session:
                 try_generate_document_set_sync_tasks(
                     self.app, document_set_id, db_session, r, lock_beat, tenant_id
@@ -130,6 +133,8 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> bool | No
 
         # check if any user groups are not synced
         if global_version.is_ee_version():
+            lock_beat.reacquire()
+
             try:
                 fetch_user_groups = fetch_versioned_implementation(
                     "onyx.db.user_group", "fetch_user_groups"
@@ -149,6 +154,7 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> bool | No
                         usergroup_ids.append(usergroup.id)
 
                 for usergroup_id in usergroup_ids:
+                    lock_beat.reacquire()
                     with get_session_with_tenant(tenant_id) as db_session:
                         try_generate_user_group_sync_tasks(
                             self.app, usergroup_id, db_session, r, lock_beat, tenant_id
@@ -163,6 +169,12 @@ def check_for_vespa_sync_task(self: Task, *, tenant_id: str | None) -> bool | No
     finally:
         if lock_beat.owned():
             lock_beat.release()
+        else:
+            task_logger.error(
+                "check_for_vespa_sync_task - Lock not owned on completion: "
+                f"tenant={tenant_id}"
+            )
+            redis_lock_dump(lock_beat, r)
 
     time_elapsed = time.monotonic() - time_start
     task_logger.debug(f"check_for_vespa_sync_task finished: elapsed={time_elapsed:.2f}")

@@ -4,12 +4,14 @@ import json
 import threading
 from collections.abc import Callable
 from typing import Any
+from typing import cast
 from typing import Optional
 
 import redis
 from fastapi import Request
 from redis import asyncio as aioredis
 from redis.client import Redis
+from redis.lock import Lock as RedisLock
 
 from onyx.configs.app_configs import REDIS_AUTH_KEY_PREFIX
 from onyx.configs.app_configs import REDIS_DB_NUMBER
@@ -262,3 +264,29 @@ async def retrieve_auth_token_data_from_redis(request: Request) -> dict | None:
         raise ValueError(
             f"Unexpected error in retrieve_auth_token_data_from_redis: {str(e)}"
         )
+
+
+def redis_lock_dump(lock: RedisLock, r: Redis) -> None:
+    # diagnostic logging for lock errors
+    name = lock.name
+    ttl = r.ttl(name)
+    locked = lock.locked()
+    owned = lock.owned()
+    local_token: str | None = lock.local.token  # type: ignore
+
+    remote_token_raw = r.get(lock.name)
+    if remote_token_raw:
+        remote_token_bytes = cast(bytes, remote_token_raw)
+        remote_token = remote_token_bytes.decode("utf-8")
+    else:
+        remote_token = None
+
+    logger.warning(
+        f"RedisLock diagnostic logging: "
+        f"name={name} "
+        f"locked={locked} "
+        f"owned={owned} "
+        f"local_token={local_token} "
+        f"remote_token={remote_token} "
+        f"ttl={ttl}"
+    )
