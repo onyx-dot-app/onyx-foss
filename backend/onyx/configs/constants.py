@@ -76,7 +76,10 @@ KV_ENTERPRISE_SETTINGS_KEY = "onyx_enterprise_settings"
 KV_CUSTOM_ANALYTICS_SCRIPT_KEY = "__custom_analytics_script__"
 KV_DOCUMENTS_SEEDED_KEY = "documents_seeded"
 
+# NOTE: we use this timeout / 4 in various places to refresh a lock
+# might be worth separating this timeout into separate timeouts for each situation
 CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT = 120
+
 CELERY_PRIMARY_WORKER_LOCK_TIMEOUT = 120
 
 # needs to be long enough to cover the maximum time it takes to download an object
