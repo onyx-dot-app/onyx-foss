@@ -898,6 +898,9 @@ def vespa_metadata_sync_task(
             # the sync might repeat again later
             mark_document_as_synced(document_id, db_session)
 
+            r = get_redis_client(tenant_id=tenant_id)
+            r.hdel(RedisConnectorCredentialPair.SYNCING_HASH, document_id)
+
             task_logger.info(f"doc={document_id} action=sync chunks={chunks_affected}")
     except SoftTimeLimitExceeded:
         task_logger.info(f"SoftTimeLimitExceeded exception. doc={document_id}")

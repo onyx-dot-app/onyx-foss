@@ -110,6 +110,9 @@ class TenantRedis(redis.Redis):
             "sadd",
             "srem",
             "scard",
+            "hexists",
+            "hset",
+            "hdel",
         ]  # Regular methods that need simple prefixing
 
         if item == "scan_iter":

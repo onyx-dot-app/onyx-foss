@@ -30,6 +30,8 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
     FENCE_PREFIX = PREFIX + "_fence"
     TASKSET_PREFIX = PREFIX + "_taskset"
 
+    SYNCING_HASH = PREFIX + ":vespa_syncing"
+
     def __init__(self, tenant_id: str | None, id: int) -> None:
         super().__init__(tenant_id, str(id))
 
@@ -64,6 +66,9 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
         lock: RedisLock,
         tenant_id: str | None,
     ) -> tuple[int, int] | None:
+        # an arbitrary number in seconds to prevent the same doc from syncing repeatedly
+        SYNC_EXPIRATION = 24 * 60 * 60
+
         last_lock_time = time.monotonic()
 
         async_results = []
@@ -92,6 +97,10 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
             if doc.id in self.skip_docs:
                 continue
 
+            # is the document sync already queued?
+            if redis_client.hexists(doc.id):
+                continue
+
             # celery's default task id format is "dd32ded3-00aa-4884-8b21-42f8332e7fac"
             # the key for the result is "celery-task-meta-dd32ded3-00aa-4884-8b21-42f8332e7fac"
             # we prefix the task id so it's easier to keep track of who created the task
@@ -102,6 +111,11 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
             # note that for the moment we are using a single taskset key, not differentiated by cc_pair id
             redis_client.sadd(
                 RedisConnectorCredentialPair.get_taskset_key(), custom_task_id
+            )
+
+            # track the doc.id in redis so that we don't resubmit it repeatedly
+            redis_client.hset(
+                self.SYNCING_HASH, doc.id, custom_task_id, ex=SYNC_EXPIRATION
             )
 
             # Priority on sync's triggered by new indexing should be medium
