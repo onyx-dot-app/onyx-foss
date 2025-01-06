@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from danswer.configs.constants import DocumentSource
-from danswer.connectors.models import Document
-from danswer.connectors.zendesk.connector import ZendeskConnector
+from onyx.configs.constants import DocumentSource
+from onyx.connectors.models import Document
+from onyx.connectors.zendesk.connector import ZendeskConnector
 
 
 def load_test_data(file_name: str = "test_zendesk_data.json") -> dict[str, dict]:
@@ -60,6 +60,7 @@ def test_zendesk_connector_basic(
             all_docs.append(doc)
             if doc.id == target_test_doc_id:
                 target_doc = doc
+                print(f"target_doc {target_doc}")
 
     assert len(all_docs) > 0, "No documents were retrieved from the connector"
     assert (
@@ -68,15 +69,29 @@ def test_zendesk_connector_basic(
     assert target_doc.source == DocumentSource.ZENDESK, "Document source is not ZENDESK"
 
     if connector.content_type == "articles":
-        print(f"target_doc.semantic_identifier {target_doc.semantic_identifier}")
+        test_article = test_data["article"]
+        assert target_doc.semantic_identifier == test_article["semantic_identifier"]
+        assert target_doc.sections[0].link == test_article["sections"][0]["link"]
+        assert target_doc.source == test_article["source"]
         assert (
-            target_doc.semantic_identifier
-            == test_data["article"]["semantic_identifier"]
-        ), "Article title does not match"
+            target_doc.primary_owners[0].display_name
+            == test_article["primary_owners"][0]["display_name"]
+        )
+        assert (
+            target_doc.primary_owners[0].email
+            == test_article["primary_owners"][0]["email"]
+        )
     else:
-        assert target_doc.semantic_identifier.startswith(
-            f"Ticket #{test_data['ticket']['id']}"
-        ), "Ticket ID does not match"
+        test_ticket = test_data["ticket"]
+        assert target_doc.semantic_identifier == test_ticket["semantic_identifier"]
+        assert target_doc.sections[0].link == test_ticket["sections"][0]["link"]
+        assert target_doc.source == test_ticket["source"]
+        assert target_doc.metadata["status"] == test_ticket["metadata"]["status"]
+        assert target_doc.metadata["priority"] == test_ticket["metadata"]["priority"]
+        assert target_doc.metadata["tags"] == test_ticket["metadata"]["tags"]
+        assert (
+            target_doc.metadata["ticket_type"] == test_ticket["metadata"]["ticket_type"]
+        )
 
 
 def test_zendesk_connector_slim(zendesk_article_connector: ZendeskConnector) -> None:
