@@ -760,6 +760,8 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool:
 
     Returns True if the task actually did work, False if it exited early to prevent overlap
     """
+    task_logger.info(f"monitor_vespa_sync starting: tenant={tenant_id}")
+
     time_start = time.monotonic()
 
     timings: dict[str, float] = {}
@@ -775,6 +777,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool:
     try:
         # prevent overlapping tasks
         if not lock_beat.acquire(blocking=False):
+            task_logger.info("monitor_vespa_sync exiting due to overlap")
             return False
 
         # print current queue lengths
@@ -894,7 +897,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool:
             redis_lock_dump(lock_beat, r)
 
     time_elapsed = time.monotonic() - time_start
-    task_logger.debug(f"monitor_vespa_sync finished: elapsed={time_elapsed:.2f}")
+    task_logger.info(f"monitor_vespa_sync finished: elapsed={time_elapsed:.2f}")
     return True
 
 
