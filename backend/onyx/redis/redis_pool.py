@@ -282,7 +282,7 @@ def redis_lock_dump(lock: RedisLock, r: Redis) -> None:
         remote_token = None
 
     logger.warning(
-        f"RedisLock diagnostic logging: "
+        f"RedisLock diagnostic: "
         f"name={name} "
         f"locked={locked} "
         f"owned={owned} "
