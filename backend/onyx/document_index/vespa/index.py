@@ -338,7 +338,7 @@ class VespaIndex(DocumentIndex):
             # `old_version` documents.
 
             enriched_doc_infos: list[EnrichedDocumentIndexingInfo] = []
-            for document_id, _ in doc_id_to_previous_chunk_cnt.items():
+            for document_id, doc_count in doc_id_to_previous_chunk_cnt.items():
                 last_indexed_chunk = doc_id_to_previous_chunk_cnt.get(document_id, None)
                 # If the document has no `chunk_count` in the database, we know that it
                 # has the old chunk ID system and we must check for the final chunk index
@@ -355,6 +355,10 @@ class VespaIndex(DocumentIndex):
                         index_name=self.index_name,
                         http_client=http_client,
                     )
+
+                # If the document has previously indexed chunks, we know it previously existed
+                if doc_count or last_indexed_chunk:
+                    existing_docs.add(document_id)
 
                 enriched_doc_info = EnrichedDocumentIndexingInfo(
                     doc_id=document_id,
