@@ -343,6 +343,7 @@ export const validAutoSyncSources = [
   ValidSources.GoogleDrive,
   ValidSources.Gmail,
   ValidSources.Slack,
+  ValidSources.Salesforce,
 ] as const;
 
 // Create a type from the array elements
