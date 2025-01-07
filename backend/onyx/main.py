@@ -181,6 +181,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         logger.notice(f"System recursion limit set to {SYSTEM_RECURSION_LIMIT}")
 
     SqlEngine.set_app_name(POSTGRES_WEB_APP_NAME)
+
     SqlEngine.init_engine(
         pool_size=POSTGRES_API_SERVER_POOL_SIZE,
         max_overflow=POSTGRES_API_SERVER_POOL_OVERFLOW,
