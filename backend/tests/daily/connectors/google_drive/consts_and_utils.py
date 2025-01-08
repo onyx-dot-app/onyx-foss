@@ -163,6 +163,9 @@ def assert_retrieved_docs_match_expected(
         _get_expected_file_content(file_id) for file_id in expected_file_ids
     }
 
+    for doc in retrieved_docs:
+        print(f"doc.semantic_identifier: {doc.semantic_identifier}")
+
     # Filter out invalid prefixes to prevent different tests from interfering with each other
     valid_retrieved_docs = [
         doc
