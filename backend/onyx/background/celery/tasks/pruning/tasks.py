@@ -89,11 +89,11 @@ def check_for_pruning(self: Task, *, tenant_id: str | None) -> bool | None:
         timeout=CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT,
     )
 
-    try:
-        # these tasks should never overlap
-        if not lock_beat.acquire(blocking=False):
-            return None
+    # these tasks should never overlap
+    if not lock_beat.acquire(blocking=False):
+        return None
 
+    try:
         cc_pair_ids: list[int] = []
         with get_session_with_tenant(tenant_id) as db_session:
             cc_pairs = get_connector_credential_pairs(db_session)

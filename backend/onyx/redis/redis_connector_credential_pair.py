@@ -7,6 +7,7 @@ from redis import Redis
 from redis.lock import Lock as RedisLock
 from sqlalchemy.orm import Session
 
+from onyx.configs.app_configs import DB_YIELD_PER_DEFAULT
 from onyx.configs.constants import CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import OnyxCeleryPriority
 from onyx.configs.constants import OnyxCeleryQueues
@@ -65,12 +66,20 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
 
     def generate_tasks(
         self,
+        max_tasks: int,
         celery_app: Celery,
         db_session: Session,
         redis_client: Redis,
         lock: RedisLock,
         tenant_id: str | None,
     ) -> tuple[int, int] | None:
+        """We can limit the number of tasks generated here, which is useful to prevent
+        one tenant from overwhelming the sync queue.
+
+        This works because the dirty state of a document is in the DB, so more docs
+        get picked up after the limited set of tasks is complete.
+        """
+
         last_lock_time = time.monotonic()
 
         async_results = []
@@ -84,7 +93,7 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
 
         num_docs = 0
 
-        for doc in db_session.scalars(stmt).yield_per(1):
+        for doc in db_session.scalars(stmt).yield_per(DB_YIELD_PER_DEFAULT):
             doc = cast(Document, doc)
             current_time = time.monotonic()
             if current_time - last_lock_time >= (
@@ -131,5 +140,8 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
 
             async_results.append(result)
             self.skip_docs.add(doc.id)
+
+            if len(async_results) >= max_tasks:
+                break
 
         return len(async_results), num_docs

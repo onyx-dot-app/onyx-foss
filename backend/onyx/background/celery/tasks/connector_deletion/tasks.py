@@ -44,11 +44,11 @@ def check_for_connector_deletion_task(
         timeout=CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT,
     )
 
-    try:
-        # these tasks should never overlap
-        if not lock_beat.acquire(blocking=False):
-            return None
+    # these tasks should never overlap
+    if not lock_beat.acquire(blocking=False):
+        return None
 
+    try:
         # collect cc_pair_ids
         cc_pair_ids: list[int] = []
         with get_session_with_tenant(tenant_id) as db_session:

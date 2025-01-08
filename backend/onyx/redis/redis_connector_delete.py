@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from redis.lock import Lock as RedisLock
 from sqlalchemy.orm import Session
 
+from onyx.configs.app_configs import DB_YIELD_PER_DEFAULT
 from onyx.configs.constants import CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import OnyxCeleryPriority
 from onyx.configs.constants import OnyxCeleryQueues
@@ -98,7 +99,7 @@ class RedisConnectorDelete:
         stmt = construct_document_select_for_connector_credential_pair(
             cc_pair.connector_id, cc_pair.credential_id
         )
-        for doc_temp in db_session.scalars(stmt).yield_per(1):
+        for doc_temp in db_session.scalars(stmt).yield_per(DB_YIELD_PER_DEFAULT):
             doc: DbDocument = doc_temp
             current_time = time.monotonic()
             if current_time - last_lock_time >= (
