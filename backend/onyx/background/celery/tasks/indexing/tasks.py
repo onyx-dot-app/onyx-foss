@@ -293,19 +293,33 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                     if redis_connector_index.fenced:
                         continue
 
+                    if tenant_id in debug_tenants:
+                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
+                        task_logger.info(
+                            f"check_for_indexing get_connector_credential_pair_from_id: "
+                            f"tenant={tenant_id} "
+                            f"cc_pair={cc_pair_id} "
+                            f"ttl={ttl}"
+                        )
+
                     cc_pair = get_connector_credential_pair_from_id(
                         cc_pair_id, db_session
                     )
                     if not cc_pair:
                         continue
 
+                    if tenant_id in debug_tenants:
+                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
+                        task_logger.info(
+                            f"check_for_indexing get_last_attempt_for_cc_pair: "
+                            f"tenant={tenant_id} "
+                            f"cc_pair={cc_pair_id} "
+                            f"ttl={ttl}"
+                        )
+
                     last_attempt = get_last_attempt_for_cc_pair(
                         cc_pair.id, search_settings_instance.id, db_session
                     )
-
-                    search_settings_primary = False
-                    if search_settings_instance.id == search_settings_list[0].id:
-                        search_settings_primary = True
 
                     if tenant_id in debug_tenants:
                         ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
@@ -315,6 +329,10 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                             f"cc_pair={cc_pair_id} "
                             f"ttl={ttl}"
                         )
+
+                    search_settings_primary = False
+                    if search_settings_instance.id == search_settings_list[0].id:
+                        search_settings_primary = True
 
                     if not _should_index(
                         cc_pair=cc_pair,
