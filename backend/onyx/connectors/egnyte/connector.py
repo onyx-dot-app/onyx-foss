@@ -224,7 +224,7 @@ class EgnyteConnector(LoadConnector, PollConnector, OAuthConnector):
     def _get_files_list(
         self,
         path: str,
-    ) -> list[dict[str, Any]]:
+    ) -> Generator[dict[str, Any], None, None]:
         if not self.access_token or not self.domain:
             raise ConnectorMissingCredentialError("Egnyte")
 
@@ -245,48 +245,46 @@ class EgnyteConnector(LoadConnector, PollConnector, OAuthConnector):
             raise RuntimeError(f"Failed to fetch files from Egnyte: {response.text}")
 
         data = response.json()
-        all_files: list[dict[str, Any]] = []
 
-        # Add files from current directory
-        all_files.extend(data.get("files", []))
+        # Yield files from current directory
+        for file in data.get("files", []):
+            yield file
 
         # Recursively traverse folders
-        for item in data.get("folders", []):
-            all_files.extend(self._get_files_list(item["path"]))
+        for folder in data.get("folders", []):
+            yield from self._get_files_list(folder["path"])
 
-        return all_files
-
-    def _filter_files(
+    def _should_index_file(
         self,
-        files: list[dict[str, Any]],
+        file: dict[str, Any],
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-    ) -> list[dict[str, Any]]:
-        filtered_files = []
-        for file in files:
-            if file["is_folder"]:
-                continue
+    ) -> bool:
+        """Return True if file should be included based on filters."""
+        if file["is_folder"]:
+            return False
 
-            file_modified = _parse_last_modified(file["last_modified"])
-            if start_time and file_modified < start_time:
-                continue
-            if end_time and file_modified > end_time:
-                continue
+        file_modified = _parse_last_modified(file["last_modified"])
+        if start_time and file_modified < start_time:
+            return False
+        if end_time and file_modified > end_time:
+            return False
 
-            filtered_files.append(file)
-
-        return filtered_files
+        return True
 
     def _process_files(
         self,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
     ) -> Generator[list[Document], None, None]:
-        files = self._get_files_list(self.folder_path)
-        files = self._filter_files(files, start_time, end_time)
-
         current_batch: list[Document] = []
-        for file in files:
+
+        # Iterate through yielded files and filter them
+        for file in self._get_files_list(self.folder_path):
+            if not self._should_index_file(file, start_time, end_time):
+                logger.debug(f"Skipping file '{file['path']}'.")
+                continue
+
             try:
                 # Set up request with streaming enabled
                 headers = {
