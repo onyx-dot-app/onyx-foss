@@ -109,7 +109,7 @@ class UpdateRequest:
     Does not update any of the None fields
     """
 
-    document_ids: list[str]
+    minimal_document_indexing_info: list[MinimalDocumentIndexingInfo]
     # all other fields except these 4 will always be left alone by the update request
     access: DocumentAccess | None = None
     document_sets: set[str] | None = None
@@ -136,7 +136,7 @@ class Verifiable(abc.ABC):
         index_name: str,
         secondary_index_name: str | None,
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.index_name = index_name
@@ -218,7 +218,13 @@ class Deletable(abc.ABC):
     """
 
     @abc.abstractmethod
-    def delete_single(self, doc_id: str) -> int:
+    def delete_single(
+        self,
+        doc_id: str,
+        *,
+        tenant_id: str | None,
+        chunk_count: int | None,
+    ) -> int:
         """
         Given a single document id, hard delete it from the document index
 
@@ -239,7 +245,14 @@ class Updatable(abc.ABC):
     """
 
     @abc.abstractmethod
-    def update_single(self, doc_id: str, fields: VespaDocumentFields) -> int:
+    def update_single(
+        self,
+        doc_id: str,
+        *,
+        tenant_id: str | None,
+        chunk_count: int | None,
+        fields: VespaDocumentFields,
+    ) -> int:
         """
         Updates all chunks for a document with the specified fields.
         None values mean that the field does not need an update.
@@ -257,7 +270,9 @@ class Updatable(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update(self, update_requests: list[UpdateRequest]) -> None:
+    def update(
+        self, update_requests: list[UpdateRequest], *, tenant_id: str | None
+    ) -> None:
         """
         Updates some set of chunks. The document and fields to update are specified in the update
         requests. Each update request in the list applies its changes to a list of document ids.
