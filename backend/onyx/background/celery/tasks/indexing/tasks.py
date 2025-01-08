@@ -278,6 +278,15 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                     db_session
                 )
                 for search_settings_instance in search_settings_list:
+                    if tenant_id in debug_tenants:
+                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
+                        task_logger.info(
+                            f"check_for_indexing cc_pair search settings lock: "
+                            f"tenant={tenant_id} "
+                            f"cc_pair={cc_pair_id} "
+                            f"ttl={ttl}"
+                        )
+
                     redis_connector_index = redis_connector.new_index(
                         search_settings_instance.id
                     )
