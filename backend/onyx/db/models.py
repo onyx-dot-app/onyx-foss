@@ -18,6 +18,7 @@ from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyBaseAccessTokenTa
 from fastapi_users_db_sqlalchemy.generics import TIMESTAMPAware
 from sqlalchemy import Boolean
 from sqlalchemy import DateTime
+from sqlalchemy import desc
 from sqlalchemy import Enum
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
@@ -812,6 +813,13 @@ class IndexAttempt(Base):
             "ix_index_attempt_latest_for_connector_credential_pair",
             "connector_credential_pair_id",
             "time_created",
+        ),
+        Index(
+            "ix_index_attempt_ccpair_search_settings_time_updated",
+            "connector_credential_pair_id",
+            "search_settings_id",
+            desc("time_updated"),
+            unique=False,
         ),
     )
 
