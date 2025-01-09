@@ -608,19 +608,15 @@ class VespaIndex(DocumentIndex):
                     large_chunks_enabled=large_chunks_enabled,
                 )
 
-                logger.info("UPDATING len(doc_chunk_ids)")
-
                 doc_chunk_count += len(doc_chunk_ids)
 
                 for doc_chunk_id in doc_chunk_ids:
-                    logger.info("UPDATING CHUNK")
                     self.update_single_chunk(
                         doc_chunk_id=doc_chunk_id,
                         index_name=index_name,
                         fields=fields,
                         doc_id=doc_id,
                     )
-        logger.info(f"UPDATED A TOTAL OF {doc_chunk_count} CHUNKS for {doc_id}")
 
         return doc_chunk_count
 
