@@ -354,6 +354,33 @@ class OnyxConfluence(Confluence):
         group_name = quote(group_name)
         yield from self._paginate_url(f"rest/api/group/{group_name}/member", limit)
 
+    def get_all_space_permissions_server(
+        self,
+        space_key: str,
+    ) -> list[dict[str, Any]]:
+        """
+        This is a confluence server specific method that can be used to
+        fetch the permissions of a space.
+        This is better logging than calling the get_space_permissions method
+        because it returns a jsonrpc response.
+        """
+        url = "rpc/json-rpc/confluenceservice-v2"
+        data = {
+            "jsonrpc": "2.0",
+            "method": "getSpacePermissionSets",
+            "id": 7,
+            "params": [space_key],
+        }
+        response = self.post(url, data=data)
+        logger.debug(f"jsonrpc response: {response}")
+        if not response.get("result"):
+            logger.warning(
+                f"No jsonrpc response for space permissions for space {space_key}"
+                f"\nResponse: {response}"
+            )
+
+        return response.get("result", [])
+
 
 def _validate_connector_configuration(
     credentials: dict[str, Any],
