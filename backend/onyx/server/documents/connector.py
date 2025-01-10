@@ -53,8 +53,9 @@ from onyx.connectors.google_utils.google_kv import (
     upsert_service_account_key,
 )
 from onyx.connectors.google_utils.google_kv import verify_csrf
+from onyx.connectors.google_utils.shared_constants import DB_CREDENTIALS_DICT_TOKEN_KEY
 from onyx.connectors.google_utils.shared_constants import (
-    DB_CREDENTIALS_DICT_TOKEN_KEY,
+    GoogleOAuthAuthenticationMethod,
 )
 from onyx.db.connector import create_connector
 from onyx.db.connector import delete_connector
@@ -314,6 +315,7 @@ def upsert_service_account_credential(
         credential_base = build_service_account_creds(
             DocumentSource.GOOGLE_DRIVE,
             primary_admin_email=service_account_credential_request.google_primary_admin,
+            name="Service Account (uploaded)",
         )
     except KvKeyNotFoundError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -406,6 +408,38 @@ def upload_files(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return FileUploadResponse(file_paths=deduped_file_paths)
+
+
+@router.get("/admin/connector")
+def get_connectors_by_credential(
+    _: User = Depends(current_curator_or_admin_user),
+    db_session: Session = Depends(get_session),
+    credential: int | None = None,
+) -> list[ConnectorSnapshot]:
+    """Get a list of connectors. Allow filtering by a specific credential id."""
+
+    connectors = fetch_connectors(db_session)
+
+    filtered_connectors = []
+    for connector in connectors:
+        if connector.source == DocumentSource.INGESTION_API:
+            # don't include INGESTION_API, as it's a system level
+            # connector not manageable by the user
+            continue
+
+        if credential is not None:
+            found = False
+            for cc_pair in connector.credentials:
+                if credential == cc_pair.credential_id:
+                    found = True
+                    break
+
+            if not found:
+                continue
+
+        filtered_connectors.append(ConnectorSnapshot.from_connector_db_model(connector))
+
+    return filtered_connectors
 
 
 # Retrieves most recent failure cases for connectors that are currently failing
@@ -987,7 +1021,12 @@ def gmail_callback(
     credential_id = int(credential_id_cookie)
     verify_csrf(credential_id, callback.state)
     credentials: Credentials | None = update_credential_access_tokens(
-        callback.code, credential_id, user, db_session, DocumentSource.GMAIL
+        callback.code,
+        credential_id,
+        user,
+        db_session,
+        DocumentSource.GMAIL,
+        GoogleOAuthAuthenticationMethod.UPLOADED,
     )
     if credentials is None:
         raise HTTPException(
@@ -1013,7 +1052,12 @@ def google_drive_callback(
     verify_csrf(credential_id, callback.state)
 
     credentials: Credentials | None = update_credential_access_tokens(
-        callback.code, credential_id, user, db_session, DocumentSource.GOOGLE_DRIVE
+        callback.code,
+        credential_id,
+        user,
+        db_session,
+        DocumentSource.GOOGLE_DRIVE,
+        GoogleOAuthAuthenticationMethod.UPLOADED,
     )
     if credentials is None:
         raise HTTPException(
