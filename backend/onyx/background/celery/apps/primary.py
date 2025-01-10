@@ -80,8 +80,14 @@ def on_celeryd_init(sender: Any = None, conf: Any = None, **kwargs: Any) -> None
 @worker_init.connect
 def on_worker_init(sender: Any, **kwargs: Any) -> None:
     logger.info("worker_init signal received.")
+
+    all_start_methods: list[str] = multiprocessing.get_all_start_methods()
+    logger.info(f"Multiprocessing all start methods: {all_start_methods}")
+
     multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
-    logger.info(f"Multiprocessing start method: {multiprocessing.get_start_method()}")
+    logger.info(
+        f"Multiprocessing selected start method: {multiprocessing.get_start_method()}"
+    )
 
     SqlEngine.set_app_name(POSTGRES_CELERY_WORKER_PRIMARY_APP_NAME)
     SqlEngine.init_engine(pool_size=8, max_overflow=0)
