@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import time
 from typing import Any
 
@@ -163,7 +162,10 @@ def on_task_postrun(
 
 def on_celeryd_init(sender: Any = None, conf: Any = None, **kwargs: Any) -> None:
     """The first signal sent on celery worker startup"""
-    multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+    # rkuo: commenting out as set_start_method seems to work here on macOS
+    # but not in the cloud and it is unclear why.
+    # logger.info(f"Multiprocessing start method - setting to spawn.")
+    # multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
 
 
 def wait_for_redis(sender: Any, **kwargs: Any) -> None:
