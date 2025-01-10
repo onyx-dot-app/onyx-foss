@@ -417,6 +417,15 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
             unfenced_attempt_ids = get_unfenced_index_attempt_ids(
                 db_session, redis_client
             )
+
+            if tenant_id in debug_tenants:
+                ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
+                task_logger.info(
+                    f"check_for_indexing after get unfenced lock: "
+                    f"tenant={tenant_id} "
+                    f"ttl={ttl}"
+                )
+
             for attempt_id in unfenced_attempt_ids:
                 # debugging logic - remove after we're done
                 if tenant_id in debug_tenants:
