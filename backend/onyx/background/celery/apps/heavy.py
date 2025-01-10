@@ -60,7 +60,17 @@ def on_worker_init(sender: Any, **kwargs: Any) -> None:
     all_start_methods: list[str] = multiprocessing.get_all_start_methods()
     logger.info(f"Multiprocessing all start methods: {all_start_methods}")
 
-    multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+    try:
+        multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+    except Exception:
+        logger.info("multiprocessing.set_start_method exceptioned.")
+        try:
+            multiprocessing.set_start_method(
+                "spawn", force=True
+            )  # fork is unsafe, set to spawn
+        except Exception:
+            logger.info("multiprocessing.set_start_method force=True exceptioned.")
+
     logger.info(
         f"Multiprocessing selected start method: {multiprocessing.get_start_method()}"
     )
