@@ -861,7 +861,7 @@ def connector_indexing_proxy_task(
         f"Indexing watchdog - starting: attempt={index_attempt_id} "
         f"cc_pair={cc_pair_id} "
         f"search_settings={search_settings_id} "
-        f"multiprocessing={multiprocessing.get_start_method()}"
+        f"mp_start_method={multiprocessing.get_start_method()}"
     )
 
     if not self.request.id:
