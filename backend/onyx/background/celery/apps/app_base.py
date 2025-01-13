@@ -163,10 +163,10 @@ def on_task_postrun(
 
 def on_celeryd_init(sender: Any = None, conf: Any = None, **kwargs: Any) -> None:
     """The first signal sent on celery worker startup"""
-    # rkuo: commenting out as set_start_method seems to work here on macOS
-    # but not in the cloud and it is unclear why.
-    # logger.info(f"Multiprocessing start method - setting to spawn.")
-    # multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+
+    # NOTE(rkuo): start method "fork" is unsafe and we really need it to be "spawn"
+    # But something is blocking set_start_method from working in the cloud unless
+    # force=True. so we use force=True as a fallback.
 
     all_start_methods: list[str] = multiprocessing.get_all_start_methods()
     logger.info(f"Multiprocessing all start methods: {all_start_methods}")
