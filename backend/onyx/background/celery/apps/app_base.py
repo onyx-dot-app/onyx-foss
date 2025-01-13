@@ -175,7 +175,7 @@ def on_celeryd_init(sender: str, conf: Any = None, **kwargs: Any) -> None:
         multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
     except Exception:
         logger.info(
-            "multiprocessing.set_start_method exceptioned. Trying force=True..."
+            "Multiprocessing set_start_method exceptioned. Trying force=True..."
         )
         try:
             multiprocessing.set_start_method(
@@ -183,7 +183,7 @@ def on_celeryd_init(sender: str, conf: Any = None, **kwargs: Any) -> None:
             )  # fork is unsafe, set to spawn
         except Exception:
             logger.info(
-                "multiprocessing.set_start_method force=True exceptioned even with force=True."
+                "Multiprocessing set_start_method force=True exceptioned even with force=True."
             )
 
     logger.info(
