@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import sys
 import time
@@ -862,11 +863,14 @@ def connector_indexing_proxy_task(
     search_settings_id: int,
     tenant_id: str | None,
 ) -> None:
-    """celery tasks are forked, but forking is unstable.  This proxies work to a spawned task."""
+    """celery tasks are forked, but forking is unstable.
+    This is a thread that proxies work to a spawned task."""
+
     task_logger.info(
         f"Indexing watchdog - starting: attempt={index_attempt_id} "
         f"cc_pair={cc_pair_id} "
-        f"search_settings={search_settings_id}"
+        f"search_settings={search_settings_id} "
+        f"mp_start_method={multiprocessing.get_start_method()}"
     )
 
     if not self.request.id:

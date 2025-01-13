@@ -44,7 +44,7 @@ from onyx.configs.constants import DEFAULT_BOOST, MilestoneRecordType
 from onyx.configs.constants import DocumentSource
 from onyx.configs.constants import FileOrigin
 from onyx.configs.constants import MessageType
-from onyx.db.enums import AccessType, IndexingMode
+from onyx.db.enums import AccessType, IndexingMode, SyncType, SyncStatus
 from onyx.configs.constants import NotificationType
 from onyx.configs.constants import SearchFeedbackType
 from onyx.configs.constants import TokenRateLimitScope
@@ -881,6 +881,46 @@ class IndexAttemptError(Base):
         )
 
 
+class SyncRecord(Base):
+    """
+    Represents the status of a "sync" operation (e.g. document set, user group, deletion).
+
+    A "sync" operation is an operation which needs to update a set of documents within
+    Vespa, usually to match the state of Postgres.
+    """
+
+    __tablename__ = "sync_record"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # document set id, user group id, or deletion id
+    entity_id: Mapped[int] = mapped_column(Integer)
+
+    sync_type: Mapped[SyncType] = mapped_column(Enum(SyncType, native_enum=False))
+    sync_status: Mapped[SyncStatus] = mapped_column(Enum(SyncStatus, native_enum=False))
+
+    num_docs_synced: Mapped[int] = mapped_column(Integer, default=0)
+
+    sync_start_time: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
+    sync_end_time: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_sync_record_entity_id_sync_type_sync_start_time",
+            "entity_id",
+            "sync_type",
+            "sync_start_time",
+        ),
+        Index(
+            "ix_sync_record_entity_id_sync_type_sync_status",
+            "entity_id",
+            "sync_type",
+            "sync_status",
+        ),
+    )
+
+
 class DocumentByConnectorCredentialPair(Base):
     """Represents an indexing of a document by a specific connector / credential pair"""
 
@@ -1283,6 +1323,11 @@ class DocumentSet(Base):
     # If `False`, then the document set is not visible to users who are not explicitly
     # given access to it either via the `users` or `groups` relationships
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # Last time a user updated this document set
+    time_last_modified_by_user: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     connector_credential_pairs: Mapped[list[ConnectorCredentialPair]] = relationship(
         "ConnectorCredentialPair",
@@ -1761,6 +1806,11 @@ class UserGroup(Base):
     # tell the sync job to clean up the group
     is_up_for_deletion: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
+    )
+
+    # Last time a user updated this user group
+    time_last_modified_by_user: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
 
     users: Mapped[list[User]] = relationship(

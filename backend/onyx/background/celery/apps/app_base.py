@@ -161,9 +161,34 @@ def on_task_postrun(
         return
 
 
-def on_celeryd_init(sender: Any = None, conf: Any = None, **kwargs: Any) -> None:
+def on_celeryd_init(sender: str, conf: Any = None, **kwargs: Any) -> None:
     """The first signal sent on celery worker startup"""
-    multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+
+    # NOTE(rkuo): start method "fork" is unsafe and we really need it to be "spawn"
+    # But something is blocking set_start_method from working in the cloud unless
+    # force=True. so we use force=True as a fallback.
+
+    all_start_methods: list[str] = multiprocessing.get_all_start_methods()
+    logger.info(f"Multiprocessing all start methods: {all_start_methods}")
+
+    try:
+        multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+    except Exception:
+        logger.info(
+            "Multiprocessing set_start_method exceptioned. Trying force=True..."
+        )
+        try:
+            multiprocessing.set_start_method(
+                "spawn", force=True
+            )  # fork is unsafe, set to spawn
+        except Exception:
+            logger.info(
+                "Multiprocessing set_start_method force=True exceptioned even with force=True."
+            )
+
+    logger.info(
+        f"Multiprocessing selected start method: {multiprocessing.get_start_method()}"
+    )
 
 
 def wait_for_redis(sender: Any, **kwargs: Any) -> None:
