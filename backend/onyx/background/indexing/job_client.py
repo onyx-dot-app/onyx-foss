@@ -132,6 +132,8 @@ class SimpleJobClient:
         job_id = self.job_id_counter
         self.job_id_counter += 1
 
+        # this approach allows us to always "spawn" a new process regardless of
+        # get_start_method's current setting
         ctx = mp.get_context("spawn")
         process = ctx.Process(target=_run_in_process, args=(func, args), daemon=True)
         job = SimpleJob(id=job_id, process=process)
