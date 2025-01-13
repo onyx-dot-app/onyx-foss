@@ -161,7 +161,7 @@ def on_task_postrun(
         return
 
 
-def on_celeryd_init(sender: Any = None, conf: Any = None, **kwargs: Any) -> None:
+def on_celeryd_init(sender: str, conf: Any = None, **kwargs: Any) -> None:
     """The first signal sent on celery worker startup"""
 
     # NOTE(rkuo): start method "fork" is unsafe and we really need it to be "spawn"
