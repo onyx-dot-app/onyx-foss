@@ -60,9 +60,13 @@ def on_worker_init(sender: Worker, **kwargs: Any) -> None:
 
     SqlEngine.set_app_name(POSTGRES_CELERY_WORKER_INDEXING_APP_NAME)
 
-    # rkuo: been seeing transient connection exceptions here, so upping the connection count
-    # from just concurrency/concurrency to concurrency/concurrency*2
-    SqlEngine.init_engine(pool_size=sender.concurrency, max_overflow=8)  # type: ignore
+    # rkuo: Transient errors keep happening in the worker threads for indexing
+    # "SSL connection has been closed unexpectedly"
+    # fixing spawn method didn't help (although it seemed like it should)
+    # setting pre ping might help.
+    SqlEngine.init_engine(
+        pool_size=sender.concurrency, max_overflow=8, pool_pre_ping=True
+    )  # type: ignore
 
     app_base.wait_for_redis(sender, **kwargs)
     app_base.wait_for_db(sender, **kwargs)
