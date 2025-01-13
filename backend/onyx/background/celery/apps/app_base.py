@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import time
 from typing import Any
 
@@ -166,6 +167,28 @@ def on_celeryd_init(sender: Any = None, conf: Any = None, **kwargs: Any) -> None
     # but not in the cloud and it is unclear why.
     # logger.info(f"Multiprocessing start method - setting to spawn.")
     # multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+
+    all_start_methods: list[str] = multiprocessing.get_all_start_methods()
+    logger.info(f"Multiprocessing all start methods: {all_start_methods}")
+
+    try:
+        multiprocessing.set_start_method("spawn")  # fork is unsafe, set to spawn
+    except Exception:
+        logger.info(
+            "multiprocessing.set_start_method exceptioned. Trying force=True..."
+        )
+        try:
+            multiprocessing.set_start_method(
+                "spawn", force=True
+            )  # fork is unsafe, set to spawn
+        except Exception:
+            logger.info(
+                "multiprocessing.set_start_method force=True exceptioned even with force=True."
+            )
+
+    logger.info(
+        f"Multiprocessing selected start method: {multiprocessing.get_start_method()}"
+    )
 
 
 def wait_for_redis(sender: Any, **kwargs: Any) -> None:
