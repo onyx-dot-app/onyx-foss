@@ -763,7 +763,7 @@ class IndexAttempt(Base):
     # the run once API
     from_beginning: Mapped[bool] = mapped_column(Boolean)
     status: Mapped[IndexingStatus] = mapped_column(
-        Enum(IndexingStatus, native_enum=False)
+        Enum(IndexingStatus, native_enum=False, index=True)
     )
     # The two below may be slightly out of sync if user switches Embedding Model
     new_docs_indexed: Mapped[int | None] = mapped_column(Integer, default=0)
@@ -782,6 +782,7 @@ class IndexAttempt(Base):
     time_created: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        index=True,
     )
     # when the actual indexing run began
     # NOTE: will use the api_server clock rather than DB server clock
