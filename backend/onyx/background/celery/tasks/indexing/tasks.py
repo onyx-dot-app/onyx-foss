@@ -637,7 +637,8 @@ def validate_indexing_fence(
             mark_attempt_failed(
                 payload.index_attempt_id,
                 db_session,
-                "validate_indexing_fence - Canceling index attempt due to missing celery tasks",
+                f"validate_indexing_fence - Canceling index attempt due to missing celery tasks: "
+                f"index_attempt={payload.index_attempt_id}",
             )
         except Exception:
             logger.exception(

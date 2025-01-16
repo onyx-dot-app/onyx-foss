@@ -251,8 +251,8 @@ def connector_external_group_sync_generator_task(
 
         with get_session_with_tenant(tenant_id) as db_session:
             cc_pair = get_connector_credential_pair_from_id(
-                cc_pair_id=cc_pair_id,
                 db_session=db_session,
+                cc_pair_id=cc_pair_id,
             )
             if cc_pair is None:
                 raise ValueError(
