@@ -873,6 +873,11 @@ export function AssistantEditor({
                                       }`}
                                     >
                                       <Switch
+                                        checked={
+                                          values.enabled_tools_map[
+                                            searchTool.id
+                                          ]
+                                        }
                                         size="sm"
                                         onCheckedChange={(checked) => {
                                           setShowSearchTool(checked);
