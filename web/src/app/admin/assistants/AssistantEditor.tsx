@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React from "react";
 import { Option } from "@/components/Dropdown";
 import { generateRandomIconShape } from "@/lib/assistantIconUtils";
 import { CCPairBasicInfo, DocumentSet, User, UserGroup } from "@/lib/types";
@@ -35,7 +35,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FiInfo, FiRefreshCcw, FiUsers } from "react-icons/fi";
+import { FiInfo } from "react-icons/fi";
 import * as Yup from "yup";
 import CollapsibleSection from "./CollapsibleSection";
 import { SuccessfulPersonaUpdateRedirectType } from "./enums";
@@ -60,6 +60,7 @@ import { useAssistants } from "@/components/context/AssistantsContext";
 import { debounce } from "lodash";
 import { FullLLMProvider } from "../configuration/llm/interfaces";
 import StarterMessagesList from "./StarterMessageList";
+
 import { Switch } from "@/components/ui/switch";
 import { generateIdenticon } from "@/components/assistants/AssistantIcon";
 import { BackButton } from "@/components/BackButton";
@@ -72,11 +73,13 @@ import {
   Option as DropdownOption,
 } from "@/components/Dropdown";
 import { SourceChip } from "@/app/chat/input/ChatInputBar";
-import { TagIcon, UserIcon } from "lucide-react";
+import { TagIcon, UserIcon, XIcon } from "lucide-react";
 import { LLMSelector } from "@/components/llm/LLMSelector";
 import useSWR from "swr";
 import { errorHandlingFetcher } from "@/lib/fetcher";
 import { DeleteEntityModal } from "@/components/modals/DeleteEntityModal";
+import { DeletePersonaButton } from "./[id]/DeletePersonaButton";
+import Title from "@/components/ui/title";
 
 function findSearchTool(tools: ToolSnapshot[]) {
   return tools.find((tool) => tool.in_code_tool_id === "SearchTool");
@@ -128,8 +131,8 @@ export function AssistantEditor({
   const router = useRouter();
 
   const { popup, setPopup } = usePopup();
-  const { data, refreshLabels } = useLabels();
-  const labels = data || [];
+  const { labels, refreshLabels, createLabel, updateLabel, deleteLabel } =
+    useLabels();
 
   const colorOptions = [
     "#FF6FBF",
@@ -144,8 +147,6 @@ export function AssistantEditor({
   const [showSearchTool, setShowSearchTool] = useState(false);
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [hasEditedStarterMessage, setHasEditedStarterMessage] = useState(false);
-  const [showPersonaLabel, setShowPersonaLabel] = useState(!admin);
 
   // state to persist across formik reformatting
   const [defautIconColor, _setDeafultIconColor] = useState(
@@ -330,6 +331,10 @@ export function AssistantEditor({
     }));
   };
 
+  if (!labels) {
+    return <></>;
+  }
+
   return (
     <div className="mx-auto max-w-4xl">
       <style>
@@ -351,7 +356,7 @@ export function AssistantEditor({
           entityName={labelToDelete.name}
           onClose={() => setLabelToDelete(null)}
           onSubmit={async () => {
-            const response = await deletePersonaLabel(labelToDelete.id);
+            const response = await deleteLabel(labelToDelete.id);
             if (response?.ok) {
               setPopup({
                 message: `Label deleted successfully`,
@@ -575,7 +580,7 @@ export function AssistantEditor({
           return (
             <Form className="w-full text-text-950 assistant-editor">
               {/* Refresh starter messages when name or description changes */}
-              <p className="text-base font-normal !text-2xl">
+              <p className="text-base font-normal text-2xl">
                 {existingPersona ? (
                   <>
                     Edit assistant <b>{existingPersona.name}</b>
@@ -744,97 +749,6 @@ export function AssistantEditor({
                 className="[&_input]:placeholder:text-text-muted/50"
               />
 
-              <div className=" w-full max-w-4xl">
-                <Separator />
-                <div className="flex gap-x-2 items-center mt-4 ">
-                  <div className="block font-medium text-sm">Labels</div>
-                </div>
-                <p
-                  className="text-sm text-subtle"
-                  style={{ color: "rgb(113, 114, 121)" }}
-                >
-                  Select labels to categorize this assistant
-                </p>
-                <div className="mt-3">
-                  <SearchMultiSelectDropdown
-                    onCreateLabel={async (name: string) => {
-                      await createPersonaLabel(name);
-                      const currentLabels = await refreshLabels();
-
-                      setTimeout(() => {
-                        const newLabelId = currentLabels.find(
-                          (l: { name: string }) => l.name === name
-                        )?.id;
-                        const updatedLabelIds = [
-                          ...values.label_ids,
-                          newLabelId as number,
-                        ];
-                        setFieldValue("label_ids", updatedLabelIds);
-                      }, 300);
-                    }}
-                    options={Array.from(
-                      new Set(labels.map((label) => label.name))
-                    ).map((name) => ({
-                      name,
-                      value: name,
-                    }))}
-                    onSelect={(selected) => {
-                      const newLabelIds = [
-                        ...values.label_ids,
-                        labels.find((l) => l.name === selected.value)
-                          ?.id as number,
-                      ];
-                      setFieldValue("label_ids", newLabelIds);
-                    }}
-                    itemComponent={({ option }) => (
-                      <div
-                        className="flex items-center px-4 py-2.5 text-sm hover:bg-hover cursor-pointer"
-                        onClick={() => {
-                          const label = labels.find(
-                            (l) => l.name === option.value
-                          );
-                          if (label) {
-                            const isSelected = values.label_ids.includes(
-                              label.id
-                            );
-                            const newLabelIds = isSelected
-                              ? values.label_ids.filter(
-                                  (id: number) => id !== label.id
-                                )
-                              : [...values.label_ids, label.id];
-                            setFieldValue("label_ids", newLabelIds);
-                          }
-                        }}
-                      >
-                        <span className="text-sm font-medium leading-none">
-                          {option.name}
-                        </span>
-                      </div>
-                    )}
-                  />
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {values.label_ids.map((labelId: number) => {
-                      const label = labels.find((l) => l.id === labelId);
-                      return label ? (
-                        <SourceChip
-                          key={label.id}
-                          onRemove={() => {
-                            setFieldValue(
-                              "label_ids",
-                              values.label_ids.filter(
-                                (id: number) => id !== label.id
-                              )
-                            );
-                          }}
-                          title={label.name}
-                          icon={<TagIcon size={12} />}
-                        />
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              </div>
-
               <Separator />
 
               <TextFormField
@@ -894,8 +808,7 @@ export function AssistantEditor({
                                     <TooltipContent side="top" align="center">
                                       <p className="bg-background-900 max-w-[200px] text-sm rounded-lg p-1.5 text-white">
                                         To use the Knowledge Action, you need to
-                                        have at least one Connector-Credential
-                                        pair configured.
+                                        have at least one Connector configured.
                                       </p>
                                     </TooltipContent>
                                   )}
@@ -1085,6 +998,7 @@ export function AssistantEditor({
                         <React.Fragment key={tool.id}>
                           <div className="flex items-center content-start mb-2">
                             <Checkbox
+                              size="sm"
                               id={`enabled_tools_map.${tool.id}`}
                               checked={values.enabled_tools_map[tool.id]}
                               onCheckedChange={() => {
@@ -1119,7 +1033,6 @@ export function AssistantEditor({
                         )
                       : null
                   }
-                  userDefault={user?.preferences?.default_model || null}
                   requiresImageGeneration={
                     imageGenerationTool
                       ? values.enabled_tools_map[imageGenerationTool.id]
@@ -1140,106 +1053,6 @@ export function AssistantEditor({
                   }}
                 />
               </div>
-
-              {admin && labels && labels.length > 0 && (
-                <div className=" max-w-4xl">
-                  <Separator />
-                  <div className="flex gap-x-2 items-center ">
-                    <div className="block font-medium text-sm">
-                      Manage Labels
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <FiInfo size={12} />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="center">
-                          Manage existing labels or create new ones to group
-                          similar assistants
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <SubLabel>Edit or delete existing labels</SubLabel>
-                  <div className="grid grid-cols-1 gap-4">
-                    {labels.map((label: PersonaLabel) => (
-                      <div
-                        key={label.id}
-                        className="grid grid-cols-[1fr,2fr,auto] gap-4 items-end"
-                      >
-                        <TextFormField
-                          fontSize="sm"
-                          name={`editLabelName_${label.id}`}
-                          label="Label Name"
-                          value={
-                            values.editLabelId === label.id
-                              ? values.editLabelName
-                              : label.name
-                          }
-                          onChange={(e) => {
-                            setFieldValue("editLabelId", label.id);
-                            setFieldValue("editLabelName", e.target.value);
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          {values.editLabelId === label.id ? (
-                            <>
-                              <Button
-                                onClick={async () => {
-                                  const updatedName =
-                                    values.editLabelName || label.name;
-                                  const response = await updatePersonaLabel(
-                                    label.id,
-                                    updatedName
-                                  );
-                                  if (response?.ok) {
-                                    setPopup({
-                                      message: `Label "${updatedName}" updated successfully`,
-                                      type: "success",
-                                    });
-                                    await refreshLabels();
-                                    setFieldValue("editLabelId", null);
-                                    setFieldValue("editLabelName", "");
-                                    setFieldValue("editLabelDescription", "");
-                                  } else {
-                                    setPopup({
-                                      message: `Failed to update label - ${await response.text()}`,
-                                      type: "error",
-                                    });
-                                  }
-                                }}
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setFieldValue("editLabelId", null);
-                                  setFieldValue("editLabelName", "");
-                                  setFieldValue("editLabelDescription", "");
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                variant="destructive"
-                                onClick={async () => {
-                                  setLabelToDelete(label);
-                                }}
-                              >
-                                Delete
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <Separator />
               <AdvancedOptionsToggle
@@ -1402,17 +1215,122 @@ export function AssistantEditor({
                             autoStarterMessageEnabled={
                               autoStarterMessageEnabled
                             }
-                            errors={errors}
                             isRefreshing={isRefreshing}
                             values={values.starter_messages}
                             arrayHelpers={arrayHelpers}
-                            touchStarterMessages={() => {
-                              setHasEditedStarterMessage(true);
-                            }}
                             setFieldValue={setFieldValue}
                           />
                         )}
                       />
+                    </div>
+                  </div>
+
+                  <div className=" w-full max-w-4xl">
+                    <Separator />
+                    <div className="flex gap-x-2 items-center mt-4 ">
+                      <div className="block font-medium text-sm">Labels</div>
+                    </div>
+                    <p
+                      className="text-sm text-subtle"
+                      style={{ color: "rgb(113, 114, 121)" }}
+                    >
+                      Select labels to categorize this assistant
+                    </p>
+                    <div className="mt-3">
+                      <SearchMultiSelectDropdown
+                        onCreate={async (name: string) => {
+                          await createLabel(name);
+                          const currentLabels = await refreshLabels();
+
+                          setTimeout(() => {
+                            const newLabelId = currentLabels.find(
+                              (l: { name: string }) => l.name === name
+                            )?.id;
+                            const updatedLabelIds = [
+                              ...values.label_ids,
+                              newLabelId as number,
+                            ];
+                            setFieldValue("label_ids", updatedLabelIds);
+                          }, 300);
+                        }}
+                        options={Array.from(
+                          new Set(labels.map((label) => label.name))
+                        ).map((name) => ({
+                          name,
+                          value: name,
+                        }))}
+                        onSelect={(selected) => {
+                          const newLabelIds = [
+                            ...values.label_ids,
+                            labels.find((l) => l.name === selected.value)
+                              ?.id as number,
+                          ];
+                          setFieldValue("label_ids", newLabelIds);
+                        }}
+                        itemComponent={({ option }) => (
+                          <div className="flex items-center justify-between px-4 py-3 text-sm hover:bg-hover cursor-pointer border-b border-border last:border-b-0">
+                            <div
+                              className="flex-grow"
+                              onClick={() => {
+                                const label = labels.find(
+                                  (l) => l.name === option.value
+                                );
+                                if (label) {
+                                  const isSelected = values.label_ids.includes(
+                                    label.id
+                                  );
+                                  const newLabelIds = isSelected
+                                    ? values.label_ids.filter(
+                                        (id: number) => id !== label.id
+                                      )
+                                    : [...values.label_ids, label.id];
+                                  setFieldValue("label_ids", newLabelIds);
+                                }
+                              }}
+                            >
+                              <span className="font-normal leading-none">
+                                {option.name}
+                              </span>
+                            </div>
+                            {admin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const label = labels.find(
+                                    (l) => l.name === option.value
+                                  );
+                                  if (label) {
+                                    deleteLabel(label.id);
+                                  }
+                                }}
+                                className="ml-2 p-1 hover:bg-background-hover rounded"
+                              >
+                                <TrashIcon size={16} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      />
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {values.label_ids.map((labelId: number) => {
+                          const label = labels.find((l) => l.id === labelId);
+                          return label ? (
+                            <SourceChip
+                              key={label.id}
+                              onRemove={() => {
+                                setFieldValue(
+                                  "label_ids",
+                                  values.label_ids.filter(
+                                    (id: number) => id !== label.id
+                                  )
+                                );
+                              }}
+                              title={label.name}
+                              icon={<TagIcon size={12} />}
+                            />
+                          ) : null;
+                        })}
+                      </div>
                     </div>
                   </div>
                   <Separator />
@@ -1440,7 +1358,6 @@ export function AssistantEditor({
                           small
                           subtext="Documents prior to this date will be ignored."
                           label="[Optional] Knowledge Cutoff Date"
-                          value={values.search_start_date}
                           name="search_start_date"
                         />
 
@@ -1479,6 +1396,14 @@ export function AssistantEditor({
                     explanationLink="https://docs.onyx.app/guides/assistants"
                     className="[&_textarea]:placeholder:text-text-muted/50"
                   />
+                  <div className="flex justify-end">
+                    {existingPersona && (
+                      <DeletePersonaButton
+                        personaId={existingPersona!.id}
+                        redirectType={SuccessfulPersonaUpdateRedirectType.ADMIN}
+                      />
+                    )}
+                  </div>
                 </>
               )}
 

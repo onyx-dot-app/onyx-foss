@@ -162,7 +162,6 @@ function FileDisplay({
 export const AIMessage = ({
   regenerate,
   overriddenModel,
-  selectedMessageForDocDisplay,
   continueGenerating,
   shared,
   isActive,
@@ -170,7 +169,6 @@ export const AIMessage = ({
   alternativeAssistant,
   docs,
   messageId,
-  documentSelectionToggled,
   content,
   files,
   selectedDocuments,
@@ -180,7 +178,6 @@ export const AIMessage = ({
   isComplete,
   hasDocs,
   handleFeedback,
-  handleShowRetrieved,
   handleSearchQueryEdit,
   handleForceSearch,
   retrievalDisabled,
@@ -192,7 +189,6 @@ export const AIMessage = ({
   toggledDocumentSidebar,
 }: {
   index?: number;
-  selectedMessageForDocDisplay?: number | null;
   shared?: boolean;
   isActive?: boolean;
   continueGenerating?: () => void;
@@ -205,7 +201,6 @@ export const AIMessage = ({
   currentPersona: Persona;
   messageId: number | null;
   content: string | JSX.Element;
-  documentSelectionToggled?: boolean;
   files?: FileDescriptor[];
   query?: string;
   citedDocuments?: [string, OnyxDocument][] | null;
@@ -214,7 +209,6 @@ export const AIMessage = ({
   toggledDocumentSidebar?: boolean;
   hasDocs?: boolean;
   handleFeedback?: (feedbackType: FeedbackType) => void;
-  handleShowRetrieved?: (messageNumber: number | null) => void;
   handleSearchQueryEdit?: (query: string) => void;
   handleForceSearch?: () => void;
   retrievalDisabled?: boolean;
@@ -602,7 +596,7 @@ export const AIMessage = ({
                         className={`
                         flex md:flex-row gap-x-0.5 mt-1
                         transition-transform duration-300 ease-in-out
-                        transform opacity-100 translate-y-0"
+                        transform opacity-100 "
                   `}
                       >
                         <TooltipGroup>
@@ -692,10 +686,6 @@ export const AIMessage = ({
                             settings?.isMobile) &&
                           "!opacity-100"
                         }
-                        translate-y-2 ${
-                          (isHovering || settings?.isMobile) && "!translate-y-0"
-                        }
-                        transition-transform duration-300 ease-in-out 
                         flex md:flex-row gap-x-0.5 bg-background-125/40 -mx-1.5 p-1.5 rounded-lg
                         `}
                       >

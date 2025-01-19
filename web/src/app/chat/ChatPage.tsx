@@ -25,7 +25,6 @@ import { HealthCheckBanner } from "@/components/health/healthcheck";
 import {
   buildChatUrl,
   buildLatestMessageChain,
-  checkAnyAssistantHasSearch,
   createChatSession,
   deleteAllChatSessions,
   getCitedDocumentsFromMessage,
@@ -308,7 +307,6 @@ export function ChatPage({
   const {
     visibleAssistants: assistants,
     recentAssistants,
-    assistants: allAssistants,
     refreshRecentAssistants,
   } = useAssistants();
 
@@ -1890,6 +1888,7 @@ export function ChatPage({
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
   const currentPersona = alternativeAssistant || liveAssistant;
+
   useEffect(() => {
     const handleSlackChatRedirect = async () => {
       if (!slackChatId) return;
@@ -2065,8 +2064,7 @@ export function ChatPage({
         <div className="md:hidden">
           <Modal
             onOutsideClick={() => setDocumentSidebarToggled(false)}
-            noPadding
-            noScroll
+            title="Sources"
           >
             <DocumentResults
               setPresentingDocument={setPresentingDocument}
@@ -2083,6 +2081,7 @@ export function ChatPage({
               maxTokens={maxTokens}
               initialWidth={400}
               isOpen={true}
+              removeHeader
             />
           </Modal>
         </div>
@@ -2160,20 +2159,16 @@ export function ChatPage({
               <div className="w-full relative">
                 <HistorySidebar
                   setShowAssistantsModal={setShowAssistantsModal}
-                  assistants={assistants}
                   explicitlyUntoggle={explicitlyUntoggle}
-                  stopGenerating={stopGenerating}
                   reset={() => setMessage("")}
                   page="chat"
                   ref={innerSidebarElementRef}
                   toggleSidebar={toggleSidebar}
                   toggled={toggledSidebar}
-                  backgroundToggled={toggledSidebar || showHistorySidebar}
                   currentAssistantId={liveAssistant?.id}
                   existingChats={chatSessions}
                   currentChatSession={selectedChatSession}
                   folders={folders}
-                  openedFolders={openedFolders}
                   removeToggle={removeToggle}
                   showShareModal={showShareModal}
                   showDeleteAllModal={() => setShowDeleteAllModal(true)}
@@ -2191,7 +2186,11 @@ export function ChatPage({
                 bg-opacity-80
                 duration-300
                 ease-in-out
-                ${documentSidebarToggled && "opacity-100 w-[350px]"}`}
+                ${
+                  documentSidebarToggled &&
+                  !settings?.isMobile &&
+                  "opacity-100 w-[350px]"
+                }`}
               ></div>
             </div>
           </div>
@@ -2212,7 +2211,11 @@ export function ChatPage({
                 duration-300
                 ease-in-out
                 h-full
-                ${documentSidebarToggled ? "w-[400px]" : "w-[0px]"}
+                ${
+                  documentSidebarToggled && !settings?.isMobile
+                    ? "w-[400px]"
+                    : "w-[0px]"
+                }
             `}
           >
             <DocumentResults
@@ -2229,12 +2232,13 @@ export function ChatPage({
               selectedDocumentTokens={selectedDocumentTokens}
               maxTokens={maxTokens}
               initialWidth={400}
-              isOpen={documentSidebarToggled}
+              isOpen={documentSidebarToggled && !settings?.isMobile}
             />
           </div>
 
           <BlurBackground
             visible={!untoggled && (showHistorySidebar || toggledSidebar)}
+            onClick={() => toggleSidebar()}
           />
 
           <div
@@ -2253,7 +2257,9 @@ export function ChatPage({
                       ? setSharingModalVisible
                       : undefined
                   }
-                  documentSidebarToggled={documentSidebarToggled}
+                  documentSidebarToggled={
+                    documentSidebarToggled && !settings?.isMobile
+                  }
                   toggleSidebar={toggleSidebar}
                   currentChatSession={selectedChatSession}
                   hideUserDropdown={user?.is_anonymous_user}
@@ -2319,7 +2325,7 @@ export function ChatPage({
                             currentSessionChatState == "input" &&
                             !loadingError &&
                             !submittedMessage && (
-                              <div className="h-full w-[95%] mx-auto flex flex-col justify-center items-center">
+                              <div className="h-full  w-[95%] mx-auto flex flex-col justify-center items-center">
                                 <ChatIntro selectedPersona={liveAssistant} />
 
                                 <StarterMessages
@@ -2473,12 +2479,6 @@ export function ChatPage({
                                         setPresentingDocument
                                       }
                                       index={i}
-                                      selectedMessageForDocDisplay={
-                                        selectedMessageForDocDisplay
-                                      }
-                                      documentSelectionToggled={
-                                        documentSidebarToggled
-                                      }
                                       continueGenerating={
                                         i == messageHistory.length - 1 &&
                                         currentCanContinue()
@@ -2598,19 +2598,6 @@ export function ChatPage({
                                             }
                                           : undefined
                                       }
-                                      handleShowRetrieved={(messageNumber) => {
-                                        if (isShowingRetrieved) {
-                                          setSelectedMessageForDocDisplay(null);
-                                        } else {
-                                          if (messageNumber !== null) {
-                                            setSelectedMessageForDocDisplay(
-                                              messageNumber
-                                            );
-                                          } else {
-                                            setSelectedMessageForDocDisplay(-1);
-                                          }
-                                        }
-                                      }}
                                       handleForceSearch={() => {
                                         if (
                                           previousMessage &&
@@ -2817,7 +2804,11 @@ export function ChatPage({
                           duration-300 
                           ease-in-out
                           h-full
-                          ${documentSidebarToggled ? "w-[350px]" : "w-[0px]"}
+                          ${
+                            documentSidebarToggled && !settings?.isMobile
+                              ? "w-[350px]"
+                              : "w-[0px]"
+                          }
                       `}
                       ></div>
                     </div>
