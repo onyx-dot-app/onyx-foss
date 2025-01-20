@@ -31,6 +31,7 @@ class ExpandedRetrievalInput(SubgraphCoreState):
 
 class QueryExpansionUpdate(BaseModel):
     expanded_queries: list[str] = ["aaa", "bbb"]
+    log_messages: list[str] = []
 
 
 class DocVerificationUpdate(BaseModel):
@@ -42,11 +43,13 @@ class DocRetrievalUpdate(BaseModel):
     retrieved_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ] = []
+    log_messages: list[str] = []
 
 
 class DocRerankingUpdate(BaseModel):
     reranked_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     sub_question_retrieval_stats: RetrievalFitStats | None = None
+    log_messages: list[str] = []
 
 
 class ExpandedRetrievalUpdate(BaseModel):
@@ -59,6 +62,7 @@ class ExpandedRetrievalUpdate(BaseModel):
 class ExpandedRetrievalOutput(BaseModel):
     expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
     base_expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
+    log_messages: list[str] = []
 
 
 ## Graph State

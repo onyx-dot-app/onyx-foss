@@ -252,6 +252,6 @@ def generate_initial_answer(
         agent_base_end_time=agent_base_end_time,
         agent_base_metrics=agent_base_metrics,
         log_messages=[
-            f"{now_start} -- Initial answer generation - Time taken: {now_end - now_start}"
+            f"{now_end} -- Main - Initial Answer generation,  Time taken: {now_end - now_start}"
         ],
     )

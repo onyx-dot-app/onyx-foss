@@ -38,12 +38,16 @@ def entity_term_extraction_llm(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     if not agent_a_config.allow_refinement:
+        now_end = datetime.now()
         return EntityTermExtractionUpdate(
             entity_retlation_term_extractions=EntityRelationshipTermExtraction(
                 entities=[],
                 relationships=[],
                 terms=[],
-            )
+            ),
+            log_messages=[
+                f"{now_end} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
+            ],
         )
 
     # first four lines duplicates from generate_initial_answer
@@ -128,6 +132,6 @@ def entity_term_extraction_llm(
             terms=terms,
         ),
         log_messages=[
-            f"{now_start} -- Entity Term Extraction - Time taken: {now_end - now_start}"
+            f"{now_end} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
         ],
     )

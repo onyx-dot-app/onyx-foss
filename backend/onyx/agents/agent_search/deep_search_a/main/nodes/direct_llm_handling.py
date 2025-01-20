@@ -83,5 +83,7 @@ def direct_llm_handling(
         generated_sub_questions=[],
         agent_base_end_time=now_end,
         agent_base_metrics=None,
-        log_messages=[f"LLM handling: {now_end - now_start}"],
+        log_messages=[
+            f"{now_end} -- Main - LLM handling: {answer},  Time taken: {now_end - now_start}"
+        ],
     )

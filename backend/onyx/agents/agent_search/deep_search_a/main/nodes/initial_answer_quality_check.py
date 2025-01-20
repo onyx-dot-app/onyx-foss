@@ -32,4 +32,9 @@ def initial_answer_quality_check(state: MainState) -> InitialAnswerQualityUpdate
         f"--------{now_end}--{now_end - now_start}--------INITIAL ANSWER QUALITY CHECK END---"
     )
 
-    return InitialAnswerQualityUpdate(initial_answer_quality=verdict)
+    return InitialAnswerQualityUpdate(
+        initial_answer_quality=verdict,
+        log_messages=[
+            f"{now_end} -- Main - Initial answer quality check,  Time taken: {now_end - now_start}"
+        ],
+    )

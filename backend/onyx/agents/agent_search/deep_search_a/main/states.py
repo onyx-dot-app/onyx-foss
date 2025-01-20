@@ -62,6 +62,10 @@ class RoutingDecision(RoutingDecisionBase, LoggerUpdate):
     pass
 
 
+class LoggingUpdate(BaseModel):
+    log_messages: list[str] = []
+
+
 class BaseDecompUpdate(
     RefinedAgentStartStats, RefinedAgentEndStats, BaseDecompUpdateBase
 ):
@@ -94,27 +98,27 @@ class RefinedAnswerUpdate(RefinedAgentEndStats, RefinedAnswerUpdateBase):
     pass
 
 
-class InitialAnswerQualityUpdate(BaseModel):
+class InitialAnswerQualityUpdate(LoggingUpdate):
     initial_answer_quality: bool = False
 
 
-class RequireRefinedAnswerUpdate(BaseModel):
+class RequireRefinedAnswerUpdate(LoggingUpdate):
     require_refined_answer: bool = True
 
 
-class DecompAnswersUpdate(BaseModel):
+class DecompAnswersUpdate(LoggingUpdate):
     documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     decomp_answer_results: Annotated[
         list[QuestionAnswerResults], dedup_question_answer_results
     ] = []
 
 
-class FollowUpDecompAnswersUpdate(BaseModel):
+class FollowUpDecompAnswersUpdate(LoggingUpdate):
     refined_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     refined_decomp_answer_results: Annotated[list[QuestionAnswerResults], add] = []
 
 
-class ExpandedRetrievalUpdate(BaseModel):
+class ExpandedRetrievalUpdate(LoggingUpdate):
     all_original_question_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ]
@@ -122,7 +126,7 @@ class ExpandedRetrievalUpdate(BaseModel):
     original_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
 
 
-class EntityTermExtractionUpdateBase(BaseModel):
+class EntityTermExtractionUpdateBase(LoggingUpdate):
     entity_retlation_term_extractions: EntityRelationshipTermExtraction = (
         EntityRelationshipTermExtraction()
     )
@@ -180,4 +184,4 @@ class MainState(
 
 
 class MainOutput(TypedDict):
-    pass
+    log_messages: list[str]

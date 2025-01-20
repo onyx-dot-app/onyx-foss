@@ -100,10 +100,14 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
         # #     )
         # pass
 
-    main_output = MainOutput()
-
     now_end = datetime.now()
+    main_output = MainOutput(
+        log_messages=[
+            f"{now_end} -- Main - Logging,  Time taken: {now_end - now_start}"
+        ],
+    )
 
+    logger.debug(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
     logger.debug(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
 
     return main_output

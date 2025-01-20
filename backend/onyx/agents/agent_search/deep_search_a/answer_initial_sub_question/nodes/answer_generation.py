@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from typing import Any
 from typing import cast
 
@@ -36,16 +36,17 @@ logger = setup_logger()
 def answer_generation(
     state: AnswerQuestionState, config: RunnableConfig
 ) -> QAGenerationUpdate:
-    now_start = datetime.datetime.now()
+    now_start = datetime.now()
     logger.debug(f"--------{now_start}--------START ANSWER GENERATION---")
 
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question
     docs = state.documents
     level, question_nr = parse_question_id(state.question_id)
+    context_docs = state.context_documents
     persona_prompt = get_persona_prompt(agent_search_config.search_request.persona)
 
-    if len(docs) == 0:
+    if len(context_docs) == 0:
         answer_str = UNKNOWN_ANSWER
         dispatch_custom_event(
             "sub_answers",
@@ -106,6 +107,10 @@ def answer_generation(
     )
     dispatch_custom_event("stream_finished", stop_event)
 
+    now_end = datetime.now()
     return QAGenerationUpdate(
         answer=answer_str,
+        log_messages=[
+            f"{now_end} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
+        ],
     )

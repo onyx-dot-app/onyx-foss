@@ -18,16 +18,19 @@ from onyx.context.search.models import InferenceSection
 ## Update States
 class QACheckUpdate(BaseModel):
     answer_quality: str = ""
+    log_messages: list[str] = []
 
 
 class QAGenerationUpdate(BaseModel):
     answer: str = ""
+    log_messages: list[str] = []
     # answer_stat: AnswerStats
 
 
 class RetrievalIngestionUpdate(BaseModel):
     expanded_retrieval_results: list[QueryResult] = []
     documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
+    context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     sub_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
 
 

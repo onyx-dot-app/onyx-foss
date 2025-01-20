@@ -33,4 +33,7 @@ def ingest_refined_answers(
         # so we might not need to dedup here
         documents=dedup_inference_sections(documents, []),
         decomp_answer_results=answer_results,
+        log_messages=[
+            f"{now_end} -- Main - Ingest refined answers,  Time taken: {now_end - now_start}"
+        ],
     )
