@@ -1,7 +1,8 @@
 from typing import TypedDict
 
 from onyx.chat.llm_response_handler import LLMResponseHandlerManager
-from onyx.chat.prompt_builder.build import LLMCall
+from onyx.chat.prompt_builder.answer_prompt_builder import LLMCall
+
 
 ## Update States
 
