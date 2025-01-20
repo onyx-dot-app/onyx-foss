@@ -61,10 +61,10 @@ import { debounce } from "lodash";
 import { FullLLMProvider } from "../configuration/llm/interfaces";
 import StarterMessagesList from "./StarterMessageList";
 
-import { Switch } from "@/components/ui/switch";
+import { Switch, SwitchField } from "@/components/ui/switch";
 import { generateIdenticon } from "@/components/assistants/AssistantIcon";
 import { BackButton } from "@/components/BackButton";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
 import { AdvancedOptionsToggle } from "@/components/AdvancedOptionsToggle";
 import { MinimalUserSnapshot } from "@/lib/types";
 import { useUserGroups } from "@/lib/hooks";
@@ -143,8 +143,6 @@ export function AssistantEditor({
     "#FF6F6F",
     "#6FFFFF",
   ];
-
-  const [showSearchTool, setShowSearchTool] = useState(false);
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
@@ -786,15 +784,9 @@ export function AssistantEditor({
                                           : ""
                                       }`}
                                     >
-                                      <Switch
-                                        checked={
-                                          values.enabled_tools_map[
-                                            searchTool.id
-                                          ]
-                                        }
+                                      <SwitchField
                                         size="sm"
                                         onCheckedChange={(checked) => {
-                                          setShowSearchTool(checked);
                                           setFieldValue("num_chunks", null);
                                           toggleToolInValues(searchTool.id);
                                         }}
@@ -828,7 +820,7 @@ export function AssistantEditor({
                   )}
                   {ccPairs.length > 0 &&
                     searchTool &&
-                    showSearchTool &&
+                    values.enabled_tools_map[searchTool.id] &&
                     !(user?.role != "admin" && documentSets.length === 0) && (
                       <CollapsibleSection>
                         <div className="mt-2">
@@ -916,14 +908,10 @@ export function AssistantEditor({
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger>
-                                <Checkbox
+                                <CheckboxField
                                   size="sm"
                                   id={`enabled_tools_map.${imageGenerationTool.id}`}
-                                  checked={
-                                    values.enabled_tools_map[
-                                      imageGenerationTool.id
-                                    ]
-                                  }
+                                  name={`enabled_tools_map.${imageGenerationTool.id}`}
                                   onCheckedChange={() => {
                                     if (
                                       currentLLMSupportsImageOutput &&
@@ -979,6 +967,7 @@ export function AssistantEditor({
                             onCheckedChange={() => {
                               toggleToolInValues(internetSearchTool.id);
                             }}
+                            name={`enabled_tools_map.${internetSearchTool.id}`}
                           />
                           <div className="flex flex-col ml-2">
                             <span className="text-sm">
@@ -1071,9 +1060,9 @@ export function AssistantEditor({
 
                     <div className="min-h-[100px]">
                       <div className="flex items-center mb-2">
-                        <Switch
+                        <SwitchField
+                          name="is_public"
                           size="md"
-                          checked={values.is_public}
                           onCheckedChange={(checked) => {
                             setFieldValue("is_public", checked);
                             if (checked) {

@@ -2063,6 +2063,7 @@ export function ChatPage({
       {retrievalEnabled && documentSidebarToggled && settings?.isMobile && (
         <div className="md:hidden">
           <Modal
+            hideDividerForTitle
             onOutsideClick={() => setDocumentSidebarToggled(false)}
             title="Sources"
           >
@@ -2346,9 +2347,10 @@ export function ChatPage({
                               (settings?.enterpriseSettings
                                 ?.two_lines_for_chat_header
                                 ? "pt-20 "
-                                : "pt-8") +
-                              (hasPerformedInitialScroll ? "" : "invisible")
+                                : "pt-8 ")
                             }
+                            // NOTE: temporarily removing this to fix the scroll bug
+                            // (hasPerformedInitialScroll ? "" : "invisible")
                           >
                             {(messageHistory.length < BUFFER_COUNT
                               ? messageHistory

@@ -22,6 +22,7 @@ interface ModalProps {
   noScroll?: boolean;
   heightOverride?: string;
   removeBottomPadding?: boolean;
+  removePadding?: boolean;
 }
 
 export function Modal({
@@ -39,6 +40,7 @@ export function Modal({
   noScroll,
   heightOverride,
   removeBottomPadding,
+  removePadding,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -114,7 +116,7 @@ export function Modal({
                   {icon && icon({ size: 30 })}
                 </h2>
               </div>
-              {!hideDividerForTitle && <Separator className="mb-0" />}
+              {!hideDividerForTitle && <Separator />}
             </>
           )}
         </div>
