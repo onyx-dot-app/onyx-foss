@@ -304,11 +304,7 @@ export function ChatPage({
   const [presentingDocument, setPresentingDocument] =
     useState<OnyxDocument | null>(null);
 
-  const {
-    visibleAssistants: assistants,
-    recentAssistants,
-    refreshRecentAssistants,
-  } = useAssistants();
+  const { recentAssistants, refreshRecentAssistants } = useAssistants();
 
   const liveAssistant: Persona | undefined =
     alternativeAssistant ||

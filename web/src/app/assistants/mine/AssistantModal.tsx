@@ -65,11 +65,8 @@ export default function AssistantModal({
 }: {
   hideModal: () => void;
 }) {
-  const [showAllFeaturedAssistants, setShowAllFeaturedAssistants] =
-    useState(false);
-  const { assistants, visibleAssistants } = useAssistants();
-  const { assistantFilters, toggleAssistantFilter, setAssistantFilters } =
-    useAssistantFilter();
+  const { assistants, pinnedAssistants } = useAssistants();
+  const { assistantFilters, toggleAssistantFilter } = useAssistantFilter();
   const router = useRouter();
   const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,11 +205,9 @@ export default function AssistantModal({
               featuredAssistants.map((assistant, index) => (
                 <div key={index}>
                   <AssistantCard
-                    pinned={
-                      user?.preferences?.pinned_assistants?.includes(
-                        assistant.id
-                      ) ?? false
-                    }
+                    pinned={pinnedAssistants
+                      .map((a) => a.id)
+                      .includes(assistant.id)}
                     persona={assistant}
                     closeModal={hideModal}
                   />

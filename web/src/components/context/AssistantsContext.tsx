@@ -57,15 +57,20 @@ export const AssistantsProvider: React.FC<{
   const [allAssistants, setAllAssistants] = useState<Persona[]>([]);
 
   const [pinnedAssistants, setPinnedAssistants] = useState<Persona[]>(
-    assistants.filter((assistant) =>
-      user?.preferences?.pinned_assistants?.includes(assistant.id)
-    )
+    user?.preferences.pinned_assistants
+      ? assistants.filter((assistant) =>
+          user?.preferences?.pinned_assistants?.includes(assistant.id)
+        )
+      : assistants.filter((a) => a.builtin_persona)
   );
+
   useEffect(() => {
     setPinnedAssistants(
-      assistants.filter((assistant) =>
-        user?.preferences?.pinned_assistants?.includes(assistant.id)
-      )
+      user?.preferences.pinned_assistants
+        ? assistants.filter((assistant) =>
+            user?.preferences?.pinned_assistants?.includes(assistant.id)
+          )
+        : assistants.filter((a) => a.builtin_persona)
     );
   }, [user?.preferences?.pinned_assistants, assistants]);
 

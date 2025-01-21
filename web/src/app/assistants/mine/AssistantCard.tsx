@@ -64,7 +64,7 @@ const AssistantCard: React.FC<{
 }> = ({ persona, pinned, closeModal }) => {
   const { user, toggleAssistantPinnedStatus } = useUser();
   const router = useRouter();
-  const { refreshAssistants } = useAssistants();
+  const { refreshAssistants, pinnedAssistants } = useAssistants();
 
   const isOwnedByUser = checkUserOwnsAssistant(user, persona);
 
@@ -319,7 +319,7 @@ const AssistantCard: React.FC<{
                   <div
                     onClick={async () => {
                       await toggleAssistantPinnedStatus(
-                        user?.preferences.pinned_assistants || [],
+                        pinnedAssistants.map((a) => a.id),
                         persona.id,
                         !pinned
                       );
