@@ -20,6 +20,9 @@ from onyx.agents.agent_search.deep_search_a.main.states import InitialAnswerUpda
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
+    build_history_prompt,
+)
+from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
 )
 from onyx.agents.agent_search.shared_graph_utils.models import InitialAgentResultStats
@@ -58,6 +61,9 @@ def generate_initial_answer(
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
+
+    history = build_history_prompt(agent_a_config.message_history)
+
     sub_question_docs = state["documents"]
     all_original_question_documents = state["all_original_question_documents"]
 
@@ -160,7 +166,7 @@ def generate_initial_answer(
         doc_context = trim_prompt_piece(
             model.config,
             doc_context,
-            base_prompt + sub_question_answer_str + persona_specification,
+            base_prompt + sub_question_answer_str + persona_specification + history,
         )
 
         msg = [
@@ -172,6 +178,7 @@ def generate_initial_answer(
                     ),
                     relevant_docs=format_docs(relevant_docs),
                     persona_specification=persona_specification,
+                    history=history,
                 )
             )
         ]

@@ -2,6 +2,13 @@ UNKNOWN_ANSWER = "I do not have enough information to answer this question."
 
 NO_RECOVERED_DOCS = "No relevant documents recovered"
 
+HISTORY_PROMPT = """\n
+For more context, here is the history of the conversation so far that preceeded this question:
+\n ------- \n
+{history}
+\n ------- \n\n
+"""
+
 REWRITE_PROMPT_MULTI_ORIGINAL = """ \n
     Please convert an initial user question into a 2-3 more appropriate short and pointed search queries for retrievel from a
     document store. Particularly, try to think about resolving ambiguities and make the search queries more specific,
@@ -309,6 +316,7 @@ DEEP_DECOMPOSE_PROMPT = """ \n
     \n ------- \n
     {question}
     \n ------- \n
+    {history}
 
     Here is the initial sub-optimal answer:
     \n ------- \n
@@ -453,6 +461,8 @@ Here is the initial question:
 -------
 {question}
 -------
+{history}
+
 Please formulate your answer as a newline-separated list of questions like so:
  <sub-question>
  <sub-question>
@@ -490,6 +500,7 @@ And here is the initial question that you should think about decomposing:
 {question}
 -------
 
+{history}
 
 Please formulate your answer as a newline-separated list of questions like so:
  <sub-question>
@@ -560,6 +571,7 @@ or address the request, you should choose the 'research' option.
 - If you think the question is very general and does not refer to a contents of a document store, you should choose
 the 'LLM' option.
 - Otherwise, you should choose the 'research' option.
+{history}
 
 Here is the initial question:
 -------
@@ -584,6 +596,7 @@ store to answer or materially help with the request, you should choose the 'rese
 you know the answer/can handle the request, you should choose the 'LLM' option.
 - If the question asks you do do somethng ('please create...', 'write for me...', etc.), you should choose the 'LLM' option.
 - If in doubt, choose the 'research' option.
+{history}
 
 Here is the initial question:
 -------
@@ -688,14 +701,14 @@ INITIAL_RAG_PROMPT = (
     """ \n
 {persona_specification}
 
-Use the information provided below - and only the
-provided information - to answer the provided question.
+Use the information provided below - and only the provided information - to answer the provided question.
 
 The information provided below consists of:
     1) a number of answered sub-questions - these are very important(!) and definitely should be
     considered to answer the question.
     2) a number of documents that were also deemed relevant for the question.
 
+{history}
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
  You may give some additional facts you learned, but do not try to invent an answer.
@@ -739,6 +752,7 @@ INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS = (
 Use the information provided below
 - and only the provided information - to answer the provided question.
 The information provided below consists of a number of documents that were deemed relevant for the question.
+{history}
 
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
@@ -781,7 +795,7 @@ The information provided below consists of:
      particular to update/extend/correct the initial answer!
     information from the revised sub-questions
     3) a number of documents that were also deemed relevant for the question.
-
+{history}
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
  You may give some additional facts you learned, but do not try to invent an answer.
@@ -838,6 +852,7 @@ provided information - to answer the provided question.
 The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
     2) a number of documents that were also deemed relevant for the question.
+{history}
 
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.

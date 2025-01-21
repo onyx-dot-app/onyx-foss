@@ -14,6 +14,9 @@ from onyx.agents.agent_search.deep_search_a.main.states import (
 )
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
+    build_history_prompt,
+)
 from onyx.agents.agent_search.shared_graph_utils.prompts import DEEP_DECOMPOSE_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -47,7 +50,7 @@ def refined_sub_question_creation(
 
     question = agent_a_config.search_request.query
     base_answer = state["initial_answer"]
-
+    history = build_history_prompt(agent_a_config.message_history)
     # get the entity term extraction dict and properly format it
     entity_retlation_term_extractions = state["entity_retlation_term_extractions"]
 
@@ -69,6 +72,7 @@ def refined_sub_question_creation(
         HumanMessage(
             content=DEEP_DECOMPOSE_PROMPT.format(
                 question=question,
+                history=history,
                 entity_term_extraction_str=entity_term_extraction_str,
                 base_answer=base_answer,
                 answered_sub_questions="\n - ".join(addressed_question_list),

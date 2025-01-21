@@ -12,6 +12,9 @@ from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import BaseDecompUpdate
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
+    build_history_prompt,
+)
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     INITIAL_DECOMPOSITION_PROMPT_QUESTIONS,
 )
@@ -47,6 +50,7 @@ def initial_sub_question_creation(
     perform_initial_search_path_decision = (
         agent_a_config.perform_initial_search_path_decision
     )
+    history = build_history_prompt(agent_a_config.message_history)
 
     # Use the initial search results to inform the decomposition
     sample_doc_str = state.get("sample_doc_str", "")
@@ -83,13 +87,13 @@ def initial_sub_question_creation(
 
         decomposition_prompt = (
             INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH.format(
-                question=question, sample_doc_str=sample_doc_str
+                question=question, sample_doc_str=sample_doc_str, history=history
             )
         )
 
     else:
         decomposition_prompt = INITIAL_DECOMPOSITION_PROMPT_QUESTIONS.format(
-            question=question
+            question=question, history=history
         )
 
     # Start decomposition

@@ -8,6 +8,9 @@ from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.deep_search_a.main.states import RoutingDecision
 from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
+    build_history_prompt,
+)
 from onyx.agents.agent_search.shared_graph_utils.prompts import AGENT_DECISION_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     AGENT_DECISION_PROMPT_AFTER_SEARCH,
@@ -28,6 +31,8 @@ def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDeci
     perform_initial_search_path_decision = (
         agent_a_config.perform_initial_search_path_decision
     )
+
+    history = build_history_prompt(config["metadata"]["config"].message_history)
 
     logger.debug(f"--------{now_start}--------DECIDING TO SEARCH OR GO TO LLM---")
 
@@ -53,12 +58,14 @@ def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDeci
         )
 
         agent_decision_prompt = AGENT_DECISION_PROMPT_AFTER_SEARCH.format(
-            question=question, sample_doc_str=sample_doc_str
+            question=question, sample_doc_str=sample_doc_str, history=history
         )
 
     else:
         sample_doc_str = ""
-        agent_decision_prompt = AGENT_DECISION_PROMPT.format(question=question)
+        agent_decision_prompt = AGENT_DECISION_PROMPT.format(
+            question=question, history=history
+        )
 
     msg = [HumanMessage(content=agent_decision_prompt)]
 

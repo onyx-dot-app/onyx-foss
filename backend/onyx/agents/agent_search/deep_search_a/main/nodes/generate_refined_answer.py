@@ -17,6 +17,9 @@ from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.deep_search_a.main.states import RefinedAnswerUpdate
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
+    build_history_prompt,
+)
+from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
 )
 from onyx.agents.agent_search.shared_graph_utils.models import RefinedAgentStats
@@ -55,6 +58,8 @@ def generate_refined_answer(
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
+
+    history = build_history_prompt(agent_a_config.message_history)
 
     initial_documents = state["documents"]
     revised_documents = state["refined_documents"]
@@ -169,13 +174,15 @@ def generate_refined_answer(
         + sub_question_answer_str
         + relevant_docs
         + initial_answer
-        + persona_specification,
+        + persona_specification
+        + history,
     )
 
     msg = [
         HumanMessage(
             content=base_prompt.format(
                 question=question,
+                history=history,
                 answered_sub_questions=remove_document_citations(
                     sub_question_answer_str
                 ),
