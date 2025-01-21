@@ -110,7 +110,7 @@ export const useConnectorStatus = (refreshInterval = 30000) => {
 };
 
 export const useBasicConnectorStatus = () => {
-  const url = "/api/manage/admin/connector-status";
+  const url = "/api/manage/connector-status";
   const swrResponse = useSWR<CCPairBasicInfo[]>(url, errorHandlingFetcher);
   return {
     ...swrResponse,
