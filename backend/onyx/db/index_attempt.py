@@ -432,7 +432,7 @@ def get_paginated_index_attempts_for_cc_pair_id(
     stmt = stmt.order_by(IndexAttempt.time_started.desc())
 
     # Apply pagination
-    stmt = stmt.offset((page - 1) * page_size).limit(page_size)
+    stmt = stmt.offset(page * page_size).limit(page_size)
 
     return list(db_session.execute(stmt).scalars().all())
 

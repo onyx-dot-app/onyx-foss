@@ -46,7 +46,9 @@ function QueryHistoryTableRow({
     >
       <TableCell>
         <Text className="whitespace-normal line-clamp-5">
-          {chatSessionMinimal.first_user_message || "-"}
+          {chatSessionMinimal.first_user_message ||
+            chatSessionMinimal.name ||
+            "-"}
         </Text>
       </TableCell>
       <TableCell>

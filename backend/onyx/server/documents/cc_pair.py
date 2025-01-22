@@ -62,7 +62,7 @@ router = APIRouter(prefix="/manage")
 @router.get("/admin/cc-pair/{cc_pair_id}/index-attempts")
 def get_cc_pair_index_attempts(
     cc_pair_id: int,
-    page: int = Query(1, ge=1),
+    page_num: int = Query(0, ge=0),
     page_size: int = Query(10, ge=1, le=1000),
     user: User | None = Depends(current_curator_or_admin_user),
     db_session: Session = Depends(get_session),
@@ -81,7 +81,7 @@ def get_cc_pair_index_attempts(
     index_attempts = get_paginated_index_attempts_for_cc_pair_id(
         db_session=db_session,
         connector_id=cc_pair.connector_id,
-        page=page,
+        page=page_num,
         page_size=page_size,
     )
     return PaginatedReturn(
