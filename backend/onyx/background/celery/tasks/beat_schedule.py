@@ -29,6 +29,16 @@ cloud_tasks_to_schedule = [
             "expires": BEAT_EXPIRES_DEFAULT,
         },
     },
+    {
+        "name": f"{ONYX_CLOUD_CELERY_TASK_PREFIX}_check-alembic",
+        "task": OnyxCeleryTask.CLOUD_CHECK_ALEMBIC,
+        "schedule": timedelta(hours=1),
+        "options": {
+            "priority": OnyxCeleryPriority.HIGH,
+            "expires": BEAT_EXPIRES_DEFAULT,
+            "queue": OnyxCeleryQueues.MONITORING,
+        },
+    },
 ]
 
 # tasks that run in either self-hosted on cloud

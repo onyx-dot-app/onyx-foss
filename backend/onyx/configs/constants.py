@@ -295,6 +295,7 @@ class OnyxRedisLocks:
     ANONYMOUS_USER_ENABLED = "anonymous_user_enabled"
 
     CLOUD_CHECK_INDEXING_BEAT_LOCK = "da_lock:cloud_check_indexing_beat"
+    CLOUD_CHECK_ALEMBIC_BEAT_LOCK = "da_lock:cloud_check_alembic"
 
 
 class OnyxRedisSignals:
@@ -344,6 +345,7 @@ class OnyxCeleryTask:
     AUTOGENERATE_USAGE_REPORT_TASK = "autogenerate_usage_report_task"
 
     CLOUD_CHECK_FOR_INDEXING = f"{ONYX_CLOUD_CELERY_TASK_PREFIX}_check_for_indexing"
+    CLOUD_CHECK_ALEMBIC = f"{ONYX_CLOUD_CELERY_TASK_PREFIX}_check_alembic"
 
 
 REDIS_SOCKET_KEEPALIVE_OPTIONS = {}
