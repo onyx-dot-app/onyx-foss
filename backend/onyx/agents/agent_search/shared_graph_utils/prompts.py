@@ -644,8 +644,7 @@ INITIAL_RAG_PROMPT_SUB_QUESTION_SEARCH = (
     """ \n
 {persona_specification}
 
-Use the information provided below - and only the
-provided information - to answer the provided question.
+Use the information provided below - and only the provided information - to answer the main question that will be provided.
 
 The information provided below consists of:
     1) a number of sub-questions and supporting document information that would help answer them.
@@ -659,6 +658,7 @@ IMPORTANT RULES:
     + f'"{UNKNOWN_ANSWER}"'
     + """.
  - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
+ - The answers to the subquestions should help you to structure your thoughts in order to answer the question.
 
 Please provide inline citations of documentsin the format [[D1]](), [[D2]](), [[D3]](), etc.,  If you have multiple citations,
 please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Feel free to cite documents in addition
@@ -671,16 +671,16 @@ or assumptions you made.
 
 Here is the contextual information:
 \n-------\n
-*Answered Sub-questions (these should really matter!):
+*Answered Sub-questions (these should really help to organize your thoughts):
 {answered_sub_questions}
 
-And here are relevant document information that support the sub-question answers, or that are relevant for the actual question:\n
+And here are relevant document information that supports the sub-question answers, or that are relevant for the actual question:\n
 
 {relevant_docs}
 
 \n-------\n
 \n
-And here is the question I want you to answer based on the information above:
+And here is the main question I want you to answer based on the information above:
 \n--\n
 {question}
 \n--\n\n
@@ -701,14 +701,22 @@ INITIAL_RAG_PROMPT = (
     """ \n
 {persona_specification}
 
-Use the information provided below - and only the provided information - to answer the provided question.
+Use the information provided below - and only the provided information - to answer the provided main question.
 
 The information provided below consists of:
-    1) a number of answered sub-questions - these are very important(!) and definitely should be
-    considered to answer the question.
-    2) a number of documents that were also deemed relevant for the question.
+    1) a number of answered sub-questions - these are very important to help you organize your thoughts and your
+answer
+    2) a number of documents that deemed relevant for the question.
 
 {history}
+
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
+Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
+citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
+Again, please do not cite sub-questions without a document citation!
+Citations are very important for the user!
+
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
  You may give some additional facts you learned, but do not try to invent an answer.
@@ -716,11 +724,6 @@ IMPORTANT RULES:
     + f'"{UNKNOWN_ANSWER}"'
     + """.
  - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
-
-Remember to provide inline citations of documents in the format [[D1]](), [[D2]](), [[D3]](), etc., and [[Q1]](), [[Q2]](),... if
-you want to cite the answer to a sub-question. If you have multiple citations, please cite for example
-as [[D1]]()[[Q3]](), or [[D2]]()[[D4]](), etc. Feel free to cite sub-questions in addition to documents, but make sure that you
-have docuemnt citations ([[D7]]() etc.) if possible!
 
 Again, you should be sure that the answer is supported by the information provided!
 
@@ -764,7 +767,9 @@ IMPORTANT RULES:
 
 Again, you should be sure that the answer is supported by the information provided!
 
-Remember to provide inline citations of documents in the format [[D1]](), [[D2]](), [[D3]](), etc.!
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the
+user!
 
 Try to keep your answer concise.
 
@@ -784,18 +789,26 @@ Answer:"""
 REVISED_RAG_PROMPT = (
     """\n
 {persona_specification}
-Use the information provided below - and only the
-provided information - to answer the provided question.
+Use the information provided below - and only the provided information - to answer the provided main question.
 
 The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
-    2) a number of answered sub-questions - these are very important(!) and definitely should be
-    considered to answer the question. Note that the sub-questions have a type, 'initial' and 'revised'. The 'initial'
+    2) a number of answered sub-questions - these are very important(!) and definitely should help yoiu to answer
+the main question. Note that the sub-questions have a type, 'initial' and 'revised'. The 'initial'
      ones were available for the initial answer, and the 'revised' were not. So please use the 'revised' sub-questions in
      particular to update/extend/correct the initial answer!
-    information from the revised sub-questions
-    3) a number of documents that were also deemed relevant for the question.
+    3) a number of documents that were deemed relevant for the question. This the is the context that you use largey for
+citations (see below).
+
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
+Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
+citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
+Again, please do not cite sub-questions without a document citation!
+Citations are very important for the user!\n\n
+
 {history}
+
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
  You may give some additional facts you learned, but do not try to invent an answer.
@@ -804,17 +817,11 @@ IMPORTANT RULES:
     + """.
  - If the information is relevant but not fully conclusive, provide and answer to the extent you can but also
  specify that the information is not conclusive and why.
-- Ignore the exisiting citations within the answered sub-questions, like [[D1]]()... and [[Q2]]()!
-The citations you will need to use will need to refer to the documents and sub-questions that you are explicitly
+- Ignore any exisiting citations within the answered sub-questions, like [[D1]]()... and [[Q2]]()!
+The citations you will need to use will need to refer to the documents (and sub-questions) that you are explicitly
 presented with below!
 
 Again, you should be sure that the answer is supported by the information provided!
-
-Remember to provide inline citations of documents in the format [[D1]](), [[D2]](), [[D3]](), etc., and [[Q1]](), [[Q2]](),... if
-you want to cite the answer to a sub-question. If you have multiple citations, please cite for example
-as [[D1]]()[[Q3]](), or [[D2]]()[[D4]](), etc. Feel free to cite sub-questions in addition to documents, but make sure that you
-have docuemnt citations ([[D7]]() etc.) if possible!
-Proper citations are important for the final answer to be verifiable! \n\n\n
 
 Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,
 or assumptions you made.
@@ -825,17 +832,17 @@ Here is the contextual information:
 *Initial Answer that was found to be lacking:
 {initial_answer}
 
-*Answered Sub-questions (these should really matter! They also contain questions/answers that were not available when the original
-answer was constructed):
+*Answered Sub-questions (these should really help ypu to research your answer! They also contain questions/answers
+that were not available when the original answer was constructed):
 {answered_sub_questions}
 
-And here are relevant document information that support the sub-question answers, or that are relevant for the actual question:\n
+And here are the relevant documents that support the sub-question answers, and that are relevant for the actual question:\n
 
 {relevant_docs}
 
 \n-------\n
 \n
-Lastly, here is the question I want you to answer based on the information above:
+Lastly, here is the main question I want you to answer based on the information above:
 \n--\n
 {question}
 \n--\n\n
@@ -852,6 +859,10 @@ provided information - to answer the provided question.
 The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
     2) a number of documents that were also deemed relevant for the question.
+
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n
+
 {history}
 
 IMPORTANT RULES:
@@ -864,8 +875,6 @@ IMPORTANT RULES:
  specify that the information is not conclusive and why.
 
 Again, you should be sure that the answer is supported by the information provided!
-
-Remember to provide inline citations of documents in the format [[D1]](), [[D2]](), [[D3]](), etc.
 
 Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,
 or assumptions you made.
