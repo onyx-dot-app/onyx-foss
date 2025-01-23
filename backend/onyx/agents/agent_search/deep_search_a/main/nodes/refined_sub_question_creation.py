@@ -50,7 +50,7 @@ def refined_sub_question_creation(
 
     question = agent_a_config.search_request.query
     base_answer = state.initial_answer
-    history = build_history_prompt(agent_a_config.message_history)
+    history = build_history_prompt(agent_a_config.prompt_builder)
     # get the entity term extraction dict and properly format it
     entity_retlation_term_extractions = state.entity_retlation_term_extractions
 

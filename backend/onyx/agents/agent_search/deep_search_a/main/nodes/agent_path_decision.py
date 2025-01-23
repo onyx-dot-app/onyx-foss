@@ -33,7 +33,7 @@ def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDeci
         agent_a_config.perform_initial_search_path_decision
     )
 
-    history = build_history_prompt(config["metadata"]["config"].message_history)
+    history = build_history_prompt(agent_a_config.prompt_builder)
 
     logger.debug(f"--------{now_start}--------DECIDING TO SEARCH OR GO TO LLM---")
 

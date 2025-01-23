@@ -59,7 +59,7 @@ def generate_refined_answer(
     question = agent_a_config.search_request.query
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
 
-    history = build_history_prompt(agent_a_config.message_history)
+    history = build_history_prompt(agent_a_config.prompt_builder)
 
     initial_documents = state.documents
     revised_documents = state.refined_documents

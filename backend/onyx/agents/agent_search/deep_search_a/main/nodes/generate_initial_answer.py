@@ -62,7 +62,7 @@ def generate_initial_answer(
     question = agent_a_config.search_request.query
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
 
-    history = build_history_prompt(agent_a_config.message_history)
+    history = build_history_prompt(agent_a_config.prompt_builder)
 
     sub_question_docs = state.documents
     all_original_question_documents = state.all_original_question_documents

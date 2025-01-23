@@ -5,9 +5,9 @@ from langchain_core.messages.tool import ToolMessage
 
 from onyx.agents.agent_search.shared_graph_utils.prompts import BASE_RAG_PROMPT_v2
 from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
+from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.context.search.models import InferenceSection
 from onyx.llm.interfaces import LLMConfig
-from onyx.llm.models import PreviousMessage
 from onyx.llm.utils import get_max_input_tokens
 from onyx.natural_language_processing.utils import get_tokenizer
 from onyx.natural_language_processing.utils import tokenizer_trim_content
@@ -67,23 +67,24 @@ def trim_prompt_piece(config: LLMConfig, prompt_piece: str, reserved_str: str) -
     )
 
 
-def build_history_prompt(message_history: list[PreviousMessage] | None) -> str:
-    if message_history is None:
+def build_history_prompt(prompt_builder: AnswerPromptBuilder | None) -> str:
+    if prompt_builder is None:
         return ""
-    history = ""
-    previous_message_type = None
-    for message in message_history:
-        if "user" in message.message_type:
-            history += f"User: {message.message}\n"
-            previous_message_type = "user"
-        elif "assistant" in message.message_type:
-            # only use the initial agent answer for the history
-            if previous_message_type != "assistant":
-                history += f"You/Agent: {message.message}\n"
-            previous_message_type = "assistant"
-        else:
-            continue
-    if len(history) > 0:
-        return HISTORY_PROMPT.format(history=history)
+
+    if prompt_builder.single_message_history is not None:
+        history = prompt_builder.single_message_history
     else:
-        return ""
+        history = ""
+        previous_message_type = None
+        for message in prompt_builder.raw_message_history:
+            if "user" in message.message_type:
+                history += f"User: {message.message}\n"
+                previous_message_type = "user"
+            elif "assistant" in message.message_type:
+                # only use the initial agent answer for the history
+                if previous_message_type != "assistant":
+                    history += f"You/Agent: {message.message}\n"
+                previous_message_type = "assistant"
+            else:
+                continue
+    return HISTORY_PROMPT.format(history=history) if history else ""

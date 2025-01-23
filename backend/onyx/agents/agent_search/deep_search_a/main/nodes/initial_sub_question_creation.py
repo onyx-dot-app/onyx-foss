@@ -50,7 +50,7 @@ def initial_sub_question_creation(
     perform_initial_search_path_decision = (
         agent_a_config.perform_initial_search_path_decision
     )
-    history = build_history_prompt(agent_a_config.message_history)
+    history = build_history_prompt(agent_a_config.prompt_builder)
 
     # Use the initial search results to inform the decomposition
     sample_doc_str = state.sample_doc_str if hasattr(state, "sample_doc_str") else ""
