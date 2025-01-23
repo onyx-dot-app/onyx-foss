@@ -33,6 +33,9 @@ from onyx.chat.models import QADocsResponse
 from onyx.chat.models import StreamingError
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import DISABLE_LLM_CHOOSE_SEARCH
 from onyx.configs.chat_configs import MAX_CHUNKS_FED_TO_CHAT
@@ -130,13 +133,13 @@ from onyx.tools.tool_implementations.search.search_tool import (
     SECTION_RELEVANCE_LIST_ID,
 )
 from onyx.tools.tool_runner import ToolCallFinalResult
+from onyx.tools.utils import explicit_tool_calling_supported
 from onyx.utils.logger import setup_logger
 from onyx.utils.long_term_log import LongTermLogger
 from onyx.utils.telemetry import mt_cloud_telemetry
 from onyx.utils.timing import log_function_time
 from onyx.utils.timing import log_generator_function_time
 from shared_configs.contextvars import CURRENT_TENANT_ID_CONTEXTVAR
-
 
 logger = setup_logger()
 
@@ -534,11 +537,8 @@ def stream_chat_message_objects(
         files = load_all_chat_files(
             history_msgs, new_msg_req.file_descriptors, db_session
         )
-        latest_query_files = [
-            file
-            for file in files
-            if file.file_id in [f["id"] for f in new_msg_req.file_descriptors]
-        ]
+        req_file_ids = [f["id"] for f in new_msg_req.file_descriptors]
+        latest_query_files = [file for file in files if file.file_id in req_file_ids]
 
         if user_message:
             attach_files_to_chat_message(
@@ -748,17 +748,42 @@ def stream_chat_message_objects(
             # TODO: handle multiple search tools
             raise ValueError("Multiple search tools found")
         search_tool = search_tools[0]
-        pro_search_config = AgentSearchConfig(
-            use_agentic_search=new_msg_req.use_agentic_search,
-            search_request=search_request,
-            chat_session_id=chat_session_id,
-            message_id=reserved_message_id,
+        using_tool_calling_llm = explicit_tool_calling_supported(
+            llm.config.model_provider, llm.config.model_name
+        )
+        force_use_tool = _get_force_search_settings(new_msg_req, tools)
+        prompt_builder = AnswerPromptBuilder(
+            user_message=default_build_user_message(
+                user_query=final_msg.message,
+                prompt_config=prompt_config,
+                files=latest_query_files,
+                single_message_history=single_message_history,
+            ),
+            system_message=default_build_system_message(prompt_config),
             message_history=message_history,
+            llm_config=llm.config,
+            raw_user_query=final_msg.message,
+            raw_user_uploaded_files=latest_query_files or [],
+            single_message_history=single_message_history,
+        )
+        agent_search_config = AgentSearchConfig(
+            search_request=search_request,
             primary_llm=llm,
             fast_llm=fast_llm,
             search_tool=search_tool,
-            structured_response_format=new_msg_req.structured_response_format,
+            force_use_tool=force_use_tool,
+            use_agentic_search=new_msg_req.use_agentic_search,
+            chat_session_id=chat_session_id,
+            message_id=reserved_message_id,
+            use_persistence=True,
+            allow_refinement=True,
             db_session=db_session,
+            prompt_builder=prompt_builder,
+            tools=tools,
+            using_tool_calling_llm=using_tool_calling_llm,
+            files=latest_query_files,
+            structured_response_format=new_msg_req.structured_response_format,
+            skip_gen_ai_answer_generation=new_msg_req.skip_gen_ai_answer_generation,
         )
 
         # TODO: add previous messages, answer style config, tools, etc.
@@ -785,9 +810,9 @@ def stream_chat_message_objects(
             fast_llm=fast_llm,
             message_history=message_history,
             tools=tools,
-            force_use_tool=_get_force_search_settings(new_msg_req, tools),
+            force_use_tool=force_use_tool,
             single_message_history=single_message_history,
-            pro_search_config=pro_search_config,
+            agent_search_config=agent_search_config,
             db_session=db_session,
         )
 

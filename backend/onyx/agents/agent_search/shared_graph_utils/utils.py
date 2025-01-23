@@ -11,6 +11,7 @@ from typing import cast
 from uuid import UUID
 
 from langchain_core.messages import BaseMessage
+from langchain_core.messages import HumanMessage
 from sqlalchemy.orm import Session
 
 from onyx.agents.agent_search.models import AgentSearchConfig
@@ -21,6 +22,7 @@ from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationConfig
 from onyx.chat.models import DocumentPruningConfig
 from onyx.chat.models import PromptConfig
+from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import MAX_CHUNKS_FED_TO_CHAT
 from onyx.configs.constants import DEFAULT_PERSONA_ID
@@ -31,6 +33,7 @@ from onyx.context.search.models import SearchRequest
 from onyx.db.persona import get_persona_by_id
 from onyx.db.persona import Persona
 from onyx.llm.interfaces import LLM
+from onyx.tools.force import ForceUseTool
 from onyx.tools.tool_constructor import SearchToolConfig
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
@@ -207,14 +210,23 @@ def get_test_config(
 
     config = AgentSearchConfig(
         search_request=search_request,
+        primary_llm=primary_llm,
+        fast_llm=fast_llm,
+        search_tool=search_tool,
+        force_use_tool=ForceUseTool(force_use=False, tool_name=""),
+        prompt_builder=AnswerPromptBuilder(
+            user_message=HumanMessage(content=search_request.query),
+            message_history=[],
+            llm_config=primary_llm.config,
+            raw_user_query=search_request.query,
+            raw_user_uploaded_files=[],
+        ),
         # chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
         chat_session_id=UUID("edda10d5-6cef-45d8-acfb-39317552a1f4"),  # Joachim
         # chat_session_id=UUID("d1acd613-2692-4bc3-9d65-c6d3da62e58e"),  # Evan
         message_id=1,
         use_persistence=True,
-        primary_llm=primary_llm,
-        fast_llm=fast_llm,
-        search_tool=search_tool,
+        db_session=db_session,
     )
 
     return config, search_tool

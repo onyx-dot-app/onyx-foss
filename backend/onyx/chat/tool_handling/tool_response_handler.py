@@ -5,6 +5,7 @@ from langchain_core.messages import BaseMessage
 from langchain_core.messages import ToolCall
 
 from onyx.chat.models import ResponsePart
+from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.chat.prompt_builder.answer_prompt_builder import LLMCall
 from onyx.llm.interfaces import LLM
 from onyx.tools.force import ForceUseTool
@@ -50,56 +51,12 @@ class ToolResponseHandler:
     def get_tool_call_for_non_tool_calling_llm(
         cls, llm_call: LLMCall, llm: LLM
     ) -> tuple[Tool, dict] | None:
-        if llm_call.force_use_tool.force_use:
-            # if we are forcing a tool, we don't need to check which tools to run
-            tool = get_tool_by_name(llm_call.tools, llm_call.force_use_tool.tool_name)
-
-            tool_args = (
-                llm_call.force_use_tool.args
-                if llm_call.force_use_tool.args is not None
-                else tool.get_args_for_non_tool_calling_llm(
-                    query=llm_call.prompt_builder.raw_user_query,
-                    history=llm_call.prompt_builder.raw_message_history,
-                    llm=llm,
-                    force_run=True,
-                )
-            )
-
-            if tool_args is None:
-                raise RuntimeError(f"Tool '{tool.name}' did not return args")
-
-            return (tool, tool_args)
-        else:
-            tool_options = check_which_tools_should_run_for_non_tool_calling_llm(
-                tools=llm_call.tools,
-                query=llm_call.prompt_builder.raw_user_query,
-                history=llm_call.prompt_builder.raw_message_history,
-                llm=llm,
-            )
-
-            available_tools_and_args = [
-                (llm_call.tools[ind], args)
-                for ind, args in enumerate(tool_options)
-                if args is not None
-            ]
-
-            logger.info(
-                f"Selecting single tool from tools: {[(tool.name, args) for tool, args in available_tools_and_args]}"
-            )
-
-            chosen_tool_and_args = (
-                select_single_tool_for_non_tool_calling_llm(
-                    tools_and_args=available_tools_and_args,
-                    history=llm_call.prompt_builder.raw_message_history,
-                    query=llm_call.prompt_builder.raw_user_query,
-                    llm=llm,
-                )
-                if available_tools_and_args
-                else None
-            )
-
-            logger.notice(f"Chosen tool: {chosen_tool_and_args}")
-            return chosen_tool_and_args
+        return get_tool_call_for_non_tool_calling_llm_impl(
+            force_use_tool=llm_call.force_use_tool,
+            tools=llm_call.tools,
+            prompt_builder=llm_call.prompt_builder,
+            llm=llm,
+        )
 
     def _handle_tool_call(self) -> Generator[ResponsePart, None, None]:
         if not self.tool_call_chunk or not self.tool_call_chunk.tool_calls:
@@ -196,3 +153,61 @@ class ToolResponseHandler:
                 self.tool_final_result,
             ],
         )
+
+
+def get_tool_call_for_non_tool_calling_llm_impl(
+    force_use_tool: ForceUseTool,
+    tools: list[Tool],
+    prompt_builder: AnswerPromptBuilder,
+    llm: LLM,
+) -> tuple[Tool, dict] | None:
+    if force_use_tool.force_use:
+        # if we are forcing a tool, we don't need to check which tools to run
+        tool = get_tool_by_name(tools, force_use_tool.tool_name)
+
+        tool_args = (
+            force_use_tool.args
+            if force_use_tool.args is not None
+            else tool.get_args_for_non_tool_calling_llm(
+                query=prompt_builder.raw_user_query,
+                history=prompt_builder.raw_message_history,
+                llm=llm,
+                force_run=True,
+            )
+        )
+
+        if tool_args is None:
+            raise RuntimeError(f"Tool '{tool.name}' did not return args")
+
+        return (tool, tool_args)
+    else:
+        tool_options = check_which_tools_should_run_for_non_tool_calling_llm(
+            tools=tools,
+            query=prompt_builder.raw_user_query,
+            history=prompt_builder.raw_message_history,
+            llm=llm,
+        )
+
+        available_tools_and_args = [
+            (tools[ind], args)
+            for ind, args in enumerate(tool_options)
+            if args is not None
+        ]
+
+        logger.info(
+            f"Selecting single tool from tools: {[(tool.name, args) for tool, args in available_tools_and_args]}"
+        )
+
+        chosen_tool_and_args = (
+            select_single_tool_for_non_tool_calling_llm(
+                tools_and_args=available_tools_and_args,
+                history=prompt_builder.raw_message_history,
+                query=prompt_builder.raw_user_query,
+                llm=llm,
+            )
+            if available_tools_and_args
+            else None
+        )
+
+        logger.notice(f"Chosen tool: {chosen_tool_and_args}")
+        return chosen_tool_and_args

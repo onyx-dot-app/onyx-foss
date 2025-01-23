@@ -16,7 +16,6 @@ from onyx.agents.agent_search.deep_search_a.main.graph_builder import (
 from onyx.agents.agent_search.deep_search_a.main.states import MainInput as MainInput_a
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import get_test_config
-from onyx.chat.llm_response_handler import LLMResponseHandlerManager
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import AnswerPacket
 from onyx.chat.models import AnswerStream
@@ -25,7 +24,6 @@ from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import SubQueryPiece
 from onyx.chat.models import SubQuestionPiece
 from onyx.chat.models import ToolResponse
-from onyx.chat.prompt_builder.answer_prompt_builder import LLMCall
 from onyx.configs.dev_configs import GRAPH_NAME
 from onyx.context.search.models import SearchRequest
 from onyx.db.engine import get_session_context_manager
@@ -143,7 +141,6 @@ def run_graph(
     config: AgentSearchConfig,
     input: BasicInput | MainInput_a,
 ) -> AnswerStream:
-    input["base_question"] = config.search_request.query if config else ""
     # TODO: add these to the environment
     config.perform_initial_search_path_decision = True
     config.perform_initial_search_decomposition = True
@@ -192,17 +189,12 @@ def run_main_graph(
 # TODO: unify input types, especially prosearchconfig
 def run_basic_graph(
     config: AgentSearchConfig,
-    last_llm_call: LLMCall | None,
-    response_handler_manager: LLMResponseHandlerManager,
 ) -> AnswerStream:
     graph = basic_graph_builder()
     compiled_graph = graph.compile()
     # TODO: unify basic input
     input = BasicInput(
-        base_question="",
-        last_llm_call=last_llm_call,
-        response_handler_manager=response_handler_manager,
-        calls=0,
+        should_stream_answer=True,
     )
     return run_graph(compiled_graph, config, input)
 

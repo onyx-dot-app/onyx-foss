@@ -138,6 +138,8 @@ class CreateChatMessageRequest(ChunkContext):
     # TODO: decide how many of the above options we want to pass through to pro search
     use_agentic_search: bool = False
 
+    skip_gen_ai_answer_generation: bool = False
+
     @model_validator(mode="after")
     def check_search_doc_ids_or_retrieval_options(self) -> "CreateChatMessageRequest":
         if self.search_doc_ids is None and self.retrieval_options is None:
