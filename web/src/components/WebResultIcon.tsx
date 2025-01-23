@@ -13,7 +13,13 @@ export function WebResultIcon({
   size?: number;
 }) {
   const [error, setError] = useState(false);
-  const hostname = new URL(url).hostname;
+  let hostname;
+  try {
+    hostname = new URL(url).hostname;
+  } catch (e) {
+    console.log(e);
+    hostname = "docs.onyx.app";
+  }
   return (
     <>
       {hostname == "docs.onyx.app" ? (

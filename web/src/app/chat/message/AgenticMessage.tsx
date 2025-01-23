@@ -67,18 +67,9 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import SubQuestionsDisplay from "./SubQuestionsDisplay";
-import SubQuestionProgress from "./SubQuestionProgress";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/Spinner";
-import { LoadingAnimation } from "@/components/Loading";
-import { LoadingIndicator } from "react-select/dist/declarations/src/components/indicators";
-import {
-  StreamingPhase,
-  StreamingPhaseText,
-  useStreamingMessages,
-} from "./StreamingMessages";
 import { Badge } from "@/components/ui/badge";
 import RefinemenetBadge from "../refinmentBadge";
+import SubQuestionProgress from "./SubQuestionProgress";
 
 export const AgenticMessage = ({
   secondLevelAssistantMessage,
@@ -466,7 +457,7 @@ export const AgenticMessage = ({
 
                   {/* For debugging purposes */}
                   {/* <SubQuestionProgress subQuestions={subQuestions || []} /> */}
-
+                  {/*  */}
                   {(allowStreaming &&
                     finalContent &&
                     finalContent.length > 8) ||
@@ -479,8 +470,13 @@ export const AgenticMessage = ({
                             Answer
                           </div>
 
-                          {true ? (
+                          {!secondLevelAssistantMessage &&
+                          // !isGenerating &&
+                          subQuestions &&
+                          subQuestions.length > 0 ? (
                             <RefinemenetBadge
+                              finished={!secondLevelGenerating}
+                              overallAnswer={secondLevelAssistantMessage || ""}
                               secondLevelSubquestions={secondLevelSubquestions}
                               toggleInitialAnswerVieinwg={() => {
                                 setIsViewingInitialAnswer(

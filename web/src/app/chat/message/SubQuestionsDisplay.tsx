@@ -25,6 +25,41 @@ import { CheckIcon, ChevronDown } from "lucide-react";
 import { PHASE_MIN_MS, useStreamingMessages } from "./StreamingMessages";
 import { CirclingArrowIcon } from "@/components/icons/icons";
 
+export const StatusIndicator = ({ status }: { status: ToggleState }) => {
+  return (
+    <>
+      {" "}
+      {status != ToggleState.InProgress ? (
+        <div
+          className={` h-full w-full rounded-full z-10 
+    bg-background border-3 border-background-900  "
+    ${
+      status === ToggleState.Todo
+        ? "!border-4 border border-background-900 bg-background"
+        : false
+          ? "bg-background border-3 border border-background-900 rotating-border"
+          : "bg-background-900 flex items-center  justify-center"
+    } 
+ `}
+        >
+          {status === ToggleState.Done && (
+            <CheckIcon className="m-auto text-white" size={8} />
+          )}
+        </div>
+      ) : (
+        <div className="relative h-full w-full">
+          <div className="absolute top-0 left-0 z-[100] h-full w-full rounded-full bg-background" />
+
+          <CirclingArrowIcon
+            size={12}
+            className="absolute top-0 left-0 z-[2000] h-full w-full animate-spin"
+          />
+        </div>
+      )}
+    </>
+  );
+};
+
 export interface TemporaryDisplay {
   question: string;
   tinyQuestion: string;
@@ -43,7 +78,7 @@ interface SubQuestionsDisplayProps {
   overallAnswerGenerating?: boolean;
 }
 
-enum ToggleState {
+export enum ToggleState {
   Todo,
   InProgress,
   Done,
@@ -300,34 +335,9 @@ const SubQuestionDisplay: React.FC<{
         ref={questionRef}
         className={`flex  items-start ${!isLast ? "pb-2" : ""}`}
       >
-        {status != ToggleState.InProgress ? (
-          <div
-            className={`absolute left-0 w-3 h-3 rounded-full mt-[12px] z-10 
-            bg-background border-3 border-background-900  "
-            ${
-              status === ToggleState.Todo
-                ? "!border-4 border border-background-900 bg-background"
-                : false
-                  ? "bg-background border-3 border border-background-900 rotating-border"
-                  : "bg-background-900 flex items-center  justify-center"
-            } 
-         `}
-          >
-            {status === ToggleState.Done && (
-              <CheckIcon className="m-auto text-white" size={8} />
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="absolute z-[100] left-0 mt-[12px] w-3 h-3 rounded-full bg-background" />
-
-            <CirclingArrowIcon
-              size={12}
-              className="absolute z-[2000] left-0 mt-[12px] w-3 h-3 animate-spin"
-            />
-          </>
-        )}
-
+        <div className="absolute left-0 w-3 h-3 rounded-full mt-[12px] z-10">
+          <StatusIndicator status={status} />
+        </div>
         <div className="ml-8 w-full">
           <div
             className="flex  -mx-2 rounded-md px-2 hover:bg-[#F5F3ED] items-start py-1.5 my-.5 cursor-pointer"
