@@ -76,9 +76,9 @@ import {
   StreamingPhase,
   StreamingPhaseText,
   useStreamingMessages,
-  useOrderedPhases,
 } from "./StreamingMessages";
 import { Badge } from "@/components/ui/badge";
+import RefinemenetBadge from "../refinmentBadge";
 
 export const AgenticMessage = ({
   secondLevelAssistantMessage,
@@ -294,8 +294,8 @@ export const AgenticMessage = ({
               ? docs
               : agenticDocs
             : agenticDocs && agenticDocs.length > 0
-            ? agenticDocs
-            : docs
+              ? agenticDocs
+              : docs
         }
         subQuestions={
           isViewingInitialAnswer
@@ -373,22 +373,6 @@ export const AgenticMessage = ({
       </ReactMarkdown>
     );
   }, [streamedContent, markdownComponents]);
-
-  const currentState = secondLevelSubquestions?.[0]
-    ? secondLevelSubquestions[0].answer
-      ? secondLevelSubquestions[0].is_complete
-        ? StreamingPhase.COMPLETE
-        : StreamingPhase.ANSWER
-      : secondLevelSubquestions[0].context_docs
-      ? StreamingPhase.CONTEXT_DOCS
-      : secondLevelSubquestions[0].sub_queries
-      ? StreamingPhase.SUB_QUERIES
-      : secondLevelSubquestions[0].question
-      ? StreamingPhase.WAITING
-      : StreamingPhase.WAITING
-    : StreamingPhase.WAITING;
-
-  const message = useOrderedPhases(currentState);
 
   const includeMessageSwitcher =
     currentMessageInd !== undefined &&
@@ -495,45 +479,16 @@ export const AgenticMessage = ({
                             Answer
                           </div>
 
-                          {secondLevelSubquestions &&
-                          secondLevelSubquestions.length > 0 &&
-                          secondLevelGenerating ? (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <div className="flex loading-text items-center gap-x-2 text-black text-sm font-medium cursor-pointer hover:text-blue-600 transition-colors duration-200">
-                                  Refining answer...
-                                  <FiChevronRight
-                                    className="inline-block text-text-darker"
-                                    size={16}
-                                  />
-                                </div>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 p-4 bg-white shadow-lg rounded-md">
-                                <div className="space-y-4">
-                                  <p className="text-lg leading-none font-semibold text-gray-800">
-                                    {message}
-                                  </p>
-                                  <p className="text-sm text-gray-600">
-                                    The answer is being refined based on
-                                    additional context and analysis.
-                                  </p>
-                                  <Button
-                                    onClick={() =>
-                                      setIsViewingInitialAnswer(
-                                        !isViewingInitialAnswer
-                                      )
-                                    }
-                                    size="sm"
-                                    className="w-full"
-                                  >
-                                    {isViewingInitialAnswer
-                                      ? "See Live Updates"
-                                      : "Hide Live Updates"}
-                                    <FiGlobe className="inline-block mr-2" />
-                                  </Button>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                          {true ? (
+                            <RefinemenetBadge
+                              secondLevelSubquestions={secondLevelSubquestions}
+                              toggleInitialAnswerVieinwg={() => {
+                                setIsViewingInitialAnswer(
+                                  !isViewingInitialAnswer
+                                );
+                              }}
+                              isViewingInitialAnswer={isViewingInitialAnswer}
+                            />
                           ) : (
                             secondLevelAssistantMessage && (
                               <Badge

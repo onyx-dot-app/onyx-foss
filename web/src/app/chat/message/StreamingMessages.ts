@@ -31,84 +31,10 @@ interface SubQuestionProgress {
   answerCharIndex: number;
 }
 
-const PHASES_ORDER: StreamingPhase[] = [
-  StreamingPhase.WAITING,
-  StreamingPhase.SUB_QUERIES,
-  StreamingPhase.CONTEXT_DOCS,
-  StreamingPhase.ANSWER,
-  StreamingPhase.COMPLETE,
-];
-
 export const PHASE_MIN_MS = 800; // Minimum phase duration in ms
 
 function canTransition(p: SubQuestionProgress) {
   return Date.now() - p.phaseStartTime >= PHASE_MIN_MS;
-}
-
-export function useOrderedPhases(externalPhase: StreamingPhase) {
-  const [phaseQueue, setPhaseQueue] = useState<StreamingPhase[]>([]);
-  const [displayedPhase, setDisplayedPhase] = useState<StreamingPhase>(
-    StreamingPhase.WAITING
-  );
-  const lastDisplayTimestampRef = useRef<number>(Date.now());
-
-  const getPhaseIndex = (phase: StreamingPhase) => {
-    return PHASES_ORDER.indexOf(phase);
-  };
-
-  useEffect(() => {
-    setPhaseQueue((prevQueue) => {
-      const lastQueuedPhase =
-        prevQueue.length > 0 ? prevQueue[prevQueue.length - 1] : displayedPhase;
-
-      const lastQueuedIndex = getPhaseIndex(lastQueuedPhase);
-      const externalIndex = getPhaseIndex(externalPhase);
-
-      if (externalIndex <= lastQueuedIndex) {
-        return prevQueue;
-      }
-
-      const missingPhases: StreamingPhase[] = [];
-      for (let i = lastQueuedIndex + 1; i <= externalIndex; i++) {
-        missingPhases.push(PHASES_ORDER[i]);
-      }
-      return [...prevQueue, ...missingPhases];
-    });
-  }, [externalPhase, displayedPhase]);
-
-  useEffect(() => {
-    if (phaseQueue.length === 0) return;
-    let rafId: number;
-
-    const processQueue = () => {
-      const now = Date.now();
-      const elapsed = now - lastDisplayTimestampRef.current;
-
-      // Keep this at 1000ms from the original example (unchanged),
-      // but you can adjust if you want a different visible time in *this* component.
-      if (elapsed >= 1000) {
-        setPhaseQueue((prevQueue) => {
-          if (prevQueue.length > 0) {
-            const [next, ...rest] = prevQueue;
-            setDisplayedPhase(next);
-            lastDisplayTimestampRef.current = Date.now();
-            return rest;
-          }
-          return prevQueue;
-        });
-      }
-      rafId = requestAnimationFrame(processQueue);
-    };
-
-    rafId = requestAnimationFrame(processQueue);
-    return () => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [phaseQueue]);
-
-  return StreamingPhaseText[displayedPhase];
 }
 
 const DOC_DELAY_MS = 100;

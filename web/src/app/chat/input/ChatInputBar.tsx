@@ -826,7 +826,7 @@ export function ChatInputBar({
                   chatState == "toolBuilding" ||
                   chatState == "loading" ? (
                     <StopGeneratingIcon
-                      size={10}
+                      size={8}
                       className="text-emphasis m-auto text-white flex-none"
                     />
                   ) : (

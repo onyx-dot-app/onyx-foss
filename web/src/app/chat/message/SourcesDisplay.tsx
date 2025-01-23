@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { OnyxDocument } from "@/lib/search/interfaces";
-import { ResultIcon } from "@/components/chat_search/sources/SourceCard";
+import {
+  ResultIcon,
+  SeeMoreBlock,
+} from "@/components/chat_search/sources/SourceCard";
 import { openDocument } from "@/lib/search/utils";
 import { buildDocumentSummaryDisplay } from "@/components/search/DocumentDisplay";
+import { ValidSources } from "@/lib/types";
 
 interface SourcesDisplayProps {
   documents: OnyxDocument[];
@@ -103,19 +107,16 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
         ))}
 
         {hasMoreDocuments && (
-          <button
-            onClick={toggleDocumentSelection}
-            className={`max-w-[260px] h-[80px] p-3 bg-[#f1eee8] hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col items-start justify-between transition-opacity duration-300 ${
-              animateEntrance ? "opacity-100" : "opacity-100"
-            }`}
-          >
-            <div className="flex items-center gap-1">
-              {documents.slice(3, 6).map((doc, index) => (
-                <ResultIcon key={index} doc={doc} size={14} />
-              ))}
-            </div>
-            <div className="text-[#4a4a4a] text-xs font-medium">Show All</div>
-          </button>
+          <SeeMoreBlock
+            toggled={false}
+            toggleDocumentSelection={toggleDocumentSelection}
+            uniqueSources={
+              Array.from(
+                new Set(documents.map((doc) => doc.source_type))
+              ) as ValidSources[]
+            }
+            webSourceDomains={documents.map((doc) => doc.link)}
+          />
         )}
       </div>
     </div>
