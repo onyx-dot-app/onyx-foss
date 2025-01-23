@@ -494,7 +494,7 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
     ).length == memoizedSubQuestions.length;
 
   const [streamedText, setStreamedText] = useState(
-    !overallAnswerGenerating ? "Summarizing findings" : ""
+    !overallAnswerGenerating ? "Summarize findings" : ""
   );
   const [showSummarizing, setShowSummarizing] = useState(
     finishedGenerating && !overallAnswerGenerating
@@ -538,8 +538,8 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
   }, [memoizedSubQuestions, finishedGenerating]);
 
   useEffect(() => {
-    if (showSummarizing && streamedText !== "Summarizing findings") {
-      const fullText = "Summarizing findings";
+    if (showSummarizing && streamedText !== "Summarize findings") {
+      const fullText = "Summarize findings";
       let index = 0;
 
       const streamInterval = setInterval(() => {
