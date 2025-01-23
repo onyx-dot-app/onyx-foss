@@ -31,7 +31,7 @@ def ingest_initial_base_retrieval(
 
     return ExpandedRetrievalUpdate(
         original_question_retrieval_results=state.base_expanded_retrieval_result.expanded_queries_results,
-        all_original_question_documents=state.base_expanded_retrieval_result.all_documents,
+        all_original_question_documents=state.base_expanded_retrieval_result.context_documents,
         original_question_retrieval_stats=sub_question_retrieval_stats,
         log_messages=[
             f"{now_end} -- Main - Ingestion base retrieval,  Time taken: {now_end - now_start}"

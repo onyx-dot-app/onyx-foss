@@ -17,9 +17,11 @@ def ingest_initial_sub_question_answers(
 
     logger.debug(f"--------{now_start}--------INGEST ANSWERS---")
     documents = []
+    context_documents = []
     answer_results = state.answer_results if hasattr(state, "answer_results") else []
     for answer_result in answer_results:
         documents.extend(answer_result.documents)
+        context_documents.extend(answer_result.context_documents)
 
     now_end = datetime.now()
 
@@ -31,6 +33,7 @@ def ingest_initial_sub_question_answers(
         # Deduping is done by the documents operator for the main graph
         # so we might not need to dedup here
         documents=dedup_inference_sections(documents, []),
+        context_documents=dedup_inference_sections(context_documents, []),
         decomp_answer_results=answer_results,
         log_messages=[
             f"{now_end} -- Main - Ingest initial processed sub questions,  Time taken: {now_end - now_start}"

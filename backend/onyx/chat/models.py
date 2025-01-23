@@ -335,12 +335,20 @@ class ExtendedToolResponse(ToolResponse):
     level_question_nr: int
 
 
-ProSearchPacket = (
-    SubQuestionPiece | AgentAnswerPiece | SubQueryPiece | ExtendedToolResponse
+class RefinedAnswerImprovement(BaseModel):
+    refined_answer_improvement: bool
+
+
+AgentSearchPacket = (
+    SubQuestionPiece
+    | AgentAnswerPiece
+    | SubQueryPiece
+    | ExtendedToolResponse
+    | RefinedAnswerImprovement
 )
 
 AnswerPacket = (
-    AnswerQuestionPossibleReturn | ProSearchPacket | ToolCallKickoff | ToolResponse
+    AnswerQuestionPossibleReturn | AgentSearchPacket | ToolCallKickoff | ToolResponse
 )
 
 
@@ -351,7 +359,7 @@ ResponsePart = (
     | ToolResponse
     | ToolCallFinalResult
     | StreamStopInfo
-    | ProSearchPacket
+    | AgentSearchPacket
 )
 
 AnswerStream = Iterator[AnswerPacket]

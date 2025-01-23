@@ -18,6 +18,7 @@ from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
+from onyx.agents.agent_search.shared_graph_utils.prompts import DATE_PROMPT
 from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationConfig
 from onyx.chat.models import DocumentPruningConfig
@@ -276,3 +277,7 @@ def dispatch_separated(
         streamed_tokens.append(content)
 
     return streamed_tokens
+
+
+def get_today_prompt() -> str:
+    return DATE_PROMPT.format(date=datetime.now().strftime("%A, %B %d, %Y"))

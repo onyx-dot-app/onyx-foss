@@ -42,6 +42,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
@@ -60,7 +61,7 @@ def generate_refined_answer(
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
 
     history = build_history_prompt(agent_a_config.prompt_builder)
-
+    date_str = get_today_prompt()
     initial_documents = state.documents
     revised_documents = state.refined_documents
 
@@ -189,6 +190,7 @@ def generate_refined_answer(
                 relevant_docs=relevant_docs,
                 initial_answer=remove_document_citations(initial_answer),
                 persona_specification=persona_specification,
+                date_prompt=date_str,
             )
         )
     ]

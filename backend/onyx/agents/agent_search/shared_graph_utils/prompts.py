@@ -2,6 +2,8 @@ UNKNOWN_ANSWER = "I do not have enough information to answer this question."
 
 NO_RECOVERED_DOCS = "No relevant documents recovered"
 
+DATE_PROMPT = """Today is {date}.\n\n"""
+
 HISTORY_PROMPT = """\n
 For more context, here is the history of the conversation so far that preceeded this question:
 \n ------- \n
@@ -37,6 +39,7 @@ REWRITE_PROMPT_MULTI = """ \n
 BASE_RAG_PROMPT = (
     """ \n
     {persona_specification}
+    {date_prompt}
     Use the context provided below - and only the
     provided context - to answer the given question. (Note that the answer is in service of anserwing a broader
     question, given below as 'motivation'.)
@@ -44,8 +47,9 @@ BASE_RAG_PROMPT = (
     Again, only use the provided context and do not use your internal knowledge! If you cannot answer the
     question based on the context, say """
     + f'"{UNKNOWN_ANSWER}"'
-    + """. It is a matter of life and death that you do NOT
-    use your internal knowledge, just the provided information!
+    + """.
+    It is a matter of life and death that you do NOT use your internal knowledge, just the provided
+    information!
 
     Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
     (But keep other details as well.)
@@ -61,6 +65,7 @@ BASE_RAG_PROMPT = (
 
 BASE_RAG_PROMPT_v2 = (
     """ \n
+    {date_prompt}
     Use the context provided below - and only the
     provided context - to answer the given question. (Note that the answer is in service of answering a broader
     question, given below as 'motivation'.)
@@ -74,7 +79,8 @@ BASE_RAG_PROMPT_v2 = (
     Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
     (But keep other details as well.)
 
-    Please remember to provide inline citations in the format [[D1]](), [[D2]](), [[D3]](), etc.
+    Please remember to provide inline citations in the format [[D1]](), [[D2]](), [[D3]](), etc!
+     It is important that the citation is close to the information it supports.
     Proper citations are very important to the user!\n\n\n
 
     For your general information, here is the ultimate motivation:
@@ -534,7 +540,7 @@ INITIAL_DECOMPOSITION_PROMPT = """ \n
 
 INITIAL_RAG_BASE_PROMPT = (
     """ \n
-You are an assistant for question-answering tasks. Use the information provided below - and only the
+ You are an assistant for question-answering tasks. Use the information provided below - and only the
 provided information - to answer the provided question.
 
 The information provided below consists ofa number of documents that were deemed relevant for the question.
@@ -542,7 +548,7 @@ The information provided below consists ofa number of documents that were deemed
 IMPORTANT RULES:
 - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
 You may give some additional facts you learned, but do not try to invent an answer.
-- If the information is empty or irrelevant, just say """
+- If the information is irrelevant, just say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
 - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
@@ -643,7 +649,7 @@ SUB_QUESTION_SEARCH_RESULTS_TEMPLATE = """
 INITIAL_RAG_PROMPT_SUB_QUESTION_SEARCH = (
     """ \n
 {persona_specification}
-
+{date_prompt}
 Use the information provided below - and only the provided information - to answer the main question that will be provided.
 
 The information provided below consists of:
@@ -660,7 +666,8 @@ IMPORTANT RULES:
  - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
  - The answers to the subquestions should help you to structure your thoughts in order to answer the question.
 
-Please provide inline citations of documentsin the format [[D1]](), [[D2]](), [[D3]](), etc.,  If you have multiple citations,
+Please provide inline citations of documentsin the format [[D1]](), [[D2]](), [[D3]](), etc.!
+It is important that the citation is close to the information it supports.  If you have multiple citations,
 please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Feel free to cite documents in addition
 to the sub-questions! Proper citations are important for the final answer to be verifiable! \n\n\n
 
@@ -700,7 +707,7 @@ Answer:"""
 INITIAL_RAG_PROMPT = (
     """ \n
 {persona_specification}
-
+ {date_prompt}
 Use the information provided below - and only the provided information - to answer the provided main question.
 
 The information provided below consists of:
@@ -710,12 +717,13 @@ answer
 
 {history}
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
-citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc.! It is important that the citation
+is close to the information it supports. If you have multiple citations that support a fact, please cite for example
+as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
 citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
-Again, please do not cite sub-questions without a document citation!
-Citations are very important for the user!
+Again, please do NEVER cite sub-questions without a document citation!
+Proper citations are very important for the user!
 
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
@@ -752,6 +760,7 @@ Answer:"""
 INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS = (
     """{answered_sub_questions}
 {persona_specification}
+{date_prompt}
 Use the information provided below
 - and only the provided information - to answer the provided question.
 The information provided below consists of a number of documents that were deemed relevant for the question.
@@ -767,7 +776,8 @@ IMPORTANT RULES:
 
 Again, you should be sure that the answer is supported by the information provided!
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!  It is important that the citation
+is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the
 user!
 
@@ -789,6 +799,7 @@ Answer:"""
 REVISED_RAG_PROMPT = (
     """\n
 {persona_specification}
+{date_prompt}
 Use the information provided below - and only the provided information - to answer the provided main question.
 
 The information provided below consists of:
@@ -800,12 +811,13 @@ the main question. Note that the sub-questions have a type, 'initial' and 'revis
     3) a number of documents that were deemed relevant for the question. This the is the context that you use largey for
 citations (see below).
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+ It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
 citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
-Again, please do not cite sub-questions without a document citation!
-Citations are very important for the user!\n\n
+Again, please do NEVER cite sub-questions without a document citation!
+Proper citations are very important for the user!\n\n
 
 {history}
 
@@ -853,6 +865,7 @@ Answer:"""
 REVISED_RAG_PROMPT_NO_SUB_QUESTIONS = (
     """{answered_sub_questions}\n
 {persona_specification}
+{date_prompt}
 Use the information provided below - and only the
 provided information - to answer the provided question.
 
@@ -860,7 +873,8 @@ The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
     2) a number of documents that were also deemed relevant for the question.
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc. If you have multiple
+Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+ It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n
 
 {history}
@@ -933,4 +947,27 @@ ENTITY_TERM_PROMPT = """ \n
         }}]
     }}
     }}
+
    """
+ANSWER_COMPARISON_PROMPT = """
+    For the given question, please compare the initial answer and the refined answer and determine if
+the refined answer is substantially better than the initial answer. Better could mean:
+ - additional information
+ - more comprehensive information
+ - more concise information
+ - more structured information
+ - substantially more document citations ([[D1]](), [[D2]](), [[D3]](), etc.)
+
+ Here is the question:
+ {question}
+
+ Here is the initial answer:
+ {initial_answer}
+
+ Here is the refined answer:
+ {refined_answer}
+
+ With these criteriain mind, is the refined answer substantially better than the initial answer?
+
+ Please answer with a simple 'yes' or 'no'.
+    """

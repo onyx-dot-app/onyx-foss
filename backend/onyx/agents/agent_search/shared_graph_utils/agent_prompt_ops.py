@@ -5,6 +5,7 @@ from langchain_core.messages.tool import ToolMessage
 
 from onyx.agents.agent_search.shared_graph_utils.prompts import BASE_RAG_PROMPT_v2
 from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.context.search.models import InferenceSection
 from onyx.llm.interfaces import LLMConfig
@@ -24,6 +25,8 @@ def build_sub_question_answer_prompt(
         content=persona_specification,
     )
 
+    date_str = get_today_prompt()
+
     docs_format_list = [
         f"""Document Number: [D{doc_nr + 1}]\n
                              Content: {doc.combined_content}\n\n"""
@@ -33,11 +36,14 @@ def build_sub_question_answer_prompt(
     docs_str = "\n\n".join(docs_format_list)
 
     docs_str = trim_prompt_piece(
-        config, docs_str, BASE_RAG_PROMPT_v2 + question + original_question
+        config, docs_str, BASE_RAG_PROMPT_v2 + question + original_question + date_str
     )
     human_message = HumanMessage(
         content=BASE_RAG_PROMPT_v2.format(
-            question=question, original_question=original_question, context=docs_str
+            question=question,
+            original_question=original_question,
+            context=docs_str,
+            date_prompt=date_str,
         )
     )
 
@@ -74,17 +80,21 @@ def build_history_prompt(prompt_builder: AnswerPromptBuilder | None) -> str:
     if prompt_builder.single_message_history is not None:
         history = prompt_builder.single_message_history
     else:
-        history = ""
+        history_components = []
         previous_message_type = None
         for message in prompt_builder.raw_message_history:
             if "user" in message.message_type:
-                history += f"User: {message.message}\n"
+                history_components.append(f"User: {message.message}\n")
                 previous_message_type = "user"
             elif "assistant" in message.message_type:
-                # only use the initial agent answer for the history
+                # only use the last agent answer for the history
                 if previous_message_type != "assistant":
-                    history += f"You/Agent: {message.message}\n"
+                    history_components.append(f"You/Agent: {message.message}\n")
+                else:
+                    history_components = history_components[:-1]
+                    history_components.append(f"You/Agent: {message.message}\n")
                 previous_message_type = "assistant"
             else:
                 continue
+        history = "\n".join(history_components)
     return HISTORY_PROMPT.format(history=history) if history else ""

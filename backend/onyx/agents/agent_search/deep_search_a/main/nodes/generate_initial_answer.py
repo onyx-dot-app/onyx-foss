@@ -45,6 +45,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
@@ -63,8 +64,10 @@ def generate_initial_answer(
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
 
     history = build_history_prompt(agent_a_config.prompt_builder)
+    date_str = get_today_prompt()
 
-    sub_question_docs = state.documents
+    # sub_question_docs = state.documents
+    sub_question_docs = state.context_documents
     all_original_question_documents = state.all_original_question_documents
 
     relevant_docs = dedup_inference_sections(
@@ -166,7 +169,11 @@ def generate_initial_answer(
         doc_context = trim_prompt_piece(
             model.config,
             doc_context,
-            base_prompt + sub_question_answer_str + persona_specification + history,
+            base_prompt
+            + sub_question_answer_str
+            + persona_specification
+            + history
+            + date_str,
         )
 
         msg = [
@@ -179,6 +186,7 @@ def generate_initial_answer(
                     relevant_docs=format_docs(relevant_docs),
                     persona_specification=persona_specification,
                     history=history,
+                    date_prompt=date_str,
                 )
             )
         ]

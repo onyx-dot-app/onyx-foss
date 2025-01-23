@@ -12,6 +12,7 @@ from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.chat.answer import Answer
 from onyx.chat.chat_utils import create_chat_chain
 from onyx.chat.chat_utils import create_temporary_persona
+from onyx.chat.models import AgentSearchPacket
 from onyx.chat.models import AllCitations
 from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import ChatOnyxBotResponse
@@ -28,7 +29,6 @@ from onyx.chat.models import MessageSpecificCitations
 from onyx.chat.models import OnyxAnswerPiece
 from onyx.chat.models import OnyxContexts
 from onyx.chat.models import PromptConfig
-from onyx.chat.models import ProSearchPacket
 from onyx.chat.models import QADocsResponse
 from onyx.chat.models import StreamingError
 from onyx.chat.models import StreamStopInfo
@@ -304,7 +304,7 @@ ChatPacket = (
     | MessageSpecificCitations
     | MessageResponseIDInfo
     | StreamStopInfo
-    | ProSearchPacket
+    | AgentSearchPacket
 )
 ChatPacketStream = Iterator[ChatPacket]
 

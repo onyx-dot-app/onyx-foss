@@ -32,6 +32,9 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.agent_path_routing import
 from onyx.agents.agent_search.deep_search_a.main.nodes.agent_search_start import (
     agent_search_start,
 )
+from onyx.agents.agent_search.deep_search_a.main.nodes.answer_comparison import (
+    answer_comparison,
+)
 from onyx.agents.agent_search.deep_search_a.main.nodes.direct_llm_handling import (
     direct_llm_handling,
 )
@@ -184,7 +187,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         node="refined_answer_decision",
         action=refined_answer_decision,
     )
-
+    graph.add_node(
+        node="answer_comparison",
+        action=answer_comparison,
+    )
     graph.add_node(
         node="logging_node",
         action=agent_logging,
@@ -313,6 +319,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key="generate_refined_answer",
+        end_key="answer_comparison",
+    )
+    graph.add_edge(
+        start_key="answer_comparison",
         end_key="logging_node",
     )
 

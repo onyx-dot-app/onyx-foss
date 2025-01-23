@@ -21,6 +21,7 @@ def format_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
                 answer=state.answer,
                 expanded_retrieval_results=state.expanded_retrieval_results,
                 documents=state.documents,
+                context_documents=state.context_documents,
                 sub_question_retrieval_stats=state.sub_question_retrieval_stats,
             )
         ],

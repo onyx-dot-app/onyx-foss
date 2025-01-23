@@ -53,6 +53,14 @@ class BaseDecompUpdateBase(BaseModel):
     initial_decomp_questions: list[str] = []
 
 
+class AnswerComparisonBase(BaseModel):
+    refined_answer_improvement: bool = False
+
+
+class AnswerComparison(AnswerComparisonBase, LoggerUpdate):
+    pass
+
+
 class RoutingDecisionBase(BaseModel):
     routing: str = ""
     sample_doc_str: str = ""
@@ -108,6 +116,7 @@ class RequireRefinedAnswerUpdate(LoggingUpdate):
 
 class DecompAnswersUpdate(LoggingUpdate):
     documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
+    context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     decomp_answer_results: Annotated[
         list[QuestionAnswerResults], dedup_question_answer_results
     ] = []
@@ -175,6 +184,7 @@ class MainState(
     RefinedAgentStartStats,
     RefinedAgentEndStats,
     RoutingDecisionBase,
+    AnswerComparisonBase,
 ):
     # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
     base_raw_search_result: Annotated[list[ExpandedRetrievalResult], add]
