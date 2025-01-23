@@ -118,6 +118,7 @@ export const AgenticMessage = ({
   secondLevelSubquestions,
   setStreamingAllowed,
   streamingAllowed,
+  toggleDocDisplay,
 }: {
   secondLevelSubquestions?: SubQuestionDetail[] | null;
   agenticDocs?: OnyxDocument[] | null;
@@ -156,6 +157,7 @@ export const AgenticMessage = ({
   setPresentingDocument?: (document: OnyxDocument) => void;
   setStreamingAllowed?: (allowed: boolean) => void;
   streamingAllowed?: boolean;
+  toggleDocDisplay?: (agentic: boolean) => void;
 }) => {
   const [streamedContent, setStreamedContent] = useState(content as string);
 
@@ -292,8 +294,8 @@ export const AgenticMessage = ({
               ? docs
               : agenticDocs
             : agenticDocs && agenticDocs.length > 0
-              ? agenticDocs
-              : docs
+            ? agenticDocs
+            : docs
         }
         subQuestions={
           isViewingInitialAnswer
@@ -378,12 +380,12 @@ export const AgenticMessage = ({
         ? StreamingPhase.COMPLETE
         : StreamingPhase.ANSWER
       : secondLevelSubquestions[0].context_docs
-        ? StreamingPhase.CONTEXT_DOCS
-        : secondLevelSubquestions[0].sub_queries
-          ? StreamingPhase.SUB_QUERIES
-          : secondLevelSubquestions[0].question
-            ? StreamingPhase.WAITING
-            : StreamingPhase.WAITING
+      ? StreamingPhase.CONTEXT_DOCS
+      : secondLevelSubquestions[0].sub_queries
+      ? StreamingPhase.SUB_QUERIES
+      : secondLevelSubquestions[0].question
+      ? StreamingPhase.WAITING
+      : StreamingPhase.WAITING
     : StreamingPhase.WAITING;
 
   const message = useOrderedPhases(currentState);
@@ -542,6 +544,8 @@ export const AgenticMessage = ({
                                   const viewInitialAnswer =
                                     !isViewingInitialAnswer;
                                   setIsViewingInitialAnswer(viewInitialAnswer);
+                                  toggleDocDisplay &&
+                                    toggleDocDisplay(isViewingInitialAnswer);
                                   if (viewInitialAnswer) {
                                     setIsViewingInitialAnswer(true);
                                   }

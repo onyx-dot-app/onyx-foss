@@ -308,8 +308,8 @@ const SubQuestionDisplay: React.FC<{
               status === ToggleState.Todo
                 ? "!border-4 border border-background-900 bg-background"
                 : false
-                  ? "bg-background border-3 border border-background-900 rotating-border"
-                  : "bg-background-900 flex items-center  justify-center"
+                ? "bg-background border-3 border border-background-900 rotating-border"
+                : "bg-background-900 flex items-center  justify-center"
             } 
          `}
           >
@@ -637,7 +637,15 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
               !finishedGenerating ? ToggleState.Todo : ToggleState.Done
             }
             documents={documents}
-            isLast={false}
+            isLast={
+              !showSummarizing &&
+              memoizedSubQuestions.length > index + 1 &&
+              !(
+                showSecondLevel &&
+                memoizedSecondLevelQuestions &&
+                memoizedSecondLevelQuestions?.length > 0
+              )
+            }
             isFirst={index === 0}
             setPresentingDocument={setPresentingDocument}
             unToggle={
@@ -679,7 +687,10 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
               key={index}
               subQuestion={subQuestion}
               documents={documents}
-              isLast={false}
+              isLast={
+                !showSummarizing &&
+                memoizedSecondLevelQuestions.length > index + 1
+              }
               isFirst={false}
               setPresentingDocument={setPresentingDocument}
               unToggle={

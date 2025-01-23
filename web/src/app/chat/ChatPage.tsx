@@ -287,6 +287,16 @@ export function ChatPage({
     SEARCH_PARAM_NAMES.TEMPERATURE
   );
 
+  const defaultTemperature = search_param_temperature
+    ? parseFloat(search_param_temperature)
+    : selectedAssistant?.tools.some(
+        (tool) =>
+          tool.in_code_tool_id === SEARCH_TOOL_ID ||
+          tool.in_code_tool_id === INTERNET_SEARCH_TOOL_ID
+      )
+    ? 0
+    : 0.7;
+
   const setSelectedAssistantFromId = (assistantId: number) => {
     // NOTE: also intentionally look through available assistants here, so that
     // even if the user has hidden an assistant they can still go back to it
@@ -2569,6 +2579,10 @@ export function ChatPage({
                                 if (parentMessage?.type == "assistant") {
                                   return <></>;
                                 }
+                                const secondLevelMessage =
+                                  messageHistory[i + 1]?.type === "assistant"
+                                    ? messageHistory[i + 1]
+                                    : undefined;
 
                                 const secondLevelAssistantMessage =
                                   messageHistory[i + 1]?.type === "assistant"
@@ -2631,6 +2645,21 @@ export function ChatPage({
                                         agenticDocs={
                                           message.agentic_docs || agenticDocs
                                         }
+                                        toggleDocDisplay={(
+                                          agentic: boolean
+                                        ) => {
+                                          if (agentic) {
+                                            setSelectedMessageForDocDisplay(
+                                              message.messageId
+                                            );
+                                          } else {
+                                            setSelectedMessageForDocDisplay(
+                                              secondLevelMessage
+                                                ? secondLevelMessage.messageId
+                                                : null
+                                            );
+                                          }
+                                        }}
                                         docs={
                                           message?.documents &&
                                           message?.documents.length > 0
@@ -2737,6 +2766,39 @@ export function ChatPage({
                                                   feedbackType,
                                                   message.messageId as number,
                                                 ])
+                                        }
+                                        handleSearchQueryEdit={
+                                          i === messageHistory.length - 1 &&
+                                          currentSessionChatState == "input"
+                                            ? (newQuery) => {
+                                                if (!previousMessage) {
+                                                  setPopup({
+                                                    type: "error",
+                                                    message:
+                                                      "Cannot edit query of first message - please refresh the page and try again.",
+                                                  });
+                                                  return;
+                                                }
+                                                if (
+                                                  previousMessage.messageId ===
+                                                  null
+                                                ) {
+                                                  setPopup({
+                                                    type: "error",
+                                                    message:
+                                                      "Cannot edit query of a pending message - please wait a few seconds and try again.",
+                                                  });
+                                                  return;
+                                                }
+                                                onSubmit({
+                                                  messageIdToResend:
+                                                    previousMessage.messageId,
+                                                  queryOverride: newQuery,
+                                                  alternativeAssistantOverride:
+                                                    currentAlternativeAssistant,
+                                                });
+                                              }
+                                            : undefined
                                         }
                                         handleShowRetrieved={(
                                           messageNumber
