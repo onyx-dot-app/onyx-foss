@@ -133,7 +133,9 @@ BASE_CHECK_PROMPT = """ \n
     Please answer with yes or no:"""
 
 VERIFIER_PROMPT = """
-You are supposed to judge whether a document text contains data or information that is potentially relevant for a question.
+You are supposed to judge whether a document text contains data or information that is potentially relevant
+for a question. It does not have to be fully relevant, but check whether it has some information that
+could help to address the question.
 
 Here is a document text that you can take as a fact:
 --
@@ -141,7 +143,7 @@ DOCUMENT INFORMATION:
 {document_content}
 --
 
-Do you think that this information is useful and relevant to answer the following question?
+Do you think that this document text is useful and relevant to answer the following question?
 (Other documents may supply additional information, so do not worry if the provided information
 is not enough to answer the question, but it needs to be relevant to the question.)
 --
