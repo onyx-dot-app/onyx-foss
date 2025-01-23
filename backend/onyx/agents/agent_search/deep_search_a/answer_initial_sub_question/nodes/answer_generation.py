@@ -22,7 +22,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     ASSISTANT_SYSTEM_PROMPT_PERSONA,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
+from onyx.agents.agent_search.shared_graph_utils.prompts import NO_RECOVERED_DOCS
 from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
@@ -47,7 +47,7 @@ def answer_generation(
     persona_prompt = get_persona_prompt(agent_search_config.search_request.persona)
 
     if len(context_docs) == 0:
-        answer_str = UNKNOWN_ANSWER
+        answer_str = NO_RECOVERED_DOCS
         dispatch_custom_event(
             "sub_answers",
             AgentAnswerPiece(

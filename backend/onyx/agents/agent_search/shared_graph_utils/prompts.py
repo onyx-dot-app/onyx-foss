@@ -1,6 +1,6 @@
 UNKNOWN_ANSWER = "I do not have enough information to answer this question."
 
-NO_RECOVERED_DOCS = "No relevant documents recovered"
+NO_RECOVERED_DOCS = "No relevant information recovered"
 
 DATE_PROMPT = """Today is {date}.\n\n"""
 
@@ -48,7 +48,7 @@ BASE_RAG_PROMPT = (
     question based on the context, say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
-    It is a matter of life and death that you do NOT use your internal knowledge, just the provided
+    It is a matter of life and death that you do NOT use your internal knowledge, just the provided`
     information!
 
     Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
@@ -660,7 +660,7 @@ The information provided below consists of:
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
  You may give some additional facts you learned, but do not try to invent an answer.
- - If the information is empty or irrelevant, just say """
+ - If the information is irrelevant, just say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
  - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
