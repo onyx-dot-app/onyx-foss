@@ -35,10 +35,9 @@ def answer_comparison(state: MainState, config: RunnableConfig) -> AnswerCompari
     # no need to stream this
     resp = model.invoke(msg)
 
-    if isinstance(resp.content, str) and "yes" in resp.content.lower():
-        refined_answer_improvement = True
-    else:
-        refined_answer_improvement = False
+    refined_answer_improvement = (
+        isinstance(resp.content, str) and "yes" in resp.content.lower()
+    )
 
     dispatch_custom_event(
         "refined_answer_improvement",

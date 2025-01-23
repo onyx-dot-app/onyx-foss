@@ -66,7 +66,6 @@ def generate_initial_answer(
     history = build_history_prompt(agent_a_config.prompt_builder)
     date_str = get_today_prompt()
 
-    # sub_question_docs = state.documents
     sub_question_docs = state.context_documents
     all_original_question_documents = state.all_original_question_documents
 

@@ -724,7 +724,7 @@ is close to the information it supports. If you have multiple citations that sup
 as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
 citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
-Again, please do NEVER cite sub-questions without a document citation!
+Again, please NEVER cite sub-questions without a document citation!
 Proper citations are very important for the user!
 
 IMPORTANT RULES:
@@ -818,7 +818,7 @@ Please provide inline citations to documents in the format [[D1]](), [[D2]](), [
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
 citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
-Again, please do NEVER cite sub-questions without a document citation!
+Again, please NEVER cite sub-questions without a document citation!
 Proper citations are very important for the user!\n\n
 
 {history}
@@ -969,7 +969,7 @@ the refined answer is substantially better than the initial answer. Better could
  Here is the refined answer:
  {refined_answer}
 
- With these criteriain mind, is the refined answer substantially better than the initial answer?
+ With these criteria in mind, is the refined answer substantially better than the initial answer?
 
  Please answer with a simple 'yes' or 'no'.
     """

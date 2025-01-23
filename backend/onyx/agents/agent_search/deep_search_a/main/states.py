@@ -48,43 +48,25 @@ class RefinedAgentEndStats(BaseModel):
     agent_refined_metrics: AgentRefinedMetrics = AgentRefinedMetrics()
 
 
-class BaseDecompUpdateBase(BaseModel):
+class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats):
     agent_start_time: datetime = datetime.now()
     initial_decomp_questions: list[str] = []
 
 
-class AnswerComparisonBase(BaseModel):
+class AnswerComparison(LoggerUpdate):
     refined_answer_improvement: bool = False
 
 
-class AnswerComparison(AnswerComparisonBase, LoggerUpdate):
-    pass
-
-
-class RoutingDecisionBase(BaseModel):
+class RoutingDecision(LoggerUpdate):
     routing: str = ""
     sample_doc_str: str = ""
-
-
-class RoutingDecision(RoutingDecisionBase, LoggerUpdate):
-    pass
-
-
-class LoggingUpdate(BaseModel):
-    log_messages: list[str] = []
-
-
-class BaseDecompUpdate(
-    RefinedAgentStartStats, RefinedAgentEndStats, BaseDecompUpdateBase
-):
-    pass
 
 
 class InitialAnswerBASEUpdate(BaseModel):
     initial_base_answer: str = ""
 
 
-class InitialAnswerUpdateBase(BaseModel):
+class InitialAnswerUpdate(LoggerUpdate):
     initial_answer: str = ""
     initial_agent_stats: InitialAgentResultStats | None = None
     generated_sub_questions: list[str] = []
@@ -92,29 +74,21 @@ class InitialAnswerUpdateBase(BaseModel):
     agent_base_metrics: AgentBaseMetrics | None = None
 
 
-class InitialAnswerUpdate(InitialAnswerUpdateBase, LoggerUpdate):
-    pass
-
-
-class RefinedAnswerUpdateBase(BaseModel):
+class RefinedAnswerUpdate(RefinedAgentEndStats):
     refined_answer: str = ""
     refined_agent_stats: RefinedAgentStats | None = None
     refined_answer_quality: bool = False
 
 
-class RefinedAnswerUpdate(RefinedAgentEndStats, RefinedAnswerUpdateBase):
-    pass
-
-
-class InitialAnswerQualityUpdate(LoggingUpdate):
+class InitialAnswerQualityUpdate(LoggerUpdate):
     initial_answer_quality: bool = False
 
 
-class RequireRefinedAnswerUpdate(LoggingUpdate):
+class RequireRefinedAnswerUpdate(LoggerUpdate):
     require_refined_answer: bool = True
 
 
-class DecompAnswersUpdate(LoggingUpdate):
+class DecompAnswersUpdate(LoggerUpdate):
     documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     decomp_answer_results: Annotated[
@@ -122,12 +96,12 @@ class DecompAnswersUpdate(LoggingUpdate):
     ] = []
 
 
-class FollowUpDecompAnswersUpdate(LoggingUpdate):
+class FollowUpDecompAnswersUpdate(LoggerUpdate):
     refined_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     refined_decomp_answer_results: Annotated[list[QuestionAnswerResults], add] = []
 
 
-class ExpandedRetrievalUpdate(LoggingUpdate):
+class ExpandedRetrievalUpdate(LoggerUpdate):
     all_original_question_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ]
@@ -135,24 +109,14 @@ class ExpandedRetrievalUpdate(LoggingUpdate):
     original_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
 
 
-class EntityTermExtractionUpdateBase(LoggingUpdate):
+class EntityTermExtractionUpdate(LoggerUpdate):
     entity_retlation_term_extractions: EntityRelationshipTermExtraction = (
         EntityRelationshipTermExtraction()
     )
 
 
-class EntityTermExtractionUpdate(EntityTermExtractionUpdateBase, LoggerUpdate):
-    pass
-
-
-class FollowUpSubQuestionsUpdateBase(BaseModel):
+class FollowUpSubQuestionsUpdate(RefinedAgentStartStats):
     refined_sub_questions: dict[int, FollowUpSubQuestion] = {}
-
-
-class FollowUpSubQuestionsUpdate(
-    RefinedAgentStartStats, FollowUpSubQuestionsUpdateBase
-):
-    pass
 
 
 ## Graph Input State
@@ -169,22 +133,21 @@ class MainInput(CoreState):
 class MainState(
     # This includes the core state
     MainInput,
-    LoggerUpdate,
-    BaseDecompUpdateBase,
-    InitialAnswerUpdateBase,
+    BaseDecompUpdate,
+    InitialAnswerUpdate,
     InitialAnswerBASEUpdate,
     DecompAnswersUpdate,
     ExpandedRetrievalUpdate,
-    EntityTermExtractionUpdateBase,
+    EntityTermExtractionUpdate,
     InitialAnswerQualityUpdate,
     RequireRefinedAnswerUpdate,
-    FollowUpSubQuestionsUpdateBase,
+    FollowUpSubQuestionsUpdate,
     FollowUpDecompAnswersUpdate,
-    RefinedAnswerUpdateBase,
+    RefinedAnswerUpdate,
     RefinedAgentStartStats,
     RefinedAgentEndStats,
-    RoutingDecisionBase,
-    AnswerComparisonBase,
+    RoutingDecision,
+    AnswerComparison,
 ):
     # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
     base_raw_search_result: Annotated[list[ExpandedRetrievalResult], add]
