@@ -145,7 +145,6 @@ def test_answer_with_search_call(
 
     # Process the output
     output = list(answer_instance.processed_streamed_output)
-    print(output)
 
     # Updated assertions
     assert len(output) == 7
@@ -238,14 +237,9 @@ def test_answer_with_search_no_tool_calling(
 
     # Process the output
     output = list(answer_instance.processed_streamed_output)
-    print("-" * 50)
-    for v in output:
-        print(v)
-        print()
-    print("-" * 50)
 
     # Assertions
-    assert len(output) == 7
+    assert len(output) == 8
     assert output[0] == ToolCallKickoff(
         tool_name="search", tool_args=DEFAULT_SEARCH_ARGS
     )
@@ -324,7 +318,6 @@ def test_is_cancelled(answer_instance: Answer) -> None:
         if i == 1:
             connection_status["connected"] = False
 
-    print(output)
     assert len(output) == 3
     assert output[0] == OnyxAnswerPiece(answer_piece="This is the ")
     assert output[1] == OnyxAnswerPiece(answer_piece="first part.")

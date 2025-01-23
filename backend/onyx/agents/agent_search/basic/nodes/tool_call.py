@@ -42,13 +42,11 @@ def tool_call(state: BasicState, config: RunnableConfig) -> ToolCallUpdate:
     tool_runner = ToolRunner(tool, tool_args)
     tool_kickoff = tool_runner.kickoff()
 
-    print("tool_kickoff", tool_kickoff)
     # TODO: custom events for yields
     emit_packet(tool_kickoff)
 
     tool_responses = []
     for response in tool_runner.tool_responses():
-        print("response", response.id)
         tool_responses.append(response)
         emit_packet(response)
 
