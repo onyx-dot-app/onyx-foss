@@ -68,10 +68,6 @@ logger = setup_logger()
 def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
     """a lightweight task used to kick off indexing tasks.
     Occcasionally does some validation of existing state to clear up error conditions"""
-    debug_tenants = {
-        "tenant_i-043470d740845ec56",
-        "tenant_82b497ce-88aa-4fbd-841a-92cae43529c8",
-    }
     time_start = time.monotonic()
 
     tasks_created = 0
@@ -123,16 +119,6 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
 
         # kick off index attempts
         for cc_pair_id in cc_pair_ids:
-            # debugging logic - remove after we're done
-            if tenant_id in debug_tenants:
-                ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                task_logger.info(
-                    f"check_for_indexing cc_pair lock: "
-                    f"tenant={tenant_id} "
-                    f"cc_pair={cc_pair_id} "
-                    f"ttl={ttl}"
-                )
-
             lock_beat.reacquire()
 
             redis_connector = RedisConnector(tenant_id, cc_pair_id)
@@ -141,29 +127,11 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                     db_session
                 )
                 for search_settings_instance in search_settings_list:
-                    if tenant_id in debug_tenants:
-                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                        task_logger.info(
-                            f"check_for_indexing cc_pair search settings lock: "
-                            f"tenant={tenant_id} "
-                            f"cc_pair={cc_pair_id} "
-                            f"ttl={ttl}"
-                        )
-
                     redis_connector_index = redis_connector.new_index(
                         search_settings_instance.id
                     )
                     if redis_connector_index.fenced:
                         continue
-
-                    if tenant_id in debug_tenants:
-                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                        task_logger.info(
-                            f"check_for_indexing get_connector_credential_pair_from_id: "
-                            f"tenant={tenant_id} "
-                            f"cc_pair={cc_pair_id} "
-                            f"ttl={ttl}"
-                        )
 
                     cc_pair = get_connector_credential_pair_from_id(
                         db_session=db_session,
@@ -172,27 +140,9 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                     if not cc_pair:
                         continue
 
-                    if tenant_id in debug_tenants:
-                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                        task_logger.info(
-                            f"check_for_indexing get_last_attempt_for_cc_pair: "
-                            f"tenant={tenant_id} "
-                            f"cc_pair={cc_pair_id} "
-                            f"ttl={ttl}"
-                        )
-
                     last_attempt = get_last_attempt_for_cc_pair(
                         cc_pair.id, search_settings_instance.id, db_session
                     )
-
-                    if tenant_id in debug_tenants:
-                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                        task_logger.info(
-                            f"check_for_indexing cc_pair should index: "
-                            f"tenant={tenant_id} "
-                            f"cc_pair={cc_pair_id} "
-                            f"ttl={ttl}"
-                        )
 
                     search_settings_primary = False
                     if search_settings_instance.id == search_settings_list[0].id:
@@ -226,15 +176,6 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                                 cc_pair.id, None, db_session
                             )
 
-                    if tenant_id in debug_tenants:
-                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                        task_logger.info(
-                            f"check_for_indexing cc_pair try_creating_indexing_task: "
-                            f"tenant={tenant_id} "
-                            f"cc_pair={cc_pair_id} "
-                            f"ttl={ttl}"
-                        )
-
                     # using a task queue and only allowing one task per cc_pair/search_setting
                     # prevents us from starving out certain attempts
                     attempt_id = try_creating_indexing_task(
@@ -255,24 +196,6 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                         )
                         tasks_created += 1
 
-                    if tenant_id in debug_tenants:
-                        ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                        task_logger.info(
-                            f"check_for_indexing cc_pair try_creating_indexing_task finished: "
-                            f"tenant={tenant_id} "
-                            f"cc_pair={cc_pair_id} "
-                            f"ttl={ttl}"
-                        )
-
-        # debugging logic - remove after we're done
-        if tenant_id in debug_tenants:
-            ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-            task_logger.info(
-                f"check_for_indexing unfenced lock: "
-                f"tenant={tenant_id} "
-                f"ttl={ttl}"
-            )
-
         lock_beat.reacquire()
 
         # Fail any index attempts in the DB that don't have fences
@@ -282,24 +205,7 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                 db_session, redis_client
             )
 
-            if tenant_id in debug_tenants:
-                ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                task_logger.info(
-                    f"check_for_indexing after get unfenced lock: "
-                    f"tenant={tenant_id} "
-                    f"ttl={ttl}"
-                )
-
             for attempt_id in unfenced_attempt_ids:
-                # debugging logic - remove after we're done
-                if tenant_id in debug_tenants:
-                    ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-                    task_logger.info(
-                        f"check_for_indexing unfenced attempt id lock: "
-                        f"tenant={tenant_id} "
-                        f"ttl={ttl}"
-                    )
-
                 lock_beat.reacquire()
 
                 attempt = get_index_attempt(db_session, attempt_id)
@@ -316,15 +222,6 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
                 mark_attempt_failed(
                     attempt.id, db_session, failure_reason=failure_reason
                 )
-
-        # debugging logic - remove after we're done
-        if tenant_id in debug_tenants:
-            ttl = redis_client.ttl(OnyxRedisLocks.CHECK_INDEXING_BEAT_LOCK)
-            task_logger.info(
-                f"check_for_indexing validate fences lock: "
-                f"tenant={tenant_id} "
-                f"ttl={ttl}"
-            )
 
         lock_beat.reacquire()
         # we want to run this less frequently than the overall task
