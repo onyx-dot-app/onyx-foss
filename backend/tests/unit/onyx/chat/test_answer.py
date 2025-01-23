@@ -17,6 +17,7 @@ from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationInfo
 from onyx.chat.models import LlmDoc
 from onyx.chat.models import OnyxAnswerPiece
+from onyx.chat.models import OnyxContexts
 from onyx.chat.models import PromptConfig
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
@@ -25,6 +26,10 @@ from onyx.tools.force import ForceUseTool
 from onyx.tools.models import ToolCallFinalResult
 from onyx.tools.models import ToolCallKickoff
 from onyx.tools.models import ToolResponse
+from onyx.tools.tool_implementations.search.search_tool import SEARCH_DOC_CONTENT_ID
+from onyx.tools.tool_implementations.search_like_tool_utils import (
+    FINAL_CONTEXT_DOCUMENTS_ID,
+)
 from tests.unit.onyx.chat.conftest import DEFAULT_SEARCH_ARGS
 from tests.unit.onyx.chat.conftest import QUERY
 
@@ -215,12 +220,13 @@ def test_answer_with_search_call(
 def test_answer_with_search_no_tool_calling(
     answer_instance: Answer,
     mock_search_results: list[LlmDoc],
+    mock_contexts: OnyxContexts,
     mock_search_tool: MagicMock,
 ) -> None:
-    answer_instance.tools = [mock_search_tool]
+    answer_instance.agent_search_config.tools = [mock_search_tool]
 
     # Set up the LLM mock to return an answer
-    mock_llm = cast(Mock, answer_instance.llm)
+    mock_llm = cast(Mock, answer_instance.agent_search_config.primary_llm)
     mock_llm.stream.return_value = [
         AIMessageChunk(content="Based on the search results, "),
         AIMessageChunk(content="the answer is abc[1]. "),
@@ -228,10 +234,15 @@ def test_answer_with_search_no_tool_calling(
     ]
 
     # Force non-tool calling behavior
-    answer_instance.using_tool_calling_llm = False
+    answer_instance.agent_search_config.using_tool_calling_llm = False
 
     # Process the output
     output = list(answer_instance.processed_streamed_output)
+    print("-" * 50)
+    for v in output:
+        print(v)
+        print()
+    print("-" * 50)
 
     # Assertions
     assert len(output) == 7
@@ -239,21 +250,25 @@ def test_answer_with_search_no_tool_calling(
         tool_name="search", tool_args=DEFAULT_SEARCH_ARGS
     )
     assert output[1] == ToolResponse(
-        id="final_context_documents",
+        id=SEARCH_DOC_CONTENT_ID,
+        response=mock_contexts,
+    )
+    assert output[2] == ToolResponse(
+        id=FINAL_CONTEXT_DOCUMENTS_ID,
         response=mock_search_results,
     )
-    assert output[2] == ToolCallFinalResult(
+    assert output[3] == ToolCallFinalResult(
         tool_name="search",
         tool_args=DEFAULT_SEARCH_ARGS,
         tool_result=[json.loads(doc.model_dump_json()) for doc in mock_search_results],
     )
-    assert output[3] == OnyxAnswerPiece(answer_piece="Based on the search results, ")
+    assert output[4] == OnyxAnswerPiece(answer_piece="Based on the search results, ")
     expected_citation = CitationInfo(citation_num=1, document_id="doc1")
-    assert output[4] == expected_citation
-    assert output[5] == OnyxAnswerPiece(
+    assert output[5] == expected_citation
+    assert output[6] == OnyxAnswerPiece(
         answer_piece="the answer is abc[[1]](https://example.com/doc1). "
     )
-    assert output[6] == OnyxAnswerPiece(answer_piece="This is some other stuff.")
+    assert output[7] == OnyxAnswerPiece(answer_piece="This is some other stuff.")
 
     expected_answer = (
         "Based on the search results, "

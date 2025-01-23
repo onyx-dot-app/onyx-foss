@@ -49,9 +49,6 @@ from onyx.tools.tool_implementations.search_like_tool_utils import (
 from onyx.tools.tool_implementations.search_like_tool_utils import (
     FINAL_CONTEXT_DOCUMENTS_ID,
 )
-from onyx.tools.tool_implementations.search_like_tool_utils import (
-    ORIGINAL_CONTEXT_DOCUMENTS_ID,
-)
 from onyx.utils.logger import setup_logger
 from onyx.utils.special_types import JSON_ro
 
@@ -395,7 +392,7 @@ class SearchTool(Tool):
                 final_search_results = cast(list[LlmDoc], yield_item.response)
             elif (
                 isinstance(yield_item, ToolResponse)
-                and yield_item.id == ORIGINAL_CONTEXT_DOCUMENTS_ID
+                and yield_item.id == SEARCH_DOC_CONTENT_ID
             ):
                 search_contexts = yield_item.response.contexts
                 # original_doc_search_rank = 1

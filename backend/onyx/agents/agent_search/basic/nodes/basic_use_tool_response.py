@@ -7,11 +7,11 @@ from onyx.agents.agent_search.basic.states import BasicState
 from onyx.agents.agent_search.basic.utils import process_llm_stream
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.chat.models import LlmDoc
-from onyx.tools.tool_implementations.search_like_tool_utils import (
-    FINAL_CONTEXT_DOCUMENTS_ID,
+from onyx.tools.tool_implementations.search.search_tool import (
+    SEARCH_DOC_CONTENT_ID,
 )
 from onyx.tools.tool_implementations.search_like_tool_utils import (
-    ORIGINAL_CONTEXT_DOCUMENTS_ID,
+    FINAL_CONTEXT_DOCUMENTS_ID,
 )
 
 
@@ -34,11 +34,12 @@ def basic_use_tool_response(state: BasicState, config: RunnableConfig) -> BasicO
         using_tool_calling_llm=agent_config.using_tool_calling_llm,
     )
 
+    final_search_results = []
     initial_search_results = []
     for yield_item in tool_call_responses:
         if yield_item.id == FINAL_CONTEXT_DOCUMENTS_ID:
-            cast(list[LlmDoc], yield_item.response)
-        elif yield_item.id == ORIGINAL_CONTEXT_DOCUMENTS_ID:
+            final_search_results = cast(list[LlmDoc], yield_item.response)
+        elif yield_item.id == SEARCH_DOC_CONTENT_ID:
             search_contexts = yield_item.response.contexts
             for doc in search_contexts:
                 if doc.document_id not in initial_search_results:
@@ -52,6 +53,11 @@ def basic_use_tool_response(state: BasicState, config: RunnableConfig) -> BasicO
     )
 
     # For now, we don't do multiple tool calls, so we ignore the tool_message
-    process_llm_stream(stream, True)
+    process_llm_stream(
+        stream,
+        True,
+        final_search_results=final_search_results,
+        displayed_search_results=initial_search_results,
+    )
 
     return BasicOutput()
