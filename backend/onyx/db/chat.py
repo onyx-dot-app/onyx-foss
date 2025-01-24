@@ -616,6 +616,7 @@ def create_new_chat_message(
     commit: bool = True,
     reserved_message_id: int | None = None,
     overridden_model: str | None = None,
+    refined_answer_improvement: bool = True,
 ) -> ChatMessage:
     if reserved_message_id is not None:
         # Edit existing message
@@ -636,6 +637,7 @@ def create_new_chat_message(
         existing_message.error = error
         existing_message.alternate_assistant_id = alternate_assistant_id
         existing_message.overridden_model = overridden_model
+        existing_message.refined_answer_improvement = refined_answer_improvement
 
         new_chat_message = existing_message
     else:
@@ -655,6 +657,7 @@ def create_new_chat_message(
             error=error,
             alternate_assistant_id=alternate_assistant_id,
             overridden_model=overridden_model,
+            refined_answer_improvement=refined_answer_improvement,
         )
         db_session.add(new_chat_message)
 

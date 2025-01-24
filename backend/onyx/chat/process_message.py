@@ -30,6 +30,7 @@ from onyx.chat.models import OnyxAnswerPiece
 from onyx.chat.models import OnyxContexts
 from onyx.chat.models import PromptConfig
 from onyx.chat.models import QADocsResponse
+from onyx.chat.models import RefinedAnswerImprovement
 from onyx.chat.models import StreamingError
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
@@ -829,6 +830,7 @@ def stream_chat_message_objects(
         info_by_subq: dict[tuple[int, int], AnswerPostInfo] = defaultdict(
             lambda: AnswerPostInfo(ai_message_files=[])
         )
+        refined_answer_improvement = True
         for packet in answer.processed_streamed_output:
             if isinstance(packet, ToolResponse):
                 level, level_question_nr = (
@@ -954,6 +956,9 @@ def stream_chat_message_objects(
             elif isinstance(packet, StreamStopInfo):
                 if packet.stop_reason == StreamStopReason.FINISHED:
                     yield packet
+            elif isinstance(packet, RefinedAnswerImprovement):
+                refined_answer_improvement = packet.refined_answer_improvement
+                yield packet
             else:
                 if isinstance(packet, ToolCallFinalResult):
                     level, level_question_nr = (
@@ -1067,6 +1072,7 @@ def stream_chat_message_objects(
                 citations=info.message_specific_citations.citation_map
                 if info.message_specific_citations
                 else None,
+                refined_answer_improvement=refined_answer_improvement,
             )
             next_level += 1
             prev_message = next_answer_message
