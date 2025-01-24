@@ -12,6 +12,9 @@ from onyx.agents.agent_search.deep_search_a.expanded_retrieval.models import (
 from onyx.agents.agent_search.deep_search_a.main.models import AgentBaseMetrics
 from onyx.agents.agent_search.deep_search_a.main.models import AgentRefinedMetrics
 from onyx.agents.agent_search.deep_search_a.main.models import FollowUpSubQuestion
+from onyx.agents.agent_search.orchestration.states import ToolCallUpdate
+from onyx.agents.agent_search.orchestration.states import ToolChoiceInput
+from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
@@ -133,6 +136,9 @@ class MainInput(CoreState):
 class MainState(
     # This includes the core state
     MainInput,
+    ToolChoiceInput,
+    ToolCallUpdate,
+    ToolChoiceUpdate,
     BaseDecompUpdate,
     InitialAnswerUpdate,
     InitialAnswerBASEUpdate,

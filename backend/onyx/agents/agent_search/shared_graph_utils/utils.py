@@ -153,7 +153,11 @@ def generate_log_message(
 
 
 def get_test_config(
-    db_session: Session, primary_llm: LLM, fast_llm: LLM, search_request: SearchRequest
+    db_session: Session,
+    primary_llm: LLM,
+    fast_llm: LLM,
+    search_request: SearchRequest,
+    use_agentic_search: bool = True,
 ) -> tuple[AgentSearchConfig, SearchTool]:
     persona = get_persona_by_id(DEFAULT_PERSONA_ID, None, db_session)
     document_pruning_config = DocumentPruningConfig(
@@ -229,6 +233,7 @@ def get_test_config(
         use_persistence=True,
         db_session=db_session,
         tools=[search_tool],
+        use_agentic_search=use_agentic_search,
     )
 
     return config, search_tool

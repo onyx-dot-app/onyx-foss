@@ -21,8 +21,8 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
 
     agent_start_time = state.agent_start_time
     agent_base_end_time = state.agent_base_end_time
-    agent_refined_start_time = state.agent_refined_start_time or None
-    agent_refined_end_time = state.agent_refined_end_time or None
+    agent_refined_start_time = state.agent_refined_start_time
+    agent_refined_end_time = state.agent_refined_end_time
     agent_end_time = agent_refined_end_time or agent_base_end_time
 
     agent_base_duration = None
@@ -67,14 +67,15 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
 
     # log the agent metrics
     if agent_a_config.db_session is not None:
-        log_agent_metrics(
-            db_session=agent_a_config.db_session,
-            user_id=user_id,
-            persona_id=persona_id,
-            agent_type=agent_type,
-            start_time=agent_start_time,
-            agent_metrics=combined_agent_metrics,
-        )
+        if agent_base_duration is not None:
+            log_agent_metrics(
+                db_session=agent_a_config.db_session,
+                user_id=user_id,
+                persona_id=persona_id,
+                agent_type=agent_type,
+                start_time=agent_start_time,
+                agent_metrics=combined_agent_metrics,
+            )
 
         if agent_a_config.use_persistence:
             # Persist the sub-answer in the database

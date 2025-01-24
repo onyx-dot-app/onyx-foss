@@ -39,7 +39,7 @@ def llm_tool_choice(state: ToolChoiceState, config: RunnableConfig) -> ToolChoic
     skip_gen_ai_answer_generation = agent_config.skip_gen_ai_answer_generation
 
     structured_response_format = agent_config.structured_response_format
-    tools = agent_config.tools or []
+    tools = [tool for tool in (agent_config.tools or []) if tool.name in state.tools]
     force_use_tool = agent_config.force_use_tool
 
     tool, tool_args = None, None

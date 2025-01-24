@@ -8,11 +8,16 @@ from onyx.tools.models import ToolResponse
 from onyx.tools.tool import Tool
 
 
+# TODO: adapt the tool choice/tool call to allow for parallel tool calls by
+# creating a subgraph that can be invoked in parallel via Send/Command APIs
 class ToolChoiceInput(BaseModel):
     should_stream_answer: bool = True
     # default to the prompt builder from the config, but
     # allow overrides for arbitrary tool calls
     prompt_snapshot: PromptSnapshot | None = None
+
+    # names of tools to use for tool calling. Filters the tools available in the config
+    tools: list[str] = []
 
 
 class ToolCallOutput(BaseModel):

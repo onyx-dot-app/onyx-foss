@@ -964,9 +964,11 @@ def log_agent_metrics(
         start_time=start_time,
         base_duration__s=agent_timings.base_duration__s,
         full_duration__s=agent_timings.full_duration__s,
-        base_metrics=vars(agent_base_metrics),
-        refined_metrics=vars(agent_refined_metrics),
-        all_metrics=vars(agent_additional_metrics),
+        base_metrics=vars(agent_base_metrics) if agent_base_metrics else None,
+        refined_metrics=vars(agent_refined_metrics) if agent_refined_metrics else None,
+        all_metrics=vars(agent_additional_metrics)
+        if agent_additional_metrics
+        else None,
     )
 
     db_session.add(agent_metric_tracking)

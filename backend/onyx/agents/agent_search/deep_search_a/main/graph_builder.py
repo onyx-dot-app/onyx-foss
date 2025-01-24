@@ -20,23 +20,17 @@ from onyx.agents.agent_search.deep_search_a.main.edges import (
 from onyx.agents.agent_search.deep_search_a.main.edges import (
     parallelize_refined_sub_question_answering,
 )
+from onyx.agents.agent_search.deep_search_a.main.edges import (
+    route_initial_tool_choice,
+)
 from onyx.agents.agent_search.deep_search_a.main.nodes.agent_logging import (
     agent_logging,
-)
-from onyx.agents.agent_search.deep_search_a.main.nodes.agent_path_decision import (
-    agent_path_decision,
-)
-from onyx.agents.agent_search.deep_search_a.main.nodes.agent_path_routing import (
-    agent_path_routing,
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.agent_search_start import (
     agent_search_start,
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.answer_comparison import (
     answer_comparison,
-)
-from onyx.agents.agent_search.deep_search_a.main.nodes.direct_llm_handling import (
-    direct_llm_handling,
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.entity_term_extraction_llm import (
     entity_term_extraction_llm,
@@ -73,6 +67,12 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.retrieval_consolidation i
 )
 from onyx.agents.agent_search.deep_search_a.main.states import MainInput
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
+from onyx.agents.agent_search.orchestration.basic_use_tool_response import (
+    basic_use_tool_response,
+)
+from onyx.agents.agent_search.orchestration.llm_tool_choice import llm_tool_choice
+from onyx.agents.agent_search.orchestration.prepare_tool_input import prepare_tool_input
+from onyx.agents.agent_search.orchestration.tool_call import tool_call
 from onyx.agents.agent_search.shared_graph_utils.utils import get_test_config
 from onyx.utils.logger import setup_logger
 
@@ -87,21 +87,37 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         input=MainInput,
     )
 
+    # graph.add_node(
+    #     node="agent_path_decision",
+    #     action=agent_path_decision,
+    # )
+
+    # graph.add_node(
+    #     node="agent_path_routing",
+    #     action=agent_path_routing,
+    # )
+
+    # graph.add_node(
+    #     node="LLM",
+    #     action=direct_llm_handling,
+    # )
     graph.add_node(
-        node="agent_path_decision",
-        action=agent_path_decision,
+        node="prepare_tool_input",
+        action=prepare_tool_input,
+    )
+    graph.add_node(
+        node="initial_tool_choice",
+        action=llm_tool_choice,
+    )
+    graph.add_node(
+        node="tool_call",
+        action=tool_call,
     )
 
     graph.add_node(
-        node="agent_path_routing",
-        action=agent_path_routing,
+        node="basic_use_tool_response",
+        action=basic_use_tool_response,
     )
-
-    graph.add_node(
-        node="LLM",
-        action=direct_llm_handling,
-    )
-
     graph.add_node(
         node="agent_search_start",
         action=agent_search_start,
@@ -205,14 +221,35 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     # raph.add_edge(start_key=START, end_key="base_raw_search_subgraph")
 
+    # graph.add_edge(
+    #     start_key=START,
+    #     end_key="agent_path_decision",
+    # )
+
+    # graph.add_edge(
+    #     start_key="agent_path_decision",
+    #     end_key="agent_path_routing",
+    # )
+    graph.add_edge(start_key=START, end_key="prepare_tool_input")
+
     graph.add_edge(
-        start_key=START,
-        end_key="agent_path_decision",
+        start_key="prepare_tool_input",
+        end_key="initial_tool_choice",
+    )
+
+    graph.add_conditional_edges(
+        "initial_tool_choice",
+        route_initial_tool_choice,
+        ["tool_call", "agent_search_start", "logging_node"],
     )
 
     graph.add_edge(
-        start_key="agent_path_decision",
-        end_key="agent_path_routing",
+        start_key="tool_call",
+        end_key="basic_use_tool_response",
+    )
+    graph.add_edge(
+        start_key="basic_use_tool_response",
+        end_key="logging_node",
     )
 
     graph.add_edge(
@@ -245,10 +282,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         end_key="generate_initial_answer",
     )
 
-    graph.add_edge(
-        start_key="LLM",
-        end_key=END,
-    )
+    # graph.add_edge(
+    #     start_key="LLM",
+    #     end_key=END,
+    # )
 
     # graph.add_edge(
     #     start_key=START,

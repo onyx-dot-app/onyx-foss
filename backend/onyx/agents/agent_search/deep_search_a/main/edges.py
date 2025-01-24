@@ -1,7 +1,9 @@
 from collections.abc import Hashable
 from datetime import datetime
+from typing import cast
 from typing import Literal
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import Send
 
 from onyx.agents.agent_search.deep_search_a.answer_initial_sub_question.states import (
@@ -14,10 +16,27 @@ from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.deep_search_a.main.states import (
     RequireRefinedAnswerUpdate,
 )
+from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
+
+
+def route_initial_tool_choice(
+    state: MainState, config: RunnableConfig
+) -> Literal["tool_call", "agent_search_start", "logging_node"]:
+    agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    if state.tool_choice is not None:
+        if (
+            agent_config.use_agentic_search
+            and state.tool_choice.tool.name == agent_config.search_tool.name
+        ):
+            return "agent_search_start"
+        else:
+            return "tool_call"
+    else:
+        return "logging_node"
 
 
 def parallelize_initial_sub_question_answering(
