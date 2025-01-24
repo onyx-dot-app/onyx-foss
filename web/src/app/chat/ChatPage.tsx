@@ -79,6 +79,7 @@ import {
   SubQueryPiece,
   SubQuestionPiece,
   AgentAnswerPiece,
+  RefinedAnswerImprovement,
 } from "@/lib/search/interfaces";
 import { buildFilters } from "@/lib/search/utils";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
@@ -1248,6 +1249,7 @@ export function ChatPage({
     let second_level_generating: boolean = false;
     let finalMessage: BackendMessage | null = null;
     let toolCall: ToolCallMetadata | null = null;
+    let isImprovement: boolean | undefined = undefined;
 
     let initialFetchDetails: null | {
       user_message_id: number;
@@ -1398,6 +1400,10 @@ export function ChatPage({
               }
             }
 
+            if (Object.hasOwn(packet, "refined_answer_improvement")) {
+              isImprovement = (packet as RefinedAnswerImprovement)
+                .refined_answer_improvement;
+            }
             // Continuously refine the sub_questions based on the packets that we receive
             if (
               Object.hasOwn(packet, "stop_reason") &&
@@ -1567,6 +1573,7 @@ export function ChatPage({
               },
               {
                 is_generating: is_generating,
+                isImprovement: isImprovement,
                 messageId: initialFetchDetails.assistant_message_id!,
                 message: error || answer,
                 second_level_message: second_level_answer,
@@ -2607,6 +2614,7 @@ export function ChatPage({
                                     {message.sub_questions &&
                                     message.sub_questions.length > 0 ? (
                                       <AgenticMessage
+                                        isImprovement={message.isImprovement}
                                         setStreamingAllowed={
                                           setStreamingAllowed
                                         }

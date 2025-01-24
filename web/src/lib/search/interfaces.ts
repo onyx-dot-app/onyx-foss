@@ -24,6 +24,10 @@ export interface ProSearchPacket {
   level_question_nr: number;
 }
 
+export interface RefinedAnswerImprovement {
+  refined_answer_improvement: boolean;
+}
+
 export interface AgentAnswerPiece {
   answer_piece: string;
   level: number;

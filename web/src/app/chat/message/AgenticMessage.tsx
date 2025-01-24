@@ -68,10 +68,11 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import SubQuestionsDisplay from "./SubQuestionsDisplay";
 import { Badge } from "@/components/ui/badge";
-import RefinemenetBadge from "../refinmentBadge";
+import RefinemenetBadge, { NoNewAnswerMessage } from "../refinmentBadge";
 import SubQuestionProgress from "./SubQuestionProgress";
 
 export const AgenticMessage = ({
+  isImprovement,
   secondLevelAssistantMessage,
   secondLevelGenerating,
   isGenerating,
@@ -111,6 +112,7 @@ export const AgenticMessage = ({
   streamingAllowed,
   toggleDocDisplay,
 }: {
+  isImprovement?: boolean | null;
   secondLevelSubquestions?: SubQuestionDetail[] | null;
   agenticDocs?: OnyxDocument[] | null;
   secondLevelGenerating?: boolean;
@@ -470,8 +472,7 @@ export const AgenticMessage = ({
                             Answer
                           </div>
 
-                          {!secondLevelAssistantMessage &&
-                          // !isGenerating &&
+                          {isImprovement == null &&
                           subQuestions &&
                           subQuestions.length > 0 ? (
                             <RefinemenetBadge
@@ -485,8 +486,8 @@ export const AgenticMessage = ({
                               }}
                               isViewingInitialAnswer={isViewingInitialAnswer}
                             />
-                          ) : (
-                            secondLevelAssistantMessage && (
+                          ) : secondLevelAssistantMessage ? (
+                            isImprovement ? (
                               <Badge
                                 // NOTE: This is a hack to make the badge slightly higher
                                 className="cursor-pointer mt-[1px]"
@@ -506,7 +507,11 @@ export const AgenticMessage = ({
                                   ? "See Refined Answer"
                                   : "See Original Answer"}
                               </Badge>
+                            ) : (
+                              <NoNewAnswerMessage />
                             )
+                          ) : (
+                            <></>
                           )}
                         </div>
 

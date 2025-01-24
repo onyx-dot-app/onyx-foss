@@ -464,3 +464,39 @@ export default function RefinemenetBadge({
 //     </TooltipProvider>
 //   );
 // }
+
+// import React, { useState, useEffect } from "react";
+
+export const NoNewAnswerMessage = () => {
+  const [opacity, setOpacity] = useState(1);
+
+  useEffect(() => {
+    const fadeOutDuration = 2000; // 2 seconds
+    const intervalDuration = 50; // Update every 50ms for smooth fade
+    const opacityStep = intervalDuration / fadeOutDuration;
+
+    const fadeOutInterval = setInterval(() => {
+      setOpacity((prevOpacity) => {
+        const newOpacity = prevOpacity - opacityStep;
+        return newOpacity > 0 ? newOpacity : 0;
+      });
+    }, intervalDuration);
+
+    const timer = setTimeout(() => {
+      clearInterval(fadeOutInterval);
+    }, fadeOutDuration);
+
+    return () => {
+      clearInterval(fadeOutInterval);
+      clearTimeout(timer);
+    };
+  }, []);
+
+  if (opacity === 0) return null;
+
+  return (
+    <div className="text-gray-600 text-sm" style={{ opacity: opacity }}>
+      No new answer found...
+    </div>
+  );
+};

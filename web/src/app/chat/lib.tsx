@@ -9,6 +9,7 @@ import {
   AgentAnswerPiece,
   SubQuestionPiece,
   ExtendedToolResponse,
+  RefinedAnswerImprovement,
 } from "@/lib/search/interfaces";
 import { handleSSEStream } from "@/lib/search/streamingUtils";
 import { ChatState, FeedbackType } from "./types";
@@ -152,7 +153,8 @@ export type PacketType =
   | SubQueryPiece
   | AgentAnswerPiece
   | SubQuestionPiece
-  | ExtendedToolResponse;
+  | ExtendedToolResponse
+  | RefinedAnswerImprovement;
 
 export async function* sendMessage({
   regenerate,

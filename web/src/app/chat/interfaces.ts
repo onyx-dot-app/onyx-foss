@@ -109,6 +109,7 @@ export interface Message {
   agentic_docs?: OnyxDocument[] | null;
   second_level_message?: string;
   second_level_subquestions?: SubQuestionDetail[] | null;
+  isImprovement?: boolean | null;
 }
 
 export interface BackendChatSession {
