@@ -43,6 +43,9 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
     SUB_QUESTION_ANSWER_TEMPLATE,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    dispatch_main_answer_stop_info,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
@@ -84,6 +87,7 @@ def generate_initial_answer(
                 answer_type="agent_level_answer",
             ),
         )
+        dispatch_main_answer_stop_info(0)
 
         answer = UNKNOWN_ANSWER
         initial_agent_stats = InitialAgentResultStats(
@@ -209,6 +213,7 @@ def generate_initial_answer(
             )
             streamed_tokens.append(content)
 
+        dispatch_main_answer_stop_info(0)
         response = merge_content(*streamed_tokens)
         answer = cast(str, response)
 

@@ -70,7 +70,7 @@ class StreamStopReason(Enum):
 class StreamStopInfo(BaseModel):
     stop_reason: StreamStopReason
 
-    stream_type: Literal["", "sub_questions", "sub_answer"] = ""
+    stream_type: Literal["", "sub_questions", "sub_answer", "main_answer"] = ""
     # used to identify the stream that was stopped for agent search
     level: int | None = None
     level_question_nr: int | None = None

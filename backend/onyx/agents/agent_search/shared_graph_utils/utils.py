@@ -10,6 +10,7 @@ from typing import Any
 from typing import cast
 from uuid import UUID
 
+from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import BaseMessage
 from langchain_core.messages import HumanMessage
 from sqlalchemy.orm import Session
@@ -23,6 +24,8 @@ from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationConfig
 from onyx.chat.models import DocumentPruningConfig
 from onyx.chat.models import PromptConfig
+from onyx.chat.models import StreamStopInfo
+from onyx.chat.models import StreamStopReason
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import MAX_CHUNKS_FED_TO_CHAT
@@ -283,6 +286,15 @@ def dispatch_separated(
         streamed_tokens.append(content)
 
     return streamed_tokens
+
+
+def dispatch_main_answer_stop_info(level: int) -> None:
+    stop_event = StreamStopInfo(
+        stop_reason=StreamStopReason.FINISHED,
+        stream_type="main_answer",
+        level=level,
+    )
+    dispatch_custom_event("stream_finished", stop_event)
 
 
 def get_today_prompt() -> str:
