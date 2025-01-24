@@ -1,10 +1,11 @@
 from typing import TypedDict
 
-from onyx.tools.message import ToolCallSummary
-from onyx.tools.models import ToolCallFinalResult
-from onyx.tools.models import ToolCallKickoff
-from onyx.tools.models import ToolResponse
-from onyx.tools.tool import Tool
+from langchain_core.messages import AIMessageChunk
+from pydantic import BaseModel
+
+from onyx.agents.agent_search.orchestration.states import ToolCallUpdate
+from onyx.agents.agent_search.orchestration.states import ToolChoiceInput
+from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
 
 # States contain values that change over the course of graph execution,
 # Config is for values that are set at the start and never change.
@@ -14,33 +15,19 @@ from onyx.tools.tool import Tool
 ## Graph Input State
 
 
-class BasicInput(TypedDict):
-    should_stream_answer: bool
+class BasicInput(BaseModel):
+    # TODO: subclass global log update state
+    logs: str = ""
 
 
 ## Graph Output State
 
 
 class BasicOutput(TypedDict):
-    pass
+    tool_call_chunk: AIMessageChunk
 
 
 ## Update States
-class ToolCallUpdate(TypedDict):
-    tool_call_summary: ToolCallSummary
-    tool_call_kickoff: ToolCallKickoff
-    tool_call_responses: list[ToolResponse]
-    tool_call_final_result: ToolCallFinalResult
-
-
-class ToolChoice(TypedDict):
-    tool: Tool
-    tool_args: dict
-    id: str | None
-
-
-class ToolChoiceUpdate(TypedDict):
-    tool_choice: ToolChoice | None
 
 
 ## Graph State
@@ -48,8 +35,8 @@ class ToolChoiceUpdate(TypedDict):
 
 class BasicState(
     BasicInput,
+    ToolChoiceInput,
     ToolCallUpdate,
     ToolChoiceUpdate,
-    BasicOutput,
 ):
     pass

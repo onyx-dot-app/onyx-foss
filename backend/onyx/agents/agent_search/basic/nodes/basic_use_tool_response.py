@@ -13,20 +13,26 @@ from onyx.tools.tool_implementations.search.search_tool import (
 from onyx.tools.tool_implementations.search_like_tool_utils import (
     FINAL_CONTEXT_DOCUMENTS_ID,
 )
+from onyx.utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 def basic_use_tool_response(state: BasicState, config: RunnableConfig) -> BasicOutput:
     agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
     structured_response_format = agent_config.structured_response_format
     llm = agent_config.primary_llm
-    tool_choice = state["tool_choice"]
+    tool_choice = state.tool_choice
     if tool_choice is None:
         raise ValueError("Tool choice is None")
-    tool = tool_choice["tool"]
+    tool = tool_choice.tool
     prompt_builder = agent_config.prompt_builder
-    tool_call_summary = state["tool_call_summary"]
-    tool_call_responses = state["tool_call_responses"]
-    state["tool_call_final_result"]
+    if state.tool_call_output is None:
+        raise ValueError("Tool call output is None")
+    tool_call_output = state.tool_call_output
+    tool_call_summary = tool_call_output.tool_call_summary
+    tool_call_responses = tool_call_output.tool_call_responses
+
     new_prompt_builder = tool.build_next_prompt(
         prompt_builder=prompt_builder,
         tool_call_summary=tool_call_summary,
@@ -53,11 +59,11 @@ def basic_use_tool_response(state: BasicState, config: RunnableConfig) -> BasicO
     )
 
     # For now, we don't do multiple tool calls, so we ignore the tool_message
-    process_llm_stream(
+    new_tool_call_chunk = process_llm_stream(
         stream,
         True,
         final_search_results=final_search_results,
         displayed_search_results=initial_search_results,
     )
 
-    return BasicOutput()
+    return BasicOutput(tool_call_chunk=new_tool_call_chunk)

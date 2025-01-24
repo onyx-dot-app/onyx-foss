@@ -122,8 +122,11 @@ def _manage_async_event_streaming(
                 except (StopAsyncIteration, GeneratorExit):
                     break
         finally:
-            for task in task_references.pop():
-                task.cancel()
+            try:
+                for task in task_references.pop():
+                    task.cancel()
+            except StopAsyncIteration:
+                pass
             loop.close()
 
     return _yield_async_to_sync()
@@ -186,9 +189,7 @@ def run_basic_graph(
     graph = basic_graph_builder()
     compiled_graph = graph.compile()
     # TODO: unify basic input
-    input = BasicInput(
-        should_stream_answer=True,
-    )
+    input = BasicInput()
     return run_graph(compiled_graph, config, input)
 
 

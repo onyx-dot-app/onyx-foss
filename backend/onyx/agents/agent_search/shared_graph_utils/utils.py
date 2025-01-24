@@ -228,6 +228,7 @@ def get_test_config(
         message_id=1,
         use_persistence=True,
         db_session=db_session,
+        tools=[search_tool],
     )
 
     return config, search_tool

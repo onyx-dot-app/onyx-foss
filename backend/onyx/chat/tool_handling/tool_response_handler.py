@@ -7,6 +7,7 @@ from langchain_core.messages import ToolCall
 from onyx.chat.models import ResponsePart
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.chat.prompt_builder.answer_prompt_builder import LLMCall
+from onyx.chat.prompt_builder.answer_prompt_builder import PromptSnapshot
 from onyx.llm.interfaces import LLM
 from onyx.tools.force import ForceUseTool
 from onyx.tools.message import build_tool_message
@@ -158,7 +159,7 @@ class ToolResponseHandler:
 def get_tool_call_for_non_tool_calling_llm_impl(
     force_use_tool: ForceUseTool,
     tools: list[Tool],
-    prompt_builder: AnswerPromptBuilder,
+    prompt_builder: AnswerPromptBuilder | PromptSnapshot,
     llm: LLM,
 ) -> tuple[Tool, dict] | None:
     if force_use_tool.force_use:

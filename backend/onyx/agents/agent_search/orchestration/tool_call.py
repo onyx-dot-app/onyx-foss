@@ -5,9 +5,10 @@ from langchain_core.messages import AIMessageChunk
 from langchain_core.messages.tool import ToolCall
 from langchain_core.runnables.config import RunnableConfig
 
-from onyx.agents.agent_search.basic.states import BasicState
-from onyx.agents.agent_search.basic.states import ToolCallUpdate
 from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.orchestration.states import ToolCallOutput
+from onyx.agents.agent_search.orchestration.states import ToolCallUpdate
+from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
 from onyx.chat.models import AnswerPacket
 from onyx.tools.message import build_tool_message
 from onyx.tools.message import ToolCallSummary
@@ -22,23 +23,18 @@ def emit_packet(packet: AnswerPacket) -> None:
     dispatch_custom_event("basic_response", packet)
 
 
-# TODO: handle is_cancelled
-def tool_call(state: BasicState, config: RunnableConfig) -> ToolCallUpdate:
+def tool_call(state: ToolChoiceUpdate, config: RunnableConfig) -> ToolCallUpdate:
     """Calls the tool specified in the state and updates the state with the result"""
-    # TODO: implement
 
     cast(AgentSearchConfig, config["metadata"]["config"])
-    # Unnecessary now, node should only be called if there is a tool call
-    # if not self.tool_call_chunk or not self.tool_call_chunk.tool_calls:
-    #     return
 
-    tool_choice = state["tool_choice"]
+    tool_choice = state.tool_choice
     if tool_choice is None:
         raise ValueError("Cannot invoke tool call node without a tool choice")
 
-    tool = tool_choice["tool"]
-    tool_args = tool_choice["tool_args"]
-    tool_id = tool_choice["id"]
+    tool = tool_choice.tool
+    tool_args = tool_choice.tool_args
+    tool_id = tool_choice.id
     tool_runner = ToolRunner(tool, tool_args)
     tool_kickoff = tool_runner.kickoff()
 
@@ -61,9 +57,10 @@ def tool_call(state: BasicState, config: RunnableConfig) -> ToolCallUpdate:
         ),
     )
 
-    return ToolCallUpdate(
+    tool_call_output = ToolCallOutput(
         tool_call_summary=tool_call_summary,
         tool_call_kickoff=tool_kickoff,
         tool_call_responses=tool_responses,
         tool_call_final_result=tool_final_result,
     )
+    return ToolCallUpdate(tool_call_output=tool_call_output)

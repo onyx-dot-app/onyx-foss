@@ -43,6 +43,7 @@ def process_llm_stream(
     else:
         answer_handler = PassThroughAnswerResponseHandler()
 
+    full_answer = ""
     # This stream will be the llm answer if no tool is chosen. When a tool is chosen,
     # the stream will contain AIMessageChunks with tool call information.
     for response in stream:
@@ -51,6 +52,7 @@ def process_llm_stream(
             # TODO: handle non-string content
             logger.warning(f"Received non-string content: {type(answer_piece)}")
             answer_piece = str(answer_piece)
+        full_answer += answer_piece
 
         if isinstance(response, AIMessageChunk) and (
             response.tool_call_chunks or response.tool_calls
@@ -64,4 +66,5 @@ def process_llm_stream(
                     response_part,
                 )
 
+    logger.info(f"Full answer: {full_answer}")
     return cast(AIMessageChunk, tool_call_chunk)
