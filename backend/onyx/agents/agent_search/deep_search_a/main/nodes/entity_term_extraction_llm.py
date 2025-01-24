@@ -22,9 +22,6 @@ from onyx.agents.agent_search.shared_graph_utils.models import (
 )
 from onyx.agents.agent_search.shared_graph_utils.models import Relationship
 from onyx.agents.agent_search.shared_graph_utils.models import Term
-from onyx.agents.agent_search.shared_graph_utils.operators import (
-    dedup_inference_sections,
-)
 from onyx.agents.agent_search.shared_graph_utils.prompts import ENTITY_TERM_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 
@@ -52,14 +49,10 @@ def entity_term_extraction_llm(
 
     # first four lines duplicates from generate_initial_answer
     question = agent_a_config.search_request.query
-    sub_question_docs = state.documents
-    all_original_question_documents = state.all_original_question_documents
-    relevant_docs = dedup_inference_sections(
-        sub_question_docs, all_original_question_documents
-    )
+    initial_search_docs = state.exploratory_search_results[:15]
 
     # start with the entity/term/extraction
-    doc_context = format_docs(relevant_docs)
+    doc_context = format_docs(initial_search_docs)
 
     doc_context = trim_prompt_piece(
         agent_a_config.fast_llm.config, doc_context, ENTITY_TERM_PROMPT + question

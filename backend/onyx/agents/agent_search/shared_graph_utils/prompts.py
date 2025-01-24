@@ -91,6 +91,9 @@ BASE_RAG_PROMPT_v2 = (
 
     Here is the context:
     \n\n\n--\n {context} \n--\n
+    Please keep your answer brief and concise, and focus on facts and data.
+
+    Answer:
     """
 )
 
@@ -495,8 +498,10 @@ Here are some other ruleds:
 
 1) To give you some context, you will see below also some documents that relate to the question. Please only
 use this information to learn what the question is approximately asking about, but do not focus on the details
-to construct the sub-questions.
-2) If you think that a decomposition is not needed or helpful, please just return an empty string. That is very muchok too.
+to construct the sub-questions! Also, some of the entities, relationships and terms that are in the dataset may
+not be in these few documents, so DO NOT focusd too much on the documents when constructing the sub-questions! Decomposition and
+disambiguation are most important!
+2) If you think that a decomposition is not needed or helpful, please just return an empty string. That is very much ok too.
 
 Here are the sampple docs to give you some context:
 -------
@@ -514,6 +519,7 @@ Please formulate your answer as a newline-separated list of questions like so:
  <sub-question>
  <sub-question>
  <sub-question>
+ ...
 
 Answer:"""
 
@@ -755,6 +761,9 @@ And here is the question I want you to answer based on the information above:
 \n--\n
 {question}
 \n--\n\n
+
+Please keep your answer brief and concise, and focus on facts and data.
+
 Answer:"""
 )
 
@@ -794,6 +803,8 @@ And here is the question I want you to answer based on the context above
 \n--\n
 {question}
 \n--\n
+
+Please keep your answer brief and concise, and focus on facts and data.
 
 Answer:"""
 )
@@ -860,6 +871,9 @@ Lastly, here is the main question I want you to answer based on the information 
 \n--\n
 {question}
 \n--\n\n
+
+Please keep your answer brief and concise, and focus on facts and data.
+
 Answer:"""
 )
 
@@ -911,44 +925,46 @@ Lastly, here is the question I want you to answer based on the information above
 \n--\n
 {question}
 \n--\n\n
+Please keep your answer brief and concise, and focus on facts and data.
+
 Answer:"""
 )
 
 
 ENTITY_TERM_PROMPT = """ \n
-    Based on the original question and the context retieved from a dataset, please generate a list of
-    entities (e.g. companies, organizations, industries, products, locations, etc.), terms and concepts
-    (e.g. sales, revenue, etc.) that are relevant for the question, plus their relations to each other.
+Based on the original question and some context retieved from a dataset, please generate a list of
+entities (e.g. companies, organizations, industries, products, locations, etc.), terms and concepts
+(e.g. sales, revenue, etc.) that are relevant for the question, plus their relations to each other.
 
-    \n\n
-    Here is the original question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-   And here is the context retrieved:
-    \n ------- \n
-    {context}
-    \n ------- \n
+\n\n
+Here is the original question:
+\n ------- \n
+{question}
+\n ------- \n
+And here is the context retrieved:
+\n ------- \n
+{context}
+\n ------- \n
 
-    Please format your answer as a json object in the following format:
+Please format your answer as a json object in the following format:
 
-    {{"retrieved_entities_relationships": {{
-        "entities": [{{
-            "entity_name": <assign a name for the entity>,
-            "entity_type": <specify a short type name for the entity, such as 'company', 'location',...>
-        }}],
-        "relationships": [{{
-            "relationship_name": <assign a name for the relationship>,
-            "relationship_type": <specify a short type name for the relationship, such as 'sales_to', 'is_location_of',...>,
-            "relationship_entities": [<related entity name 1>, <related entity name 2>, ...]
-        }}],
-        "terms": [{{
-            "term_name": <assign a name for the term>,
-            "term_type": <specify a short type name for the term, such as 'revenue', 'market_share',...>,
-            "term_similar_to": <list terms that are similar to this term>
-        }}]
-    }}
-    }}
+{{"retrieved_entities_relationships": {{
+    "entities": [{{
+        "entity_name": <assign a name for the entity>,
+        "entity_type": <specify a short type name for the entity, such as 'company', 'location',...>
+    }}],
+    "relationships": [{{
+        "relationship_name": <assign a name for the relationship>,
+        "relationship_type": <specify a short type name for the relationship, such as 'sales_to', 'is_location_of',...>,
+        "relationship_entities": [<related entity name 1>, <related entity name 2>, ...]
+    }}],
+    "terms": [{{
+        "term_name": <assign a name for the term>,
+        "term_type": <specify a short type name for the term, such as 'revenue', 'market_share',...>,
+        "term_similar_to": <list terms that are similar to this term>
+    }}]
+}}
+}}
 
    """
 ANSWER_COMPARISON_PROMPT = """

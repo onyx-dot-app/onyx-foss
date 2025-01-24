@@ -25,12 +25,6 @@ from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
 from onyx.chat.models import SubQuestionPiece
-from onyx.context.search.models import InferenceSection
-from onyx.db.engine import get_session_context_manager
-from onyx.tools.tool_implementations.search.search_tool import (
-    SEARCH_RESPONSE_SUMMARY_ID,
-)
-from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
 
 
 def initial_sub_question_creation(
@@ -47,9 +41,9 @@ def initial_sub_question_creation(
     perform_initial_search_decomposition = (
         agent_a_config.perform_initial_search_decomposition
     )
-    perform_initial_search_path_decision = (
-        agent_a_config.perform_initial_search_path_decision
-    )
+    # perform_initial_search_path_decision = (
+    #     agent_a_config.perform_initial_search_path_decision
+    # )
     history = build_history_prompt(agent_a_config.prompt_builder)
 
     # Use the initial search results to inform the decomposition
@@ -64,26 +58,12 @@ def initial_sub_question_creation(
     # Initial search to inform decomposition. Just get top 3 fits
 
     if perform_initial_search_decomposition:
-        if not perform_initial_search_path_decision:
-            search_tool = agent_a_config.search_tool
-            retrieved_docs: list[InferenceSection] = []
-
-            # new db session to avoid concurrency issues
-            with get_session_context_manager() as db_session:
-                for tool_response in search_tool.run(
-                    query=question,
-                    force_no_rerank=True,
-                    alternate_db_session=db_session,
-                ):
-                    # get retrieved docs to send to the rest of the graph
-                    if tool_response.id == SEARCH_RESPONSE_SUMMARY_ID:
-                        response = cast(SearchResponseSummary, tool_response.response)
-                        retrieved_docs = response.top_sections
-                        break
-
-            sample_doc_str = "\n\n".join(
-                [doc.combined_content for _, doc in enumerate(retrieved_docs[:3])]
-            )
+        sample_doc_str = "\n\n".join(
+            [
+                doc.combined_content
+                for _, doc in enumerate(state.exploratory_search_results[:3])
+            ]
+        )
 
         decomposition_prompt = (
             INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH.format(

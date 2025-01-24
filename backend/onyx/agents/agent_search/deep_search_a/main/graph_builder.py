@@ -261,6 +261,11 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key="agent_search_start",
+        end_key="entity_term_extraction_llm",
+    )
+
+    graph.add_edge(
+        start_key="agent_search_start",
         end_key="initial_sub_question_creation",
     )
 
@@ -272,11 +277,6 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     graph.add_edge(
         start_key=["ingest_initial_retrieval", "ingest_initial_sub_question_answers"],
         end_key="retrieval_consolidation",
-    )
-
-    graph.add_edge(
-        start_key="retrieval_consolidation",
-        end_key="entity_term_extraction_llm",
     )
 
     graph.add_edge(
