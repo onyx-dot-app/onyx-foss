@@ -48,10 +48,15 @@ def doc_reranking(
         and _search_query.rerank_settings.rerank_model_name
         and _search_query.rerank_settings.num_rerank > 0
     ):
-        reranked_documents = rerank_sections(
-            _search_query,
-            verified_documents,
-        )
+        if len(verified_documents) > 1:
+            reranked_documents = rerank_sections(
+                _search_query,
+                verified_documents,
+            )
+        else:
+            num = "No" if len(verified_documents) == 0 else "One"
+            logger.warning(f"{num} verified document(s) found, skipping reranking")
+            reranked_documents = verified_documents
     else:
         logger.warning("No reranking settings found, using unranked documents")
         reranked_documents = verified_documents
