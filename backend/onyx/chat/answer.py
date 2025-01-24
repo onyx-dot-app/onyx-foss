@@ -50,8 +50,6 @@ class Answer:
         #       but we only support them anyways
         # if set to True, then never use the LLMs provided tool-calling functonality
         skip_explicit_tool_calling: bool = False,
-        # Returns the full document sections text from the search tool
-        return_contexts: bool = False,
         skip_gen_ai_answer_generation: bool = False,
         is_connected: Callable[[], bool] | None = None,
         fast_llm: LLM | None = None,
@@ -89,7 +87,6 @@ class Answer:
         self._streamed_output: list[str] | None = None
         self._processed_stream: (list[AnswerPacket] | None) = None
 
-        self._return_contexts = return_contexts
         self.skip_gen_ai_answer_generation = skip_gen_ai_answer_generation
         self._is_cancelled = False
 

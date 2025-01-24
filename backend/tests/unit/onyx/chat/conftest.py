@@ -3,7 +3,6 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.messages import HumanMessage
 from langchain_core.messages import SystemMessage
 
 from onyx.agents.agent_search.models import AgentSearchConfig
@@ -15,6 +14,8 @@ from onyx.chat.models import OnyxContext
 from onyx.chat.models import OnyxContexts
 from onyx.chat.models import PromptConfig
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.configs.constants import DocumentSource
 from onyx.context.search.models import InferenceChunk
 from onyx.context.search.models import InferenceSection
@@ -28,6 +29,7 @@ from onyx.tools.tool_implementations.search.search_tool import SearchTool
 from onyx.tools.tool_implementations.search_like_tool_utils import (
     FINAL_CONTEXT_DOCUMENTS_ID,
 )
+from onyx.tools.utils import explicit_tool_calling_supported
 
 QUERY = "Test question"
 DEFAULT_SEARCH_ARGS = {"query": "search"}
@@ -40,26 +42,38 @@ def answer_style_config() -> AnswerStyleConfig:
 
 @pytest.fixture
 def agent_search_config(
-    mock_llm: LLM, mock_search_tool: SearchTool
+    mock_llm: LLM, mock_search_tool: SearchTool, prompt_config: PromptConfig
 ) -> AgentSearchConfig:
+    prompt_builder = AnswerPromptBuilder(
+        user_message=default_build_user_message(
+            user_query=QUERY,
+            prompt_config=prompt_config,
+            files=[],
+            single_message_history=None,
+        ),
+        message_history=[],
+        llm_config=mock_llm.config,
+        raw_user_query=QUERY,
+        raw_user_uploaded_files=[],
+        single_message_history=None,
+    )
+    prompt_builder.update_system_prompt(default_build_system_message(prompt_config))
+    using_tool_calling_llm = explicit_tool_calling_supported(
+        mock_llm.config.model_provider, mock_llm.config.model_name
+    )
     return AgentSearchConfig(
         search_request=SearchRequest(query=QUERY),
         primary_llm=mock_llm,
         fast_llm=mock_llm,
         search_tool=mock_search_tool,
         force_use_tool=ForceUseTool(force_use=False, tool_name=""),
-        prompt_builder=AnswerPromptBuilder(
-            user_message=HumanMessage(content=QUERY),
-            message_history=[],
-            llm_config=mock_llm.config,
-            raw_user_query=QUERY,
-            raw_user_uploaded_files=[],
-        ),
+        prompt_builder=prompt_builder,
         chat_session_id=None,
         message_id=1,
         use_persistence=True,
         db_session=None,
         use_agentic_search=False,
+        using_tool_calling_llm=using_tool_calling_llm,
     )
 
 

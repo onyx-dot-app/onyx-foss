@@ -59,7 +59,6 @@ def process_llm_stream(
         ):
             tool_call_chunk += response  # type: ignore
         elif should_stream_answer:
-            # TODO: handle emitting of CitationInfo
             for response_part in answer_handler.handle_response_part(response, []):
                 dispatch_custom_event(
                     "basic_response",

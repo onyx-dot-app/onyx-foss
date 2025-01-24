@@ -766,6 +766,8 @@ def stream_chat_message_objects(
             raw_user_uploaded_files=latest_query_files or [],
             single_message_history=single_message_history,
         )
+        prompt_builder.update_system_prompt(default_build_system_message(prompt_config))
+
         agent_search_config = AgentSearchConfig(
             search_request=search_request,
             primary_llm=llm,

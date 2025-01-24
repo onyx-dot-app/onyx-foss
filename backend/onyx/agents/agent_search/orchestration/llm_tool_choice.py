@@ -96,7 +96,9 @@ def llm_tool_choice(state: ToolChoiceState, config: RunnableConfig) -> ToolChoic
         structured_response_format=structured_response_format,
     )
 
-    tool_message = process_llm_stream(stream, should_stream_answer)
+    tool_message = process_llm_stream(
+        stream, should_stream_answer and not agent_config.skip_gen_ai_answer_generation
+    )
 
     # If no tool calls are emitted by the LLM, we should not choose a tool
     if len(tool_message.tool_calls) == 0:
