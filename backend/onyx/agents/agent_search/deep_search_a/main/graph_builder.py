@@ -67,12 +67,14 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.retrieval_consolidation i
 )
 from onyx.agents.agent_search.deep_search_a.main.states import MainInput
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
-from onyx.agents.agent_search.orchestration.basic_use_tool_response import (
+from onyx.agents.agent_search.orchestration.nodes.basic_use_tool_response import (
     basic_use_tool_response,
 )
-from onyx.agents.agent_search.orchestration.llm_tool_choice import llm_tool_choice
-from onyx.agents.agent_search.orchestration.prepare_tool_input import prepare_tool_input
-from onyx.agents.agent_search.orchestration.tool_call import tool_call
+from onyx.agents.agent_search.orchestration.nodes.llm_tool_choice import llm_tool_choice
+from onyx.agents.agent_search.orchestration.nodes.prepare_tool_input import (
+    prepare_tool_input,
+)
+from onyx.agents.agent_search.orchestration.nodes.tool_call import tool_call
 from onyx.agents.agent_search.shared_graph_utils.utils import get_test_config
 from onyx.utils.logger import setup_logger
 
