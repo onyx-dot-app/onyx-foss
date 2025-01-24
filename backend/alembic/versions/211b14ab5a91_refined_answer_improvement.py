@@ -22,8 +22,7 @@ def upgrade() -> None:
         sa.Column(
             "refined_answer_improvement",
             sa.Boolean(),
-            server_default=sa.true(),
-            nullable=False,
+            nullable=True,
         ),
     )
 

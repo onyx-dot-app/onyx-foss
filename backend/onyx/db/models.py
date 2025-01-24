@@ -1204,7 +1204,7 @@ class ChatMessage(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    refined_answer_improvement: Mapped[bool] = mapped_column(Boolean, default=True)
+    refined_answer_improvement: Mapped[bool] = mapped_column(Boolean, nullable=True)
 
     chat_session: Mapped[ChatSession] = relationship("ChatSession")
     prompt: Mapped[Optional["Prompt"]] = relationship("Prompt")
