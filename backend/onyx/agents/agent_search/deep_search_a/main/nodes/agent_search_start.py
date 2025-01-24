@@ -60,6 +60,6 @@ def agent_search_start(
     return ExploratorySearchUpdate(
         exploratory_search_results=exploratory_search_results,
         log_messages=[
-            f"--------{now_end}--{now_end - now_start}--------EXPLORATORY SEARCH END---"
+            f"{now_start} -- Main - Exploratory Search,  Time taken: {now_end - now_start}"
         ],
     )

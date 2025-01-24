@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import cast
 
 from langchain_core.messages import HumanMessage
-from langchain_core.messages import merge_message_runs
 from langchain_core.runnables import RunnableConfig
 
 from onyx.agents.agent_search.deep_search_a.main.operations import logger
@@ -32,12 +31,15 @@ def entity_term_extraction_llm(
     now_start = datetime.now()
 
     logger.debug(f"--------{now_start}--------GENERATE ENTITIES & TERMS---")
+    logger.debug(
+        f"--------{now_start}--------GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    )
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     if not agent_a_config.allow_refinement:
         now_end = datetime.now()
         return EntityTermExtractionUpdate(
-            entity_retlation_term_extractions=EntityRelationshipTermExtraction(
+            entity_relation_term_extractions=EntityRelationshipTermExtraction(
                 entities=[],
                 relationships=[],
                 terms=[],
@@ -64,14 +66,11 @@ def entity_term_extraction_llm(
     ]
     fast_llm = agent_a_config.fast_llm
     # Grader
-    llm_response_list = list(
-        fast_llm.stream(
-            prompt=msg,
-        )
+    llm_response = fast_llm.invoke(
+        prompt=msg,
     )
-    llm_response = merge_message_runs(llm_response_list, chunk_separator="")[0].content
 
-    cleaned_response = re.sub(r"```json\n|\n```", "", llm_response)
+    cleaned_response = re.sub(r"```json\n|\n```", "", str(llm_response.content))
     parsed_response = json.loads(cleaned_response)
 
     entities = []
@@ -117,14 +116,17 @@ def entity_term_extraction_llm(
     logger.debug(
         f"--------{now_end}--{now_end - now_start}--------ENTITY TERM EXTRACTION END---"
     )
+    logger.debug(
+        f"--------{now_end}--------GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    )
 
     return EntityTermExtractionUpdate(
-        entity_retlation_term_extractions=EntityRelationshipTermExtraction(
+        entity_relation_term_extractions=EntityRelationshipTermExtraction(
             entities=entities,
             relationships=relationships,
             terms=terms,
         ),
         log_messages=[
-            f"{now_end} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
+            f"{now_start} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
         ],
     )

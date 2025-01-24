@@ -117,7 +117,7 @@ class ExpandedRetrievalUpdate(LoggerUpdate):
 
 
 class EntityTermExtractionUpdate(LoggerUpdate):
-    entity_retlation_term_extractions: EntityRelationshipTermExtraction = (
+    entity_relation_term_extractions: EntityRelationshipTermExtraction = (
         EntityRelationshipTermExtraction()
     )
 

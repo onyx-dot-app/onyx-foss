@@ -27,7 +27,7 @@ def answer_check(state: AnswerQuestionState, config: RunnableConfig) -> QACheckU
         return QACheckUpdate(
             answer_quality=SUB_CHECK_NO,
             log_messages=[
-                f"{now_end} -- Answer check SQ-{level}-{question_num} - unknown answer,  Time taken: {now_end - now_start}"
+                f"{now_start} -- Answer check SQ-{level}-{question_num} - unknown answer,  Time taken: {now_end - now_start}"
             ],
         )
     msg = [
@@ -53,7 +53,7 @@ def answer_check(state: AnswerQuestionState, config: RunnableConfig) -> QACheckU
     return QACheckUpdate(
         answer_quality=quality_str,
         log_messages=[
-            f"""{now_end} -- Answer check SQ-{level}-{question_num} - Answer quality: {quality_str},
+            f"""{now_start} -- Answer check SQ-{level}-{question_num} - Answer quality: {quality_str},
  Time taken: {now_end - now_start}"""
         ],
     )

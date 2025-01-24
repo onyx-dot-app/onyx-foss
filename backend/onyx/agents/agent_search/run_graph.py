@@ -138,7 +138,7 @@ def run_graph(
     input: BasicInput | MainInput_a,
 ) -> AnswerStream:
     # TODO: add these to the environment
-    config.perform_initial_search_path_decision = False
+    # config.perform_initial_search_path_decision = False
     config.perform_initial_search_decomposition = True
     config.allow_refinement = True
 
@@ -212,7 +212,8 @@ if __name__ == "__main__":
         # query="What are the guiding principles behind the development of cockroachDB",
         # query="What are the temperatures in Munich, Hawaii, and New York?",
         # query="When was Washington born?",
-        query="What is Onyx?",
+        # query="What is Onyx?",
+        query="What is the difference between astronomy and astrology?",
     )
     # Joachim custom persona
 
@@ -222,7 +223,7 @@ if __name__ == "__main__":
         )
         # search_request.persona = get_persona_by_id(1, None, db_session)
         config.use_persistence = True
-        config.perform_initial_search_path_decision = False
+        # config.perform_initial_search_path_decision = False
         config.perform_initial_search_decomposition = True
         if GRAPH_NAME == "a":
             input = MainInput_a(

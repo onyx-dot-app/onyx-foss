@@ -52,7 +52,7 @@ class AgentSearchConfig:
     db_session: Session | None = None
 
     # Whether to perform initial search to inform decomposition
-    perform_initial_search_path_decision: bool = True
+    # perform_initial_search_path_decision: bool = True
 
     # Whether to perform initial search to inform decomposition
     perform_initial_search_decomposition: bool = True

@@ -19,9 +19,7 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import DEEP_DECOMPOSE_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
-from onyx.agents.agent_search.shared_graph_utils.utils import (
-    format_entity_term_extraction,
-)
+from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 from onyx.tools.models import ToolCallKickoff
 
@@ -52,11 +50,13 @@ def refined_sub_question_creation(
     base_answer = state.initial_answer
     history = build_history_prompt(agent_a_config.prompt_builder)
     # get the entity term extraction dict and properly format it
-    entity_retlation_term_extractions = state.entity_retlation_term_extractions
+    # entity_retlation_term_extractions = state.entity_relation_term_extractions
 
-    entity_term_extraction_str = format_entity_term_extraction(
-        entity_retlation_term_extractions
-    )
+    # entity_term_extraction_str = format_entity_term_extraction(
+    #     entity_retlation_term_extractions
+    # )
+
+    docs_str = format_docs(state.all_original_question_documents[:10])
 
     initial_question_answers = state.decomp_answer_results
 
@@ -73,7 +73,7 @@ def refined_sub_question_creation(
             content=DEEP_DECOMPOSE_PROMPT.format(
                 question=question,
                 history=history,
-                entity_term_extraction_str=entity_term_extraction_str,
+                docs_str=docs_str,
                 base_answer=base_answer,
                 answered_sub_questions="\n - ".join(addressed_question_list),
                 failed_sub_questions="\n - ".join(failed_question_list),

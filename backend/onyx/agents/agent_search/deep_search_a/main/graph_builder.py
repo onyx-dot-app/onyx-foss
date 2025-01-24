@@ -32,8 +32,13 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.agent_search_start import
 from onyx.agents.agent_search.deep_search_a.main.nodes.answer_comparison import (
     answer_comparison,
 )
+
 from onyx.agents.agent_search.deep_search_a.main.nodes.entity_term_extraction_llm import (
     entity_term_extraction_llm,
+)
+from onyx.agents.agent_search.deep_search_a.main.nodes.direct_llm_handling import (
+    direct_llm_handling,
+
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.generate_initial_answer import (
     generate_initial_answer,
@@ -197,10 +202,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=initial_answer_quality_check,
     )
 
-    graph.add_node(
-        node="entity_term_extraction_llm",
-        action=entity_term_extraction_llm,
-    )
+    # graph.add_node(
+    #     node="entity_term_extraction_llm",
+    #     action=entity_term_extraction_llm,
+    # )
     graph.add_node(
         node="refined_answer_decision",
         action=refined_answer_decision,
@@ -259,10 +264,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         end_key="base_raw_search_subgraph",
     )
 
-    graph.add_edge(
-        start_key="agent_search_start",
-        end_key="entity_term_extraction_llm",
-    )
+    # graph.add_edge(
+    #     start_key="agent_search_start",
+    #     end_key="entity_term_extraction_llm",
+    # )
 
     graph.add_edge(
         start_key="agent_search_start",
@@ -319,8 +324,12 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         end_key="initial_answer_quality_check",
     )
 
+    # graph.add_edge(
+    #     start_key=["initial_answer_quality_check", "entity_term_extraction_llm"],
+    #     end_key="refined_answer_decision",
+    # )
     graph.add_edge(
-        start_key=["initial_answer_quality_check", "entity_term_extraction_llm"],
+        start_key="initial_answer_quality_check",
         end_key="refined_answer_decision",
     )
 
