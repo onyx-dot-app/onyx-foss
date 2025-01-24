@@ -81,6 +81,8 @@ def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDeci
     else:
         routing = "LLM"
 
+    routing = "agent_search"
+
     now_end = datetime.now()
 
     logger.debug(
