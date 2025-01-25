@@ -81,3 +81,14 @@ except ValueError:
     raise ValueError(
         f"AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION must be an integer, got {AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION_OS}"
     )
+
+AGENT_EXPLORATORY_SEARCH_RESULTS_OS: int | str = os.environ.get(
+    "AGENT_EXPLORATORY_SEARCH_RESULTS", "3"
+)
+
+try:
+    AGENT_EXPLORATORY_SEARCH_RESULTS = int(AGENT_EXPLORATORY_SEARCH_RESULTS_OS)
+except ValueError:
+    raise ValueError(
+        f"AGENT_EXPLORATORY_SEARCH_RESULTS must be an integer, got {AGENT_EXPLORATORY_SEARCH_RESULTS_OS}"
+    )

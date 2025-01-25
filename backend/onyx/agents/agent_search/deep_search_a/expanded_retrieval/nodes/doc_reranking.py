@@ -13,8 +13,8 @@ from onyx.agents.agent_search.deep_search_a.expanded_retrieval.states import (
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
 from onyx.agents.agent_search.shared_graph_utils.models import RetrievalFitStats
-from onyx.configs.dev_configs import AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS
-from onyx.configs.dev_configs import AGENT_RERANKING_STATS
+from onyx.configs.agent_configs import AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS
+from onyx.configs.agent_configs import AGENT_RERANKING_STATS
 from onyx.context.search.models import InferenceSection
 from onyx.context.search.models import SearchRequest
 from onyx.context.search.pipeline import retrieval_preprocessing
@@ -47,6 +47,7 @@ def doc_reranking(
         _search_query.rerank_settings
         and _search_query.rerank_settings.rerank_model_name
         and _search_query.rerank_settings.num_rerank > 0
+        and len(verified_documents) > 0
     ):
         if len(verified_documents) > 1:
             reranked_documents = rerank_sections(

@@ -8,6 +8,7 @@ from onyx.agents.agent_search.deep_search_a.main.states import ExploratorySearch
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import retrieve_search_docs
+from onyx.configs.agent_configs import AGENT_EXPLORATORY_SEARCH_RESULTS
 from onyx.context.search.models import InferenceSection
 
 
@@ -33,7 +34,7 @@ def agent_search_start(
     search_tool = agent_a_config.search_tool
     retrieved_docs: list[InferenceSection] = retrieve_search_docs(search_tool, question)
 
-    exploratory_search_results = retrieved_docs[:10]
+    exploratory_search_results = retrieved_docs[:AGENT_EXPLORATORY_SEARCH_RESULTS]
     now_end = datetime.now()
     logger.debug(
         f"--------{now_end}--{now_end - now_start}--------EXPLORATORY SEARCH END---"
