@@ -35,7 +35,7 @@ export const StatusIndicator = ({ status }: { status: ToggleState }) => {
     bg-background border-3 border-background-900  "
     ${
       status === ToggleState.Todo
-        ? "!border-4 border border-background-900 bg-background"
+        ? "!border-[3px] border border-background-900 bg-background"
         : false
           ? "bg-background border-3 border border-background-900 rotating-border"
           : "bg-background-900 flex items-center  justify-center"

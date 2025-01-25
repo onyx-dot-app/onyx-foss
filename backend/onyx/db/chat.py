@@ -942,6 +942,7 @@ def translate_db_message_to_chat_message_detail(
         sub_questions=translate_db_sub_questions_to_server_objects(
             chat_message.sub_questions
         ),
+        refined_answer_improvement=chat_message.refined_answer_improvement,
     )
 
     return chat_msg_detail

@@ -239,6 +239,7 @@ class ChatMessageDetail(BaseModel):
     sub_questions: list[SubQuestionDetail] | None = None
     files: list[FileDescriptor]
     tool_call: ToolCallFinalResult | None
+    refined_answer_improvement: bool | None = None
 
     def model_dump(self, *args: list, **kwargs: dict[str, Any]) -> dict[str, Any]:  # type: ignore
         initial_dict = super().model_dump(mode="json", *args, **kwargs)  # type: ignore

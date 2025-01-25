@@ -497,6 +497,8 @@ export function processRawChatHistory(
       latestChildMessageId: messageInfo.latest_child_message,
       overridden_model: messageInfo.overridden_model,
       sub_questions: subQuestions,
+      isImprovement:
+        (messageInfo.refined_answer_improvement as unknown as boolean) || false,
     };
 
     messages.set(messageInfo.message_id, message);

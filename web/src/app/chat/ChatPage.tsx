@@ -1404,6 +1404,14 @@ export function ChatPage({
               isImprovement = (packet as RefinedAnswerImprovement)
                 .refined_answer_improvement;
             }
+
+            if (Object.hasOwn(packet, "stream_type")) {
+              if ((packet as any).stream_type == "main_answer") {
+                is_generating = false;
+                second_level_generating = true;
+              }
+            }
+
             // Continuously refine the sub_questions based on the packets that we receive
             if (
               Object.hasOwn(packet, "stop_reason") &&

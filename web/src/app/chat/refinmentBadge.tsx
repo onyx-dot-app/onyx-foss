@@ -231,7 +231,7 @@ export default function RefinemenetBadge({
     <TooltipProvider delayDuration={0}>
       <Tooltip>
         <div
-          className="relative w-full max-w-sm"
+          className="relative w-fit max-w-sm"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
@@ -254,7 +254,7 @@ export default function RefinemenetBadge({
           <TooltipContent
             side="bottom"
             align="start"
-            className="w-80 p-4 bg-white shadow-lg rounded-md"
+            className="w-fit p-4 bg-white border-2 border-border shadow-lg rounded-md"
           >
             {/* If not done, show the "Refining" box + a chevron */}
 
@@ -496,7 +496,7 @@ export const NoNewAnswerMessage = () => {
 
   return (
     <div className="text-gray-600 text-sm" style={{ opacity: opacity }}>
-      No new answer found...
+      {/* No new answer found... */}
     </div>
   );
 };

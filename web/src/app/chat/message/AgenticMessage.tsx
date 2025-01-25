@@ -372,33 +372,35 @@ export const AgenticMessage = ({
     onMessageSelection &&
     otherMessagesCanSwitchTo &&
     otherMessagesCanSwitchTo.length > 1;
+  const currentIndexRef = useRef(0);
 
   useEffect(() => {
     if (!allowStreaming) {
-      //   if (typeof content === "string") {
-      //     setStreamedContent(finalContent);
-      //     setLastKnownContentLength(finalContent.length);
-      //   }
       return;
     }
 
     if (typeof finalContent !== "string") return;
 
-    let currentIndex = streamedContent.length;
     let intervalId: NodeJS.Timeout | null = null;
 
-    // if (finalContent.length > currentIndex) {
     intervalId = setInterval(() => {
       setStreamedContent((prev) => {
-        if (prev.length < finalContent.length) {
-          const nextLength = Math.min(prev.length + 5, finalContent.length);
+        if (streamedContent.length == finalContent.length) {
+          return finalContent;
+        }
+        if (currentIndexRef.current < finalContent.length) {
+          const nextLength = Math.min(
+            currentIndexRef.current + 5,
+            finalContent.length
+          );
+          currentIndexRef.current = nextLength;
           return finalContent.slice(0, nextLength);
         } else {
           if (intervalId) clearInterval(intervalId);
           return finalContent;
         }
       });
-    }, 10);
+    }, 5);
     // } else {
     //   setStreamedContent(finalContent);
     // }
@@ -472,47 +474,81 @@ export const AgenticMessage = ({
                             Answer
                           </div>
 
-                          {isImprovement == null &&
-                          subQuestions &&
-                          subQuestions.length > 0 ? (
-                            <RefinemenetBadge
-                              finished={!secondLevelGenerating}
-                              overallAnswer={secondLevelAssistantMessage || ""}
-                              secondLevelSubquestions={secondLevelSubquestions}
-                              toggleInitialAnswerVieinwg={() => {
-                                setIsViewingInitialAnswer(
-                                  !isViewingInitialAnswer
-                                );
-                              }}
-                              isViewingInitialAnswer={isViewingInitialAnswer}
-                            />
-                          ) : secondLevelAssistantMessage ? (
-                            isImprovement ? (
-                              <Badge
-                                // NOTE: This is a hack to make the badge slightly higher
-                                className="cursor-pointer mt-[1px]"
-                                variant="agent"
-                                onClick={() => {
-                                  const viewInitialAnswer =
-                                    !isViewingInitialAnswer;
-                                  setIsViewingInitialAnswer(viewInitialAnswer);
-                                  toggleDocDisplay &&
-                                    toggleDocDisplay(isViewingInitialAnswer);
-                                  if (viewInitialAnswer) {
-                                    setIsViewingInitialAnswer(true);
-                                  }
+                          {/* {
+                            <div className="bg-gray-100 p-4 rounded-md shadow-sm">
+                              <p>
+                                isGenerating: {isGenerating ? "true" : "false"}
+                              </p>
+                              <p>
+                                secondLevelGenerating:{" "}
+                                {secondLevelGenerating ? "true" : "false"}
+                              </p>
+                              <p>
+                                isImprovement:{" "}
+                                {isImprovement === null ? "null" : "not null"}
+                              </p>
+                              <p>
+                                subQuestions:{" "}
+                                {subQuestions ? "exists" : "does not exist"}
+                              </p>
+                              <p>
+                                subQuestions length:{" "}
+                                {subQuestions ? subQuestions.length : "N/A"}
+                              </p>
+                            </div>
+                          } */}
+                          {/* {isImprovement ? "true" : "false"} */}
+                          {
+                            // !isGenerating &&
+                            secondLevelGenerating &&
+                            isImprovement == null &&
+                            subQuestions &&
+                            subQuestions.length > 0 ? (
+                              <RefinemenetBadge
+                                finished={!secondLevelGenerating}
+                                overallAnswer={
+                                  secondLevelAssistantMessage || ""
+                                }
+                                secondLevelSubquestions={
+                                  secondLevelSubquestions
+                                }
+                                toggleInitialAnswerVieinwg={() => {
+                                  setIsViewingInitialAnswer(
+                                    !isViewingInitialAnswer
+                                  );
                                 }}
-                              >
-                                {isViewingInitialAnswer
-                                  ? "See Refined Answer"
-                                  : "See Original Answer"}
-                              </Badge>
+                                isViewingInitialAnswer={isViewingInitialAnswer}
+                              />
+                            ) : secondLevelAssistantMessage ? (
+                              isImprovement ? (
+                                <Badge
+                                  // NOTE: This is a hack to make the badge slightly higher
+                                  className="cursor-pointer mt-[1px]"
+                                  variant="agent"
+                                  onClick={() => {
+                                    const viewInitialAnswer =
+                                      !isViewingInitialAnswer;
+                                    setIsViewingInitialAnswer(
+                                      viewInitialAnswer
+                                    );
+                                    toggleDocDisplay &&
+                                      toggleDocDisplay(isViewingInitialAnswer);
+                                    if (viewInitialAnswer) {
+                                      setIsViewingInitialAnswer(true);
+                                    }
+                                  }}
+                                >
+                                  {isViewingInitialAnswer
+                                    ? "See Refined Answer"
+                                    : "See Original Answer"}
+                                </Badge>
+                              ) : (
+                                <NoNewAnswerMessage />
+                              )
                             ) : (
-                              <NoNewAnswerMessage />
+                              <></>
                             )
-                          ) : (
-                            <></>
-                          )}
+                          }
                         </div>
 
                         <div className="px-4">
