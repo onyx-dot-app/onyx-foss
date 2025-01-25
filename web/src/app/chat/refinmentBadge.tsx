@@ -242,9 +242,9 @@ export default function RefinemenetBadge({
                          font-medium cursor-pointer hover:text-blue-600 
                          transition-colors duration-200"
             >
-              Refining Answer
+              <p className="text-sm font-medium">Refining Answer</p>
               <FiChevronRight
-                className={`inline-block transition-transform duration-200 text-text-darker ${
+                className={`inline-block my-auto transition-transform duration-200 text-text-darker ${
                   isHovered ? "rotate-90" : ""
                 }`}
                 size={16}
