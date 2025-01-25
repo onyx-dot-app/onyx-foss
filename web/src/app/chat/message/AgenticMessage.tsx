@@ -497,7 +497,7 @@ export const AgenticMessage = ({
                                     !isViewingInitialAnswer;
                                   setIsViewingInitialAnswer(viewInitialAnswer);
                                   toggleDocDisplay &&
-                                    toggleDocDisplay(isViewingInitialAnswer);
+                                    toggleDocDisplay(!isViewingInitialAnswer);
                                   if (viewInitialAnswer) {
                                     setIsViewingInitialAnswer(true);
                                   }
