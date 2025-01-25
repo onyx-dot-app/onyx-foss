@@ -25,6 +25,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
 from onyx.chat.models import SubQuestionPiece
+from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
 
 def initial_sub_question_creation(
@@ -61,7 +62,9 @@ def initial_sub_question_creation(
         sample_doc_str = "\n\n".join(
             [
                 doc.combined_content
-                for _, doc in enumerate(state.exploratory_search_results[:3])
+                for doc in state.exploratory_search_results[
+                    :AGENT_NUM_DOCS_FOR_DECOMPOSITION
+                ]
             ]
         )
 

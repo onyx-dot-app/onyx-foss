@@ -374,8 +374,8 @@ DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES = """ \n
     An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
     good enough. Also, some sub-questions had been answered and this information has been used to provide
     the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
-    were not directly answerable. Also, some entities, relationships and terms are givenm to you so that
-    you have an idea of how the avaiolable data looks like.
+    were not directly answerable. Also, some entities, relationships and terms are given to you so that
+    you have an idea of how the available data looks like.
 
     Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
     considering:

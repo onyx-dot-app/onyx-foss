@@ -13,8 +13,8 @@ from onyx.agents.agent_search.deep_search_a.expanded_retrieval.states import (
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
 from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
-from onyx.configs.dev_configs import AGENT_MAX_QUERY_RETRIEVAL_RESULTS
-from onyx.configs.dev_configs import AGENT_RETRIEVAL_STATS
+from onyx.configs.agent_configs import AGENT_MAX_QUERY_RETRIEVAL_RESULTS
+from onyx.configs.agent_configs import AGENT_RETRIEVAL_STATS
 from onyx.context.search.models import InferenceSection
 from onyx.db.engine import get_session_context_manager
 from onyx.tools.models import SearchQueryInfo

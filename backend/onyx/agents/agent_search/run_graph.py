@@ -24,7 +24,7 @@ from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import SubQueryPiece
 from onyx.chat.models import SubQuestionPiece
 from onyx.chat.models import ToolResponse
-from onyx.configs.dev_configs import GRAPH_NAME
+from onyx.configs.agent_configs import GRAPH_NAME
 from onyx.context.search.models import SearchRequest
 from onyx.db.engine import get_session_context_manager
 from onyx.tools.tool_runner import ToolCallKickoff

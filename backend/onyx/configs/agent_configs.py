@@ -57,3 +57,27 @@ except ValueError:
     raise ValueError(
         f"AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS must be an integer, got {AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS}"
     )
+
+AGENT_NUM_DOCS_FOR_DECOMPOSITION_OS: int | str = os.environ.get(
+    "AGENT_NUM_DOCS_FOR_DECOMPOSITION", "3"
+)
+
+try:
+    AGENT_NUM_DOCS_FOR_DECOMPOSITION = int(AGENT_NUM_DOCS_FOR_DECOMPOSITION_OS)
+except ValueError:
+    raise ValueError(
+        f"AGENT_NUM_DOCS_FOR_DECOMPOSITION must be an integer, got {AGENT_NUM_DOCS_FOR_DECOMPOSITION_OS}"
+    )
+
+AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION_OS: int | str = os.environ.get(
+    "AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION", "10"
+)
+
+try:
+    AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION = int(
+        AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION_OS
+    )
+except ValueError:
+    raise ValueError(
+        f"AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION must be an integer, got {AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION_OS}"
+    )

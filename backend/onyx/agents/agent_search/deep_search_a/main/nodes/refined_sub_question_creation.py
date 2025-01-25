@@ -21,6 +21,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import DEEP_DECOMPOSE_P
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
+from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION
 from onyx.tools.models import ToolCallKickoff
 
 
@@ -56,7 +57,9 @@ def refined_sub_question_creation(
     #     entity_retlation_term_extractions
     # )
 
-    docs_str = format_docs(state.all_original_question_documents[:10])
+    docs_str = format_docs(
+        state.all_original_question_documents[:AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION]
+    )
 
     initial_question_answers = state.decomp_answer_results
 
