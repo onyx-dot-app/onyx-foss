@@ -33,6 +33,8 @@ def doc_reranking(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question if state.question else agent_a_config.search_request.query
+    if agent_a_config.search_tool is None:
+        raise ValueError("search_tool must be provided for agentic search")
     with get_session_context_manager() as db_session:
         _search_query = retrieval_preprocessing(
             search_request=SearchRequest(query=question),

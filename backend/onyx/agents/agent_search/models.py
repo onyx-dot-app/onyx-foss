@@ -25,7 +25,6 @@ class AgentSearchConfig:
 
     primary_llm: LLM
     fast_llm: LLM
-    search_tool: SearchTool
 
     # Whether to force use of a tool, or to
     # force tool args IF the tool is used
@@ -36,6 +35,8 @@ class AgentSearchConfig:
     # message_history: list[PreviousMessage] | None = None
     # single_message_history: str | None = None
     prompt_builder: AnswerPromptBuilder
+
+    search_tool: SearchTool | None = None
 
     use_agentic_search: bool = False
 
@@ -77,6 +78,12 @@ class AgentSearchConfig:
             raise ValueError(
                 "db_session must be provided for pro search when using persistence"
             )
+        return self
+
+    @model_validator(mode="after")
+    def validate_search_tool(self) -> "AgentSearchConfig":
+        if self.use_agentic_search and self.search_tool is None:
+            raise ValueError("search_tool must be provided for agentic search")
         return self
 
 

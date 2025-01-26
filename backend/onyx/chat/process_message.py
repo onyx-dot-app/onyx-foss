@@ -743,12 +743,19 @@ def stream_chat_message_objects(
         # we should construct this unconditionally inside Answer instead
         # Leaving it here for the time being to avoid breaking changes
         search_tools = [tool for tool in tools if isinstance(tool, SearchTool)]
-        if len(search_tools) == 0:
-            raise ValueError("No search tool found")
-        elif len(search_tools) > 1:
+        search_tool: SearchTool | None = None
+
+        if len(search_tools) > 1:
             # TODO: handle multiple search tools
-            raise ValueError("Multiple search tools found")
-        search_tool = search_tools[0]
+            logger.warning("Multiple search tools found, using first one")
+            search_tool = search_tools[0]
+        elif len(search_tools) == 1:
+            search_tool = search_tools[0]
+        else:
+            logger.warning("No search tool found")
+            if new_msg_req.use_agentic_search:
+                raise ValueError("No search tool found, cannot use agentic search")
+
         using_tool_calling_llm = explicit_tool_calling_supported(
             llm.config.model_provider, llm.config.model_name
         )

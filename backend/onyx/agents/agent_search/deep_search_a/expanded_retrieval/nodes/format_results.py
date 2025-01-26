@@ -45,6 +45,8 @@ def format_results(
             # the top 3 for that one. We may want to revisit this.
             stream_documents = state.expanded_retrieval_results[-1].search_results[:3]
 
+        if agent_a_config.search_tool is None:
+            raise ValueError("search_tool must be provided for agentic search")
         for tool_response in yield_search_responses(
             query=state.question,
             reranked_sections=state.retrieved_documents,  # TODO: rename params. (sections pre-merging here.)

@@ -61,9 +61,10 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
         persona_id = agent_a_config.search_request.persona.id
 
     user_id = None
-    user = agent_a_config.search_tool.user
-    if user:
-        user_id = user.id
+    if agent_a_config.search_tool is not None:
+        user = agent_a_config.search_tool.user
+        if user:
+            user_id = user.id
 
     # log the agent metrics
     if agent_a_config.db_session is not None:

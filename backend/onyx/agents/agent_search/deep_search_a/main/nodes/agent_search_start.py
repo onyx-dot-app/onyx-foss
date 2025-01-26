@@ -32,6 +32,8 @@ def agent_search_start(
     # Initial search to inform decomposition. Just get top 3 fits
 
     search_tool = agent_a_config.search_tool
+    if search_tool is None:
+        raise ValueError("search_tool must be provided for agentic search")
     retrieved_docs: list[InferenceSection] = retrieve_search_docs(search_tool, question)
 
     exploratory_search_results = retrieved_docs[:AGENT_EXPLORATORY_SEARCH_RESULTS]

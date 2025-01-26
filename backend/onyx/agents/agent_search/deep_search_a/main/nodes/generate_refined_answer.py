@@ -71,6 +71,8 @@ def generate_refined_answer(
     combined_documents = dedup_inference_sections(initial_documents, revised_documents)
 
     query_info = get_query_info(state.original_question_retrieval_results)
+    if agent_a_config.search_tool is None:
+        raise ValueError("search_tool must be provided for agentic search")
     # stream refined answer docs
     for tool_response in yield_search_responses(
         query=question,

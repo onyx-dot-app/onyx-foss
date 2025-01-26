@@ -54,6 +54,8 @@ def doc_retrieval(state: RetrievalInput, config: RunnableConfig) -> DocRetrieval
         )
 
     query_info = None
+    if search_tool is None:
+        raise ValueError("search_tool must be provided for agentic search")
     # new db session to avoid concurrency issues
     with get_session_context_manager() as db_session:
         for tool_response in search_tool.run(

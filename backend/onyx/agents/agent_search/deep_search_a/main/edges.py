@@ -30,6 +30,7 @@ def route_initial_tool_choice(
     if state.tool_choice is not None:
         if (
             agent_config.use_agentic_search
+            and agent_config.search_tool is not None
             and state.tool_choice.tool.name == agent_config.search_tool.name
         ):
             return "agent_search_start"
