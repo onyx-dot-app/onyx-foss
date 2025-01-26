@@ -6,11 +6,13 @@ from langchain_core.messages import HumanMessage
 from langchain_core.messages import merge_content
 from langchain_core.runnables import RunnableConfig
 
+from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.states import (
+    SearchSQState,
+)
 from onyx.agents.agent_search.deep_search_a.main.models import AgentRefinedMetrics
 from onyx.agents.agent_search.deep_search_a.main.operations import dispatch_subquestion
 from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import BaseDecompUpdate
-from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
@@ -29,7 +31,7 @@ from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
 
 def initial_sub_question_creation(
-    state: MainState, config: RunnableConfig
+    state: SearchSQState, config: RunnableConfig
 ) -> BaseDecompUpdate:
     now_start = datetime.now()
 

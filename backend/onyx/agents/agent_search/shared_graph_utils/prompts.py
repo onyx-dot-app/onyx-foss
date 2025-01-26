@@ -207,7 +207,7 @@ MODIFIED_RAG_PROMPT = (
     Answer:"""
 )
 
-ORIG_DEEP_DECOMPOSE_PROMPT = """ \n
+ERT_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
     good enough. Also, some sub-questions had been answered and this information has been used to provide
     the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
@@ -284,7 +284,7 @@ ORIG_DEEP_DECOMPOSE_PROMPT = """ \n
         "search_term": <rewrite the sub-question using as a search phrase for the document store>}},
         ...]}} """
 
-DEEP_DECOMPOSE_PROMPT = """ \n
+DOC_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
     good enough. Also, some sub-questions had been answered and this information has been used to provide
     the initial answer. Some other subquestions may have been suggested based on little knowledge, but they

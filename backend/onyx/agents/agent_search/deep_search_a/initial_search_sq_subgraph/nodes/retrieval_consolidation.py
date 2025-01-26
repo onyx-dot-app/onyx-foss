@@ -1,11 +1,13 @@
 from datetime import datetime
 
+from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.states import (
+    SearchSQState,
+)
 from onyx.agents.agent_search.deep_search_a.main.states import LoggerUpdate
-from onyx.agents.agent_search.deep_search_a.main.states import MainState
 
 
 def retrieval_consolidation(
-    state: MainState,
+    state: SearchSQState,
 ) -> LoggerUpdate:
     now_start = datetime.now()
 

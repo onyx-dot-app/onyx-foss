@@ -17,11 +17,14 @@ from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import DEEP_DECOMPOSE_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
-from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    format_entity_term_extraction,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
-from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION
 from onyx.tools.models import ToolCallKickoff
 
 
@@ -51,14 +54,10 @@ def refined_sub_question_creation(
     base_answer = state.initial_answer
     history = build_history_prompt(agent_a_config.prompt_builder)
     # get the entity term extraction dict and properly format it
-    # entity_retlation_term_extractions = state.entity_relation_term_extractions
+    entity_retlation_term_extractions = state.entity_relation_term_extractions
 
-    # entity_term_extraction_str = format_entity_term_extraction(
-    #     entity_retlation_term_extractions
-    # )
-
-    docs_str = format_docs(
-        state.all_original_question_documents[:AGENT_NUM_DOCS_FOR_REFINED_DECOMPOSITION]
+    entity_term_extraction_str = format_entity_term_extraction(
+        entity_retlation_term_extractions
     )
 
     initial_question_answers = state.decomp_answer_results
@@ -73,10 +72,10 @@ def refined_sub_question_creation(
 
     msg = [
         HumanMessage(
-            content=DEEP_DECOMPOSE_PROMPT.format(
+            content=DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES.format(
                 question=question,
                 history=history,
-                docs_str=docs_str,
+                entity_term_extraction_str=entity_term_extraction_str,
                 base_answer=base_answer,
                 answered_sub_questions="\n - ".join(addressed_question_list),
                 failed_sub_questions="\n - ".join(failed_question_list),
