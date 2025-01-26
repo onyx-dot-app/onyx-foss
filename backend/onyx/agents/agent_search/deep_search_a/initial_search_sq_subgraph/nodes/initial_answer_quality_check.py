@@ -37,6 +37,6 @@ def initial_answer_quality_check(state: SearchSQState) -> InitialAnswerQualityUp
     return InitialAnswerQualityUpdate(
         initial_answer_quality=verdict,
         log_messages=[
-            f"{now_end} -- Main - Initial answer quality check,  Time taken: {now_end - now_start}"
+            f"{now_start} -- Main - Initial answer quality check,  Time taken: {now_end - now_start}"
         ],
     )

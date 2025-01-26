@@ -105,7 +105,7 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
     now_end = datetime.now()
     main_output = MainOutput(
         log_messages=[
-            f"{now_end} -- Main - Logging,  Time taken: {now_end - now_start}"
+            f"{now_start} -- Main - Logging,  Time taken: {now_end - now_start}"
         ],
     )
 

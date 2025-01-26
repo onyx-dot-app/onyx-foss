@@ -49,7 +49,7 @@ def doc_retrieval(state: RetrievalInput, config: RunnableConfig) -> DocRetrieval
             expanded_retrieval_results=[],
             retrieved_documents=[],
             log_messages=[
-                f"{now_end} -- Expanded Retrieval - Retrieval - Empty Query - Time taken: {now_end - now_start}"
+                f"{now_start} -- Expanded Retrieval - Retrieval - Empty Query - Time taken: {now_end - now_start}"
             ],
         )
 
@@ -100,6 +100,6 @@ def doc_retrieval(state: RetrievalInput, config: RunnableConfig) -> DocRetrieval
         expanded_retrieval_results=[expanded_retrieval_result],
         retrieved_documents=retrieved_docs,
         log_messages=[
-            f"{now_end} -- Expanded Retrieval - Retrieval - Time taken: {now_end - now_start}"
+            f"{now_start} -- Expanded Retrieval - Retrieval - Time taken: {now_end - now_start}"
         ],
     )

@@ -111,6 +111,6 @@ def answer_generation(
     return QAGenerationUpdate(
         answer=answer_str,
         log_messages=[
-            f"{now_end} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
+            f"{now_start} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
         ],
     )

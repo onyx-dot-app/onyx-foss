@@ -6,7 +6,7 @@ from onyx.agents.agent_search.deep_search_a.expanded_retrieval.models import (
 from onyx.agents.agent_search.deep_search_a.expanded_retrieval.states import (
     ExpandedRetrievalInput,
 )
-
+from onyx.agents.agent_search.deep_search_a.main.states import ExpandedRetrievalUpdate
 
 ## Update States
 
@@ -37,7 +37,6 @@ class BaseRawSearchOutput(BaseModel):
 
 
 class BaseRawSearchState(
-    BaseRawSearchInput,
-    BaseRawSearchOutput,
+    BaseRawSearchInput, BaseRawSearchOutput, ExpandedRetrievalUpdate
 ):
     pass

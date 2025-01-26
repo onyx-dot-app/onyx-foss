@@ -2,29 +2,14 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.answer_initial_sub_question.graph_builder import (
-    answer_query_graph_builder,
-)
 from onyx.agents.agent_search.deep_search_a.base_raw_search.graph_builder import (
     base_raw_search_graph_builder,
-)
-from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.edges import (
-    parallelize_initial_sub_question_answering,
 )
 from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.nodes.generate_initial_answer import (
     generate_initial_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.nodes.ingest_initial_base_retrieval import (
-    ingest_initial_base_retrieval,
-)
-from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.nodes.ingest_initial_sub_question_answers import (
-    ingest_initial_sub_question_answers,
-)
 from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.nodes.initial_answer_quality_check import (
     initial_answer_quality_check,
-)
-from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.nodes.initial_sub_question_creation import (
-    initial_sub_question_creation,
 )
 from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.nodes.retrieval_consolidation import (
     retrieval_consolidation,
@@ -34,6 +19,9 @@ from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.states im
 )
 from onyx.agents.agent_search.deep_search_a.initial_search_sq_subgraph.states import (
     SearchSQState,
+)
+from onyx.agents.agent_search.deep_search_a.initial_sub_question_answering.graph_builder import (
+    initial_sq_subgraph_builder,
 )
 from onyx.utils.logger import setup_logger
 
@@ -48,15 +36,22 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
         input=SearchSQInput,
     )
 
+    # graph.add_node(
+    #     node="initial_sub_question_creation",
+    #     action=initial_sub_question_creation,
+    # )
+
+    sub_question_answering_subgraph = initial_sq_subgraph_builder().compile()
     graph.add_node(
-        node="initial_sub_question_creation",
-        action=initial_sub_question_creation,
+        node="sub_question_answering_subgraph",
+        action=sub_question_answering_subgraph,
     )
-    answer_query_subgraph = answer_query_graph_builder().compile()
-    graph.add_node(
-        node="answer_query_subgraph",
-        action=answer_query_subgraph,
-    )
+
+    # answer_query_subgraph = answer_query_graph_builder().compile()
+    # graph.add_node(
+    #     node="answer_query_subgraph",
+    #     action=answer_query_subgraph,
+    # )
 
     base_raw_search_subgraph = base_raw_search_graph_builder().compile()
     graph.add_node(
@@ -64,20 +59,20 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
         action=base_raw_search_subgraph,
     )
 
-    graph.add_node(
-        node="ingest_initial_retrieval",
-        action=ingest_initial_base_retrieval,
-    )
+    # graph.add_node(
+    #     node="ingest_initial_retrieval",
+    #     action=ingest_initial_base_retrieval,
+    # )
 
     graph.add_node(
         node="retrieval_consolidation",
         action=retrieval_consolidation,
     )
 
-    graph.add_node(
-        node="ingest_initial_sub_question_answers",
-        action=ingest_initial_sub_question_answers,
-    )
+    # graph.add_node(
+    #     node="ingest_initial_sub_question_answers",
+    #     action=ingest_initial_sub_question_answers,
+    # )
     graph.add_node(
         node="generate_initial_answer",
         action=generate_initial_answer,
@@ -98,22 +93,22 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     # graph.add_edge(
+    #     start_key="base_raw_search_subgraph",
+    #     end_key="ingest_initial_retrieval",
+    # )
+
+    # graph.add_edge(
     #     start_key="agent_search_start",
     #     end_key="entity_term_extraction_llm",
     # )
 
     graph.add_edge(
         start_key=START,
-        end_key="initial_sub_question_creation",
+        end_key="sub_question_answering_subgraph",
     )
 
     graph.add_edge(
-        start_key="base_raw_search_subgraph",
-        end_key="ingest_initial_retrieval",
-    )
-
-    graph.add_edge(
-        start_key=["ingest_initial_retrieval", "ingest_initial_sub_question_answers"],
+        start_key=["base_raw_search_subgraph", "sub_question_answering_subgraph"],
         end_key="retrieval_consolidation",
     )
 
@@ -132,15 +127,15 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
     #     end_key="initial_sub_question_creation",
     # )
 
-    graph.add_conditional_edges(
-        source="initial_sub_question_creation",
-        path=parallelize_initial_sub_question_answering,
-        path_map=["answer_query_subgraph"],
-    )
-    graph.add_edge(
-        start_key="answer_query_subgraph",
-        end_key="ingest_initial_sub_question_answers",
-    )
+    # graph.add_conditional_edges(
+    #     source="initial_sub_question_creation",
+    #     path=parallelize_initial_sub_question_answering,
+    #     path_map=["answer_query_subgraph"],
+    # )
+    # graph.add_edge(
+    #     start_key="answer_query_subgraph",
+    #     end_key="ingest_initial_sub_question_answers",
+    # )
 
     graph.add_edge(
         start_key="retrieval_consolidation",

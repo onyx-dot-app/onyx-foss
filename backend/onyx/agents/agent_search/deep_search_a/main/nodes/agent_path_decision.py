@@ -87,6 +87,6 @@ def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDeci
         routing=routing,
         sample_doc_str=sample_doc_str,
         log_messages=[
-            f"{now_end} -- Path decision: {routing},  Time taken: {now_end - now_start}"
+            f"{now_start} -- Path decision: {routing},  Time taken: {now_end - now_start}"
         ],
     )

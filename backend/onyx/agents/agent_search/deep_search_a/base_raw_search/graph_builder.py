@@ -8,6 +8,9 @@ from onyx.agents.agent_search.deep_search_a.base_raw_search.nodes.format_raw_sea
 from onyx.agents.agent_search.deep_search_a.base_raw_search.nodes.generate_raw_search_data import (
     generate_raw_search_data,
 )
+from onyx.agents.agent_search.deep_search_a.base_raw_search.nodes.ingest_initial_base_retrieval import (
+    ingest_initial_base_retrieval,
+)
 from onyx.agents.agent_search.deep_search_a.base_raw_search.states import (
     BaseRawSearchInput,
 )
@@ -46,6 +49,11 @@ def base_raw_search_graph_builder() -> StateGraph:
         action=format_raw_search_results,
     )
 
+    graph.add_node(
+        node="ingest_initial_base_retrieval",
+        action=ingest_initial_base_retrieval,
+    )
+
     ### Add edges ###
 
     graph.add_edge(start_key=START, end_key="generate_raw_search_data")
@@ -66,6 +74,11 @@ def base_raw_search_graph_builder() -> StateGraph:
 
     graph.add_edge(
         start_key="format_raw_search_results",
+        end_key="ingest_initial_base_retrieval",
+    )
+
+    graph.add_edge(
+        start_key="ingest_initial_base_retrieval",
         end_key=END,
     )
 

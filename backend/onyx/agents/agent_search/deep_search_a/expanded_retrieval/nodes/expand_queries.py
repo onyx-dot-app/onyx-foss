@@ -63,6 +63,6 @@ def expand_queries(
     return QueryExpansionUpdate(
         expanded_queries=rewritten_queries,
         log_messages=[
-            f"{now_end} -- Expanded Retrieval - Query Expansion - Time taken: {now_end - now_start}"
+            f"{now_start} -- Expanded Retrieval - Query Expansion - Time taken: {now_end - now_start}"
         ],
     )

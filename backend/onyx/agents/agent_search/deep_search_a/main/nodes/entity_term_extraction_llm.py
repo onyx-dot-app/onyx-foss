@@ -42,7 +42,7 @@ def entity_term_extraction_llm(
                 terms=[],
             ),
             log_messages=[
-                f"{now_end} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
+                f"{now_start} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
             ],
         )
 

@@ -77,6 +77,6 @@ def doc_reranking(
         ][:AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS],
         sub_question_retrieval_stats=fit_scores,
         log_messages=[
-            f"{now_end} -- Expanded Retrieval - Reranking - Time taken: {now_end - now_start}"
+            f"{now_start} -- Expanded Retrieval - Reranking - Time taken: {now_end - now_start}"
         ],
     )

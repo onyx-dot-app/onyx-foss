@@ -32,7 +32,7 @@ def refined_answer_decision(
         f"--------{now_end}--{now_end - now_start}--------REFINED ANSWER DECISION END---"
     )
     log_messages = [
-        f"{now_end} -- Main - Refined answer decision: {decision},  Time taken: {now_end - now_start}"
+        f"{now_start} -- Main - Refined answer decision: {decision},  Time taken: {now_end - now_start}"
     ]
     if agent_a_config.allow_refinement:
         return RequireRefinedAnswerUpdate(

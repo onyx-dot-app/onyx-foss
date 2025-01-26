@@ -23,7 +23,7 @@ def agent_path_routing(
         # state update
         update={
             "log_messages": [
-                f"{now_end} -- Main - Path routing: {agent_path},  Time taken: {now_end - now_start}"
+                f"{now_start} -- Main - Path routing: {agent_path},  Time taken: {now_end - now_start}"
             ]
         },
         # control flow
