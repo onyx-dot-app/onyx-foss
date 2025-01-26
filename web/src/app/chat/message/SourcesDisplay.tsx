@@ -14,6 +14,7 @@ interface SourcesDisplayProps {
   animateEntrance?: boolean;
   threeCols?: boolean;
   hideDocumentDisplay?: boolean;
+  docSidebarToggled?: boolean;
 }
 
 const SourceCard: React.FC<{
@@ -54,6 +55,7 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
   animateEntrance = false,
   threeCols = false,
   hideDocumentDisplay = false,
+  docSidebarToggled = false,
 }) => {
   const displayedDocuments = documents.slice(0, 5);
   const hasMoreDocuments = documents.length > 3;
@@ -108,7 +110,7 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
 
         {hasMoreDocuments && (
           <SeeMoreBlock
-            toggled={false}
+            toggled={docSidebarToggled}
             toggleDocumentSelection={toggleDocumentSelection}
             uniqueSources={
               Array.from(

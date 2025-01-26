@@ -50,6 +50,7 @@ import SubQuestionsDisplay from "./SubQuestionsDisplay";
 import { StatusRefinement } from "../Refinement";
 
 export const AgenticMessage = ({
+  docSidebarToggled,
   isImprovement,
   secondLevelAssistantMessage,
   secondLevelGenerating,
@@ -79,6 +80,7 @@ export const AgenticMessage = ({
   secondLevelSubquestions,
   toggleDocDisplay,
 }: {
+  docSidebarToggled?: boolean;
   isImprovement?: boolean | null;
   secondLevelSubquestions?: SubQuestionDetail[] | null;
   agenticDocs?: OnyxDocument[] | null;
@@ -91,7 +93,7 @@ export const AgenticMessage = ({
   otherMessagesCanSwitchTo?: number[];
   onMessageSelection?: (messageId: number) => void;
   selectedDocuments?: OnyxDocument[] | null;
-  toggleDocumentSelection?: () => void;
+  toggleDocumentSelection?: (second: boolean) => void;
   docs?: OnyxDocument[] | null;
   alternativeAssistant?: Persona | null;
   currentPersona: Persona;
@@ -395,6 +397,7 @@ export const AgenticMessage = ({
                 <div className="w-full desktop:ml-4">
                   {subQuestions && subQuestions.length > 0 && (
                     <SubQuestionsDisplay
+                      docSidebarToggled={docSidebarToggled || false}
                       finishedGenerating={finalContent.length > 8}
                       overallAnswerGenerating={finalContent.length < 8}
                       showSecondLevel={!isViewingInitialAnswer}
@@ -403,7 +406,9 @@ export const AgenticMessage = ({
                       subQuestions={subQuestions}
                       secondLevelQuestions={secondLevelSubquestions || []}
                       documents={isViewingInitialAnswer ? docs! : agenticDocs!}
-                      toggleDocumentSelection={toggleDocumentSelection!}
+                      toggleDocumentSelection={() => {
+                        toggleDocumentSelection!(!isViewingInitialAnswer);
+                      }}
                       setPresentingDocument={setPresentingDocument!}
                       unToggle={false}
                     />

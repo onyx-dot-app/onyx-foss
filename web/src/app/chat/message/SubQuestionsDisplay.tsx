@@ -65,6 +65,7 @@ export interface TemporaryDisplay {
   tinyQuestion: string;
 }
 interface SubQuestionsDisplayProps {
+  docSidebarToggled: boolean;
   finishedGenerating: boolean;
   currentlyOpenQuestion?: BaseQuestionIdentifier | null;
   subQuestions: SubQuestionDetail[];
@@ -472,6 +473,7 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
   toggleDocumentSelection,
   setPresentingDocument,
   secondLevelQuestions,
+  docSidebarToggled,
   showSecondLevel,
   overallAnswerGenerating,
 }) => {
@@ -745,6 +747,7 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
 
       {shownDocuments && shownDocuments.length > 0 && (
         <SourcesDisplay
+          docSidebarToggled={docSidebarToggled}
           hideDocumentDisplay
           animateEntrance={true}
           toggleDocumentSelection={toggleDocumentSelection}

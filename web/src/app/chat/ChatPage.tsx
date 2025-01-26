@@ -2614,6 +2614,13 @@ export function ChatPage({
                                     {message.sub_questions &&
                                     message.sub_questions.length > 0 ? (
                                       <AgenticMessage
+                                        docSidebarToggled={
+                                          documentSidebarToggled &&
+                                          (selectedMessageForDocDisplay ==
+                                            message.messageId ||
+                                            selectedMessageForDocDisplay ==
+                                              secondLevelMessage?.messageId)
+                                        }
                                         isImprovement={message.isImprovement}
                                         secondLevelGenerating={
                                           (message.second_level_generating &&
@@ -2707,18 +2714,33 @@ export function ChatPage({
                                           messageHistory.length - 1 == i
                                         }
                                         selectedDocuments={selectedDocuments}
-                                        toggleDocumentSelection={() => {
+                                        toggleDocumentSelection={(
+                                          second: boolean
+                                        ) => {
                                           if (
-                                            !documentSidebarToggled ||
+                                            (!second &&
+                                              !documentSidebarToggled) ||
                                             (documentSidebarToggled &&
                                               selectedMessageForDocDisplay ===
                                                 message.messageId)
                                           ) {
                                             toggleDocumentSidebar();
                                           }
+                                          if (
+                                            (second &&
+                                              !documentSidebarToggled) ||
+                                            (documentSidebarToggled &&
+                                              selectedMessageForDocDisplay ===
+                                                secondLevelMessage?.messageId)
+                                          ) {
+                                            toggleDocumentSidebar();
+                                          }
 
                                           setSelectedMessageForDocDisplay(
-                                            message.messageId
+                                            second
+                                              ? secondLevelMessage?.messageId ||
+                                                  null
+                                              : message.messageId
                                           );
                                         }}
                                         currentPersona={liveAssistant}
