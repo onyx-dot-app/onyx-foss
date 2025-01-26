@@ -23,14 +23,16 @@ export function useOrderedPhases(externalPhase: StreamingPhase) {
   const MIN_DELAY = 1000; // 0.5 seconds
 
   const getPhaseIndex = (phase: StreamingPhase) => PHASES_ORDER.indexOf(phase);
+  const finalPhaseIndex = useRef<number | null>(null);
 
   // Whenever externalPhase changes, add any missing steps into the queue
   useEffect(() => {
     setPhaseQueue((prevQueue) => {
       const lastDisplayed = displayedPhases[displayedPhases.length - 1];
-      const lastIndex = lastDisplayed
-        ? getPhaseIndex(lastDisplayed)
-        : getPhaseIndex(StreamingPhase.WAITING);
+      const lastIndex = finalPhaseIndex.current || 0;
+      //  lastDisplayed
+      //   ? getPhaseIndex(lastDisplayed)
+      //   : getPhaseIndex(StreamingPhase.WAITING);
 
       let targetPhase = externalPhase;
       let targetIndex = getPhaseIndex(targetPhase);
@@ -40,11 +42,19 @@ export function useOrderedPhases(externalPhase: StreamingPhase) {
         return prevQueue;
       }
 
+      finalPhaseIndex.current = targetIndex;
+
       // Otherwise, collect all missing phases from lastDisplayed+1 up to targetIndex
-      const missingPhases: StreamingPhase[] = [];
-      for (let i = lastIndex + 1; i <= targetIndex; i++) {
-        missingPhases.push(PHASES_ORDER[i]);
-      }
+      const missingPhases: StreamingPhase[] = PHASES_ORDER.slice(
+        0,
+        targetIndex + 1
+      );
+
+      // [];
+
+      // for (let i = lastIndex + 1; i <= targetIndex; i++) {
+      //   missingPhases= PHASES_ORDER[i]);
+      // }
       return [...prevQueue, ...missingPhases];
     });
   }, [externalPhase, displayedPhases]);
@@ -155,16 +165,17 @@ export function RefinemenetBadge({
               />
             </div>
           </TooltipTrigger>
-          <TooltipContent
-            onMouseEnter={() => setToolTipHovered(true)}
-            side="bottom"
-            align="start"
-            className="w-fit p-4 bg-white border-2 border-border shadow-lg rounded-md"
-          >
-            {/* If not done, show the "Refining" box + a chevron */}
+          {expanded && (
+            <TooltipContent
+              onMouseEnter={() => setToolTipHovered(true)}
+              side="bottom"
+              align="start"
+              className="w-fit p-4 bg-white border-2 border-border shadow-lg rounded-md"
+            >
+              {/* If not done, show the "Refining" box + a chevron */}
 
-            {/* Expanded area: each displayed phase in order */}
-            {expanded && (
+              {/* Expanded area: each displayed phase in order */}
+
               <div className="items-start flex flex-col gap-y-2">
                 {currentState !== StreamingPhase.WAITING ? (
                   Array.from(new Set(displayedPhases)).map((phase, index) => {
@@ -209,8 +220,8 @@ export function RefinemenetBadge({
                   </div>
                 )}
               </div>
-            )}
-          </TooltipContent>
+            </TooltipContent>
+          )}
         </div>
       </Tooltip>
     </TooltipProvider>
@@ -304,7 +315,10 @@ export function StatusRefinement({
         isImprovement ? (
           <TooltipProvider delayDuration={0}>
             <Tooltip open={toolTipHovered}>
-              <TooltipTrigger asChild>
+              <TooltipTrigger
+                onMouseLeave={() => setToolTipHovered(false)}
+                asChild
+              >
                 <Badge
                   // NOTE: This is a hack to make the badge slightly higher
                   className="cursor-pointer mt-[1px]"

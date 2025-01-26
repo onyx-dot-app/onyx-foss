@@ -35,7 +35,7 @@ export default function SourceCard({
     <div
       key={doc.document_id}
       onClick={() => openDocument(doc, setPresentingDocument)}
-      className="cursor-pointer h-[80px] text-left overflow-hidden flex flex-col gap-0.5 rounded-lg px-3 py-2 hover:bg-background-dark/80 bg-background-dark/60 w-[200px]"
+      className="cursor-pointer h-[80px] text-left overflow-hidden flex flex-col gap-0.5 rounded-lg px-3 py-2 bg-[#f1eee8] hover:bg-[#ebe7de] w-[200px]"
     >
       <div className="line-clamp-1 font-semibold text-ellipsis text-text-900  flex h-6 items-center gap-2 text-sm">
         {doc.is_internet || doc.source_type === "web" ? (
@@ -105,7 +105,7 @@ export function SeeMoreBlock({
   return (
     <button
       onClick={toggleDocumentSelection}
-      className="max-w-[260px] min-w-[150px] h-[80px] p-3 bg-[#f1eee8] hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col items-start justify-between transition-opacity duration-300"
+      className="max-w-[260px]  min-w-[200px] h-[80px] p-3 bg-[#f1eee8]/40 border border-[#d8d0c0] hover:bg-[#ebe7de]/40 cursor-pointer rounded-lg flex flex-col items-start justify-between transition-opacity duration-300"
     >
       <div className="flex items-center gap-1">
         {iconsToRender.map((icon, index) =>
@@ -118,11 +118,6 @@ export function SeeMoreBlock({
           ) : (
             <WebResultIcon key={index} url={icon.data} size={14} />
           )
-        )}
-        {totalSources > 3 && (
-          <span className="text-xs text-[#4a4a4a] font-medium">
-            +{totalSources - 3}
-          </span>
         )}
       </div>
       <div className="text-text-darker text-xs font-semibold">

@@ -15,6 +15,7 @@ interface SourcesDisplayProps {
   threeCols?: boolean;
   hideDocumentDisplay?: boolean;
   docSidebarToggled?: boolean;
+  setPresentingDocument: (document: OnyxDocument) => void;
 }
 
 const SourceCard: React.FC<{
@@ -55,6 +56,7 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
   animateEntrance = false,
   threeCols = false,
   hideDocumentDisplay = false,
+  setPresentingDocument,
   docSidebarToggled = false,
 }) => {
   const displayedDocuments = documents.slice(0, 5);
@@ -96,7 +98,7 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
         {displayedDocuments.map((doc, index) => (
           <div
             key={index}
-            onClick={() => openDocument(doc, () => {})}
+            onClick={() => openDocument(doc, setPresentingDocument)}
             className={`transition-opacity duration-300 ${
               animateEntrance ? "opacity-100" : "opacity-100"
             }`}

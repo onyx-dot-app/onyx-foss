@@ -15,8 +15,8 @@ export const StreamingPhaseText: Record<StreamingPhase, string> = {
   [StreamingPhase.WAITING]: "Extracting key concepts",
   [StreamingPhase.SUB_QUERIES]: "Identifying additional questions",
   [StreamingPhase.CONTEXT_DOCS]: "Reading more documents",
-  [StreamingPhase.ANSWER]: "Generating refined answer",
   [StreamingPhase.EVALUATE]: "Evaluating new context",
+  [StreamingPhase.ANSWER]: "Generating refined answer",
   [StreamingPhase.COMPARE]: "Comparing results",
   [StreamingPhase.COMPLETE]: "Finished",
 };
@@ -25,8 +25,8 @@ export const PHASES_ORDER: StreamingPhase[] = [
   StreamingPhase.WAITING,
   StreamingPhase.SUB_QUERIES,
   StreamingPhase.CONTEXT_DOCS,
-  StreamingPhase.ANSWER,
   StreamingPhase.EVALUATE,
+  StreamingPhase.ANSWER,
   StreamingPhase.COMPARE,
   StreamingPhase.COMPLETE,
 ];
