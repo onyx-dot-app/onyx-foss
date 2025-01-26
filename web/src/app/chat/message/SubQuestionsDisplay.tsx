@@ -667,12 +667,6 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
               (subQuestion?.sub_queries?.length > 0 &&
                 (subQuestion.answer == undefined ||
                   subQuestion.answer.length > 3))
-              //   subQuestion == undefined &&
-              //   subQuestion.answer != undefined &&
-              //   !(
-              //     dynamicSubQuestions[index + 1] != undefined ||
-              //     dynamicSubQuestions[index + 1]?.sub_queries?.length! > 0
-              //   )
             }
           />
         ))}

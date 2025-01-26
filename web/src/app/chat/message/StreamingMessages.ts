@@ -6,16 +6,30 @@ export enum StreamingPhase {
   SUB_QUERIES = "sub_queries",
   CONTEXT_DOCS = "context_docs",
   ANSWER = "answer",
+  EVALUATE = "evaluate",
   COMPLETE = "complete",
+  COMPARE = "compare",
 }
 
 export const StreamingPhaseText: Record<StreamingPhase, string> = {
-  [StreamingPhase.WAITING]: "Extracting key terms",
+  [StreamingPhase.WAITING]: "Extracting key concepts",
   [StreamingPhase.SUB_QUERIES]: "Identifying additional questions",
-  [StreamingPhase.CONTEXT_DOCS]: "Reading through more documents",
-  [StreamingPhase.ANSWER]: "Generating new refined answer",
-  [StreamingPhase.COMPLETE]: "Comparing results",
+  [StreamingPhase.CONTEXT_DOCS]: "Reading more documents",
+  [StreamingPhase.ANSWER]: "Generating refined answer",
+  [StreamingPhase.EVALUATE]: "Evaluating new context",
+  [StreamingPhase.COMPARE]: "Comparing results",
+  [StreamingPhase.COMPLETE]: "Finished",
 };
+
+export const PHASES_ORDER: StreamingPhase[] = [
+  StreamingPhase.WAITING,
+  StreamingPhase.SUB_QUERIES,
+  StreamingPhase.CONTEXT_DOCS,
+  StreamingPhase.ANSWER,
+  StreamingPhase.EVALUATE,
+  StreamingPhase.COMPARE,
+  StreamingPhase.COMPLETE,
+];
 
 interface SubQuestionProgress {
   questionDone: boolean;

@@ -1,32 +1,16 @@
 "use client";
 
-import {
-  FiEdit2,
-  FiChevronRight,
-  FiChevronLeft,
-  FiTool,
-  FiGlobe,
-} from "react-icons/fi";
+import { FiChevronRight, FiChevronLeft } from "react-icons/fi";
 import { FeedbackType } from "../types";
 import React, {
-  memo,
-  ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
 import ReactMarkdown from "react-markdown";
 import { OnyxDocument, FilteredOnyxDocument } from "@/lib/search/interfaces";
-
-import { SkippedSearch } from "./SkippedSearch";
 import remarkGfm from "remark-gfm";
 import { CopyButton } from "@/components/CopyButton";
 import {
@@ -35,11 +19,7 @@ import {
   SubQuestionDetail,
   ToolCallMetadata,
 } from "../interfaces";
-import {
-  IMAGE_GENERATION_TOOL_NAME,
-  SEARCH_TOOL_NAME,
-  INTERNET_SEARCH_TOOL_NAME,
-} from "../tools/constants";
+import { SEARCH_TOOL_NAME } from "../tools/constants";
 import { Hoverable, HoverableIcon } from "@/components/Hoverable";
 import { CodeBlock } from "./CodeBlock";
 import rehypePrism from "rehype-prism-plus";
@@ -67,18 +47,14 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import SubQuestionsDisplay from "./SubQuestionsDisplay";
-import { Badge } from "@/components/ui/badge";
-import RefinemenetBadge, { NoNewAnswerMessage } from "../refinmentBadge";
-import SubQuestionProgress from "./SubQuestionProgress";
+import { StatusRefinement } from "../Refinement";
 
 export const AgenticMessage = ({
   isImprovement,
   secondLevelAssistantMessage,
   secondLevelGenerating,
-  isGenerating,
   regenerate,
   overriddenModel,
-  selectedMessageForDocDisplay,
   continueGenerating,
   shared,
   isActive,
@@ -86,7 +62,6 @@ export const AgenticMessage = ({
   alternativeAssistant,
   docs,
   messageId,
-  documentSelectionToggled,
   content,
   files,
   selectedDocuments,
@@ -94,22 +69,14 @@ export const AgenticMessage = ({
   citedDocuments,
   toolCall,
   isComplete,
-  hasDocs,
   handleFeedback,
-  handleShowRetrieved,
-  handleSearchQueryEdit,
-  handleForceSearch,
-  retrievalDisabled,
   currentPersona,
   otherMessagesCanSwitchTo,
   onMessageSelection,
   setPresentingDocument,
-  index,
   subQuestions,
   agenticDocs,
   secondLevelSubquestions,
-  setStreamingAllowed,
-  streamingAllowed,
   toggleDocDisplay,
 }: {
   isImprovement?: boolean | null;
@@ -117,10 +84,7 @@ export const AgenticMessage = ({
   agenticDocs?: OnyxDocument[] | null;
   secondLevelGenerating?: boolean;
   secondLevelAssistantMessage?: string;
-  isGenerating: boolean;
   subQuestions: SubQuestionDetail[] | null;
-  index?: number;
-  selectedMessageForDocDisplay?: number | null;
   shared?: boolean;
   isActive?: boolean;
   continueGenerating?: () => void;
@@ -133,25 +97,18 @@ export const AgenticMessage = ({
   currentPersona: Persona;
   messageId: number | null;
   content: string | JSX.Element;
-  documentSelectionToggled?: boolean;
   files?: FileDescriptor[];
   query?: string;
   citedDocuments?: [string, OnyxDocument][] | null;
   toolCall?: ToolCallMetadata | null;
   isComplete?: boolean;
-  hasDocs?: boolean;
   handleFeedback?: (feedbackType: FeedbackType) => void;
-  handleShowRetrieved?: (messageNumber: number | null) => void;
-  handleSearchQueryEdit?: (query: string) => void;
-  handleForceSearch?: () => void;
-  retrievalDisabled?: boolean;
   overriddenModel?: string;
   regenerate?: (modelOverRide: LlmOverride) => Promise<void>;
   setPresentingDocument?: (document: OnyxDocument) => void;
-  setStreamingAllowed?: (allowed: boolean) => void;
-  streamingAllowed?: boolean;
   toggleDocDisplay?: (agentic: boolean) => void;
 }) => {
+  const [noShowingMessage, setNoShowingMessage] = useState(isComplete);
   const [streamedContent, setStreamedContent] = useState(content as string);
 
   const [lastKnownContentLength, setLastKnownContentLength] = useState(0);
@@ -196,6 +153,7 @@ export const AgenticMessage = ({
 
   const [isViewingInitialAnswer, setIsViewingInitialAnswer] = useState(true);
 
+  const [canShowResponse, setCanShowResponse] = useState(isComplete);
   const [isPulsing, setIsPulsing] = useState(false);
   const [isRegenerateHovered, setIsRegenerateHovered] = useState(false);
   const [isRegenerateDropdownVisible, setIsRegenerateDropdownVisible] =
@@ -444,19 +402,12 @@ export const AgenticMessage = ({
                       allowStreaming={() => setAllowStreaming(true)}
                       subQuestions={subQuestions}
                       secondLevelQuestions={secondLevelSubquestions || []}
-                      documents={
-                        isViewingInitialAnswer
-                          ? (docs && docs.length > 0 ? docs : agenticDocs)!
-                          : (agenticDocs && agenticDocs.length > 0
-                              ? agenticDocs
-                              : docs)!
-                      }
+                      documents={isViewingInitialAnswer ? docs! : agenticDocs!}
                       toggleDocumentSelection={toggleDocumentSelection!}
                       setPresentingDocument={setPresentingDocument!}
                       unToggle={false}
                     />
                   )}
-
                   {/* For debugging purposes */}
                   {/* <SubQuestionProgress subQuestions={subQuestions || []} /> */}
                   {/*  */}
@@ -472,47 +423,30 @@ export const AgenticMessage = ({
                             Answer
                           </div>
 
-                          {isImprovement == null &&
-                          subQuestions &&
-                          subQuestions.length > 0 ? (
-                            <RefinemenetBadge
-                              finished={!secondLevelGenerating}
-                              overallAnswer={secondLevelAssistantMessage || ""}
-                              secondLevelSubquestions={secondLevelSubquestions}
-                              toggleInitialAnswerVieinwg={() => {
-                                setIsViewingInitialAnswer(
-                                  !isViewingInitialAnswer
-                                );
-                              }}
-                              isViewingInitialAnswer={isViewingInitialAnswer}
-                            />
-                          ) : secondLevelAssistantMessage ? (
-                            isImprovement ? (
-                              <Badge
-                                // NOTE: This is a hack to make the badge slightly higher
-                                className="cursor-pointer mt-[1px]"
-                                variant="agent"
-                                onClick={() => {
-                                  const viewInitialAnswer =
-                                    !isViewingInitialAnswer;
-                                  setIsViewingInitialAnswer(viewInitialAnswer);
-                                  toggleDocDisplay &&
-                                    toggleDocDisplay(!isViewingInitialAnswer);
-                                  if (viewInitialAnswer) {
-                                    setIsViewingInitialAnswer(true);
-                                  }
-                                }}
-                              >
-                                {isViewingInitialAnswer
-                                  ? "See Refined Answer"
-                                  : "See Original Answer"}
-                              </Badge>
-                            ) : (
-                              <NoNewAnswerMessage />
-                            )
-                          ) : (
-                            <></>
-                          )}
+                          <StatusRefinement
+                            noShowingMessage={noShowingMessage}
+                            canShowResponse={canShowResponse || false}
+                            setCanShowResponse={setCanShowResponse}
+                            isImprovement={isImprovement}
+                            isViewingInitialAnswer={isViewingInitialAnswer}
+                            toggleDocDisplay={toggleDocDisplay!}
+                            secondLevelSubquestions={
+                              secondLevelSubquestions || []
+                            }
+                            secondLevelAssistantMessage={
+                              secondLevelAssistantMessage || ""
+                            }
+                            secondLevelGenerating={
+                              (secondLevelGenerating &&
+                                finalContent.length ==
+                                  streamedContent.length) ||
+                              false
+                            }
+                            subQuestions={subQuestions}
+                            setIsViewingInitialAnswer={
+                              setIsViewingInitialAnswer
+                            }
+                          />
                         </div>
 
                         <div className="px-4">
@@ -531,7 +465,6 @@ export const AgenticMessage = ({
                   ) : isComplete ? null : (
                     <></>
                   )}
-
                   {handleFeedback &&
                     (isActive ? (
                       <div
