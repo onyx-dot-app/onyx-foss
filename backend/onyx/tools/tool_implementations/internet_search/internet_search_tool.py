@@ -220,6 +220,13 @@ class InternetSearchTool(Tool):
         )
         results = response.json()
 
+        # If no hits, Bing does not include the webPages key
+        search_results = (
+            results["webPages"]["value"][: self.num_results]
+            if "webPages" in results
+            else []
+        )
+
         return InternetSearchResponse(
             revised_query=query,
             internet_results=[
@@ -228,7 +235,7 @@ class InternetSearchTool(Tool):
                     link=result["url"],
                     snippet=result["snippet"],
                 )
-                for result in results["webPages"]["value"][: self.num_results]
+                for result in search_results
             ],
         )
 
