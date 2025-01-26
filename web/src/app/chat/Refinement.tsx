@@ -284,7 +284,7 @@ export function StatusRefinement({
   if (!secondLevelGenerating && isImprovement == undefined) {
     return null;
   }
-  if (noShowingMessage) {
+  if (noShowingMessage && !isImprovement) {
     return <></>;
   }
   return (
