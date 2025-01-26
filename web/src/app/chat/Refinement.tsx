@@ -312,11 +312,7 @@ export function StatusRefinement({
                   onClick={() => {
                     const viewInitialAnswer = !isViewingInitialAnswer;
                     setIsViewingInitialAnswer(viewInitialAnswer);
-                    toggleDocDisplay &&
-                      toggleDocDisplay(!isViewingInitialAnswer);
-                    if (viewInitialAnswer) {
-                      setIsViewingInitialAnswer(true);
-                    }
+                    toggleDocDisplay && toggleDocDisplay(viewInitialAnswer);
                   }}
                 >
                   {isViewingInitialAnswer
