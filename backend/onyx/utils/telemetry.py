@@ -123,6 +123,7 @@ def optional_telemetry(
                     headers={"Content-Type": "application/json"},
                     json=payload,
                 )
+
             except Exception:
                 # This way it silences all thread level logging as well
                 pass
