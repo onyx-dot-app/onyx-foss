@@ -18,10 +18,12 @@ def ingest_initial_base_retrieval(
     sub_question_retrieval_stats = (
         state.base_expanded_retrieval_result.sub_question_retrieval_stats
     )
-    if sub_question_retrieval_stats is None:
-        sub_question_retrieval_stats = AgentChunkStats()
-    else:
-        sub_question_retrieval_stats = sub_question_retrieval_stats
+    # if sub_question_retrieval_stats is None:
+    #     sub_question_retrieval_stats = AgentChunkStats()
+    # else:
+    #     sub_question_retrieval_stats = sub_question_retrieval_stats
+
+    sub_question_retrieval_stats = sub_question_retrieval_stats or AgentChunkStats()
 
     now_end = datetime.now()
 
