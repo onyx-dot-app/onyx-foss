@@ -563,6 +563,7 @@ def build_job_id(
 
 @shared_task(
     name=OnyxCeleryTask.MONITOR_BACKGROUND_PROCESSES,
+    ignore_result=True,
     soft_time_limit=_MONITORING_SOFT_TIME_LIMIT,
     time_limit=_MONITORING_TIME_LIMIT,
     queue=OnyxCeleryQueues.MONITORING,
