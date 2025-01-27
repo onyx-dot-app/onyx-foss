@@ -92,3 +92,36 @@ except ValueError:
     raise ValueError(
         f"AGENT_EXPLORATORY_SEARCH_RESULTS must be an integer, got {AGENT_EXPLORATORY_SEARCH_RESULTS_OS}"
     )
+
+AGENT_MIN_ORIG_QUESTION_DOCS_OS: int | str = os.environ.get(
+    "AGENT_MIN_ORIG_QUESTION_DOCS", "5"
+)
+
+try:
+    AGENT_MIN_ORIG_QUESTION_DOCS = int(AGENT_MIN_ORIG_QUESTION_DOCS_OS)
+except ValueError:
+    raise ValueError(
+        f"AGENT_MIN_ORIG_QUESTION_DOCS must be an integer, got {AGENT_MIN_ORIG_QUESTION_DOCS_OS}"
+    )
+
+AGENT_MAX_ANSWER_CONTEXT_DOCS_OS: int | str = os.environ.get(
+    "AGENT_MAX_ANSWER_CONTEXT_DOCS", "30"
+)
+
+try:
+    AGENT_MAX_ANSWER_CONTEXT_DOCS = int(AGENT_MAX_ANSWER_CONTEXT_DOCS_OS)
+except ValueError:
+    raise ValueError(
+        f"AGENT_MAX_ANSWER_CONTEXT_DOCS must be an integer, got {AGENT_MAX_ANSWER_CONTEXT_DOCS_OS}"
+    )
+
+AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS: int | str = os.environ.get(
+    "AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS", "100"
+)
+
+try:
+    AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH = int(AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS)
+except ValueError:
+    raise ValueError(
+        f"AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH must be an integer, got {AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS}"
+    )

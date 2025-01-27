@@ -20,6 +20,9 @@ from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import DATE_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    HISTORY_CONTEXT_SUMMARY_PROMPT,
+)
 from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationConfig
 from onyx.chat.models import DocumentPruningConfig
@@ -325,3 +328,25 @@ def retrieve_search_docs(
                 break
 
     return retrieved_docs
+
+
+def get_answer_citation_ids(answer_str: str) -> list[int]:
+    citation_ids = re.findall(r"\[\[D(\d+)\]\]", answer_str)
+    return list(set([(int(id) - 1) for id in citation_ids]))
+
+
+def summarize_history(
+    history: str, question: str, persona_specification: str, model: LLM
+) -> str:
+    history_context_prompt = HISTORY_CONTEXT_SUMMARY_PROMPT.format(
+        persona_specification=persona_specification, question=question, history=history
+    )
+
+    history_response = model.invoke(history_context_prompt)
+
+    if isinstance(history_response.content, str):
+        history_context_response_str = history_response.content
+    else:
+        history_context_response_str = ""
+
+    return history_context_response_str

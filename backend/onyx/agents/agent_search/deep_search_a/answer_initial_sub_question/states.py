@@ -24,6 +24,7 @@ class QACheckUpdate(BaseModel):
 class QAGenerationUpdate(BaseModel):
     answer: str = ""
     log_messages: list[str] = []
+    cited_docs: Annotated[list[InferenceSection], dedup_inference_sections] = []
     # answer_stat: AnswerStats
 
 

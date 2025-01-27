@@ -52,8 +52,13 @@ from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
+from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
+from onyx.configs.agent_configs import AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH
+from onyx.configs.agent_configs import AGENT_MIN_ORIG_QUESTION_DOCS
+from onyx.context.search.models import InferenceSection
 from onyx.tools.tool_implementations.search.search_tool import yield_search_responses
 
 
@@ -69,14 +74,29 @@ def generate_initial_answer(
     persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
 
     history = build_history_prompt(agent_a_config.prompt_builder)
+
     date_str = get_today_prompt()
 
     sub_question_docs = state.context_documents
+    sub_questions_cited_docs = state.cited_docs
     all_original_question_documents = state.all_original_question_documents
 
+    consolidated_context_docs: list[InferenceSection] = []
+    counter = 0
+    for original_doc_number, original_doc in enumerate(all_original_question_documents):
+        if original_doc_number not in sub_questions_cited_docs:
+            if (
+                counter <= AGENT_MIN_ORIG_QUESTION_DOCS
+                or len(consolidated_context_docs) < AGENT_MAX_ANSWER_CONTEXT_DOCS
+            ):
+                consolidated_context_docs.append(original_doc)
+                counter += 1
+
+    # sort docs by their scores - though the scores refer to different questions
     relevant_docs = dedup_inference_sections(
-        sub_question_docs, all_original_question_documents
+        consolidated_context_docs, consolidated_context_docs
     )
+
     decomp_questions = []
 
     # Use the query info from the base document retrieval
@@ -170,6 +190,10 @@ def generate_initial_answer(
             base_prompt = INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS
 
         model = agent_a_config.fast_llm
+
+        # summarize the history iff too long
+        if len(history) > AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH:
+            history = summarize_history(history, question, persona_specification, model)
 
         doc_context = format_docs(relevant_docs)
         doc_context = trim_prompt_piece(

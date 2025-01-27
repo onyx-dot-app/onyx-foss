@@ -103,6 +103,7 @@ class QuestionAnswerResults(BaseModel):
     expanded_retrieval_results: list[QueryResult]
     documents: list[InferenceSection]
     context_documents: list[InferenceSection]
+    cited_docs: list[InferenceSection]
     sub_question_retrieval_stats: AgentChunkStats
 
 

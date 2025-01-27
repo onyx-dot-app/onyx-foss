@@ -23,6 +23,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
     ASSISTANT_SYSTEM_PROMPT_PERSONA,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import NO_RECOVERED_DOCS
+from onyx.agents.agent_search.shared_graph_utils.utils import get_answer_citation_ids
 from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
@@ -71,7 +72,7 @@ def answer_generation(
         msg = build_sub_question_answer_prompt(
             question=question,
             original_question=agent_search_config.search_request.query,
-            docs=docs,
+            docs=context_docs,
             persona_specification=persona_specification,
             config=fast_llm.config,
         )
@@ -99,6 +100,9 @@ def answer_generation(
 
         answer_str = merge_message_runs(response, chunk_separator="")[0].content
 
+    answer_citation_ids = get_answer_citation_ids(answer_str)
+    cited_docs = [context_docs[id] for id in answer_citation_ids]
+
     stop_event = StreamStopInfo(
         stop_reason=StreamStopReason.FINISHED,
         stream_type="sub_answer",
@@ -110,6 +114,7 @@ def answer_generation(
     now_end = datetime.now()
     return QAGenerationUpdate(
         answer=answer_str,
+        cited_docs=cited_docs,
         log_messages=[
             f"{now_start} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
         ],

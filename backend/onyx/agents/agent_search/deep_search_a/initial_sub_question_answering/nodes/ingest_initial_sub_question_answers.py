@@ -18,11 +18,12 @@ def ingest_initial_sub_question_answers(
     logger.debug(f"--------{now_start}--------INGEST ANSWERS---")
     documents = []
     context_documents = []
+    cited_docs = []
     answer_results = state.answer_results if hasattr(state, "answer_results") else []
     for answer_result in answer_results:
         documents.extend(answer_result.documents)
         context_documents.extend(answer_result.context_documents)
-
+        cited_docs.extend(answer_result.cited_docs)
     now_end = datetime.now()
 
     logger.debug(
@@ -34,6 +35,7 @@ def ingest_initial_sub_question_answers(
         # so we might not need to dedup here
         documents=dedup_inference_sections(documents, []),
         context_documents=dedup_inference_sections(context_documents, []),
+        cited_docs=dedup_inference_sections(cited_docs, []),
         decomp_answer_results=answer_results,
         log_messages=[
             f"{now_start} -- Main - Ingest initial processed sub questions,  Time taken: {now_end - now_start}"

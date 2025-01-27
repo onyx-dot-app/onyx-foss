@@ -65,36 +65,36 @@ BASE_RAG_PROMPT = (
 
 BASE_RAG_PROMPT_v2 = (
     """ \n
-    {date_prompt}
-    Use the context provided below - and only the
-    provided context - to answer the given question. (Note that the answer is in service of answering a broader
-    question, given below as 'motivation'.)
+{date_prompt}
+Use the context provided below - and only the
+provided context - to answer the given question. (Note that the answer is in service of answering a broader
+question, given below as 'motivation'.)
 
-    Again, only use the provided context and do not use your internal knowledge! If you cannot answer the
-    question based on the context, say """
+Again, only use the provided context and do not use your internal knowledge! If you cannot answer the
+question based on the context, say """
     + f'"{UNKNOWN_ANSWER}"'
     + """. It is a matter of life and death that you do NOT
-    use your internal knowledge, just the provided information!
+use your internal knowledge, just the provided information!
 
-    Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
-    (But keep other details as well.)
+Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
+(But keep other details as well.)
 
-    Please remember to provide inline citations in the format [[D1]](), [[D2]](), [[D3]](), etc!
-     It is important that the citation is close to the information it supports.
-    Proper citations are very important to the user!\n\n\n
+It is critical that you provide inline citations in the format [[D1]](), [[D2]](), [[D3]](), etc!
+It is important that the citation is close to the information it supports.
+Proper citations are very important to the user!\n\n\n
 
-    For your general information, here is the ultimate motivation:
-    \n--\n {original_question} \n--\n
-    \n\n
-    And here is the actual question I want you to answer based on the context above (with the motivation in mind):
-    \n--\n {question} \n--\n
+For your general information, here is the ultimate motivation:
+\n--\n {original_question} \n--\n
+\n\n
+And here is the actual question I want you to answer based on the context above (with the motivation in mind):
+\n--\n {question} \n--\n
 
-    Here is the context:
-    \n\n\n--\n {context} \n--\n
-    Please keep your answer brief and concise, and focus on facts and data.
+Here is the context:
+\n\n\n--\n {context} \n--\n
+Please keep your answer brief and concise, and focus on facts and data.
 
-    Answer:
-    """
+Answer:
+"""
 )
 
 SUB_CHECK_YES = "yes"
@@ -759,7 +759,7 @@ IMPORTANT RULES:
  - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
  - The answers to the subquestions should help you to structure your thoughts in order to answer the question.
 
-Please provide inline citations of documentsin the format [[D1]](), [[D2]](), [[D3]](), etc.!
+It is critical that you provide proper inline citations of documentsin the format [[D1]](), [[D2]](), [[D3]](), etc.!
 It is important that the citation is close to the information it supports.  If you have multiple citations,
 please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Feel free to cite documents in addition
 to the sub-questions! Proper citations are important for the final answer to be verifiable! \n\n\n
@@ -810,9 +810,9 @@ answer
 
 {history}
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc.! It is important that the citation
-is close to the information it supports. If you have multiple citations that support a fact, please cite for example
-as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
+It is critical that you provide prover inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc.!
+It is important that the citation is close to the information it supports. If you have multiple citations that support
+a fact, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
 citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
 Again, please NEVER cite sub-questions without a document citation!
@@ -872,8 +872,8 @@ IMPORTANT RULES:
 
 Again, you should be sure that the answer is supported by the information provided!
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!  It is important that the citation
-is close to the information it supports. If you have multiple
+It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the
 user!
 
@@ -909,7 +909,7 @@ the main question. Note that the sub-questions have a type, 'initial' and 'revis
     3) a number of documents that were deemed relevant for the question. This the is the context that you use largey for
 citations (see below).
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
  It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
@@ -974,7 +974,7 @@ The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
     2) a number of documents that were also deemed relevant for the question.
 
-Please provide inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+It is critical that you provide proper] inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
  It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n
 
@@ -1083,4 +1083,26 @@ Here is the refined answer:
 With these criteria in mind, is the refined answer substantially better than the initial answer?
 
 Please answer with a simple 'yes' or 'no'.
+"""
+HISTORY_CONTEXT_SUMMARY_PROMPT = """\n
+{persona_specification}
+You need to summarize the key parts of the history of a conversation between a user and an agent
+strictly for the purposed of providing the suitable context for a question.
+
+Here is the question:
+\n--\n
+{question}
+\n--\n
+
+And here is the history:
+\n--\n
+{history}
+\n--\n
+
+Please provide a summarized context from the history so that the question makes sense and can - with
+suitable extra information - be answered.
+
+Please do not use more than three or four sentences.
+
+Context summary:
 """
