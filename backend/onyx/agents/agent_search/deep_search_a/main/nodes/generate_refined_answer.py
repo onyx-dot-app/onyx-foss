@@ -63,20 +63,20 @@ def generate_refined_answer(
     history = build_history_prompt(agent_a_config, question)
     date_str = get_today_prompt()
     initial_documents = state.documents
-    revised_documents = state.refined_documents
-    sub_questions_cited_docs = state.cited_docs
-
-    state.context_documents
+    refined_documents = state.refined_documents
     sub_questions_cited_docs = state.cited_docs
     all_original_question_documents = state.all_original_question_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_docs
+
     counter = 0
     for original_doc_number, original_doc in enumerate(all_original_question_documents):
         if original_doc_number not in sub_questions_cited_docs:
             if (
                 counter <= AGENT_MIN_ORIG_QUESTION_DOCS
-                or len(consolidated_context_docs) < AGENT_MAX_ANSWER_CONTEXT_DOCS
+                or len(consolidated_context_docs)
+                < 1.5
+                * AGENT_MAX_ANSWER_CONTEXT_DOCS  # allow for larger context in refinement
             ):
                 consolidated_context_docs.append(original_doc)
                 counter += 1
@@ -86,17 +86,14 @@ def generate_refined_answer(
         consolidated_context_docs, consolidated_context_docs
     )
 
-    combined_documents = relevant_docs
-    # combined_documents = dedup_inference_sections(initial_documents, revised_documents)
-
     query_info = get_query_info(state.original_question_retrieval_results)
     if agent_a_config.search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
     # stream refined answer docs
     for tool_response in yield_search_responses(
         query=question,
-        reranked_sections=combined_documents,
-        final_context_sections=combined_documents,
+        reranked_sections=relevant_docs,
+        final_context_sections=relevant_docs,
         search_query_info=query_info,
         get_section_relevance=lambda: None,  # TODO: add relevance
         search_tool=agent_a_config.search_tool,
@@ -112,8 +109,8 @@ def generate_refined_answer(
         )
 
     if len(initial_documents) > 0:
-        revision_doc_effectiveness = len(combined_documents) / len(initial_documents)
-    elif len(revised_documents) == 0:
+        revision_doc_effectiveness = len(relevant_docs) / len(initial_documents)
+    elif len(refined_documents) == 0:
         revision_doc_effectiveness = 0.0
     else:
         revision_doc_effectiveness = 10.0
@@ -121,7 +118,7 @@ def generate_refined_answer(
     decomp_answer_results = state.decomp_answer_results
     # revised_answer_results = state.refined_decomp_answer_results
 
-    good_qa_list: list[str] = []
+    answered_qa_list: list[str] = []
     decomp_questions = []
 
     initial_good_sub_questions: list[str] = []
@@ -140,7 +137,7 @@ def generate_refined_answer(
             and len(decomp_answer_result.answer) > 0
             and decomp_answer_result.answer != UNKNOWN_ANSWER
         ):
-            good_qa_list.append(
+            answered_qa_list.append(
                 SUB_QUESTION_ANSWER_TEMPLATE.format(
                     sub_question=decomp_answer_result.question,
                     sub_answer=decomp_answer_result.answer,
@@ -168,7 +165,7 @@ def generate_refined_answer(
     else:
         revision_question_efficiency = 1.0
 
-    sub_question_answer_str = "\n\n------\n\n".join(list(set(good_qa_list)))
+    sub_question_answer_str = "\n\n------\n\n".join(list(set(answered_qa_list)))
 
     # original answer
 
@@ -177,13 +174,13 @@ def generate_refined_answer(
     # Determine which persona-specification prompt to use
 
     # Determine which base prompt to use given the sub-question information
-    if len(good_qa_list) > 0:
+    if len(answered_qa_list) > 0:
         base_prompt = REVISED_RAG_PROMPT
     else:
         base_prompt = REVISED_RAG_PROMPT_NO_SUB_QUESTIONS
 
     model = agent_a_config.fast_llm
-    relevant_docs_str = format_docs(combined_documents)
+    relevant_docs_str = format_docs(relevant_docs)
     relevant_docs_str = trim_prompt_piece(
         model.config,
         relevant_docs_str,
