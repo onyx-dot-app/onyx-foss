@@ -24,7 +24,7 @@ from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import SubQueryPiece
 from onyx.chat.models import SubQuestionPiece
 from onyx.chat.models import ToolResponse
-from onyx.configs.agent_configs import GRAPH_NAME
+from onyx.configs.agent_configs import GRAPH_VERSION_NAME
 from onyx.context.search.models import SearchRequest
 from onyx.db.engine import get_session_context_manager
 from onyx.tools.tool_runner import ToolCallKickoff
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     now_start = datetime.now()
     logger.debug(f"Start at {now_start}")
 
-    if GRAPH_NAME == "a":
+    if GRAPH_VERSION_NAME == "a":
         graph = main_graph_builder_a()
     else:
         graph = main_graph_builder_a()
@@ -226,7 +226,7 @@ if __name__ == "__main__":
         config.use_persistence = True
         # config.perform_initial_search_path_decision = False
         config.perform_initial_search_decomposition = True
-        if GRAPH_NAME == "a":
+        if GRAPH_VERSION_NAME == "a":
             input = MainInput_a(
                 base_question=config.search_request.query, log_messages=[]
             )

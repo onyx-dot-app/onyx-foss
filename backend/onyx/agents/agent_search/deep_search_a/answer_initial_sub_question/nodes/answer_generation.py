@@ -37,7 +37,7 @@ def answer_generation(
 
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question
-    docs = state.documents
+    state.documents
     level, question_nr = parse_question_id(state.question_id)
     context_docs = state.context_documents[:AGENT_MAX_ANSWER_CONTEXT_DOCS]
     persona = get_persona_expressions(agent_search_config.search_request.persona)
@@ -54,7 +54,7 @@ def answer_generation(
             ),
         )
     else:
-        logger.debug(f"Number of verified retrieval docs: {len(docs)}")
+        logger.debug(f"Number of verified retrieval docs: {len(context_docs)}")
 
         fast_llm = agent_search_config.fast_llm
         msg = build_sub_question_answer_prompt(

@@ -39,7 +39,6 @@ def parallelize_initial_sub_question_answering(
                     log_messages=[
                         f"{now_start} -- Main Edge - Parallelize Initial Sub-question Answering"
                     ],
-                    request_start_time=[],
                 ),
             )
             for question_nr, question in enumerate(state.initial_decomp_questions)

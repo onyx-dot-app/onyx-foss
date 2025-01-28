@@ -71,7 +71,6 @@ def generate_initial_answer(
 
     date_str = get_today_prompt()
 
-    sub_question_docs = state.context_documents
     sub_questions_cited_docs = state.cited_docs
     all_original_question_documents = state.all_original_question_documents
 
@@ -135,11 +134,7 @@ def generate_initial_answer(
         )
 
     else:
-        net_new_original_question_docs = []
-        for all_original_question_doc in all_original_question_documents:
-            if all_original_question_doc not in sub_question_docs:
-                net_new_original_question_docs.append(all_original_question_doc)
-
+       
         decomp_answer_results = state.decomp_answer_results
 
         good_qa_list: list[str] = []
