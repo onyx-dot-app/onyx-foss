@@ -27,7 +27,6 @@ import ReactMarkdown from "react-markdown";
 import { FaMarkdown } from "react-icons/fa";
 import { useRef, useState, useCallback } from "react";
 import remarkGfm from "remark-gfm";
-import { EditIcon } from "@/components/icons/icons";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckboxField } from "@/components/ui/checkbox";
@@ -77,9 +76,7 @@ export function LabelWithTooltip({
 }
 
 export function SubLabel({ children }: { children: string | JSX.Element }) {
-  return (
-    <div className="text-xs text-subtle whitespace-pre-line">{children}</div>
-  );
+  return <div className="text-sm text-text-dark/80 mb-2">{children}</div>;
 }
 
 export function ManualErrorMessage({ children }: { children: string }) {
@@ -228,11 +225,7 @@ export function TextFormField({
         } gap-x-2 items-start`}
       >
         <div className="flex gap-x-2 items-center">
-          {!removeLabel && (
-            <Label className={sizeClass.label} small={small}>
-              {label}
-            </Label>
-          )}
+          {!removeLabel && <Label small={false}>{label}</Label>}
           {optional ? <span>(optional) </span> : ""}
           {tooltip && <ToolTipDetails>{tooltip}</ToolTipDetails>}
         </div>
@@ -450,6 +443,7 @@ interface BooleanFormFieldProps {
   optional?: boolean;
   tooltip?: string;
   disabledTooltip?: string;
+  onChange?: (checked: boolean) => void;
 }
 
 export const BooleanFormField = ({
@@ -463,6 +457,7 @@ export const BooleanFormField = ({
   disabled,
   tooltip,
   disabledTooltip,
+  onChange,
 }: BooleanFormFieldProps) => {
   const { setFieldValue } = useFormikContext<any>();
 
@@ -471,8 +466,11 @@ export const BooleanFormField = ({
       if (!disabled) {
         setFieldValue(name, checked);
       }
+      if (onChange) {
+        onChange(checked === true);
+      }
     },
-    [disabled, name, setFieldValue]
+    [disabled, name, setFieldValue, onChange]
   );
 
   return (
@@ -734,6 +732,7 @@ export function SelectorFormField({
               ) : (
                 options.map((option) => (
                   <SelectItem
+                    hideCheck
                     icon={option.icon}
                     key={option.value}
                     value={String(option.value)}

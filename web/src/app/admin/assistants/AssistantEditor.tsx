@@ -40,14 +40,7 @@ import * as Yup from "yup";
 import CollapsibleSection from "./CollapsibleSection";
 import { SuccessfulPersonaUpdateRedirectType } from "./enums";
 import { Persona, PersonaLabel, StarterMessage } from "./interfaces";
-import {
-  createPersonaLabel,
-  PersonaUpsertParameters,
-  createPersona,
-  deletePersonaLabel,
-  updatePersonaLabel,
-  updatePersona,
-} from "./lib";
+import { PersonaUpsertParameters, createPersona, updatePersona } from "./lib";
 import {
   CameraIcon,
   GroupsIconSkeleton,
