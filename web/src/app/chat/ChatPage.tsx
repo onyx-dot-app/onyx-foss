@@ -194,7 +194,7 @@ export function ChatPage({
   const enterpriseSettings = settings?.enterpriseSettings;
 
   const [documentSidebarToggled, setDocumentSidebarToggled] = useState(false);
-  const [proSearchEnabled, setProSearchEnabled] = useState(true);
+  const [proSearchEnabled, setProSearchEnabled] = useState(false);
   const [streamingAllowed, setStreamingAllowed] = useState(false);
 
   const [userSettingsToggled, setUserSettingsToggled] = useState(false);
