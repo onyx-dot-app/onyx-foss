@@ -120,9 +120,7 @@ export function Modal({
             </>
           )}
         </div>
-        <div className="flex-grow overflow-y-auto overflow-x-hidden">
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   );

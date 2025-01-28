@@ -534,7 +534,7 @@ export function ChatInputBar({
               filterManager.selectedDocumentSets.length > 0 ||
               filterManager.selectedTags.length > 0 ||
               filterManager.selectedSources.length > 0) && (
-              <div className="flex gap-x-.5 px-2">
+              <div className="flex bg-background gap-x-.5 px-2">
                 <div className="flex gap-x-1 px-2 overflow-visible overflow-x-scroll items-end miniscroll">
                   {filterManager.selectedTags &&
                     filterManager.selectedTags.map((tag, index) => (
