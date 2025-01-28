@@ -110,6 +110,5 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
     )
 
     logger.debug(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
-    logger.debug(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
 
     return main_output

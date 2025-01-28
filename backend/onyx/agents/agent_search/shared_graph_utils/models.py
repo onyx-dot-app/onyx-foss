@@ -112,3 +112,8 @@ class CombinedAgentMetrics(BaseModel):
     base_metrics: AgentBaseMetrics | None
     refined_metrics: AgentRefinedMetrics
     additional_metrics: AgentAdditionalMetrics
+
+
+class PersonaExpressions(BaseModel):
+    persona_prompt: str
+    persona_base: str

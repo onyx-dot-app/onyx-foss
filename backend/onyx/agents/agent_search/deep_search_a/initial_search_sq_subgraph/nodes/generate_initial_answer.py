@@ -31,12 +31,6 @@ from onyx.agents.agent_search.shared_graph_utils.models import InitialAgentResul
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_DEFAULT,
-)
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_PERSONA,
-)
 from onyx.agents.agent_search.shared_graph_utils.prompts import INITIAL_RAG_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS,
@@ -49,7 +43,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
@@ -71,9 +65,9 @@ def generate_initial_answer(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
+    persona = get_persona_expressions(agent_a_config.search_request.persona)
 
-    history = build_history_prompt(agent_a_config.prompt_builder)
+    history = build_history_prompt(agent_a_config, question)
 
     date_str = get_today_prompt()
 
@@ -81,7 +75,7 @@ def generate_initial_answer(
     sub_questions_cited_docs = state.cited_docs
     all_original_question_documents = state.all_original_question_documents
 
-    consolidated_context_docs: list[InferenceSection] = []
+    consolidated_context_docs: list[InferenceSection] = sub_questions_cited_docs
     counter = 0
     for original_doc_number, original_doc in enumerate(all_original_question_documents):
         if original_doc_number not in sub_questions_cited_docs:
@@ -174,15 +168,6 @@ def generate_initial_answer(
         else:
             sub_question_answer_str = ""
 
-        # Determine which persona-specification prompt to use
-
-        if len(persona_prompt) == 0:
-            persona_specification = ASSISTANT_SYSTEM_PROMPT_DEFAULT
-        else:
-            persona_specification = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
-                persona_prompt=persona_prompt
-            )
-
         # Determine which base prompt to use given the sub-question information
         if len(good_qa_list) > 0:
             base_prompt = INITIAL_RAG_PROMPT
@@ -193,7 +178,7 @@ def generate_initial_answer(
 
         # summarize the history iff too long
         if len(history) > AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH:
-            history = summarize_history(history, question, persona_specification, model)
+            history = summarize_history(history, question, persona.persona_base, model)
 
         doc_context = format_docs(relevant_docs)
         doc_context = trim_prompt_piece(
@@ -201,7 +186,7 @@ def generate_initial_answer(
             doc_context,
             base_prompt
             + sub_question_answer_str
-            + persona_specification
+            + persona.persona_prompt
             + history
             + date_str,
         )
@@ -214,7 +199,7 @@ def generate_initial_answer(
                         sub_question_answer_str
                     ),
                     relevant_docs=format_docs(relevant_docs),
-                    persona_specification=persona_specification,
+                    persona_specification=persona.persona_prompt,
                     history=history,
                     date_prompt=date_str,
                 )

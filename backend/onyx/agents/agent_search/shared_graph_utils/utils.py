@@ -19,6 +19,13 @@ from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
+from onyx.agents.agent_search.shared_graph_utils.models import PersonaExpressions
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    ASSISTANT_SYSTEM_PROMPT_DEFAULT,
+)
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    ASSISTANT_SYSTEM_PROMPT_PERSONA,
+)
 from onyx.agents.agent_search.shared_graph_utils.prompts import DATE_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     HISTORY_CONTEXT_SUMMARY_PROMPT,
@@ -250,11 +257,17 @@ def get_test_config(
     return config, search_tool
 
 
-def get_persona_prompt(persona: Persona | None) -> str:
+def get_persona_expressions(persona: Persona | None) -> PersonaExpressions:
     if persona is None:
-        return ""
+        persona_prompt = ASSISTANT_SYSTEM_PROMPT_DEFAULT
+        persona_base = ""
     else:
-        return "\n".join([x.system_prompt for x in persona.prompts])
+        persona_base = "\n".join([x.system_prompt for x in persona.prompts])
+
+        persona_prompt = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
+            persona_prompt=persona_base
+        )
+    return PersonaExpressions(persona_prompt=persona_prompt, persona_base=persona_base)
 
 
 def make_question_id(level: int, question_nr: int) -> str:

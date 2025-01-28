@@ -53,11 +53,13 @@ class RefinedAgentEndStats(BaseModel):
 
 class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats):
     agent_start_time: datetime = datetime.now()
+    previous_history: str = ""
     initial_decomp_questions: list[str] = []
 
 
 class ExploratorySearchUpdate(LoggerUpdate):
     exploratory_search_results: list[InferenceSection] = []
+    previous_history: str = ""
 
 
 class AnswerComparison(LoggerUpdate):
@@ -66,7 +68,6 @@ class AnswerComparison(LoggerUpdate):
 
 class RoutingDecision(LoggerUpdate):
     routing: str = ""
-    sample_doc_str: str = ""
 
 
 class InitialAnswerBASEUpdate(BaseModel):

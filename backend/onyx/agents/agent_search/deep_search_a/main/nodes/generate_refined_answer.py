@@ -22,15 +22,10 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
 )
+from onyx.agents.agent_search.shared_graph_utils.models import InferenceSection
 from onyx.agents.agent_search.shared_graph_utils.models import RefinedAgentStats
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
-)
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_DEFAULT,
-)
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_PERSONA,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import REVISED_RAG_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
@@ -44,11 +39,13 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
+from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
+from onyx.configs.agent_configs import AGENT_MIN_ORIG_QUESTION_DOCS
 from onyx.tools.tool_implementations.search.search_tool import yield_search_responses
 
 
@@ -61,14 +58,36 @@ def generate_refined_answer(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
+    persona = get_persona_expressions(agent_a_config.search_request.persona)
 
-    history = build_history_prompt(agent_a_config.prompt_builder)
+    history = build_history_prompt(agent_a_config, question)
     date_str = get_today_prompt()
     initial_documents = state.documents
     revised_documents = state.refined_documents
+    sub_questions_cited_docs = state.cited_docs
 
-    combined_documents = dedup_inference_sections(initial_documents, revised_documents)
+    state.context_documents
+    sub_questions_cited_docs = state.cited_docs
+    all_original_question_documents = state.all_original_question_documents
+
+    consolidated_context_docs: list[InferenceSection] = sub_questions_cited_docs
+    counter = 0
+    for original_doc_number, original_doc in enumerate(all_original_question_documents):
+        if original_doc_number not in sub_questions_cited_docs:
+            if (
+                counter <= AGENT_MIN_ORIG_QUESTION_DOCS
+                or len(consolidated_context_docs) < AGENT_MAX_ANSWER_CONTEXT_DOCS
+            ):
+                consolidated_context_docs.append(original_doc)
+                counter += 1
+
+    # sort docs by their scores - though the scores refer to different questions
+    relevant_docs = dedup_inference_sections(
+        consolidated_context_docs, consolidated_context_docs
+    )
+
+    combined_documents = relevant_docs
+    # combined_documents = dedup_inference_sections(initial_documents, revised_documents)
 
     query_info = get_query_info(state.original_question_retrieval_results)
     if agent_a_config.search_tool is None:
@@ -157,13 +176,6 @@ def generate_refined_answer(
 
     # Determine which persona-specification prompt to use
 
-    if len(persona_prompt) == 0:
-        persona_specification = ASSISTANT_SYSTEM_PROMPT_DEFAULT
-    else:
-        persona_specification = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
-            persona_prompt=persona_prompt
-        )
-
     # Determine which base prompt to use given the sub-question information
     if len(good_qa_list) > 0:
         base_prompt = REVISED_RAG_PROMPT
@@ -171,16 +183,15 @@ def generate_refined_answer(
         base_prompt = REVISED_RAG_PROMPT_NO_SUB_QUESTIONS
 
     model = agent_a_config.fast_llm
-    relevant_docs = format_docs(combined_documents)
-    relevant_docs = trim_prompt_piece(
+    relevant_docs_str = format_docs(combined_documents)
+    relevant_docs_str = trim_prompt_piece(
         model.config,
-        relevant_docs,
+        relevant_docs_str,
         base_prompt
         + question
         + sub_question_answer_str
-        + relevant_docs
         + initial_answer
-        + persona_specification
+        + persona.persona_prompt
         + history,
     )
 
@@ -194,7 +205,7 @@ def generate_refined_answer(
                 ),
                 relevant_docs=relevant_docs,
                 initial_answer=remove_document_citations(initial_answer),
-                persona_specification=persona_specification,
+                persona_specification=persona.persona_prompt,
                 date_prompt=date_str,
             )
         )
@@ -229,34 +240,14 @@ def generate_refined_answer(
     #     state.decomp_answer_results, state.original_question_retrieval_stats
     # )
 
-    initial_good_sub_questions_str = "\n".join(list(set(initial_good_sub_questions)))
-    new_revised_good_sub_questions_str = "\n".join(
-        list(set(new_revised_good_sub_questions))
-    )
-
     refined_agent_stats = RefinedAgentStats(
         revision_doc_efficiency=revision_doc_effectiveness,
         revision_question_efficiency=revision_question_efficiency,
     )
 
-    logger.debug(
-        f"\n\n---INITIAL ANSWER START---\n\n Answer:\n Agent: {initial_answer}"
-    )
+    logger.debug(f"\n\n---INITIAL ANSWER ---\n\n Answer:\n Agent: {initial_answer}")
     logger.debug("-" * 10)
-    logger.debug(f"\n\n---REVISED AGENT ANSWER START---\n\n Answer:\n Agent: {answer}")
-
-    logger.debug("-" * 100)
-    logger.debug(f"\n\nINITAL Sub-Questions\n\n{initial_good_sub_questions_str}\n\n")
-    logger.debug("-" * 10)
-    logger.debug(
-        f"\n\nNEW REVISED Sub-Questions\n\n{new_revised_good_sub_questions_str}\n\n"
-    )
-
-    logger.debug("-" * 100)
-
-    logger.debug(
-        f"\n\nINITAL & REVISED Sub-Questions & Answers:\n\n{sub_question_answer_str}\n\nStas:\n\n"
-    )
+    logger.debug(f"\n\n---REVISED AGENT ANSWER ---\n\n Answer:\n Agent: {answer}")
 
     logger.debug("-" * 100)
 

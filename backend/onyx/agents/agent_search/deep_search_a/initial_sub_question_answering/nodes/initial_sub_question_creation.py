@@ -44,10 +44,10 @@ def initial_sub_question_creation(
     perform_initial_search_decomposition = (
         agent_a_config.perform_initial_search_decomposition
     )
-    # perform_initial_search_path_decision = (
-    #     agent_a_config.perform_initial_search_path_decision
-    # )
-    history = build_history_prompt(agent_a_config.prompt_builder)
+    # Get the rewritten queries in a defined format
+    model = agent_a_config.fast_llm
+
+    history = build_history_prompt(agent_a_config, question)
 
     # Use the initial search results to inform the decomposition
     sample_doc_str = state.sample_doc_str if hasattr(state, "sample_doc_str") else ""
@@ -84,9 +84,6 @@ def initial_sub_question_creation(
     # Start decomposition
 
     msg = [HumanMessage(content=decomposition_prompt)]
-
-    # Get the rewritten queries in a defined format
-    model = agent_a_config.fast_llm
 
     # Send the initial question as a subquestion with number 0
     dispatch_custom_event(

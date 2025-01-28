@@ -11,14 +11,8 @@ from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import InitialAnswerUpdate
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_DEFAULT,
-)
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_PERSONA,
-)
 from onyx.agents.agent_search.shared_graph_utils.prompts import DIRECT_LLM_PROMPT
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
 from onyx.chat.models import AgentAnswerPiece
 
 
@@ -29,14 +23,7 @@ def direct_llm_handling(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona_prompt = get_persona_prompt(agent_a_config.search_request.persona)
-
-    if len(persona_prompt) == 0:
-        persona_specification = ASSISTANT_SYSTEM_PROMPT_DEFAULT
-    else:
-        persona_specification = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
-            persona_prompt=persona_prompt
-        )
+    persona = get_persona_expressions(agent_a_config.search_request.persona)
 
     logger.debug(f"--------{now_start}--------LLM HANDLING START---")
 
@@ -45,7 +32,7 @@ def direct_llm_handling(
     msg = [
         HumanMessage(
             content=DIRECT_LLM_PROMPT.format(
-                persona_specification=persona_specification, question=question
+                persona_specification=persona.persona_prompt, question=question
             )
         )
     ]

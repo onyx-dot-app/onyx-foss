@@ -16,15 +16,9 @@ from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_sub_question_answer_prompt,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_DEFAULT,
-)
-from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    ASSISTANT_SYSTEM_PROMPT_PERSONA,
-)
 from onyx.agents.agent_search.shared_graph_utils.prompts import NO_RECOVERED_DOCS
 from onyx.agents.agent_search.shared_graph_utils.utils import get_answer_citation_ids
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import StreamStopInfo
@@ -45,7 +39,7 @@ def answer_generation(
     docs = state.documents
     level, question_nr = parse_question_id(state.question_id)
     context_docs = state.context_documents
-    persona_prompt = get_persona_prompt(agent_search_config.search_request.persona)
+    persona = get_persona_expressions(agent_search_config.search_request.persona)
 
     if len(context_docs) == 0:
         answer_str = NO_RECOVERED_DOCS
@@ -59,13 +53,6 @@ def answer_generation(
             ),
         )
     else:
-        if len(persona_prompt) > 0:
-            persona_specification = ASSISTANT_SYSTEM_PROMPT_DEFAULT
-        else:
-            persona_specification = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
-                persona_prompt=persona_prompt
-            )
-
         logger.debug(f"Number of verified retrieval docs: {len(docs)}")
 
         fast_llm = agent_search_config.fast_llm
@@ -73,7 +60,7 @@ def answer_generation(
             question=question,
             original_question=agent_search_config.search_request.query,
             docs=context_docs,
-            persona_specification=persona_specification,
+            persona_specification=persona.persona_prompt,
             config=fast_llm.config,
         )
 
