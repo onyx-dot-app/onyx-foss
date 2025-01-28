@@ -73,6 +73,7 @@ class SharepointConnector(LoadConnector, PollConnector):
         self.batch_size = batch_size
         self.graph_client: GraphClient | None = None
         self.site_data: list[SiteData] = self._extract_site_and_folder(sites)
+        self.msal_app: msal.ConfidentialClientApplication | None = None
 
     @staticmethod
     def _extract_site_and_folder(site_urls: list[str]) -> list[SiteData]:
@@ -182,17 +183,21 @@ class SharepointConnector(LoadConnector, PollConnector):
         sp_client_secret = credentials["sp_client_secret"]
         sp_directory_id = credentials["sp_directory_id"]
 
+        authority_url = f"https://login.microsoftonline.com/{sp_directory_id}"
+        self.msal_app = msal.ConfidentialClientApplication(
+            authority=authority_url,
+            client_id=sp_client_id,
+            client_credential=sp_client_secret,
+        )
+
         def _acquire_token_func() -> dict[str, Any]:
             """
             Acquire token via MSAL
             """
-            authority_url = f"https://login.microsoftonline.com/{sp_directory_id}"
-            app = msal.ConfidentialClientApplication(
-                authority=authority_url,
-                client_id=sp_client_id,
-                client_credential=sp_client_secret,
-            )
-            token = app.acquire_token_for_client(
+            if self.msal_app is None:
+                raise RuntimeError("MSAL app is not initialized")
+
+            token = self.msal_app.acquire_token_for_client(
                 scopes=["https://graph.microsoft.com/.default"]
             )
             return token
