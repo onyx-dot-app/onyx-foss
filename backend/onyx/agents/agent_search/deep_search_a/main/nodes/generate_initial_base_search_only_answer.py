@@ -21,7 +21,7 @@ def generate_initial_base_search_only_answer(
 ) -> InitialAnswerBASEUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------GENERATE INITIAL BASE ANSWER---")
+    logger.info(f"--------{now_start}--------GENERATE INITIAL BASE ANSWER---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query

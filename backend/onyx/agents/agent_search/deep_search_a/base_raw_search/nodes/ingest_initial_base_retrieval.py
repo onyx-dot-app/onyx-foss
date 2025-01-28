@@ -13,7 +13,7 @@ def ingest_initial_base_retrieval(
 ) -> ExpandedRetrievalUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------INGEST INITIAL RETRIEVAL---")
+    logger.info(f"--------{now_start}--------INGEST INITIAL RETRIEVAL---")
 
     sub_question_retrieval_stats = (
         state.base_expanded_retrieval_result.sub_question_retrieval_stats

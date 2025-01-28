@@ -15,7 +15,7 @@ def ingest_initial_sub_question_answers(
 ) -> DecompAnswersUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------INGEST ANSWERS---")
+    logger.info(f"--------{now_start}--------INGEST ANSWERS---")
     documents = []
     context_documents = []
     cited_docs = []

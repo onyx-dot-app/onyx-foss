@@ -23,6 +23,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
@@ -32,13 +33,13 @@ def answer_generation(
     state: AnswerQuestionState, config: RunnableConfig
 ) -> QAGenerationUpdate:
     now_start = datetime.now()
-    logger.debug(f"--------{now_start}--------START ANSWER GENERATION---")
+    logger.info(f"--------{now_start}--------START ANSWER GENERATION---")
 
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question
     docs = state.documents
     level, question_nr = parse_question_id(state.question_id)
-    context_docs = state.context_documents
+    context_docs = state.context_documents[:AGENT_MAX_ANSWER_CONTEXT_DOCS]
     persona = get_persona_expressions(agent_search_config.search_request.persona)
 
     if len(context_docs) == 0:
@@ -99,6 +100,10 @@ def answer_generation(
     dispatch_custom_event("stream_finished", stop_event)
 
     now_end = datetime.now()
+
+    logger.info(
+        f"{now_start} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
+    )
     return QAGenerationUpdate(
         answer=answer_str,
         cited_docs=cited_docs,

@@ -15,7 +15,7 @@ def ingest_refined_answers(
 ) -> DecompAnswersUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------INGEST FOLLOW UP ANSWERS---")
+    logger.info(f"--------{now_start}--------INGEST FOLLOW UP ANSWERS---")
 
     documents = []
     answer_results = state.answer_results if hasattr(state, "answer_results") else []

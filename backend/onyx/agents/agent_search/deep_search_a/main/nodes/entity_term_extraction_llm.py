@@ -30,7 +30,7 @@ def entity_term_extraction_llm(
 ) -> EntityTermExtractionUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------GENERATE ENTITIES & TERMS---")
+    logger.info(f"--------{now_start}--------GENERATE ENTITIES & TERMS---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     if not agent_a_config.allow_refinement:
@@ -110,8 +110,8 @@ def entity_term_extraction_llm(
 
     now_end = datetime.now()
 
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------ENTITY TERM EXTRACTION END---"
+    logger.info(
+        f"{now_start} -- MAIN - Entity term extraction,  Time taken: {now_end - now_start}"
     )
 
     return EntityTermExtractionUpdate(

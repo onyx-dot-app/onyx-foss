@@ -18,7 +18,7 @@ def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDeci
     #    agent_a_config.perform_initial_search_path_decision
     # )
 
-    logger.debug(f"--------{now_start}--------DECIDING TO SEARCH OR GO TO LLM---")
+    logger.info(f"--------{now_start}--------DECIDING TO SEARCH OR GO TO LLM---")
 
     routing = "agent_search"
 

@@ -46,7 +46,7 @@ def refined_sub_question_creation(
 
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------FOLLOW UP DECOMPOSE---")
+    logger.info(f"--------{now_start}--------FOLLOW UP DECOMPOSE---")
 
     agent_refined_start_time = datetime.now()
 
@@ -108,8 +108,8 @@ def refined_sub_question_creation(
 
     now_end = datetime.now()
 
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------FOLLOW UP DECOMPOSE END---"
+    logger.info(
+        f"{now_start} -- MAIN - Refined sub question creation,  Time taken: {now_end - now_start}"
     )
 
     return FollowUpSubQuestionsUpdate(

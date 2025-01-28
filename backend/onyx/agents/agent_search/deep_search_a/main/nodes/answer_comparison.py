@@ -21,7 +21,7 @@ def answer_comparison(state: MainState, config: RunnableConfig) -> AnswerCompari
     initial_answer = state.initial_answer
     refined_answer = state.refined_answer
 
-    logger.debug(f"--------{now_start}--------ANSWER COMPARISON STARTED--")
+    logger.info(f"--------{now_start}--------ANSWER COMPARISON STARTED--")
 
     answer_comparison_prompt = ANSWER_COMPARISON_PROMPT.format(
         question=question, initial_answer=initial_answer, refined_answer=refined_answer
@@ -48,8 +48,8 @@ def answer_comparison(state: MainState, config: RunnableConfig) -> AnswerCompari
 
     now_end = datetime.now()
 
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------ANSWER COMPARISON COMPLETED---"
+    logger.info(
+        f"{now_start} -- MAIN - Answer comparison,  Time taken: {now_end - now_start}"
     )
 
     return AnswerComparison(

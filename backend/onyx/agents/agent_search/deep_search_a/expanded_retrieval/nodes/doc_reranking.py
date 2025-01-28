@@ -80,6 +80,9 @@ def doc_reranking(
 
     # TODO: stream deduped docs here, or decide to use search tool ranking/verification
     now_end = datetime.now()
+    logger.info(
+        f"{now_start} -- Expanded Retrieval - Reranking - Time taken: {now_end - now_start}"
+    )
     return DocRerankingUpdate(
         reranked_documents=[
             doc for doc in reranked_documents if type(doc) == InferenceSection

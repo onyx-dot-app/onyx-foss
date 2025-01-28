@@ -96,6 +96,9 @@ def doc_retrieval(state: RetrievalInput, config: RunnableConfig) -> DocRetrieval
         query_info=query_info,
     )
     now_end = datetime.now()
+    logger.info(
+        f"{now_start} -- Expanded Retrieval - Retrieval - Time taken: {now_end - now_start}"
+    )
     return DocRetrievalUpdate(
         expanded_retrieval_results=[expanded_retrieval_result],
         retrieved_documents=retrieved_docs,

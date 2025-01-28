@@ -16,7 +16,7 @@ def refined_answer_decision(
 ) -> RequireRefinedAnswerUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------REFINED ANSWER DECISION---")
+    logger.info(f"--------{now_start}--------REFINED ANSWER DECISION---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     if "?" in agent_a_config.search_request.query:
@@ -28,8 +28,8 @@ def refined_answer_decision(
 
     now_end = datetime.now()
 
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------REFINED ANSWER DECISION END---"
+    logger.info(
+        f"{now_start} -- MAIN - Refined answer decision,  Time taken: {now_end - now_start}"
     )
     log_messages = [
         f"{now_start} -- Main - Refined answer decision: {decision},  Time taken: {now_end - now_start}"

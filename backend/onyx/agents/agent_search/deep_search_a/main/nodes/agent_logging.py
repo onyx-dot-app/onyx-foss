@@ -17,7 +17,7 @@ from onyx.db.chat import log_agent_sub_question_results
 def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------LOGGING NODE---")
+    logger.info(f"--------{now_start}--------LOGGING NODE---")
 
     agent_start_time = state.agent_start_time
     agent_base_end_time = state.agent_base_end_time
@@ -109,6 +109,16 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
         ],
     )
 
-    logger.debug(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
+    logger.info(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
+
+    for log_message in state.log_messages:
+        logger.info(log_message)
+
+    logger.info("")
+
+    if state.agent_base_metrics:
+        logger.info(f"Initial loop: {state.agent_base_metrics.duration__s}")
+    if state.agent_refined_metrics:
+        logger.info(f"Refined loop: {state.agent_refined_metrics.duration__s}")
 
     return main_output

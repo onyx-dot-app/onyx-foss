@@ -25,7 +25,7 @@ def direct_llm_handling(
     question = agent_a_config.search_request.query
     persona = get_persona_expressions(agent_a_config.search_request.persona)
 
-    logger.debug(f"--------{now_start}--------LLM HANDLING START---")
+    logger.info(f"--------{now_start}--------LLM HANDLING START---")
 
     model = agent_a_config.fast_llm
 
@@ -62,7 +62,7 @@ def direct_llm_handling(
 
     now_end = datetime.now()
 
-    logger.debug(f"--------{now_end}--{now_end - now_start}--------LLM HANDLING END---")
+    logger.info(f"--------{now_end}--{now_end - now_start}--------LLM HANDLING END---")
 
     return InitialAnswerUpdate(
         initial_answer=answer,

@@ -8,6 +8,7 @@ from langchain_core.runnables.config import RunnableConfig
 from onyx.agents.agent_search.deep_search_a.expanded_retrieval.operations import (
     dispatch_subquery,
 )
+from onyx.agents.agent_search.deep_search_a.expanded_retrieval.operations import logger
 from onyx.agents.agent_search.deep_search_a.expanded_retrieval.states import (
     ExpandedRetrievalInput,
 )
@@ -60,6 +61,9 @@ def expand_queries(
 
     rewritten_queries = llm_response.split("\n")
     now_end = datetime.now()
+    logger.info(
+        f"{now_start} -- Expanded Retrieval - Query Expansion - Time taken: {now_end - now_start}"
+    )
     return QueryExpansionUpdate(
         expanded_queries=rewritten_queries,
         log_messages=[

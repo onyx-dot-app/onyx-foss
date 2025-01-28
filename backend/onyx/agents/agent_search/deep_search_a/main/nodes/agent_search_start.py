@@ -20,7 +20,7 @@ def agent_search_start(
 ) -> ExploratorySearchUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------EXPLORATORY SEARCH START---")
+    logger.info(f"--------{now_start}--------EXPLORATORY SEARCH START---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query

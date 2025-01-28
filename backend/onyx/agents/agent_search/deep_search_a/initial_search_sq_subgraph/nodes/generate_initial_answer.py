@@ -61,7 +61,7 @@ def generate_initial_answer(
 ) -> InitialAnswerUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------GENERATE INITIAL---")
+    logger.info(f"--------{now_start}--------GENERATE INITIAL---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -244,10 +244,6 @@ def generate_initial_answer(
 
     now_end = datetime.now()
 
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------INITIAL AGENT ANSWER  END---\n\n"
-    )
-
     agent_base_end_time = datetime.now()
 
     agent_base_metrics = AgentBaseMetrics(
@@ -267,6 +263,10 @@ def generate_initial_answer(
             "support_ratio", None
         ),
         duration__s=(agent_base_end_time - state.agent_start_time).total_seconds(),
+    )
+
+    logger.info(
+        f"{now_start} -- Main - Initial Answer generation,  Time taken: {now_end - now_start}"
     )
 
     return InitialAnswerUpdate(

@@ -214,7 +214,7 @@ if __name__ == "__main__":
         # query="When was Washington born?",
         # query="What is Onyx?",
         # query="What is the difference between astronomy and astrology?",
-        query="Do a search to tell me what is the difference between astronomy and astrology?",
+        query="Do a search to tell me hat is the difference between astronomy and astrology?",
     )
     # Joachim custom persona
 

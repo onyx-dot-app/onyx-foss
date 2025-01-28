@@ -105,7 +105,7 @@ except ValueError:
     )
 
 AGENT_MAX_ANSWER_CONTEXT_DOCS_OS: int | str = os.environ.get(
-    "AGENT_MAX_ANSWER_CONTEXT_DOCS", "30"
+    "AGENT_MAX_ANSWER_CONTEXT_DOCS", "10"
 )
 
 try:
@@ -116,7 +116,7 @@ except ValueError:
     )
 
 AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS: int | str = os.environ.get(
-    "AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS", "100"
+    "AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH_OS", "10000"
 )
 
 try:

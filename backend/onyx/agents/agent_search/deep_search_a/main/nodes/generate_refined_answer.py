@@ -54,7 +54,7 @@ def generate_refined_answer(
 ) -> RefinedAnswerUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------GENERATE REFINED ANSWER---")
+    logger.info(f"--------{now_start}--------GENERATE REFINED ANSWER---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -307,8 +307,8 @@ def generate_refined_answer(
 
     now_end = datetime.now()
 
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------REFINED ANSWER UPDATE END---"
+    logger.info(
+        f"{now_start} -- MAIN - Generate refined answer,  Time taken: {now_end - now_start}"
     )
 
     return RefinedAnswerUpdate(
@@ -317,4 +317,7 @@ def generate_refined_answer(
         refined_agent_stats=refined_agent_stats,
         agent_refined_end_time=agent_refined_end_time,
         agent_refined_metrics=agent_refined_metrics,
+        log_messages=[
+            f"{now_start} -- MAIN - Generate refined answer,  Time taken: {now_end - now_start}"
+        ],
     )

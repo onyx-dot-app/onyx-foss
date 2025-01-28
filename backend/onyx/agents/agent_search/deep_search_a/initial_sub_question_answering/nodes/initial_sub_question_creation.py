@@ -35,7 +35,7 @@ def initial_sub_question_creation(
 ) -> BaseDecompUpdate:
     now_start = datetime.now()
 
-    logger.debug(f"--------{now_start}--------BASE DECOMP START---")
+    logger.info(f"--------{now_start}--------BASE DECOMP START---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -117,7 +117,9 @@ def initial_sub_question_creation(
 
     now_end = datetime.now()
 
-    logger.debug(f"--------{now_end}--{now_end - now_start}--------BASE DECOMP END---")
+    logger.info(
+        f"{now_start} -- INITIAL SUBQUESTION ANSWERING - Base Decomposition,  Time taken: {now_end - now_start}"
+    )
 
     return BaseDecompUpdate(
         initial_decomp_questions=decomp_list,

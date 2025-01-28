@@ -82,7 +82,7 @@ class InitialAnswerUpdate(LoggerUpdate):
     agent_base_metrics: AgentBaseMetrics | None = None
 
 
-class RefinedAnswerUpdate(RefinedAgentEndStats):
+class RefinedAnswerUpdate(RefinedAgentEndStats, LoggerUpdate):
     refined_answer: str = ""
     refined_agent_stats: RefinedAgentStats | None = None
     refined_answer_quality: bool = False
