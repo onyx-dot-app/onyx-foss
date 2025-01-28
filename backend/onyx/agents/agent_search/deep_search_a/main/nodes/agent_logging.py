@@ -120,5 +120,14 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
         logger.info(f"Initial loop: {state.agent_base_metrics.duration__s}")
     if state.agent_refined_metrics:
         logger.info(f"Refined loop: {state.agent_refined_metrics.duration__s}")
+    if (
+        state.agent_base_metrics
+        and state.agent_refined_metrics
+        and state.agent_base_metrics.duration__s
+        and state.agent_refined_metrics.duration__s
+    ):
+        logger.info(
+            f"Total time: {float(state.agent_base_metrics.duration__s) + float(state.agent_refined_metrics.duration__s)}"
+        )
 
     return main_output
