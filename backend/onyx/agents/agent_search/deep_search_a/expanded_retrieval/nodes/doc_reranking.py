@@ -36,8 +36,17 @@ def doc_reranking(
     if agent_a_config.search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
     with get_session_context_manager() as db_session:
+        # we ignore some of the user specified fields since this search is
+        # internal to agentic search, but we still want to pass through
+        # persona (for stuff like document sets) and rerank settings
+        # (to not make an unnecessary db call).
+        search_request = SearchRequest(
+            query=question,
+            persona=agent_a_config.search_request.persona,
+            rerank_settings=agent_a_config.search_request.rerank_settings,
+        )
         _search_query = retrieval_preprocessing(
-            search_request=SearchRequest(query=question),
+            search_request=search_request,
             user=agent_a_config.search_tool.user,  # bit of a hack
             llm=agent_a_config.fast_llm,
             db_session=db_session,
