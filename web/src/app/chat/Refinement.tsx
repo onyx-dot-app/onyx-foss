@@ -20,7 +20,7 @@ export function useOrderedPhases(externalPhase: StreamingPhase) {
   const [phaseQueue, setPhaseQueue] = useState<StreamingPhase[]>([]);
   const [displayedPhases, setDisplayedPhases] = useState<StreamingPhase[]>([]);
   const lastDisplayTimeRef = useRef<number>(Date.now());
-  const MIN_DELAY = 1000; // 0.5 seconds
+  const MIN_DELAY = 300; // 0.5 seconds
 
   const getPhaseIndex = (phase: StreamingPhase) => PHASES_ORDER.indexOf(phase);
   const finalPhaseIndex = useRef<number | null>(null);
