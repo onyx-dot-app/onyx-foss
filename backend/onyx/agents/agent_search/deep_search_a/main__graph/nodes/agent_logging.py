@@ -80,7 +80,7 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
                 agent_metrics=combined_agent_metrics,
             )
 
-        if agent_a_config.use_persistence:
+        if agent_a_config.use_agentic_persistence:
             # Persist the sub-answer in the database
             db_session = agent_a_config.db_session
             chat_session_id = agent_a_config.chat_session_id

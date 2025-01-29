@@ -248,7 +248,7 @@ def get_test_config(
         chat_session_id=UUID("edda10d5-6cef-45d8-acfb-39317552a1f4"),  # Joachim
         # chat_session_id=UUID("d1acd613-2692-4bc3-9d65-c6d3da62e58e"),  # Evan
         message_id=1,
-        use_persistence=True,
+        use_agentic_persistence=True,
         db_session=db_session,
         tools=[search_tool],
         use_agentic_search=use_agentic_search,

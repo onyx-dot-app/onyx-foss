@@ -11,6 +11,7 @@ from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import PromptConfig
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.context.search.models import SearchRequest
+from onyx.llm.interfaces import LLM
 from onyx.tools.force import ForceUseTool
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 from tests.regression.answer_quality.run_qa import _process_and_write_query_results
@@ -38,7 +39,7 @@ def test_skip_gen_ai_answer_generation_flag(
     question = config["question"]
     skip_gen_ai_answer_generation = config["skip_gen_ai_answer_generation"]
 
-    mock_llm = Mock()
+    mock_llm = Mock(spec=LLM)
     mock_llm.config = Mock()
     mock_llm.config.model_name = "gpt-4o-mini"
     mock_llm.stream = Mock()
@@ -66,6 +67,7 @@ def test_skip_gen_ai_answer_generation_flag(
         ),
         chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
         current_agent_message_id=0,
+        use_agentic_persistence=False,
     )
     results = list(answer.processed_streamed_output)
     for res in results:

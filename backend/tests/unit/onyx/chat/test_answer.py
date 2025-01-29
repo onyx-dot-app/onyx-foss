@@ -65,6 +65,7 @@ def answer_instance(
         search_request=SearchRequest(query=QUERY),
         chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
         current_agent_message_id=0,
+        use_agentic_persistence=False,
     )
 
 

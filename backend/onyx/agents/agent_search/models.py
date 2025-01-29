@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,8 +14,7 @@ from onyx.tools.tool import Tool
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
-@dataclass
-class AgentSearchConfig:
+class AgentSearchConfig(BaseModel):
     """
     Configuration for the Agent Search feature.
     """
@@ -47,10 +45,10 @@ class AgentSearchConfig:
     # The message ID of the user message that triggered the Pro Search
     message_id: int | None = None
 
-    # Whether to persistence data for the Pro Search (turned off for testing)
-    use_persistence: bool = True
+    # Whether to persistence data for Agentic Search (turned off for testing)
+    use_agentic_persistence: bool = True
 
-    # The database session for the Pro Search
+    # The database session for Agentic Search
     db_session: Session | None = None
 
     # Whether to perform initial search to inform decomposition
@@ -75,7 +73,7 @@ class AgentSearchConfig:
 
     @model_validator(mode="after")
     def validate_db_session(self) -> "AgentSearchConfig":
-        if self.use_persistence and self.db_session is None:
+        if self.use_agentic_persistence and self.db_session is None:
             raise ValueError(
                 "db_session must be provided for pro search when using persistence"
             )
@@ -86,6 +84,9 @@ class AgentSearchConfig:
         if self.use_agentic_search and self.search_tool is None:
             raise ValueError("search_tool must be provided for agentic search")
         return self
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class AgentDocumentCitations(BaseModel):

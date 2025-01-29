@@ -38,7 +38,6 @@ def tool_call(state: ToolChoiceUpdate, config: RunnableConfig) -> ToolCallUpdate
     tool_runner = ToolRunner(tool, tool_args)
     tool_kickoff = tool_runner.kickoff()
 
-    # TODO: custom events for yields
     emit_packet(tool_kickoff)
 
     tool_responses = []

@@ -54,6 +54,7 @@ class Answer:
         is_connected: Callable[[], bool] | None = None,
         db_session: Session | None = None,
         use_agentic_search: bool = False,
+        use_agentic_persistence: bool = True,
     ) -> None:
         self.is_connected: Callable[[], bool] | None = is_connected
 
@@ -90,14 +91,9 @@ class Answer:
 
         if len(search_tools) > 1:
             # TODO: handle multiple search tools
-            logger.warning("Multiple search tools found, using first one")
-            search_tool = search_tools[0]
+            raise ValueError("Multiple search tools found")
         elif len(search_tools) == 1:
             search_tool = search_tools[0]
-        else:
-            logger.warning("No search tool found")
-            if use_agentic_search:
-                raise ValueError("No search tool found, cannot use agentic search")
 
         using_tool_calling_llm = explicit_tool_calling_supported(
             llm.config.model_provider, llm.config.model_name
@@ -111,7 +107,7 @@ class Answer:
             use_agentic_search=use_agentic_search,
             chat_session_id=chat_session_id,
             message_id=current_agent_message_id,
-            use_persistence=True,
+            use_agentic_persistence=use_agentic_persistence,
             allow_refinement=True,
             db_session=db_session,
             prompt_builder=prompt_builder,
@@ -137,104 +133,20 @@ class Answer:
         logger.info(f"Forcefully using tool='{tool.name}'{args_str}")
         return [tool]
 
-    # TODO: delete the function and move the full body to processed_streamed_output
-    def _get_response(self) -> AnswerStream:
-        # current_llm_call = llm_calls[-1]
+    @property
+    def processed_streamed_output(self) -> AnswerStream:
+        if self._processed_stream is not None:
+            yield from self._processed_stream
+            return
 
-        # tool, tool_args = None, None
-        # # handle the case where no decision has to be made; we simply run the tool
-        # if (
-        #     current_llm_call.force_use_tool.force_use
-        #     and current_llm_call.force_use_tool.args is not None
-        # ):
-        #     tool_name, tool_args = (
-        #         current_llm_call.force_use_tool.tool_name,
-        #         current_llm_call.force_use_tool.args,
-        #     )
-        #     tool = get_tool_by_name(current_llm_call.tools, tool_name)
-
-        # # special pre-logic for non-tool calling LLM case
-        # elif not self.using_tool_calling_llm and current_llm_call.tools:
-        #     chosen_tool_and_args = (
-        #         ToolResponseHandler.get_tool_call_for_non_tool_calling_llm(
-        #             current_llm_call, self.llm
-        #         )
-        #     )
-        #     if chosen_tool_and_args:
-        #         tool, tool_args = chosen_tool_and_args
-
-        # if tool and tool_args:
-        #     dummy_tool_call_chunk = AIMessageChunk(content="")
-        #     dummy_tool_call_chunk.tool_calls = [
-        #         ToolCall(name=tool.name, args=tool_args, id=str(uuid4()))
-        #     ]
-
-        #     response_handler_manager = LLMResponseHandlerManager(
-        #         ToolResponseHandler([tool]), None, self.is_cancelled
-        #     )
-        #     yield from response_handler_manager.handle_llm_response(
-        #         iter([dummy_tool_call_chunk])
-        #     )
-
-        #     tmp_call = response_handler_manager.next_llm_call(current_llm_call)
-        #     if tmp_call is None:
-        #         return  # no more LLM calls to process
-        #     current_llm_call = tmp_call
-
-        # # if we're skipping gen ai answer generation, we should break
-        # # out unless we're forcing a tool call. If we don't, we might generate an
-        # # answer, which is a no-no!
-        # if (
-        #     self.skip_gen_ai_answer_generation
-        #     and not current_llm_call.force_use_tool.force_use
-        # ):
-        #     return
-
-        # # set up "handlers" to listen to the LLM response stream and
-        # # feed back the processed results + handle tool call requests
-        # # + figure out what the next LLM call should be
-        # tool_call_handler = ToolResponseHandler(current_llm_call.tools)
-
-        # final_search_results, displayed_search_results = SearchTool.get_search_result(
-        #     current_llm_call
-        # ) or ([], [])
-
-        # # NEXT: we still want to handle the LLM response stream, but it is now:
-        # # 1. handle the tool call requests
-        # # 2. feed back the processed results
-        # # 3. handle the citations
-
-        # answer_handler = CitationResponseHandler(
-        #     context_docs=final_search_results,
-        #     final_doc_id_to_rank_map=map_document_id_order(final_search_results),
-        #     display_doc_id_to_rank_map=map_document_id_order(displayed_search_results),
-        # )
-
-        # # At the moment, this wrapper class passes streamed stuff through citation and tool handlers.
-        # # In the future, we'll want to handle citations and tool calls in the langgraph graph.
-        # response_handler_manager = LLMResponseHandlerManager(
-        #     tool_call_handler, answer_handler, self.is_cancelled
-        # )
-
-        # In langgraph, whether we do the basic thing (call llm stream) or pro search
-        # is based on a flag in the pro search config
-
-        if self.agent_search_config.use_agentic_search:
-            if (
-                self.agent_search_config.db_session is None
-                and self.agent_search_config.use_persistence
-            ):
-                raise ValueError(
-                    "db_session must be provided for pro search when using persistence"
-                )
-
-            stream = run_main_graph(
-                config=self.agent_search_config,
-            )
-        else:
-            stream = run_basic_graph(
-                config=self.agent_search_config,
-            )
+        run_langgraph = (
+            run_main_graph
+            if self.agent_search_config.use_agentic_search
+            else run_basic_graph
+        )
+        stream = run_langgraph(
+            self.agent_search_config,
+        )
 
         processed_stream = []
         for packet in stream:
@@ -244,62 +156,6 @@ class Answer:
                 break
             processed_stream.append(packet)
             yield packet
-        self._processed_stream = processed_stream
-        return
-        # DEBUG: good breakpoint
-        # stream = self.llm.stream(
-        #     # For tool calling LLMs, we want to insert the task prompt as part of this flow, this is because the LLM
-        #     # may choose to not call any tools and just generate the answer, in which case the task prompt is needed.
-        #     prompt=current_llm_call.prompt_builder.build(),
-        #     tools=[tool.tool_definition() for tool in current_llm_call.tools] or None,
-        #     tool_choice=(
-        #         "required"
-        #         if current_llm_call.tools and current_llm_call.force_use_tool.force_use
-        #         else None
-        #     ),
-        #     structured_response_format=self.answer_style_config.structured_response_format,
-        # )
-        # yield from response_handler_manager.handle_llm_response(stream)
-
-        # new_llm_call = response_handler_manager.next_llm_call(current_llm_call)
-        # if new_llm_call:
-        #     yield from self._get_response(llm_calls + [new_llm_call])
-
-    @property
-    def processed_streamed_output(self) -> AnswerStream:
-        if self._processed_stream is not None:
-            yield from self._processed_stream
-            return
-
-        # prompt_builder = AnswerPromptBuilder(
-        #     user_message=default_build_user_message(
-        #         user_query=self.question,
-        #         prompt_config=self.prompt_config,
-        #         files=self.latest_query_files,
-        #         single_message_history=self.single_message_history,
-        #     ),
-        #     message_history=self.message_history,
-        #     llm_config=self.llm.config,
-        #     raw_user_query=self.question,
-        #     raw_user_uploaded_files=self.latest_query_files or [],
-        #     single_message_history=self.single_message_history,
-        # )
-        # prompt_builder.update_system_prompt(
-        #     default_build_system_message(self.prompt_config)
-        # )
-        # llm_call = LLMCall(
-        #     prompt_builder=prompt_builder,
-        #     tools=self._get_tools_list(),
-        #     force_use_tool=self.force_use_tool,
-        #     files=self.latest_query_files,
-        #     tool_call_info=[],
-        #     using_tool_calling_llm=self.using_tool_calling_llm,
-        # )
-
-        processed_stream = []
-        for processed_packet in self._get_response():
-            processed_stream.append(processed_packet)
-            yield processed_packet
 
         self._processed_stream = processed_stream
 
@@ -343,6 +199,7 @@ class Answer:
 
         return citations
 
+    # TODO: replace tuple of ints with SubQuestionId EVERYWHERE
     def citations_by_subquestion(self) -> dict[tuple[int, int], list[CitationInfo]]:
         citations_by_subquestion: dict[
             tuple[int, int], list[CitationInfo]
