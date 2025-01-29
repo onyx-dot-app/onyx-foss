@@ -51,7 +51,7 @@ export function SlackChannelConfigFormFields({
   setPopup,
 }: SlackChannelConfigFormFieldsProps) {
   const router = useRouter();
-  const { values, setFieldValue, isSubmitting } = useFormikContext<any>();
+  const { values, setFieldValue } = useFormikContext<any>();
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [viewUnselectableSets, setViewUnselectableSets] = useState(false);
   const [viewSyncEnabledAssistants, setViewSyncEnabledAssistants] =
@@ -315,6 +315,7 @@ export function SlackChannelConfigFormFields({
                 )}
               </>
             </SubLabel>
+
             <SelectorFormField
               name="persona_id"
               options={availableAssistants.map((persona) => ({

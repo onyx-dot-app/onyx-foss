@@ -91,7 +91,11 @@ import { DeleteEntityModal } from "../../components/modals/DeleteEntityModal";
 import { MinimalMarkdown } from "@/components/chat_search/MinimalMarkdown";
 import ExceptionTraceModal from "@/components/modals/ExceptionTraceModal";
 
-import { SEARCH_TOOL_NAME } from "./tools/constants";
+import {
+  INTERNET_SEARCH_TOOL_ID,
+  SEARCH_TOOL_ID,
+  SEARCH_TOOL_NAME,
+} from "./tools/constants";
 import { useUser } from "@/components/user/UserProvider";
 import { ApiKeyModal } from "@/components/llm/ApiKeyModal";
 import BlurBackground from "./shared_chat_search/BlurBackground";
@@ -272,8 +276,8 @@ export function ChatPage({
     ? parseFloat(search_param_temperature)
     : selectedAssistant?.tools.some(
           (tool) =>
-            tool.in_code_tool_id === "SearchTool" ||
-            tool.in_code_tool_id === "InternetSearchTool"
+            tool.in_code_tool_id === SEARCH_TOOL_ID ||
+            tool.in_code_tool_id === INTERNET_SEARCH_TOOL_ID
         )
       ? 0
       : 0.7;
@@ -1842,7 +1846,7 @@ export function ChatPage({
   useEffect(() => {
     if (liveAssistant) {
       const hasSearchTool = liveAssistant.tools.some(
-        (tool) => tool.in_code_tool_id === "SearchTool"
+        (tool) => tool.in_code_tool_id === SEARCH_TOOL_ID
       );
       setRetrievalEnabled(hasSearchTool);
       if (!hasSearchTool) {
@@ -1854,7 +1858,7 @@ export function ChatPage({
   const [retrievalEnabled, setRetrievalEnabled] = useState(() => {
     if (liveAssistant) {
       return liveAssistant.tools.some(
-        (tool) => tool.in_code_tool_id === "SearchTool"
+        (tool) => tool.in_code_tool_id === SEARCH_TOOL_ID
       );
     }
     return false;

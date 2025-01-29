@@ -24,6 +24,9 @@ import { Persona } from "../admin/assistants/interfaces";
 import { ReadonlyURLSearchParams } from "next/navigation";
 import { SEARCH_PARAM_NAMES } from "./searchParams";
 import { Settings } from "../admin/settings/interfaces";
+import { INTERNET_SEARCH_TOOL_ID } from "./tools/constants";
+import { SEARCH_TOOL_ID } from "./tools/constants";
+import { IIMAGE_GENERATION_TOOL_ID } from "./tools/constants";
 
 interface ChatRetentionInfo {
   chatRetentionDays: number;
@@ -572,14 +575,14 @@ export function personaIncludesRetrieval(selectedPersona: Persona) {
   return selectedPersona.tools.some(
     (tool) =>
       tool.in_code_tool_id &&
-      ["SearchTool", "InternetSearchTool"].includes(tool.in_code_tool_id)
+      [SEARCH_TOOL_ID, INTERNET_SEARCH_TOOL_ID].includes(tool.in_code_tool_id)
   );
 }
 
 export function personaIncludesImage(selectedPersona: Persona) {
   return selectedPersona.tools.some(
     (tool) =>
-      tool.in_code_tool_id && tool.in_code_tool_id == "ImageGenerationTool"
+      tool.in_code_tool_id && tool.in_code_tool_id == IIMAGE_GENERATION_TOOL_ID
   );
 }
 

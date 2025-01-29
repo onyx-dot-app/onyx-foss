@@ -14,7 +14,7 @@ import CardSection from "@/components/admin/CardSection";
 import { useRouter } from "next/navigation";
 import { Persona } from "@/app/admin/assistants/interfaces";
 import { StandardAnswerCategoryResponse } from "@/components/standardAnswers/getStandardAnswerCategoriesIfEE";
-import { SEARCH_TOOL_NAME } from "@/app/chat/tools/constants";
+import { SEARCH_TOOL_ID, SEARCH_TOOL_NAME } from "@/app/chat/tools/constants";
 import { SlackChannelConfigFormFields } from "./SlackChannelConfigFormFields";
 
 export const SlackChannelConfigCreationForm = ({
@@ -36,16 +36,12 @@ export const SlackChannelConfigCreationForm = ({
   const existingSlackBotUsesPersona = existingSlackChannelConfig?.persona
     ? !isPersonaASlackBotPersona(existingSlackChannelConfig.persona)
     : false;
-  const knowledgePersona = personas.find((persona) => persona.id === 0);
-
-  const documentSetContainsSync = (documentSet: DocumentSet) =>
-    documentSet.cc_pair_descriptors.some(
-      (descriptor) => descriptor.access_type === "sync"
-    );
 
   const searchEnabledAssistants = useMemo(() => {
     return personas.filter((persona) => {
-      return persona.tools.some((tool) => tool.name == SEARCH_TOOL_NAME);
+      return persona.tools.some(
+        (tool) => tool.in_code_tool_id == SEARCH_TOOL_ID
+      );
     });
   }, [personas]);
 
