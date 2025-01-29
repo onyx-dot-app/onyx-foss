@@ -102,7 +102,7 @@ class Answer:
         using_tool_calling_llm = explicit_tool_calling_supported(
             llm.config.model_provider, llm.config.model_name
         )
-        agent_search_config = AgentSearchConfig(
+        self.agent_search_config = AgentSearchConfig(
             search_request=search_request,
             primary_llm=llm,
             fast_llm=fast_llm,
@@ -121,7 +121,6 @@ class Answer:
             structured_response_format=answer_style_config.structured_response_format,
             skip_gen_ai_answer_generation=skip_gen_ai_answer_generation,
         )
-        self.agent_search_config = agent_search_config
         self.db_session = db_session
 
     def _get_tools_list(self) -> list[Tool]:
