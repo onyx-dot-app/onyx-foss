@@ -198,7 +198,7 @@ def run_basic_graph(
 if __name__ == "__main__":
     from onyx.llm.factory import get_default_llms
 
-    for _ in range(3):
+    for _ in range(1):
         now_start = datetime.now()
         logger.debug(f"Start at {now_start}")
 
