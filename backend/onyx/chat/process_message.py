@@ -426,9 +426,7 @@ def stream_chat_message_objects(
         )
 
         search_settings = get_current_search_settings(db_session)
-        document_index = get_default_document_index(
-            primary_index_name=search_settings.index_name, secondary_index_name=None
-        )
+        document_index = get_default_document_index(search_settings, None)
 
         # Every chat Session begins with an empty root message
         root_message = get_or_create_root_message(

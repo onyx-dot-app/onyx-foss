@@ -35,6 +35,7 @@ from onyx.db.models import IndexAttempt
 from onyx.db.models import IndexingStatus
 from onyx.db.models import IndexModelStatus
 from onyx.document_index.factory import get_default_document_index
+from onyx.httpx.httpx_pool import HttpxPool
 from onyx.indexing.embedder import DefaultIndexingEmbedder
 from onyx.indexing.indexing_heartbeat import IndexingHeartbeatInterface
 from onyx.indexing.indexing_pipeline import build_indexing_pipeline
@@ -219,9 +220,10 @@ def _run_indexing(
             callback=callback,
         )
 
-    # Indexing is only done into one index at a time
     document_index = get_default_document_index(
-        primary_index_name=ctx.index_name, secondary_index_name=None
+        index_attempt_start.search_settings,
+        None,
+        httpx_client=HttpxPool.get("vespa"),
     )
 
     indexing_pipeline = build_indexing_pipeline(

@@ -15,6 +15,7 @@ from redis import Redis
 from redis.lock import Lock as RedisLock
 
 from onyx.background.celery.apps.app_base import task_logger
+from onyx.background.celery.celery_utils import httpx_init_vespa_pool
 from onyx.background.celery.tasks.indexing.utils import _should_index
 from onyx.background.celery.tasks.indexing.utils import get_unfenced_index_attempt_ids
 from onyx.background.celery.tasks.indexing.utils import IndexingCallback
@@ -22,6 +23,9 @@ from onyx.background.celery.tasks.indexing.utils import try_creating_indexing_ta
 from onyx.background.celery.tasks.indexing.utils import validate_indexing_fences
 from onyx.background.indexing.job_client import SimpleJobClient
 from onyx.background.indexing.run_indexing import run_indexing_entrypoint
+from onyx.configs.app_configs import MANAGED_VESPA
+from onyx.configs.app_configs import VESPA_CLOUD_CERT_PATH
+from onyx.configs.app_configs import VESPA_CLOUD_KEY_PATH
 from onyx.configs.constants import CELERY_GENERIC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import CELERY_INDEXING_LOCK_TIMEOUT
 from onyx.configs.constants import CELERY_TASK_WAIT_FOR_FENCE_TIMEOUT
@@ -37,8 +41,7 @@ from onyx.db.index_attempt import get_index_attempt
 from onyx.db.index_attempt import get_last_attempt_for_cc_pair
 from onyx.db.index_attempt import mark_attempt_canceled
 from onyx.db.index_attempt import mark_attempt_failed
-from onyx.db.models import SearchSettings
-from onyx.db.search_settings import get_active_search_settings
+from onyx.db.search_settings import get_active_search_settings_list
 from onyx.db.search_settings import get_current_search_settings
 from onyx.db.swap_index import check_index_swap
 from onyx.natural_language_processing.search_nlp_models import EmbeddingModel
@@ -121,9 +124,7 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
 
             redis_connector = RedisConnector(tenant_id, cc_pair_id)
             with get_session_with_tenant(tenant_id) as db_session:
-                search_settings_list: list[SearchSettings] = get_active_search_settings(
-                    db_session
-                )
+                search_settings_list = get_active_search_settings_list(db_session)
                 for search_settings_instance in search_settings_list:
                     redis_connector_index = redis_connector.new_index(
                         search_settings_instance.id
@@ -302,6 +303,14 @@ def connector_indexing_task(
 
     attempt_found = False
     n_final_progress: int | None = None
+
+    # 20 is the documented default for httpx max_keepalive_connections
+    if MANAGED_VESPA:
+        httpx_init_vespa_pool(
+            20, ssl_cert=VESPA_CLOUD_CERT_PATH, ssl_key=VESPA_CLOUD_KEY_PATH
+        )
+    else:
+        httpx_init_vespa_pool(20)
 
     redis_connector = RedisConnector(tenant_id, cc_pair_id)
     redis_connector_index = redis_connector.new_index(search_settings_id)

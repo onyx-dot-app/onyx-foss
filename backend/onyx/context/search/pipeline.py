@@ -67,10 +67,7 @@ class SearchPipeline:
         self.rerank_metrics_callback = rerank_metrics_callback
 
         self.search_settings = get_current_search_settings(db_session)
-        self.document_index = get_default_document_index(
-            primary_index_name=self.search_settings.index_name,
-            secondary_index_name=None,
-        )
+        self.document_index = get_default_document_index(self.search_settings, None)
         self.prompt_config: PromptConfig | None = prompt_config
 
         # Preprocessing steps generate this

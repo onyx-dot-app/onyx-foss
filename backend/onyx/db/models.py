@@ -747,6 +747,34 @@ class SearchSettings(Base):
     def api_key(self) -> str | None:
         return self.cloud_provider.api_key if self.cloud_provider is not None else None
 
+    @property
+    def large_chunks_enabled(self) -> bool:
+        """
+        Given multipass usage and an embedder, decides whether large chunks are allowed
+        based on model/provider constraints.
+        """
+        # Only local models that support a larger context are from Nomic
+        # Cohere does not support larger contexts (they recommend not going above ~512 tokens)
+        return SearchSettings.can_use_large_chunks(
+            self.multipass_indexing, self.model_name, self.provider_type
+        )
+
+    @staticmethod
+    def can_use_large_chunks(
+        multipass: bool, model_name: str, provider_type: EmbeddingProvider | None
+    ) -> bool:
+        """
+        Given multipass usage and an embedder, decides whether large chunks are allowed
+        based on model/provider constraints.
+        """
+        # Only local models that support a larger context are from Nomic
+        # Cohere does not support larger contexts (they recommend not going above ~512 tokens)
+        return (
+            multipass
+            and model_name.startswith("nomic-ai")
+            and provider_type != EmbeddingProvider.COHERE
+        )
+
 
 class IndexAttempt(Base):
     """
