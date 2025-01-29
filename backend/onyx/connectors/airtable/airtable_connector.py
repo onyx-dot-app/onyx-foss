@@ -20,9 +20,9 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 # NOTE: all are made lowercase to avoid case sensitivity issues
-# these are the field types that are considered metadata rather
-# than sections
-_METADATA_FIELD_TYPES = {
+# These field types are considered metadata by default when
+# treat_all_non_attachment_fields_as_metadata is False
+DEFAULT_METADATA_FIELD_TYPES = {
     "singlecollaborator",
     "collaborator",
     "createdby",
@@ -60,12 +60,16 @@ class AirtableConnector(LoadConnector):
         self,
         base_id: str,
         table_name_or_id: str,
+        treat_all_non_attachment_fields_as_metadata: bool = False,
         batch_size: int = INDEX_BATCH_SIZE,
     ) -> None:
         self.base_id = base_id
         self.table_name_or_id = table_name_or_id
         self.batch_size = batch_size
         self.airtable_client: AirtableApi | None = None
+        self.treat_all_non_attachment_fields_as_metadata = (
+            treat_all_non_attachment_fields_as_metadata
+        )
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
         self.airtable_client = AirtableApi(credentials["airtable_access_token"])
@@ -166,8 +170,14 @@ class AirtableConnector(LoadConnector):
         return [(str(field_info), default_link)]
 
     def _should_be_metadata(self, field_type: str) -> bool:
-        """Determine if a field type should be treated as metadata."""
-        return field_type.lower() in _METADATA_FIELD_TYPES
+        """Determine if a field type should be treated as metadata.
+
+        When treat_all_non_attachment_fields_as_metadata is True, all fields except
+        attachments are treated as metadata. Otherwise, only fields with types listed
+        in DEFAULT_METADATA_FIELD_TYPES are treated as metadata."""
+        if self.treat_all_non_attachment_fields_as_metadata:
+            return field_type.lower() != "multipleattachments"
+        return field_type.lower() in DEFAULT_METADATA_FIELD_TYPES
 
     def _process_field(
         self,
@@ -233,7 +243,7 @@ class AirtableConnector(LoadConnector):
         record: RecordDict,
         table_schema: TableSchema,
         primary_field_name: str | None,
-    ) -> Document:
+    ) -> Document | None:
         """Process a single Airtable record into a Document.
 
         Args:
@@ -276,6 +286,10 @@ class AirtableConnector(LoadConnector):
 
             sections.extend(field_sections)
             metadata.update(field_metadata)
+
+        if not sections:
+            logger.warning(f"No sections found for record {record_id}")
+            return None
 
         semantic_id = (
             f"{table_name}: {primary_field_value}"
@@ -320,7 +334,8 @@ class AirtableConnector(LoadConnector):
                 table_schema=table_schema,
                 primary_field_name=primary_field_name,
             )
-            record_documents.append(document)
+            if document:
+                record_documents.append(document)
 
             if len(record_documents) >= self.batch_size:
                 yield record_documents
