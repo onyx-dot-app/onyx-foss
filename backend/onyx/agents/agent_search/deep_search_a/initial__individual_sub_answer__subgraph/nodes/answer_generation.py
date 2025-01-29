@@ -82,7 +82,7 @@ def answer_generation(
                 )
             start_stream_token = datetime.now()
             dispatch_custom_event(
-                "refined_agent_answer",
+                "sub_answers",
                 AgentAnswerPiece(
                     answer_piece=content,
                     level=level,
