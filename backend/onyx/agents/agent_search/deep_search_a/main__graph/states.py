@@ -63,17 +63,18 @@ class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats):
 
 class ExploratorySearchUpdate(LoggerUpdate):
     exploratory_search_results: list[InferenceSection] = []
-    previous_history: str = ""
+    previous_history_summary: str = ""
 
 
 class AnswerComparison(LoggerUpdate):
-    refined_answer_improvement: bool = False
+    refined_answer_improvement_eval: bool = False
 
 
 class RoutingDecision(LoggerUpdate):
-    routing: str = ""
+    routing_decision: str = ""
 
 
+# Not used in current graph
 class InitialAnswerBASEUpdate(BaseModel):
     initial_base_answer: str = ""
 
@@ -93,11 +94,11 @@ class RefinedAnswerUpdate(RefinedAgentEndStats, LoggerUpdate):
 
 
 class InitialAnswerQualityUpdate(LoggerUpdate):
-    initial_answer_quality: bool = False
+    initial_answer_quality_eval: bool = False
 
 
 class RequireRefinedAnswerUpdate(LoggerUpdate):
-    require_refined_answer: bool = True
+    require_refined_answer_eval: bool = True
 
 
 class DecompAnswersUpdate(LoggerUpdate):

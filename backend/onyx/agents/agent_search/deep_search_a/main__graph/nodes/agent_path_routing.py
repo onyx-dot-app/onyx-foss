@@ -10,7 +10,7 @@ def agent_path_routing(
     state: MainState,
 ) -> Command[Literal["agent_search_start", "LLM"]]:
     now_start = datetime.now()
-    routing = state.routing if hasattr(state, "routing") else "agent_search"
+    routing = state.routing_decision if hasattr(state, "routing") else "agent_search"
 
     if routing == "agent_search":
         agent_path = "agent_search_start"

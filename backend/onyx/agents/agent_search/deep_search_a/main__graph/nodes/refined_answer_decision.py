@@ -36,12 +36,12 @@ def refined_answer_decision(
     ]
     if agent_a_config.allow_refinement:
         return RequireRefinedAnswerUpdate(
-            require_refined_answer=decision,
+            require_refined_answer_eval=decision,
             log_messages=log_messages,
         )
 
     else:
         return RequireRefinedAnswerUpdate(
-            require_refined_answer=False,
+            require_refined_answer_eval=False,
             log_messages=log_messages,
         )

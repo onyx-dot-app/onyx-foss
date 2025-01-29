@@ -52,7 +52,7 @@ def agent_search_start(
 
     return ExploratorySearchUpdate(
         exploratory_search_results=exploratory_search_results,
-        previous_history=history,
+        previous_history_summary=history,
         log_messages=[
             f"{now_start} -- Main - Exploratory Search,  Time taken: {now_end - now_start}"
         ],

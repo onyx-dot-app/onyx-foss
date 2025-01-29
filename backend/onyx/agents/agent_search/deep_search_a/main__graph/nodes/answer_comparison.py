@@ -53,7 +53,7 @@ def answer_comparison(state: MainState, config: RunnableConfig) -> AnswerCompari
     )
 
     return AnswerComparison(
-        refined_answer_improvement=refined_answer_improvement,
+        refined_answer_improvement_eval=refined_answer_improvement,
         log_messages=[
             f"{now_start} -- Answer comparison: {refined_answer_improvement},  Time taken: {now_end - now_start}"
         ],

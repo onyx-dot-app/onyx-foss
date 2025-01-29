@@ -84,7 +84,7 @@ def parallelize_initial_sub_question_answering(
 def continue_to_refined_answer_or_end(
     state: RequireRefinedAnswerUpdate,
 ) -> Literal["refined_sub_question_creation", "logging_node"]:
-    if state.require_refined_answer:
+    if state.require_refined_answer_eval:
         return "refined_sub_question_creation"
     else:
         return "logging_node"
