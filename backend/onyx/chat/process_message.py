@@ -8,7 +8,6 @@ from typing import cast
 
 from sqlalchemy.orm import Session
 
-from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.chat.answer import Answer
 from onyx.chat.chat_utils import create_chat_chain
 from onyx.chat.chat_utils import create_temporary_persona
@@ -134,7 +133,6 @@ from onyx.tools.tool_implementations.search.search_tool import (
     SECTION_RELEVANCE_LIST_ID,
 )
 from onyx.tools.tool_runner import ToolCallFinalResult
-from onyx.tools.utils import explicit_tool_calling_supported
 from onyx.utils.logger import setup_logger
 from onyx.utils.long_term_log import LongTermLogger
 from onyx.utils.telemetry import mt_cloud_telemetry
@@ -712,6 +710,7 @@ def stream_chat_message_objects(
         for tool_list in tool_dict.values():
             tools.extend(tool_list)
 
+        # TODO: unify message history with single message history
         message_history = [
             PreviousMessage.from_chat_message(msg, files) for msg in history_msgs
         ]
@@ -739,26 +738,7 @@ def stream_chat_message_objects(
                 else None
             ),
         )
-        # TODO: Since we're deleting the current main path in Answer,
-        # we should construct this unconditionally inside Answer instead
-        # Leaving it here for the time being to avoid breaking changes
-        search_tools = [tool for tool in tools if isinstance(tool, SearchTool)]
-        search_tool: SearchTool | None = None
 
-        if len(search_tools) > 1:
-            # TODO: handle multiple search tools
-            logger.warning("Multiple search tools found, using first one")
-            search_tool = search_tools[0]
-        elif len(search_tools) == 1:
-            search_tool = search_tools[0]
-        else:
-            logger.warning("No search tool found")
-            if new_msg_req.use_agentic_search:
-                raise ValueError("No search tool found, cannot use agentic search")
-
-        using_tool_calling_llm = explicit_tool_calling_supported(
-            llm.config.model_provider, llm.config.model_name
-        )
         force_use_tool = _get_force_search_settings(new_msg_req, tools)
         prompt_builder = AnswerPromptBuilder(
             user_message=default_build_user_message(
@@ -776,35 +756,12 @@ def stream_chat_message_objects(
         )
         prompt_builder.update_system_prompt(default_build_system_message(prompt_config))
 
-        agent_search_config = AgentSearchConfig(
-            search_request=search_request,
-            primary_llm=llm,
-            fast_llm=fast_llm,
-            search_tool=search_tool,
-            force_use_tool=force_use_tool,
-            use_agentic_search=new_msg_req.use_agentic_search,
-            chat_session_id=chat_session_id,
-            message_id=reserved_message_id,
-            use_persistence=True,
-            allow_refinement=True,
-            db_session=db_session,
-            prompt_builder=prompt_builder,
-            tools=tools,
-            using_tool_calling_llm=using_tool_calling_llm,
-            files=latest_query_files,
-            structured_response_format=new_msg_req.structured_response_format,
-            skip_gen_ai_answer_generation=new_msg_req.skip_gen_ai_answer_generation,
-        )
-
-        # TODO: add previous messages, answer style config, tools, etc.
-
         # LLM prompt building, response capturing, etc.
         answer = Answer(
+            prompt_builder=prompt_builder,
             is_connected=is_connected,
-            question=final_msg.message,
             latest_query_files=latest_query_files,
             answer_style_config=answer_style_config,
-            prompt_config=prompt_config,
             llm=(
                 llm
                 or get_main_llm_from_tuple(
@@ -818,12 +775,13 @@ def stream_chat_message_objects(
                 )
             ),
             fast_llm=fast_llm,
-            message_history=message_history,
-            tools=tools,
             force_use_tool=force_use_tool,
-            single_message_history=single_message_history,
-            agent_search_config=agent_search_config,
+            search_request=search_request,
+            chat_session_id=chat_session_id,
+            current_agent_message_id=reserved_message_id,
+            tools=tools,
             db_session=db_session,
+            use_agentic_search=new_msg_req.use_agentic_search,
         )
 
         # reference_db_search_docs = None

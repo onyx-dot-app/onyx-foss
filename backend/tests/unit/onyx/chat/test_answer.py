@@ -2,6 +2,7 @@ import json
 from typing import cast
 from unittest.mock import MagicMock
 from unittest.mock import Mock
+from uuid import UUID
 
 import pytest
 from langchain_core.messages import AIMessageChunk
@@ -11,7 +12,6 @@ from langchain_core.messages import SystemMessage
 from langchain_core.messages import ToolCall
 from langchain_core.messages import ToolCallChunk
 
-from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.chat.answer import Answer
 from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationInfo
@@ -21,6 +21,10 @@ from onyx.chat.models import OnyxContexts
 from onyx.chat.models import PromptConfig
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
+from onyx.context.search.models import SearchRequest
 from onyx.llm.interfaces import LLM
 from onyx.tools.force import ForceUseTool
 from onyx.tools.models import ToolCallFinalResult
@@ -39,15 +43,28 @@ def answer_instance(
     mock_llm: LLM,
     answer_style_config: AnswerStyleConfig,
     prompt_config: PromptConfig,
-    agent_search_config: AgentSearchConfig,
 ) -> Answer:
     return Answer(
-        question=QUERY,
+        prompt_builder=AnswerPromptBuilder(
+            user_message=default_build_user_message(
+                user_query=QUERY,
+                prompt_config=prompt_config,
+                files=[],
+                single_message_history=None,
+            ),
+            system_message=default_build_system_message(prompt_config),
+            message_history=[],
+            llm_config=mock_llm.config,
+            raw_user_query=QUERY,
+            raw_user_uploaded_files=[],
+        ),
         answer_style_config=answer_style_config,
         llm=mock_llm,
-        prompt_config=prompt_config,
+        fast_llm=mock_llm,
         force_use_tool=ForceUseTool(force_use=False, tool_name="", args=None),
-        agent_search_config=agent_search_config,
+        search_request=SearchRequest(query=QUERY),
+        chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
+        current_agent_message_id=0,
     )
 
 
@@ -57,6 +74,8 @@ def test_basic_answer(answer_instance: Answer) -> None:
         AIMessageChunk(content="This is a "),
         AIMessageChunk(content="mock answer."),
     ]
+    answer_instance.agent_search_config.fast_llm = mock_llm
+    answer_instance.agent_search_config.primary_llm = mock_llm
 
     output = list(answer_instance.processed_streamed_output)
     assert len(output) == 2

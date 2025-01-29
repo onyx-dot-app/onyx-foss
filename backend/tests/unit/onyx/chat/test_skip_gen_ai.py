@@ -1,13 +1,16 @@
 from typing import Any
 from unittest.mock import Mock
+from uuid import UUID
 
 import pytest
+from langchain_core.messages import HumanMessage
 from pytest_mock import MockerFixture
 
-from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.chat.answer import Answer
 from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import PromptConfig
+from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
+from onyx.context.search.models import SearchRequest
 from onyx.tools.force import ForceUseTool
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 from tests.regression.answer_quality.run_qa import _process_and_write_query_results
@@ -30,7 +33,6 @@ def test_skip_gen_ai_answer_generation_flag(
     config: dict[str, Any],
     mock_search_tool: SearchTool,
     answer_style_config: AnswerStyleConfig,
-    agent_search_config: AgentSearchConfig,
     prompt_config: PromptConfig,
 ) -> None:
     question = config["question"]
@@ -42,30 +44,28 @@ def test_skip_gen_ai_answer_generation_flag(
     mock_llm.stream = Mock()
     mock_llm.stream.return_value = [Mock()]
 
-    agent_search_config.primary_llm = mock_llm
-    agent_search_config.fast_llm = mock_llm
-    agent_search_config.skip_gen_ai_answer_generation = skip_gen_ai_answer_generation
-    agent_search_config.search_tool = mock_search_tool
-    agent_search_config.using_tool_calling_llm = False
-    agent_search_config.tools = [mock_search_tool]
-
     answer = Answer(
-        question=question,
         answer_style_config=answer_style_config,
-        prompt_config=prompt_config,
         llm=mock_llm,
-        single_message_history="history",
+        fast_llm=mock_llm,
         tools=[mock_search_tool],
-        force_use_tool=(
-            ForceUseTool(
-                tool_name=mock_search_tool.name,
-                args={"query": question},
-                force_use=True,
-            )
+        force_use_tool=ForceUseTool(
+            tool_name=mock_search_tool.name,
+            args={"query": question},
+            force_use=True,
         ),
         skip_explicit_tool_calling=True,
         skip_gen_ai_answer_generation=skip_gen_ai_answer_generation,
-        agent_search_config=agent_search_config,
+        search_request=SearchRequest(query=question),
+        prompt_builder=AnswerPromptBuilder(
+            user_message=HumanMessage(content=question),
+            message_history=[],
+            llm_config=mock_llm.config,
+            raw_user_query=question,
+            raw_user_uploaded_files=[],
+        ),
+        chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
+        current_agent_message_id=0,
     )
     results = list(answer.processed_streamed_output)
     for res in results:

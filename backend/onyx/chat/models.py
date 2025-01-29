@@ -284,7 +284,7 @@ class AnswerStyleConfig(BaseModel):
 
 class PromptConfig(BaseModel):
     """Final representation of the Prompt configuration passed
-    into the `Answer` object."""
+    into the `PromptBuilder` object."""
 
     system_prompt: str
     task_prompt: str
