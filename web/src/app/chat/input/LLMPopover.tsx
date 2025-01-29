@@ -40,8 +40,8 @@ export default function LLMPopover({
   currentAssistant,
 }: LLMPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { llmOverride, updateLLMOverride, globalDefault } = llmOverrideManager;
-  const currentLlm = llmOverride.modelName || globalDefault.modelName;
+  const { llmOverride, updateLLMOverride } = llmOverrideManager;
+  const currentLlm = llmOverride.modelName;
 
   const llmOptionsByProvider: {
     [provider: string]: {

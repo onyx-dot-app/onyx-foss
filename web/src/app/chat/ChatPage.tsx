@@ -76,13 +76,7 @@ import {
 import { buildFilters } from "@/lib/search/utils";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import Dropzone from "react-dropzone";
-import {
-  checkLLMSupportsImageInput,
-  getFinalLLM,
-  destructureValue,
-  getLLMProviderOverrideForPersona,
-} from "@/lib/llm/utils";
-
+import { checkLLMSupportsImageInput, getFinalLLM } from "@/lib/llm/utils";
 import { ChatInputBar } from "./input/ChatInputBar";
 import { useChatContext } from "@/components/context/ChatContext";
 import { v4 as uuidv4 } from "uuid";
@@ -203,6 +197,12 @@ export function ChatPage({
 
   const [showHistorySidebar, setShowHistorySidebar] = useState(false); // State to track if sidebar is open
 
+  const existingChatSessionId = existingChatIdRaw ? existingChatIdRaw : null;
+
+  const selectedChatSession = chatSessions.find(
+    (chatSession) => chatSession.id === existingChatSessionId
+  );
+
   useEffect(() => {
     if (user?.is_anonymous_user) {
       Cookies.set(
@@ -239,12 +239,6 @@ export function ChatPage({
       onSubmit({ messageOverride: message, overrideFileDescriptors });
     }
   };
-
-  const existingChatSessionId = existingChatIdRaw ? existingChatIdRaw : null;
-
-  const selectedChatSession = chatSessions.find(
-    (chatSession) => chatSession.id === existingChatSessionId
-  );
 
   const chatSessionIdRef = useRef<string | null>(existingChatSessionId);
 
@@ -293,12 +287,6 @@ export function ChatPage({
     );
   };
 
-  const llmOverrideManager = useLlmOverride(
-    llmProviders,
-    user?.preferences.default_model,
-    selectedChatSession
-  );
-
   const [alternativeAssistant, setAlternativeAssistant] =
     useState<Persona | null>(null);
 
@@ -307,36 +295,33 @@ export function ChatPage({
 
   const { recentAssistants, refreshRecentAssistants } = useAssistants();
 
-  const liveAssistant: Persona | undefined =
-    alternativeAssistant ||
-    selectedAssistant ||
-    recentAssistants[0] ||
-    finalAssistants[0] ||
-    availableAssistants[0];
+  const liveAssistant: Persona | undefined = useMemo(
+    () =>
+      alternativeAssistant ||
+      selectedAssistant ||
+      recentAssistants[0] ||
+      finalAssistants[0] ||
+      availableAssistants[0],
+    [
+      alternativeAssistant,
+      selectedAssistant,
+      recentAssistants,
+      finalAssistants,
+      availableAssistants,
+    ]
+  );
+
+  const llmOverrideManager = useLlmOverride(
+    llmProviders,
+    selectedChatSession,
+    liveAssistant
+  );
 
   const noAssistants = liveAssistant == null || liveAssistant == undefined;
 
   const availableSources = ccPairs.map((ccPair) => ccPair.source);
   const uniqueSources = Array.from(new Set(availableSources));
   const sources = uniqueSources.map((source) => getSourceMetadata(source));
-
-  // always set the model override for the chat session, when an assistant, llm provider, or user preference exists
-  useEffect(() => {
-    if (noAssistants) return;
-    const personaDefault = getLLMProviderOverrideForPersona(
-      liveAssistant,
-      llmProviders
-    );
-
-    if (personaDefault) {
-      llmOverrideManager.updateLLMOverride(personaDefault);
-    } else if (user?.preferences.default_model) {
-      llmOverrideManager.updateLLMOverride(
-        destructureValue(user?.preferences.default_model)
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveAssistant, user?.preferences.default_model]);
 
   const stopGenerating = () => {
     const currentSession = currentSessionId();
@@ -419,7 +404,6 @@ export function ChatPage({
       filterManager.setTimeRange(null);
 
       // reset LLM overrides (based on chat session!)
-      llmOverrideManager.updateModelOverrideForChatSession(selectedChatSession);
       llmOverrideManager.updateTemperature(null);
 
       // remove uploaded files
@@ -1283,13 +1267,11 @@ export function ChatPage({
         modelProvider:
           modelOverRide?.name ||
           llmOverrideManager.llmOverride.name ||
-          llmOverrideManager.globalDefault.name ||
           undefined,
         modelVersion:
           modelOverRide?.modelName ||
           llmOverrideManager.llmOverride.modelName ||
           searchParams.get(SEARCH_PARAM_NAMES.MODEL_VERSION) ||
-          llmOverrideManager.globalDefault.modelName ||
           undefined,
         temperature: llmOverrideManager.temperature || undefined,
         systemPromptOverride:
@@ -1952,6 +1934,7 @@ export function ChatPage({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
   const [sharedChatSession, setSharedChatSession] =
     useState<ChatSession | null>();
 
@@ -2059,7 +2042,9 @@ export function ChatPage({
       {(settingsToggled || userSettingsToggled) && (
         <UserSettingsModal
           setPopup={setPopup}
-          setLlmOverride={llmOverrideManager.setGlobalDefault}
+          setLlmOverride={(newOverride) =>
+            llmOverrideManager.updateLLMOverride(newOverride)
+          }
           defaultModel={user?.preferences.default_model!}
           llmProviders={llmProviders}
           onClose={() => {
@@ -2749,6 +2734,7 @@ export function ChatPage({
                                 </button>
                               </div>
                             )}
+
                             <ChatInputBar
                               toggleDocumentSidebar={toggleDocumentSidebar}
                               availableSources={sources}
