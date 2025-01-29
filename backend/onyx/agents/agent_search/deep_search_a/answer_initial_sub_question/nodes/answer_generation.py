@@ -66,6 +66,7 @@ def answer_generation(
         )
 
         response: list[str | list[str | dict[str, Any]]] = []
+        dispatch_timings: list[float] = []
         for message in fast_llm.stream(
             prompt=msg,
         ):
@@ -75,6 +76,7 @@ def answer_generation(
                 raise ValueError(
                     f"Expected content to be a string, but got {type(content)}"
                 )
+            start_stream_token = datetime.now()
             dispatch_custom_event(
                 "sub_answers",
                 AgentAnswerPiece(
@@ -84,9 +86,16 @@ def answer_generation(
                     answer_type="agent_sub_answer",
                 ),
             )
+            end_stream_token = datetime.now()
+            dispatch_timings.append(
+                (end_stream_token - start_stream_token).microseconds
+            )
             response.append(content)
 
         answer_str = merge_message_runs(response, chunk_separator="")[0].content
+        logger.info(
+            f"Average dispatch time: {sum(dispatch_timings) / len(dispatch_timings)}"
+        )
 
     answer_citation_ids = get_answer_citation_ids(answer_str)
     cited_docs = [context_docs[id] for id in answer_citation_ids]
