@@ -21,7 +21,7 @@ from onyx.agents.agent_search.deep_search_a.main__graph.states import (
 )
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
-    build_history_prompt,
+    get_prompt_enrichment_components,
 )
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
@@ -43,10 +43,6 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import (
-    get_persona_agent_prompt_expressions,
-)
-from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
@@ -64,12 +60,12 @@ def generate_refined_answer(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona_contextualized_prompt = get_persona_agent_prompt_expressions(
-        agent_a_config.search_request.persona
-    ).contextualized_prompt
+    prompt_enrichment_components = get_prompt_enrichment_components(agent_a_config)
 
-    history = build_history_prompt(agent_a_config, question)
-    date_str = get_today_prompt()
+    persona_contextualized_prompt = (
+        prompt_enrichment_components.persona_prompts.contextualized_prompt
+    )
+
     initial_documents = state.documents
     refined_documents = state.refined_documents
     sub_questions_cited_docs = state.cited_docs
@@ -197,21 +193,21 @@ def generate_refined_answer(
         + sub_question_answer_str
         + initial_answer
         + persona_contextualized_prompt
-        + history,
+        + prompt_enrichment_components.history,
     )
 
     msg = [
         HumanMessage(
             content=base_prompt.format(
                 question=question,
-                history=history,
+                history=prompt_enrichment_components.history,
                 answered_sub_questions=remove_document_citations(
                     sub_question_answer_str
                 ),
                 relevant_docs=relevant_docs,
                 initial_answer=remove_document_citations(initial_answer),
                 persona_specification=persona_contextualized_prompt,
-                date_prompt=date_str,
+                date_prompt=prompt_enrichment_components.date_str,
             )
         )
     ]
@@ -219,6 +215,7 @@ def generate_refined_answer(
     # Grader
 
     streamed_tokens: list[str | list[str | dict[str, Any]]] = [""]
+    dispatch_timings: list[float] = []
     for message in model.stream(msg):
         # TODO: in principle, the answer here COULD contain images, but we don't support that yet
         content = message.content
@@ -226,6 +223,8 @@ def generate_refined_answer(
             raise ValueError(
                 f"Expected content to be a string, but got {type(content)}"
             )
+
+        start_stream_token = datetime.now()
         dispatch_custom_event(
             "refined_agent_answer",
             AgentAnswerPiece(
@@ -235,8 +234,13 @@ def generate_refined_answer(
                 answer_type="agent_level_answer",
             ),
         )
+        end_stream_token = datetime.now()
+        dispatch_timings.append((end_stream_token - start_stream_token).microseconds)
         streamed_tokens.append(content)
 
+    logger.info(
+        f"Average dispatch time for refined answer: {sum(dispatch_timings) / len(dispatch_timings)}"
+    )
     dispatch_main_answer_stop_info(1)
     response = merge_content(*streamed_tokens)
     answer = cast(str, response)

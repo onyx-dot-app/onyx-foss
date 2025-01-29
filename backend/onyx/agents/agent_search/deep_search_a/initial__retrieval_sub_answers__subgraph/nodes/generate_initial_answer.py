@@ -24,7 +24,7 @@ from onyx.agents.agent_search.deep_search_a.main__graph.states import (
 )
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
-    build_history_prompt,
+    get_prompt_enrichment_components,
 )
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
@@ -45,16 +45,10 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import (
-    get_persona_agent_prompt_expressions,
-)
-from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
-from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
 from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
-from onyx.configs.agent_configs import AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH
 from onyx.configs.agent_configs import AGENT_MIN_ORIG_QUESTION_DOCS
 from onyx.context.search.models import InferenceSection
 from onyx.tools.tool_implementations.search.search_tool import yield_search_responses
@@ -69,13 +63,7 @@ def generate_initial_answer(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona_prompts = get_persona_agent_prompt_expressions(
-        agent_a_config.search_request.persona
-    )
-
-    history = build_history_prompt(agent_a_config, question)
-
-    date_str = get_today_prompt()
+    prompt_enrichment_components = get_prompt_enrichment_components(agent_a_config)
 
     sub_questions_cited_docs = state.cited_docs
     all_original_question_documents = state.all_original_question_documents
@@ -98,6 +86,28 @@ def generate_initial_answer(
 
     decomp_questions = []
 
+    # Use the query info from the base document retrieval
+    query_info = get_query_info(state.original_question_retrieval_results)
+    if agent_a_config.search_tool is None:
+        raise ValueError("search_tool must be provided for agentic search")
+    for tool_response in yield_search_responses(
+        query=question,
+        reranked_sections=relevant_docs,
+        final_context_sections=relevant_docs,
+        search_query_info=query_info,
+        get_section_relevance=lambda: None,  # TODO: add relevance
+        search_tool=agent_a_config.search_tool,
+    ):
+        dispatch_custom_event(
+            "tool_response",
+            ExtendedToolResponse(
+                id=tool_response.id,
+                response=tool_response.response,
+                level=0,
+                level_question_nr=0,  # 0, 0 is the base question
+            ),
+        )
+
     if len(relevant_docs) == 0:
         dispatch_custom_event(
             "initial_agent_answer",
@@ -118,28 +128,6 @@ def generate_initial_answer(
         )
 
     else:
-        # Use the query info from the base document retrieval
-        query_info = get_query_info(state.original_question_retrieval_results)
-        if agent_a_config.search_tool is None:
-            raise ValueError("search_tool must be provided for agentic search")
-        for tool_response in yield_search_responses(
-            query=question,
-            reranked_sections=relevant_docs,
-            final_context_sections=relevant_docs,
-            search_query_info=query_info,
-            get_section_relevance=lambda: None,  # TODO: add relevance
-            search_tool=agent_a_config.search_tool,
-        ):
-            dispatch_custom_event(
-                "tool_response",
-                ExtendedToolResponse(
-                    id=tool_response.id,
-                    response=tool_response.response,
-                    level=0,
-                    level_question_nr=0,  # 0, 0 is the base question
-                ),
-            )
-
         decomp_answer_results = state.decomp_answer_results
 
         good_qa_list: list[str] = []
@@ -176,21 +164,15 @@ def generate_initial_answer(
 
         model = agent_a_config.fast_llm
 
-        # summarize the history iff too long
-        if len(history) > AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH:
-            history = summarize_history(
-                history, question, persona_prompts.base_prompt, model
-            )
-
         doc_context = format_docs(relevant_docs)
         doc_context = trim_prompt_piece(
             model.config,
             doc_context,
             base_prompt
             + sub_question_answer_str
-            + persona_prompts.contextualized_prompt
-            + history
-            + date_str,
+            + prompt_enrichment_components.persona_prompts.contextualized_prompt
+            + prompt_enrichment_components.history
+            + prompt_enrichment_components.date_str,
         )
 
         msg = [
@@ -201,14 +183,15 @@ def generate_initial_answer(
                         sub_question_answer_str
                     ),
                     relevant_docs=format_docs(relevant_docs),
-                    persona_specification=persona_prompts.contextualized_prompt,
-                    history=history,
-                    date_prompt=date_str,
+                    persona_specification=prompt_enrichment_components.persona_prompts.contextualized_prompt,
+                    history=prompt_enrichment_components.history,
+                    date_prompt=prompt_enrichment_components.date_str,
                 )
             )
         ]
 
         streamed_tokens: list[str | list[str | dict[str, Any]]] = [""]
+        dispatch_timings: list[float] = []
         for message in model.stream(msg):
             # TODO: in principle, the answer here COULD contain images, but we don't support that yet
             content = message.content
@@ -216,6 +199,8 @@ def generate_initial_answer(
                 raise ValueError(
                     f"Expected content to be a string, but got {type(content)}"
                 )
+            start_stream_token = datetime.now()
+
             dispatch_custom_event(
                 "initial_agent_answer",
                 AgentAnswerPiece(
@@ -225,7 +210,15 @@ def generate_initial_answer(
                     answer_type="agent_level_answer",
                 ),
             )
+            end_stream_token = datetime.now()
+            dispatch_timings.append(
+                (end_stream_token - start_stream_token).microseconds
+            )
             streamed_tokens.append(content)
+
+        logger.info(
+            f"Average dispatch time for initial answer: {sum(dispatch_timings) / len(dispatch_timings)}"
+        )
 
         dispatch_main_answer_stop_info(0)
         response = merge_content(*streamed_tokens)

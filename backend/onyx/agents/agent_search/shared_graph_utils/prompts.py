@@ -5,14 +5,14 @@ NO_RECOVERED_DOCS = "No relevant information recovered"
 DATE_PROMPT = """Today is {date}.\n\n"""
 
 HISTORY_PROMPT = """\n
-For more context, here is the history of the conversation so far that preceeded this question:
+For more context, here is the history of the conversation so far that preceded this question:
 \n ------- \n
 {history}
 \n ------- \n\n
 """
 
 REWRITE_PROMPT_MULTI_ORIGINAL = """ \n
-    Please convert an initial user question into a 2-3 more appropriate short and pointed search queries for retrievel from a
+    Please convert an initial user question into a 2-3 more appropriate short and pointed search queries for retrivel from a
     document store. Particularly, try to think about resolving ambiguities and make the search queries more specific,
     enabling the system to search more broadly.
     Also, try to make the search queries not redundant, i.e. not too similar! \n\n
@@ -41,7 +41,7 @@ BASE_RAG_PROMPT = (
     {persona_specification}
     {date_prompt}
     Use the context provided below - and only the
-    provided context - to answer the given question. (Note that the answer is in service of anserwing a broader
+    provided context - to answer the given question. (Note that the answer is in service of ansering a broader
     question, given below as 'motivation'.)
 
     Again, only use the provided context and do not use your internal knowledge! If you cannot answer the
@@ -162,11 +162,11 @@ Answer:
 INITIAL_DECOMPOSITION_PROMPT_BASIC = """ \n
 If you think it is helpful, please decompose an initial user question into not more
 than 4 appropriate sub-questions that help to answer the original question.
-The purpose for this decomposition is to isolate individulal entities
+The purpose for this decomposition is to isolate individual entities
 (i.e., 'compare sales of company A and company B' -> 'what are sales for company A' + 'what are sales
 for company B'), split ambiguous terms (i.e., 'what is our success with company A' -> 'what are our
 sales with company A' + 'what is our market share with company A' + 'is company A a reference customer
- for us'), etc. Each sub-question should be realistically be answerable by a good RAG system.
+ for us'), etc. Each sub-question should realistically be answerable by a good RAG system.
 
 Importantly, if you think it is not needed or helpful, please just return an empty list. That is ok too.
 
@@ -181,7 +181,7 @@ Answer:
 """
 
 REWRITE_PROMPT_SINGLE = """ \n
-    Please convert an initial user question into a more appropriate search query for retrievel from a
+    Please convert an initial user question into a more appropriate search query for retrieval from a
     document store. \n
     Here is the initial question:
     \n ------- \n
@@ -194,7 +194,7 @@ MODIFIED_RAG_PROMPT = (
     """You are an assistant for question-answering tasks. Use the context provided below
     - and only this context - to answer the question. It is a matter of life and death that you do NOT
     use your internal knowledge, just the provided information!
-    If you don't have enough infortmation to generate an answer, just say """
+    If you don't have enough information to generate an answer, just say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
     Use three sentences maximum and keep the answer concise.
@@ -212,7 +212,7 @@ ERT_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     good enough. Also, some sub-questions had been answered and this information has been used to provide
     the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
     were not directly answerable. Also, some entities, relationships and terms are givenm to you so that
-    you have an idea of how the avaiolable data looks like.
+    you have an idea of how the available data looks like.
 
     Your role is to generate 3-5 new sub-questions that would help to answer the initial question,
     considering:
@@ -232,7 +232,7 @@ ERT_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     - The sub-questions should be specific to the question and provide richer context for the question,
     resolve ambiguities, or address shortcoming of the initial answer
     - Each sub-question - when answered - should be relevant for the answer to the original question
-    - The sub-questions should be free from comparisions, ambiguities,judgements, aggregations, or any
+    - The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
     other complications that may require extra context.
     - The sub-questions MUST have the full context of the original question so that it can be executed by
     a RAG system independently without the original question available
@@ -288,7 +288,7 @@ DOC_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
     good enough. Also, some sub-questions had been answered and this information has been used to provide
     the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
-    were not directly answerable. Also, some entities, relationships and terms are givenm to you so that
+    were not directly answerable. Also, some entities, relationships and terms are given to you so that
     you have an idea of how the avaiolable data looks like.
 
     Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
@@ -298,7 +298,7 @@ DOC_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     2) The initial answer that was found to be unsatisfactory
     3) The sub-questions that were answered
     4) The sub-questions that were suggested but not answered
-    5) A sample of the TYPE of documents that may be in the databse in order to inform
+    5) A sample of the TYPE of documents that may be in the database in order to inform
     you what type of entities, relationships, and terms you may want to consider asking about.
     (But do not build the questions strictly on these documents! They are only examples!
     Take the, as illustrations.)
@@ -347,7 +347,7 @@ DOC_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     \n ------- \n
 
     And here some reference documents that show you what type of entities, relationships,
-    and terms you may want to consider toask about as relevamt to your initial question.
+    and terms you may want to consider to be as relevant to your initial question.
     \n ------- \n
     {docs_str}
     \n ------- \n
@@ -395,7 +395,7 @@ DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES = """ \n
     - The sub-questions should be specific to the question and provide richer context for the question,
     resolve ambiguities, or address shortcoming of the initial answer
     - Each sub-question - when answered - should be relevant for the answer to the original question
-    - The sub-questions should be free from comparisions, ambiguities,judgements, aggregations, or any
+    - The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
     other complications that may require extra context.
     - The sub-questions MUST have the full context of the original question so that it can be executed by
     a RAG system independently without the original question available
@@ -466,7 +466,7 @@ DECOMPOSE_PROMPT = """ \n
     - The sub-questions should be specific to the question and provide richer context for the question,
     and or resolve ambiguities
     - Each sub-question - when answered - should be relevant for the answer to the original question
-    - The sub-questions should be free from comparisions, ambiguities,judgements, aggregations, or any
+    - The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
     other complications that may require extra context.
     - The sub-questions MUST have the full context of the original question so that it can be executed by
     a RAG system independently without the original question available
@@ -522,7 +522,7 @@ SUB_QUESTION_EXPLANATION_RANKER_PROMPT = """-------
     Please rank the motivations in order of relevance for answering the original question. Also, try to
     ensure that the top questions do not duplicate too much, i.e. that they are not too similar.
     Ultimately, create a list with the motivation numbers where the number of the most relevant
-    motivations comes first.
+    motivation comes first.
 
     Here is the original question:
     \n\n {original_question} \n\n
@@ -579,16 +579,16 @@ answer the original question. The purpose for this decomposition may be to
      'what do we do to improve stability of product X', ...])
   4) research an area that could really help to answer the question. (But clarifications or disambiguations are more important.)
 
-Here are some other ruleds:
+Here are some other rules:
 
 1) To give you some context, you will see below also some documents that relate to the question. Please only
 use this information to learn what the question is approximately asking about, but do not focus on the details
 to construct the sub-questions! Also, some of the entities, relationships and terms that are in the dataset may
-not be in these few documents, so DO NOT focusd too much on the documents when constructing the sub-questions! Decomposition and
-disambiguation are most important!
+not be in these few documents, so DO NOT focussed too much on the documents when constructing the sub-questions! Decomposition and
+disambiguations are most important!
 2) If you think that a decomposition is not needed or helpful, please just return an empty string. That is very much ok too.
 
-Here are the sampple docs to give you some context:
+Here are the sample docs to give you some context:
 -------
 {sample_doc_str}
 -------
@@ -610,11 +610,11 @@ Answer:"""
 
 INITIAL_DECOMPOSITION_PROMPT = """ \n
     Please decompose an initial user question into 2 or 3 appropriate sub-questions that help to
-    answer the original question. The purpose for this decomposition is to isolate individulal entities
+    answer the original question. The purpose for this decomposition is to isolate individual entities
     (i.e., 'compare sales of company A and company B' -> 'what are sales for company A' + 'what are sales
     for company B'), split ambiguous terms (i.e., 'what is our success with company A' -> 'what are our
     sales with company A' + 'what is our market share with company A' + 'is company A a reference customer
-    for us'), etc. Each sub-question should be realistically be answerable by a good RAG system. \n
+    for us'), etc. Each sub-question should realistically be answerable by a good RAG system. \n
 
     For each sub-question, please also create one search term that can be used to retrieve relevant
     documents from a document store.
@@ -659,14 +659,14 @@ Answer:"""
 
 
 AGENT_DECISION_PROMPT = """
-You are an large language model assistant helping users address their information needs. You are tasked with deciding
+You are a    large language model assistant helping users address their information needs. You are tasked with deciding
 whether to use a thorough agent search ('research') of a document store to answer a question or request, or whether you want to
 address the question or request yourself as an LLM.
 
 Here are some rules:
 - If you think that a thorough search through a document store will help answer the question
 or address the request, you should choose the 'research' option.
-- If the question asks you do do somethng ('please create...', 'write for me...', etc.), you should choose the 'LLM' option.
+- If the question asks you do something ('please create...', 'write for me...', etc.), you should choose the 'LLM' option.
 - If you think the question is very general and does not refer to a contents of a document store, you should choose
 the 'LLM' option.
 - Otherwise, you should choose the 'research' option.
@@ -683,7 +683,7 @@ Please decide whether to use the agent search or the LLM to answer the question.
 Answer:"""
 
 AGENT_DECISION_PROMPT_AFTER_SEARCH = """
-You are an large language model assistant helping users address their information needs.  You are given an initial question
+You are a large language model assistant helping users address their information needs.  You are given an initial question
 or request and very few sample of documents that a preliminary and fast search from a document store returned.
 You are tasked with deciding whether to use a thorough agent search ('research') of the document store to answer a question
 or request, or whether you want to address the question or request yourself as an LLM.
@@ -693,7 +693,7 @@ Here are some rules:
 store to answer or materially help with the request, you should choose the 'research' option.
 - If you think that the retrieved document do not help to answer the question or do not help with the request, AND
 you know the answer/can handle the request, you should choose the 'LLM' option.
-- If the question asks you do do somethng ('please create...', 'write for me...', etc.), you should choose the 'LLM' option.
+- If the question asks you do something ('please create...', 'write for me...', etc.), you should choose the 'LLM' option.
 - If in doubt, choose the 'research' option.
 {history}
 
@@ -747,7 +747,7 @@ Use the information provided below - and only the provided information - to answ
 
 The information provided below consists of:
     1) a number of sub-questions and supporting document information that would help answer them.
-    2) a broader collection of documents that were deemed relevant for the question. These documents contain informattion
+    2) a broader collection of documents that were deemed relevant for the question. These documents contain information
     that was also provided in the sub-questions and often more.
 
 IMPORTANT RULES:
@@ -759,7 +759,7 @@ IMPORTANT RULES:
  - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
  - The answers to the subquestions should help you to structure your thoughts in order to answer the question.
 
-It is critical that you provide proper inline citations of documentsin the format [[D1]](), [[D2]](), [[D3]](), etc.!
+It is critical that you provide proper inline citations of documents in the format [[D1]](), [[D2]](), [[D3]](), etc.!
 It is important that the citation is close to the information it supports.  If you have multiple citations,
 please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Feel free to cite documents in addition
 to the sub-questions! Proper citations are important for the final answer to be verifiable! \n\n\n
@@ -857,8 +857,8 @@ INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS = (
     """{answered_sub_questions}
 {persona_specification}
 {date_prompt}
-Use the information provided below
-- and only the provided information - to answer the provided question.
+
+Use the information provided below - and only the provided information - to answer the provided question.
 The information provided below consists of a number of documents that were deemed relevant for the question.
 {history}
 
@@ -898,19 +898,24 @@ REVISED_RAG_PROMPT = (
     """\n
 {persona_specification}
 {date_prompt}
-Use the information provided below - and only the provided information - to answer the provided main question.
+Your task is to improve on a given answer to a question, as the initial answer was found to be lacking in some way.
+
+Use the information provided below - and only the provided information - to write your new and improved answer.
 
 The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
-    2) a number of answered sub-questions - these are very important(!) and definitely should help yoiu to answer
+
+    2) a number of answered sub-questions - these are very important(!) and definitely should help you to answer
 the main question. Note that the sub-questions have a type, 'initial' and 'revised'. The 'initial'
-     ones were available for the initial answer, and the 'revised' were not. So please use the 'revised' sub-questions in
-     particular to update/extend/correct the initial answer!
-    3) a number of documents that were deemed relevant for the question. This the is the context that you use largey for
-citations (see below).
+ones were available for the initial answer, and the 'revised' were not, they are new. So please use
+the 'revised' sub-questions in particular to update/extend/correct the initial answer!
+
+    3) a number of documents that were deemed relevant for the question. This the is the context that you use largely for
+citations (see below). So consider the answers to the sub-questions as guidelines to construct your new answer, but
+make sure you cite the relevant document for a fact!
 
 It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
- It is important that the citation is close to the information it supports. If you have multiple
+It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
 citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
@@ -925,9 +930,9 @@ IMPORTANT RULES:
  - If the information is empty or irrelevant, just say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
- - If the information is relevant but not fully conclusive, provide and answer to the extent you can but also
+ - If the information is relevant but not fully conclusive, provide an answer to the extent you can but also
  specify that the information is not conclusive and why.
-- Ignore any exisiting citations within the answered sub-questions, like [[D1]]()... and [[Q2]]()!
+- Ignore any existing citations within the answered sub-questions, like [[D1]]()... and [[Q2]]()!
 The citations you will need to use will need to refer to the documents (and sub-questions) that you are explicitly
 presented with below!
 
@@ -942,7 +947,7 @@ Here is the contextual information:
 *Initial Answer that was found to be lacking:
 {initial_answer}
 
-*Answered Sub-questions (these should really help ypu to research your answer! They also contain questions/answers
+*Answered Sub-questions (these should really help you to research your answer! They also contain questions/answers
 that were not available when the original answer was constructed):
 {answered_sub_questions}
 
@@ -1017,7 +1022,7 @@ Answer:"""
 
 
 ENTITY_TERM_PROMPT = """ \n
-Based on the original question and some context retieved from a dataset, please generate a list of
+Based on the original question and some context retrieved from a dataset, please generate a list of
 entities (e.g. companies, organizations, industries, products, locations, etc.), terms and concepts
 (e.g. sales, revenue, etc.) that are relevant for the question, plus their relations to each other.
 

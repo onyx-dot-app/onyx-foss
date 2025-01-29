@@ -198,80 +198,83 @@ def run_basic_graph(
 if __name__ == "__main__":
     from onyx.llm.factory import get_default_llms
 
-    now_start = datetime.now()
-    logger.debug(f"Start at {now_start}")
+    for _ in range(3):
+        now_start = datetime.now()
+        logger.debug(f"Start at {now_start}")
 
-    if GRAPH_VERSION_NAME == "a":
-        graph = main_graph_builder_a()
-    else:
-        graph = main_graph_builder_a()
-    compiled_graph = graph.compile()
-    now_end = datetime.now()
-    logger.debug(f"Graph compiled in {now_end - now_start} seconds")
-    primary_llm, fast_llm = get_default_llms()
-    search_request = SearchRequest(
-        # query="what can you do with gitlab?",
-        # query="What are the guiding principles behind the development of cockroachDB",
-        # query="What are the temperatures in Munich, Hawaii, and New York?",
-        # query="When was Washington born?",
-        # query="What is Onyx?",
-        # query="What is the difference between astronomy and astrology?",
-        query="Do a search to tell me hat is the difference between astronomy and astrology?",
-    )
-    # Joachim custom persona
-
-    with get_session_context_manager() as db_session:
-        config, search_tool = get_test_config(
-            db_session, primary_llm, fast_llm, search_request
-        )
-        # search_request.persona = get_persona_by_id(1, None, db_session)
-        config.use_persistence = True
-        # config.perform_initial_search_path_decision = False
-        config.perform_initial_search_decomposition = True
         if GRAPH_VERSION_NAME == "a":
-            input = MainInput_a(
-                base_question=config.search_request.query, log_messages=[]
-            )
+            graph = main_graph_builder_a()
         else:
-            input = MainInput_a(
-                base_question=config.search_request.query, log_messages=[]
+            graph = main_graph_builder_a()
+        compiled_graph = graph.compile()
+        now_end = datetime.now()
+        logger.debug(f"Graph compiled in {now_end - now_start} seconds")
+        primary_llm, fast_llm = get_default_llms()
+        search_request = SearchRequest(
+            # query="what can you do with gitlab?",
+            # query="What are the guiding principles behind the development of cockroachDB",
+            # query="What are the temperatures in Munich, Hawaii, and New York?",
+            # query="When was Washington born?",
+            # query="What is Onyx?",
+            # query="What is the difference between astronomy and astrology?",
+            query="Do a search to tell me hat is the difference between astronomy and astrology?",
+        )
+        # Joachim custom persona
+
+        with get_session_context_manager() as db_session:
+            config, search_tool = get_test_config(
+                db_session, primary_llm, fast_llm, search_request
             )
-        # with open("output.txt", "w") as f:
-        tool_responses: list = []
-        for output in run_graph(compiled_graph, config, input):
-            # pass
+            # search_request.persona = get_persona_by_id(1, None, db_session)
+            config.use_persistence = True
+            # config.perform_initial_search_path_decision = False
+            config.perform_initial_search_decomposition = True
+            if GRAPH_VERSION_NAME == "a":
+                input = MainInput_a(
+                    base_question=config.search_request.query, log_messages=[]
+                )
+            else:
+                input = MainInput_a(
+                    base_question=config.search_request.query, log_messages=[]
+                )
+            # with open("output.txt", "w") as f:
+            tool_responses: list = []
+            for output in run_graph(compiled_graph, config, input):
+                # pass
 
-            if isinstance(output, ToolCallKickoff):
-                pass
-            elif isinstance(output, ExtendedToolResponse):
-                tool_responses.append(output.response)
-                logger.info(
-                    f"   ---- ET {output.level} - {output.level_question_nr} |  "
-                )
-            elif isinstance(output, SubQueryPiece):
-                logger.info(
-                    f"Sq {output.level} - {output.level_question_nr} - {output.sub_query} | "
-                )
-            elif isinstance(output, SubQuestionPiece):
-                logger.info(
-                    f"SQ {output.level} - {output.level_question_nr} - {output.sub_question} | "
-                )
-            elif (
-                isinstance(output, AgentAnswerPiece)
-                and output.answer_type == "agent_sub_answer"
-            ):
-                logger.info(
-                    f"   ---- SA {output.level} - {output.level_question_nr} {output.answer_piece} | "
-                )
-            elif (
-                isinstance(output, AgentAnswerPiece)
-                and output.answer_type == "agent_level_answer"
-            ):
-                logger.info(
-                    f"   ---------- FA {output.level} - {output.level_question_nr}  {output.answer_piece} | "
-                )
-            elif isinstance(output, RefinedAnswerImprovement):
-                logger.info(f"   ---------- RE {output.refined_answer_improvement} | ")
+                if isinstance(output, ToolCallKickoff):
+                    pass
+                elif isinstance(output, ExtendedToolResponse):
+                    tool_responses.append(output.response)
+                    logger.info(
+                        f"   ---- ET {output.level} - {output.level_question_nr} |  "
+                    )
+                elif isinstance(output, SubQueryPiece):
+                    logger.info(
+                        f"Sq {output.level} - {output.level_question_nr} - {output.sub_query} | "
+                    )
+                elif isinstance(output, SubQuestionPiece):
+                    logger.info(
+                        f"SQ {output.level} - {output.level_question_nr} - {output.sub_question} | "
+                    )
+                elif (
+                    isinstance(output, AgentAnswerPiece)
+                    and output.answer_type == "agent_sub_answer"
+                ):
+                    logger.info(
+                        f"   ---- SA {output.level} - {output.level_question_nr} {output.answer_piece} | "
+                    )
+                elif (
+                    isinstance(output, AgentAnswerPiece)
+                    and output.answer_type == "agent_level_answer"
+                ):
+                    logger.info(
+                        f"   ---------- FA {output.level} - {output.level_question_nr}  {output.answer_piece} | "
+                    )
+                elif isinstance(output, RefinedAnswerImprovement):
+                    logger.info(
+                        f"   ---------- RE {output.refined_answer_improvement} | "
+                    )
 
-        # for tool_response in tool_responses:
-        #    logger.debug(tool_response)
+            # for tool_response in tool_responses:
+            #    logger.debug(tool_response)

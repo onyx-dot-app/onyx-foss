@@ -104,7 +104,9 @@ class RequireRefinedAnswerUpdate(LoggerUpdate):
 class DecompAnswersUpdate(LoggerUpdate):
     documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
-    cited_docs: Annotated[list[InferenceSection], dedup_inference_sections] = []
+    cited_docs: Annotated[
+        list[InferenceSection], dedup_inference_sections
+    ] = []  # cited docs from sub-answers are used for answer context
     decomp_answer_results: Annotated[
         list[QuestionAnswerResults], dedup_question_answer_results
     ] = []

@@ -3,6 +3,7 @@ from langchain.schema import HumanMessage
 from langchain.schema import SystemMessage
 from langchain_core.messages.tool import ToolMessage
 
+from onyx.agents.agent_search.models import AgentPromptEnrichmentComponents
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import BASE_RAG_PROMPT_v2
 from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
@@ -113,3 +114,21 @@ def build_history_prompt(config: AgentSearchConfig, question: str) -> str:
             history = summarize_history(history, question, persona_base, model)
 
     return HISTORY_PROMPT.format(history=history) if history else ""
+
+
+def get_prompt_enrichment_components(
+    config: AgentSearchConfig,
+) -> AgentPromptEnrichmentComponents:
+    persona_prompts = get_persona_agent_prompt_expressions(
+        config.search_request.persona
+    )
+
+    history = build_history_prompt(config, config.search_request.query)
+
+    date_str = get_today_prompt()
+
+    return AgentPromptEnrichmentComponents(
+        persona_prompts=persona_prompts,
+        history=history,
+        date_str=date_str,
+    )

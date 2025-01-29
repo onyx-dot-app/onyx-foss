@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pydantic import model_validator
 from sqlalchemy.orm import Session
 
+from onyx.agents.agent_search.shared_graph_utils.models import PersonaExpressions
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.context.search.models import SearchRequest
 from onyx.file_store.utils import InMemoryChatFile
@@ -91,3 +92,9 @@ class AgentDocumentCitations(BaseModel):
     document_id: str
     document_title: str
     link: str
+
+
+class AgentPromptEnrichmentComponents(BaseModel):
+    persona_prompts: PersonaExpressions
+    history: str
+    date_str: str
