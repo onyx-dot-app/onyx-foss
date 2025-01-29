@@ -180,6 +180,7 @@ class TeamsConnector(LoadConnector, PollConnector):
         self.batch_size = batch_size
         self.graph_client: GraphClient | None = None
         self.requested_team_list: list[str] = teams
+        self.msal_app: msal.ConfidentialClientApplication | None = None
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
         teams_client_id = credentials["teams_client_id"]
