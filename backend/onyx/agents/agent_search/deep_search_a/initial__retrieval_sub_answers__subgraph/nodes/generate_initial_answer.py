@@ -98,28 +98,6 @@ def generate_initial_answer(
 
     decomp_questions = []
 
-    # Use the query info from the base document retrieval
-    query_info = get_query_info(state.original_question_retrieval_results)
-    if agent_a_config.search_tool is None:
-        raise ValueError("search_tool must be provided for agentic search")
-    for tool_response in yield_search_responses(
-        query=question,
-        reranked_sections=relevant_docs,
-        final_context_sections=relevant_docs,
-        search_query_info=query_info,
-        get_section_relevance=lambda: None,  # TODO: add relevance
-        search_tool=agent_a_config.search_tool,
-    ):
-        dispatch_custom_event(
-            "tool_response",
-            ExtendedToolResponse(
-                id=tool_response.id,
-                response=tool_response.response,
-                level=0,
-                level_question_nr=0,  # 0, 0 is the base question
-            ),
-        )
-
     if len(relevant_docs) == 0:
         dispatch_custom_event(
             "initial_agent_answer",
@@ -140,6 +118,28 @@ def generate_initial_answer(
         )
 
     else:
+        # Use the query info from the base document retrieval
+        query_info = get_query_info(state.original_question_retrieval_results)
+        if agent_a_config.search_tool is None:
+            raise ValueError("search_tool must be provided for agentic search")
+        for tool_response in yield_search_responses(
+            query=question,
+            reranked_sections=relevant_docs,
+            final_context_sections=relevant_docs,
+            search_query_info=query_info,
+            get_section_relevance=lambda: None,  # TODO: add relevance
+            search_tool=agent_a_config.search_tool,
+        ):
+            dispatch_custom_event(
+                "tool_response",
+                ExtendedToolResponse(
+                    id=tool_response.id,
+                    response=tool_response.response,
+                    level=0,
+                    level_question_nr=0,  # 0, 0 is the base question
+                ),
+            )
+
         decomp_answer_results = state.decomp_answer_results
 
         good_qa_list: list[str] = []
