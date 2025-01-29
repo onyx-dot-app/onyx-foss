@@ -12,8 +12,8 @@ from onyx.agents.agent_search.models import AgentSearchConfig
 def agent_path_decision(state: MainState, config: RunnableConfig) -> RoutingDecision:
     now_start = datetime.now()
 
-    agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    agent_a_config.search_request.query
+    cast(AgentSearchConfig, config["metadata"]["config"])
+
     # perform_initial_search_path_decision = (
     #    agent_a_config.perform_initial_search_path_decision
     # )
