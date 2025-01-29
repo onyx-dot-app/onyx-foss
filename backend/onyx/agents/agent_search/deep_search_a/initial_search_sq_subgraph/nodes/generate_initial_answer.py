@@ -43,7 +43,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_persona_agent_prompt_expressions,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
@@ -65,7 +67,9 @@ def generate_initial_answer(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona = get_persona_expressions(agent_a_config.search_request.persona)
+    persona_prompts = get_persona_agent_prompt_expressions(
+        agent_a_config.search_request.persona
+    )
 
     history = build_history_prompt(agent_a_config, question)
 
@@ -134,7 +138,6 @@ def generate_initial_answer(
         )
 
     else:
-       
         decomp_answer_results = state.decomp_answer_results
 
         good_qa_list: list[str] = []
@@ -173,7 +176,9 @@ def generate_initial_answer(
 
         # summarize the history iff too long
         if len(history) > AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH:
-            history = summarize_history(history, question, persona.persona_base, model)
+            history = summarize_history(
+                history, question, persona_prompts.base_prompt, model
+            )
 
         doc_context = format_docs(relevant_docs)
         doc_context = trim_prompt_piece(
@@ -181,7 +186,7 @@ def generate_initial_answer(
             doc_context,
             base_prompt
             + sub_question_answer_str
-            + persona.persona_prompt
+            + persona_prompts.contextualized_prompt
             + history
             + date_str,
         )
@@ -194,7 +199,7 @@ def generate_initial_answer(
                         sub_question_answer_str
                     ),
                     relevant_docs=format_docs(relevant_docs),
-                    persona_specification=persona.persona_prompt,
+                    persona_specification=persona_prompts.contextualized_prompt,
                     history=history,
                     date_prompt=date_str,
                 )

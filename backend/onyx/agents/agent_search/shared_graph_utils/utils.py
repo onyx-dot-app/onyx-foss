@@ -257,7 +257,7 @@ def get_test_config(
     return config, search_tool
 
 
-def get_persona_expressions(persona: Persona | None) -> PersonaExpressions:
+def get_persona_agent_prompt_expressions(persona: Persona | None) -> PersonaExpressions:
     if persona is None:
         persona_prompt = ASSISTANT_SYSTEM_PROMPT_DEFAULT
         persona_base = ""
@@ -267,7 +267,9 @@ def get_persona_expressions(persona: Persona | None) -> PersonaExpressions:
         persona_prompt = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
             persona_prompt=persona_base
         )
-    return PersonaExpressions(persona_prompt=persona_prompt, persona_base=persona_base)
+    return PersonaExpressions(
+        contextualized_prompt=persona_prompt, base_prompt=persona_base
+    )
 
 
 def make_question_id(level: int, question_nr: int) -> str:

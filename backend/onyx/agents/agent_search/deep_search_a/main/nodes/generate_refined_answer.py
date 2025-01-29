@@ -39,7 +39,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_persona_agent_prompt_expressions,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
@@ -58,7 +60,9 @@ def generate_refined_answer(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona = get_persona_expressions(agent_a_config.search_request.persona)
+    persona_contextualized_prompt = get_persona_agent_prompt_expressions(
+        agent_a_config.search_request.persona
+    ).contextualized_prompt
 
     history = build_history_prompt(agent_a_config, question)
     date_str = get_today_prompt()
@@ -188,7 +192,7 @@ def generate_refined_answer(
         + question
         + sub_question_answer_str
         + initial_answer
-        + persona.persona_prompt
+        + persona_contextualized_prompt
         + history,
     )
 
@@ -202,7 +206,7 @@ def generate_refined_answer(
                 ),
                 relevant_docs=relevant_docs,
                 initial_answer=remove_document_citations(initial_answer),
-                persona_specification=persona.persona_prompt,
+                persona_specification=persona_contextualized_prompt,
                 date_prompt=date_str,
             )
         )

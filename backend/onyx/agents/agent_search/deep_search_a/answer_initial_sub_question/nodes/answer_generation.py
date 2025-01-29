@@ -18,7 +18,9 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import NO_RECOVERED_DOCS
 from onyx.agents.agent_search.shared_graph_utils.utils import get_answer_citation_ids
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_persona_agent_prompt_expressions,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import StreamStopInfo
@@ -40,7 +42,9 @@ def answer_generation(
     state.documents
     level, question_nr = parse_question_id(state.question_id)
     context_docs = state.context_documents[:AGENT_MAX_ANSWER_CONTEXT_DOCS]
-    persona = get_persona_expressions(agent_search_config.search_request.persona)
+    persona_contextualized_prompt = get_persona_agent_prompt_expressions(
+        agent_search_config.search_request.persona
+    ).contextualized_prompt
 
     if len(context_docs) == 0:
         answer_str = NO_RECOVERED_DOCS
@@ -61,7 +65,7 @@ def answer_generation(
             question=question,
             original_question=agent_search_config.search_request.query,
             docs=context_docs,
-            persona_specification=persona.persona_prompt,
+            persona_specification=persona_contextualized_prompt,
             config=fast_llm.config,
         )
 

@@ -115,5 +115,5 @@ class CombinedAgentMetrics(BaseModel):
 
 
 class PersonaExpressions(BaseModel):
-    persona_prompt: str
-    persona_base: str
+    contextualized_prompt: str
+    base_prompt: str

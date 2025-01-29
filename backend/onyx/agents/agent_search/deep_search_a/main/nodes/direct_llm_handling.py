@@ -12,7 +12,9 @@ from onyx.agents.agent_search.deep_search_a.main.states import InitialAnswerUpda
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import DIRECT_LLM_PROMPT
-from onyx.agents.agent_search.shared_graph_utils.utils import get_persona_expressions
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_persona_agent_prompt_expressions,
+)
 from onyx.chat.models import AgentAnswerPiece
 
 
@@ -23,7 +25,9 @@ def direct_llm_handling(
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
-    persona = get_persona_expressions(agent_a_config.search_request.persona)
+    persona_contextualialized_prompt = get_persona_agent_prompt_expressions(
+        agent_a_config.search_request.persona
+    ).contextualized_prompt
 
     logger.info(f"--------{now_start}--------LLM HANDLING START---")
 
@@ -32,7 +36,8 @@ def direct_llm_handling(
     msg = [
         HumanMessage(
             content=DIRECT_LLM_PROMPT.format(
-                persona_specification=persona.persona_prompt, question=question
+                persona_specification=persona_contextualialized_prompt,
+                question=question,
             )
         )
     ]
