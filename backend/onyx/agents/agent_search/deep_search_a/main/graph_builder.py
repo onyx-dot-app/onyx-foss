@@ -2,7 +2,7 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.graph_builder import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.graph_builder import (
     initial_search_sq_subgraph_builder,
 )
 from onyx.agents.agent_search.deep_search_a.main.edges import (

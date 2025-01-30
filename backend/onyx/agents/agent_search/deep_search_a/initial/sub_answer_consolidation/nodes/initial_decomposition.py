@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.messages import merge_content
 from langchain_core.runnables import RunnableConfig
 
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
 )
 from onyx.agents.agent_search.deep_search_a.main.models import (
