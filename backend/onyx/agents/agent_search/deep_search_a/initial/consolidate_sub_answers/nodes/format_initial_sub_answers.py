@@ -12,7 +12,7 @@ from onyx.agents.agent_search.shared_graph_utils.operators import (
 )
 
 
-def ingest_initial_sub_answers(
+def format_initial_sub_answers(
     state: AnswerQuestionOutput,
 ) -> DecompAnswersUpdate:
     now_start = datetime.now()

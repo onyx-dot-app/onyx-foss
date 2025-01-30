@@ -106,10 +106,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     #     action=initial_sub_question_creation,
     # )
 
-    generate_initial_answer_graph = generate_initial_answer_graph_builder().compile()
+    generate_initial_answer_subgraph = generate_initial_answer_graph_builder().compile()
     graph.add_node(
-        node="generate_initial_answer_graph",
-        action=generate_initial_answer_graph,
+        node="generate_initial_answer_subgraph",
+        action=generate_initial_answer_subgraph,
     )
 
     # answer_query_subgraph = answer_query_graph_builder().compile()
@@ -239,7 +239,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key="agent_search_start",
-        end_key="generate_initial_answer_graph",
+        end_key="generate_initial_answer_subgraph",
     )
     # graph.add_edge(
     #     start_key="agent_search_start",
@@ -316,7 +316,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     # )
 
     graph.add_edge(
-        start_key=["generate_initial_answer_graph", "entity_term_extraction_llm"],
+        start_key=["generate_initial_answer_subgraph", "entity_term_extraction_llm"],
         end_key="refined_answer_decision",
     )
 

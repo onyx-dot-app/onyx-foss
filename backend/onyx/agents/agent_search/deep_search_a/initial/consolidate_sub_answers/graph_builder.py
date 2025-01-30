@@ -8,8 +8,8 @@ from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.edge
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.decompose_orig_question import (
     decompose_orig_question,
 )
-from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.ingest_initial_sub_answers import (
-    ingest_initial_sub_answers,
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.format_initial_sub_answers import (
+    format_initial_sub_answers,
 )
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.states import (
     SQInput,
@@ -37,15 +37,15 @@ def consolidate_sub_answers_graph_builder() -> StateGraph:
         node="decompose_orig_question",
         action=decompose_orig_question,
     )
-    answer_query_subgraph = answer_query_graph_builder().compile()
+    answer_sub_question_subgraph = answer_query_graph_builder().compile()
     graph.add_node(
-        node="answer_query_subgraph",
-        action=answer_query_subgraph,
+        node="answer_sub_question_subgraph",
+        action=answer_sub_question_subgraph,
     )
 
     graph.add_node(
-        node="ingest_initial_sub_question_answers",
-        action=ingest_initial_sub_answers,
+        node="format_initial_sub_question_answers",
+        action=format_initial_sub_answers,
     )
 
     ### Add edges ###
@@ -75,15 +75,15 @@ def consolidate_sub_answers_graph_builder() -> StateGraph:
     graph.add_conditional_edges(
         source="decompose_orig_question",
         path=parallelize_initial_sub_question_answering,
-        path_map=["answer_query_subgraph"],
+        path_map=["answer_sub_question_subgraph"],
     )
     graph.add_edge(
-        start_key="answer_query_subgraph",
-        end_key="ingest_initial_sub_question_answers",
+        start_key="answer_sub_question_subgraph",
+        end_key="format_initial_sub_question_answers",
     )
 
     graph.add_edge(
-        start_key="ingest_initial_sub_question_answers",
+        start_key="format_initial_sub_question_answers",
         end_key=END,
     )
 

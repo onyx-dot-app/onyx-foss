@@ -22,7 +22,7 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.graph_buil
 )
 
 
-def base_raw_search_graph_builder() -> StateGraph:
+def retrieve_orig_question_docs_graph_builder() -> StateGraph:
     graph = StateGraph(
         state_schema=BaseRawSearchState,
         input=BaseRawSearchInput,
