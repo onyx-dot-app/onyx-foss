@@ -10,6 +10,7 @@ from onyx.agents.agent_search.shared_graph_utils.models import (
     QuestionAnswerResults,
 )
 from onyx.chat.models import SubQuestionPiece
+from onyx.context.search.models import IndexFilters
 from onyx.tools.models import SearchQueryInfo
 from onyx.utils.logger import setup_logger
 
@@ -141,5 +142,10 @@ def get_query_info(results: list[QueryResult]) -> SearchQueryInfo:
         result.query_info for result in results if result.query_info is not None
     ]
     if len(query_infos) == 0:
+        return SearchQueryInfo(
+            predicted_search=None,
+            final_filters=IndexFilters(access_control_list=None),
+            recency_bias_multiplier=1.0,
+        )
         raise ValueError("No query info found")
     return query_infos[0]

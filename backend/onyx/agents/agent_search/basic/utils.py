@@ -16,17 +16,9 @@ from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
 
-# TODO: handle citations here; below is what was previously passed in
-# see basic_use_tool_response.py for where these variables come from
-# answer_handler = CitationResponseHandler(
-#     context_docs=final_search_results,
-#     final_doc_id_to_rank_map=map_document_id_order(final_search_results),
-#     display_doc_id_to_rank_map=map_document_id_order(displayed_search_results),
-# )
-
 
 def process_llm_stream(
-    stream: Iterator[BaseMessage],
+    messages: Iterator[BaseMessage],
     should_stream_answer: bool,
     final_search_results: list[LlmDoc] | None = None,
     displayed_search_results: list[LlmDoc] | None = None,
@@ -46,20 +38,20 @@ def process_llm_stream(
     full_answer = ""
     # This stream will be the llm answer if no tool is chosen. When a tool is chosen,
     # the stream will contain AIMessageChunks with tool call information.
-    for response in stream:
-        answer_piece = response.content
+    for message in messages:
+        answer_piece = message.content
         if not isinstance(answer_piece, str):
-            # TODO: handle non-string content
-            logger.warning(f"Received non-string content: {type(answer_piece)}")
+            # this is only used for logging, so fine to
+            # just add the string representation
             answer_piece = str(answer_piece)
         full_answer += answer_piece
 
-        if isinstance(response, AIMessageChunk) and (
-            response.tool_call_chunks or response.tool_calls
+        if isinstance(message, AIMessageChunk) and (
+            message.tool_call_chunks or message.tool_calls
         ):
-            tool_call_chunk += response  # type: ignore
+            tool_call_chunk += message  # type: ignore
         elif should_stream_answer:
-            for response_part in answer_handler.handle_response_part(response, []):
+            for response_part in answer_handler.handle_response_part(message, []):
                 dispatch_custom_event(
                     "basic_response",
                     response_part,

@@ -87,6 +87,7 @@ def generate_initial_answer(
 
     # Use the query info from the base document retrieval
     query_info = get_query_info(state.original_question_retrieval_results)
+
     if agent_a_config.search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
     for tool_response in yield_search_responses(

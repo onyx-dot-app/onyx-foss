@@ -85,7 +85,6 @@ if __name__ == "__main__":
 
     graph = basic_graph_builder()
     compiled_graph = graph.compile()
-    # TODO: unify basic input
     input = BasicInput(logs="")
     primary_llm, fast_llm = get_default_llms()
     with get_session_context_manager() as db_session:

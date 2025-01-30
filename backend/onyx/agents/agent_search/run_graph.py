@@ -26,6 +26,8 @@ from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import SubQueryPiece
 from onyx.chat.models import SubQuestionPiece
 from onyx.chat.models import ToolResponse
+from onyx.configs.agent_configs import ALLOW_REFINEMENT
+from onyx.configs.agent_configs import INITIAL_SEARCH_DECOMPOSITION_ENABLED
 from onyx.context.search.models import SearchRequest
 from onyx.db.engine import get_session_context_manager
 from onyx.tools.tool_runner import ToolCallKickoff
@@ -58,7 +60,6 @@ def _parse_agent_event(
     # 1. It's a list of the names of every place we dispatch a custom event
     # 2. We maintain the intended types yielded by each event
     if event_type == "on_custom_event":
-        # TODO: different AnswerStream types for different events
         if event["name"] == "decomp_qs":
             return cast(SubQuestionPiece, event["data"])
         elif event["name"] == "subqueries":
@@ -133,15 +134,30 @@ def _manage_async_event_streaming(
     return _yield_async_to_sync()
 
 
+def manage_sync_streaming(
+    compiled_graph: CompiledStateGraph,
+    config: AgentSearchConfig,
+    graph_input: BasicInput | MainInput_a,
+) -> Iterable[StreamEvent]:
+    message_id = config.message_id if config else None
+    for event in compiled_graph.stream(
+        stream_mode="custom",
+        input=graph_input,
+        config={"metadata": {"config": config, "thread_id": str(message_id)}},
+        # debug=True,
+    ):
+        print(event)
+
+    return []
+
+
 def run_graph(
     compiled_graph: CompiledStateGraph,
     config: AgentSearchConfig,
     input: BasicInput | MainInput_a,
 ) -> AnswerStream:
-    # TODO: add these to the environment
-    # config.perform_initial_search_path_decision = False
-    config.perform_initial_search_decomposition = True
-    config.allow_refinement = True
+    config.perform_initial_search_decomposition = INITIAL_SEARCH_DECOMPOSITION_ENABLED
+    config.allow_refinement = ALLOW_REFINEMENT
 
     for event in _manage_async_event_streaming(
         compiled_graph=compiled_graph, config=config, graph_input=input
@@ -152,8 +168,8 @@ def run_graph(
         yield parsed_object
 
 
-# TODO: call this once on startup, TBD where and if it should be gated based
-# on dev mode or not
+# It doesn't actually take very long to load the graph, but we'd rather
+# not compile it again on every request.
 def load_compiled_graph() -> CompiledStateGraph:
     global _COMPILED_GRAPH
     if _COMPILED_GRAPH is None:
@@ -176,13 +192,11 @@ def run_main_graph(
     yield from run_graph(compiled_graph, config, input)
 
 
-# TODO: unify input types, especially prosearchconfig
 def run_basic_graph(
     config: AgentSearchConfig,
 ) -> AnswerStream:
     graph = basic_graph_builder()
     compiled_graph = graph.compile()
-    # TODO: unify basic input
     input = BasicInput()
     return run_graph(compiled_graph, config, input)
 

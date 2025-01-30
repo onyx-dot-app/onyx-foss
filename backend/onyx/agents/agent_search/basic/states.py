@@ -16,8 +16,9 @@ from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
 
 
 class BasicInput(BaseModel):
-    # TODO: subclass global log update state
-    logs: str = ""
+    # Langgraph needs a nonempty input, but we pass in all static
+    # data through a RunnableConfig.
+    _unused: bool = True
 
 
 ## Graph Output State
