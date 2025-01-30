@@ -97,6 +97,9 @@ class GraphInputs(BaseModel):
     files: list[InMemoryChatFile] | None = None
     structured_response_format: dict | None = None
 
+    class Config:
+        arbitrary_types_allowed = True
+
 
 class GraphTooling(BaseModel):
     """Tools and LLMs available to the graph"""
@@ -108,6 +111,9 @@ class GraphTooling(BaseModel):
     force_use_tool: ForceUseTool
     using_tool_calling_llm: bool = False
 
+    class Config:
+        arbitrary_types_allowed = True
+
 
 class GraphPersistence(BaseModel):
     """Configuration for data persistence"""
@@ -116,6 +122,9 @@ class GraphPersistence(BaseModel):
     message_id: int | None = None
     use_agentic_persistence: bool = True
     db_session: Session | None = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
     @model_validator(mode="after")
     def validate_db_session(self) -> "GraphPersistence":
