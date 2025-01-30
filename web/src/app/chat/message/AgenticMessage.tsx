@@ -147,7 +147,7 @@ export const AgenticMessage = ({
 
     processed = processed.replace(/\]\](?!\()/g, "]]()");
 
-    return processed;
+    return preprocessLaTeX(processed) + (!isComplete ? " [*]() " : "");
   };
 
   const finalContent = processContent(content) as string;
