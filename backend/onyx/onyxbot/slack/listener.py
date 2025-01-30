@@ -30,7 +30,9 @@ from onyx.configs.onyxbot_configs import DANSWER_BOT_REPHRASE_MESSAGE
 from onyx.configs.onyxbot_configs import DANSWER_BOT_RESPOND_EVERY_CHANNEL
 from onyx.configs.onyxbot_configs import NOTIFY_SLACKBOT_NO_ANSWER
 from onyx.connectors.slack.utils import expert_info_from_slack_id
-from onyx.context.search.retrieval.search_runner import download_nltk_data
+from onyx.context.search.retrieve_orig_question_documents.search_runner import (
+    download_nltk_data,
+)
 from onyx.db.engine import get_all_tenant_ids
 from onyx.db.engine import get_session_with_tenant
 from onyx.db.models import SlackBot

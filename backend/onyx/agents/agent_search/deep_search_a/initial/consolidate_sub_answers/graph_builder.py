@@ -2,23 +2,23 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.graph_builder import (
-    answer_query_graph_builder,
-)
-from onyx.agents.agent_search.deep_search_a.initial.sub_answer_consolidation.edges import (
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.edges import (
     parallelize_initial_sub_question_answering,
 )
-from onyx.agents.agent_search.deep_search_a.initial.sub_answer_consolidation.nodes.ingest_initial_sub_answers import (
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.ingest_initial_sub_answers import (
     ingest_initial_sub_answers,
 )
-from onyx.agents.agent_search.deep_search_a.initial.sub_answer_consolidation.nodes.initial_decomposition import (
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.initial_decomposition import (
     initial_sub_question_creation,
 )
-from onyx.agents.agent_search.deep_search_a.initial.sub_answer_consolidation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.states import (
     SQInput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.sub_answer_consolidation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.states import (
     SQState,
+)
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.graph_builder import (
+    answer_query_graph_builder,
 )
 from onyx.utils.logger import setup_logger
 

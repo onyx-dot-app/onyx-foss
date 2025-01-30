@@ -11,7 +11,9 @@ from onyx.configs.model_configs import FAST_GEN_AI_MODEL_VERSION
 from onyx.configs.model_configs import GEN_AI_API_KEY
 from onyx.configs.model_configs import GEN_AI_MODEL_VERSION
 from onyx.context.search.models import SavedSearchSettings
-from onyx.context.search.retrieval.search_runner import download_nltk_data
+from onyx.context.search.retrieve_orig_question_documents.search_runner import (
+    download_nltk_data,
+)
 from onyx.db.connector import check_connectors_exist
 from onyx.db.connector import create_initial_default_connector
 from onyx.db.connector_credential_pair import associate_default_cc_pair

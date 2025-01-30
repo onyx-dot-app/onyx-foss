@@ -2,6 +2,9 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.graph_builder import (
+    initial_sq_subgraph_builder,
+)
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.generate_initial_answer import (
     generate_initial_answer,
 )
@@ -17,11 +20,8 @@ from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.stat
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
 )
-from onyx.agents.agent_search.deep_search_a.initial.retrieval.graph_builder import (
+from onyx.agents.agent_search.deep_search_a.initial.retrieve_orig_question_documents.graph_builder import (
     base_raw_search_graph_builder,
-)
-from onyx.agents.agent_search.deep_search_a.initial.sub_answer_consolidation.graph_builder import (
-    initial_sq_subgraph_builder,
 )
 from onyx.utils.logger import setup_logger
 
