@@ -1286,7 +1286,7 @@ class AgentSubQuestion(Base):
     )
     sub_question: Mapped[str] = mapped_column(Text)
     level: Mapped[int] = mapped_column(Integer)
-    level_question_nr: Mapped[int] = mapped_column(Integer)
+    level_question_num: Mapped[int] = mapped_column(Integer)
     time_created: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

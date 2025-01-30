@@ -889,7 +889,7 @@ def translate_db_sub_questions_to_server_objects(
         sub_questions.append(
             SubQuestionDetail(
                 level=sub_question.level,
-                level_question_nr=sub_question.level_question_nr,
+                level_question_nr=sub_question.level_question_num,
                 question=sub_question.sub_question,
                 answer=sub_question.sub_answer,
                 sub_queries=sub_queries,
@@ -1025,7 +1025,7 @@ def log_agent_sub_question_results(
             chat_session_id=chat_session_id,
             primary_question_id=primary_message_id,
             level=level,
-            level_question_nr=level_question_nr,
+            level_question_num=level_question_nr,
             sub_question=sub_question,
             sub_answer=sub_answer,
             sub_question_doc_results=sub_document_results,
