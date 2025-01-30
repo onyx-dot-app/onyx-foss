@@ -40,7 +40,7 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.refined_sub_question_crea
 )
 from onyx.agents.agent_search.deep_search_a.main.states import MainInput
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
-from onyx.agents.agent_search.deep_search_a.refininement.sub_answer_consolidation.graph_builder import (
+from onyx.agents.agent_search.deep_search_a.refinement.sub_answer_consolidation.graph_builder import (
     answer_refined_query_graph_builder,
 )
 from onyx.agents.agent_search.orchestration.nodes.basic_use_tool_response import (

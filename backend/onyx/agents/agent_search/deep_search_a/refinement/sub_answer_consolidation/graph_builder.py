@@ -23,7 +23,7 @@ from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answ
 from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionState,
 )
-from onyx.agents.agent_search.deep_search_a.refininement.sub_answer_consolidation.edges import (
+from onyx.agents.agent_search.deep_search_a.refinement.sub_answer_consolidation.edges import (
     send_to_expanded_refined_retrieval,
 )
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.graph_builder import (
