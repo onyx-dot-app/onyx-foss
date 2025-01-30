@@ -24,7 +24,7 @@ from onyx.context.search.postprocessing.postprocessing import rerank_sections
 from onyx.db.engine import get_session_context_manager
 
 
-def doc_reranking(
+def rerank_documents(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> DocRerankingUpdate:
     now_start = datetime.now()

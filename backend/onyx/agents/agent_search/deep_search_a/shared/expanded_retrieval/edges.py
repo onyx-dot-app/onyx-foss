@@ -23,7 +23,7 @@ def parallel_retrieval_edge(
 
     return [
         Send(
-            "doc_retrieval",
+            "retrieve_documents",
             RetrievalInput(
                 query_to_retrieve=query,
                 question=question,

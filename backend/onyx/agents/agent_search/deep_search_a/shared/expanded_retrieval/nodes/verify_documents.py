@@ -16,7 +16,7 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
 from onyx.agents.agent_search.shared_graph_utils.prompts import VERIFIER_PROMPT
 
 
-def doc_verification(
+def verify_documents(
     state: DocVerificationInput, config: RunnableConfig
 ) -> DocVerificationUpdate:
     """

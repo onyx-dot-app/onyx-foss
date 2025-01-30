@@ -12,10 +12,10 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 )
 
 
-def verification_kickoff(
+def kickoff_verification(
     state: ExpandedRetrievalState,
     config: RunnableConfig,
-) -> Command[Literal["doc_verification"]]:
+) -> Command[Literal["verify_documents"]]:
     documents = state.retrieved_documents
     verification_question = state.question
 
@@ -24,7 +24,7 @@ def verification_kickoff(
         update={},
         goto=[
             Send(
-                node="doc_verification",
+                node="verify_documents",
                 arg=DocVerificationInput(
                     doc_to_verify=doc,
                     question=verification_question,

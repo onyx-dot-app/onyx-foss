@@ -8,7 +8,7 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 )
 
 
-def dummy(
+def format_queries(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> QueryExpansionUpdate:
     return QueryExpansionUpdate(

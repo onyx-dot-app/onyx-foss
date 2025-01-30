@@ -26,7 +26,9 @@ from onyx.tools.tool_implementations.search.search_tool import (
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
 
 
-def doc_retrieval(state: RetrievalInput, config: RunnableConfig) -> DocRetrievalUpdate:
+def retrieve_documents(
+    state: RetrievalInput, config: RunnableConfig
+) -> DocRetrievalUpdate:
     """
     Retrieve documents
 

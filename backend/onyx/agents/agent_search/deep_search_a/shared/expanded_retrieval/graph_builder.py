@@ -5,26 +5,26 @@ from langgraph.graph import StateGraph
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.edges import (
     parallel_retrieval_edge,
 )
-from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.doc_reranking import (
-    doc_reranking,
-)
-from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.doc_retrieval import (
-    doc_retrieval,
-)
-from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.doc_verification import (
-    doc_verification,
-)
-from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.dummy import (
-    dummy,
-)
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.expand_queries import (
     expand_queries,
+)
+from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.format_queries import (
+    format_queries,
 )
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.format_results import (
     format_results,
 )
-from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.verification_kickoff import (
-    verification_kickoff,
+from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.kickoff_verification import (
+    kickoff_verification,
+)
+from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.rerank_documents import (
+    rerank_documents,
+)
+from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.retrieve_documents import (
+    retrieve_documents,
+)
+from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.nodes.verify_documents import (
+    verify_documents,
 )
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states import (
     ExpandedRetrievalInput,
@@ -57,24 +57,24 @@ def expanded_retrieval_graph_builder() -> StateGraph:
 
     graph.add_node(
         node="dummy",
-        action=dummy,
+        action=format_queries,
     )
 
     graph.add_node(
-        node="doc_retrieval",
-        action=doc_retrieval,
+        node="retrieve_documents",
+        action=retrieve_documents,
     )
     graph.add_node(
-        node="verification_kickoff",
-        action=verification_kickoff,
+        node="kickoff_verification",
+        action=kickoff_verification,
     )
     graph.add_node(
-        node="doc_verification",
-        action=doc_verification,
+        node="verify_documents",
+        action=verify_documents,
     )
     graph.add_node(
-        node="doc_reranking",
-        action=doc_reranking,
+        node="rerank_documents",
+        action=rerank_documents,
     )
     graph.add_node(
         node="format_results",
@@ -94,18 +94,18 @@ def expanded_retrieval_graph_builder() -> StateGraph:
     graph.add_conditional_edges(
         source="dummy",
         path=parallel_retrieval_edge,
-        path_map=["doc_retrieval"],
+        path_map=["retrieve_documents"],
     )
     graph.add_edge(
-        start_key="doc_retrieval",
-        end_key="verification_kickoff",
+        start_key="retrieve_documents",
+        end_key="kickoff_verification",
     )
     graph.add_edge(
-        start_key="doc_verification",
-        end_key="doc_reranking",
+        start_key="verify_documents",
+        end_key="rerank_documents",
     )
     graph.add_edge(
-        start_key="doc_reranking",
+        start_key="rerank_documents",
         end_key="format_results",
     )
     graph.add_edge(
