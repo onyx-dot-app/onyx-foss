@@ -440,14 +440,14 @@ def get_llm_max_tokens(
 
         if "max_input_tokens" in model_obj:
             max_tokens = model_obj["max_input_tokens"]
-            logger.info(
+            logger.debug(
                 f"Max tokens for {model_name}: {max_tokens} (from max_input_tokens)"
             )
             return max_tokens
 
         if "max_tokens" in model_obj:
             max_tokens = model_obj["max_tokens"]
-            logger.info(f"Max tokens for {model_name}: {max_tokens} (from max_tokens)")
+            logger.debug(f"Max tokens for {model_name}: {max_tokens} (from max_tokens)")
             return max_tokens
 
         logger.error(f"No max tokens found for LLM: {model_name}")

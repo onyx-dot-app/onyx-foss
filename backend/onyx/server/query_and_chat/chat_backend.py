@@ -185,7 +185,6 @@ def get_chat_session(
     user: User | None = Depends(current_chat_accesssible_user),
     db_session: Session = Depends(get_session),
 ) -> ChatSessionDetailResponse:
-    print("get_chat_session called")
     user_id = user.id if user is not None else None
     try:
         chat_session = get_chat_session_by_id(
