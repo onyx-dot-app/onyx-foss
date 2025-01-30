@@ -9,7 +9,7 @@ from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answ
 from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionOutput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id

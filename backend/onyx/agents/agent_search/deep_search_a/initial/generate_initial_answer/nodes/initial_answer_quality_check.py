@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
 )
 from onyx.agents.agent_search.deep_search_a.main.operations import logger

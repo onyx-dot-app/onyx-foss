@@ -2,19 +2,19 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.nodes.generate_initial_answer import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.generate_initial_answer import (
     generate_initial_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.nodes.initial_answer_quality_check import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.initial_answer_quality_check import (
     initial_answer_quality_check,
 )
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.nodes.retrieval_consolidation import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.retrieval_consolidation import (
     retrieval_consolidation,
 )
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQInput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
 )
 from onyx.agents.agent_search.deep_search_a.initial.retrieval.graph_builder import (
