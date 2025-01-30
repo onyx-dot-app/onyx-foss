@@ -5,6 +5,7 @@ from collections.abc import Callable
 from datetime import datetime
 from datetime import timezone
 from http import HTTPStatus
+from typing import Any
 from typing import cast
 
 import httpx
@@ -35,6 +36,7 @@ from onyx.configs.app_configs import VESPA_SYNC_MAX_TASKS
 from onyx.configs.constants import CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import OnyxCeleryQueues
 from onyx.configs.constants import OnyxCeleryTask
+from onyx.configs.constants import OnyxRedisConstants
 from onyx.configs.constants import OnyxRedisLocks
 from onyx.db.connector import fetch_connector_by_id
 from onyx.db.connector_credential_pair import add_deletion_failure_message
@@ -71,6 +73,9 @@ from onyx.document_index.interfaces import VespaDocumentFields
 from onyx.httpx.httpx_pool import HttpxPool
 from onyx.redis.redis_connector import RedisConnector
 from onyx.redis.redis_connector_credential_pair import RedisConnectorCredentialPair
+from onyx.redis.redis_connector_credential_pair import (
+    RedisGlobalConnectorCredentialPair,
+)
 from onyx.redis.redis_connector_delete import RedisConnectorDelete
 from onyx.redis.redis_connector_doc_perm_sync import RedisConnectorPermissionSync
 from onyx.redis.redis_connector_index import RedisConnectorIndex
@@ -201,10 +206,12 @@ def try_generate_stale_document_sync_tasks(
     tenant_id: str | None,
 ) -> int | None:
     # the fence is up, do nothing
-    if r.exists(RedisConnectorCredentialPair.get_fence_key()):
+
+    redis_global_ccpair = RedisGlobalConnectorCredentialPair(r)
+    if redis_global_ccpair.fenced:
         return None
 
-    r.delete(RedisConnectorCredentialPair.get_taskset_key())  # delete the taskset
+    redis_global_ccpair.delete_taskset()
 
     # add tasks to celery and build up the task set to monitor in redis
     stale_doc_count = count_documents_by_needs_sync(db_session)
@@ -262,7 +269,7 @@ def try_generate_stale_document_sync_tasks(
             f"RedisConnector.generate_tasks finished for all cc_pairs. total_tasks_generated={total_tasks_generated}"
         )
 
-    r.set(RedisConnectorCredentialPair.get_fence_key(), total_tasks_generated)
+    redis_global_ccpair.set_fence(total_tasks_generated)
     return total_tasks_generated
 
 
@@ -413,23 +420,17 @@ def try_generate_user_group_sync_tasks(
 
 
 def monitor_connector_taskset(r: Redis) -> None:
-    fence_value = r.get(RedisConnectorCredentialPair.get_fence_key())
-    if fence_value is None:
+    redis_global_ccpair = RedisGlobalConnectorCredentialPair(r)
+    initial_count = redis_global_ccpair.payload
+    if initial_count is None:
         return
 
-    try:
-        initial_count = int(cast(int, fence_value))
-    except ValueError:
-        task_logger.error("The value is not an integer.")
-        return
-
-    count = r.scard(RedisConnectorCredentialPair.get_taskset_key())
+    remaining = redis_global_ccpair.get_remaining()
     task_logger.info(
-        f"Stale document sync progress: remaining={count} initial={initial_count}"
+        f"Stale document sync progress: remaining={remaining} initial={initial_count}"
     )
-    if count == 0:
-        r.delete(RedisConnectorCredentialPair.get_taskset_key())
-        r.delete(RedisConnectorCredentialPair.get_fence_key())
+    if remaining == 0:
+        redis_global_ccpair.reset()
         task_logger.info(f"Successfully synced stale documents. count={initial_count}")
 
 
@@ -889,52 +890,43 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
         # timings["queues"] = time.monotonic() - phase_start
         # timings["queues_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
 
-        keys = r.smembers("active_fences")
+        keys = cast(set[Any], r.smembers(OnyxRedisConstants.ACTIVE_FENCES))
         for key in keys:
             key_bytes = cast(bytes, key)
-            key_str = key_bytes.decode("utf-8")
 
-            if key_str == RedisConnectorCredentialPair.get_fence_key():
-                if r.exists(key_str):
-                    monitor_connector_taskset(r)
-            elif key_str.startswith(RedisConnectorDelete.FENCE_PREFIX):
-                if r.exists(key_str):
-                    monitor_connector_deletion_taskset(tenant_id, key_bytes, r)
+            if not r.exists(key_bytes):
+                r.srem(OnyxRedisConstants.ACTIVE_FENCES, key_bytes)
+                continue
+
+            key_str = key_bytes.decode("utf-8")
+            if key_str == RedisGlobalConnectorCredentialPair.FENCE_KEY:
+                monitor_connector_taskset(r)
             elif key_str.startswith(RedisDocumentSet.FENCE_PREFIX):
-                if r.exists(key_str):
-                    with get_session_with_tenant(tenant_id) as db_session:
-                        monitor_document_set_taskset(
-                            tenant_id, key_bytes, r, db_session
-                        )
+                with get_session_with_tenant(tenant_id) as db_session:
+                    monitor_document_set_taskset(tenant_id, key_bytes, r, db_session)
             elif key_str.startswith(RedisUserGroup.FENCE_PREFIX):
-                if r.exists(key_str):
-                    monitor_usergroup_taskset = (
-                        fetch_versioned_implementation_with_fallback(
-                            "onyx.background.celery.tasks.vespa.tasks",
-                            "monitor_usergroup_taskset",
-                            noop_fallback,
-                        )
+                monitor_usergroup_taskset = (
+                    fetch_versioned_implementation_with_fallback(
+                        "onyx.background.celery.tasks.vespa.tasks",
+                        "monitor_usergroup_taskset",
+                        noop_fallback,
                     )
-                    with get_session_with_tenant(tenant_id) as db_session:
-                        monitor_usergroup_taskset(tenant_id, key_bytes, r, db_session)
+                )
+                with get_session_with_tenant(tenant_id) as db_session:
+                    monitor_usergroup_taskset(tenant_id, key_bytes, r, db_session)
+            elif key_str.startswith(RedisConnectorDelete.FENCE_PREFIX):
+                monitor_connector_deletion_taskset(tenant_id, key_bytes, r)
             elif key_str.startswith(RedisConnectorPrune.FENCE_PREFIX):
-                if r.exists(key_str):
-                    with get_session_with_tenant(tenant_id) as db_session:
-                        monitor_ccpair_pruning_taskset(
-                            tenant_id, key_bytes, r, db_session
-                        )
+                with get_session_with_tenant(tenant_id) as db_session:
+                    monitor_ccpair_pruning_taskset(tenant_id, key_bytes, r, db_session)
             elif key_str.startswith(RedisConnectorIndex.FENCE_PREFIX):
-                if r.exists(key_str):
-                    with get_session_with_tenant(tenant_id) as db_session:
-                        monitor_ccpair_indexing_taskset(
-                            tenant_id, key_bytes, r, db_session
-                        )
+                with get_session_with_tenant(tenant_id) as db_session:
+                    monitor_ccpair_indexing_taskset(tenant_id, key_bytes, r, db_session)
             elif key_str.startswith(RedisConnectorPermissionSync.FENCE_PREFIX):
-                if r.exists(key_str):
-                    with get_session_with_tenant(tenant_id) as db_session:
-                        monitor_ccpair_permissions_taskset(
-                            tenant_id, key_bytes, r, db_session
-                        )
+                with get_session_with_tenant(tenant_id) as db_session:
+                    monitor_ccpair_permissions_taskset(
+                        tenant_id, key_bytes, r, db_session
+                    )
             else:
                 pass
 
@@ -1035,6 +1027,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
         task_logger.info(
             "Soft time limit exceeded, task is being terminated gracefully."
         )
+        return False
     finally:
         if lock_beat.owned():
             lock_beat.release()

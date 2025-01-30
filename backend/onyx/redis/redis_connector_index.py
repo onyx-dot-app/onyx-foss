@@ -5,6 +5,8 @@ from uuid import uuid4
 import redis
 from pydantic import BaseModel
 
+from onyx.configs.constants import OnyxRedisConstants
+
 
 class RedisConnectorIndexPayload(BaseModel):
     index_attempt_id: int | None
@@ -103,10 +105,12 @@ class RedisConnectorIndex:
         payload: RedisConnectorIndexPayload | None,
     ) -> None:
         if not payload:
+            self.redis.srem(OnyxRedisConstants.ACTIVE_FENCES, self.fence_key)
             self.redis.delete(self.fence_key)
             return
 
         self.redis.set(self.fence_key, payload.model_dump_json())
+        self.redis.sadd(OnyxRedisConstants.ACTIVE_FENCES, self.fence_key)
 
     def terminating(self, celery_task_id: str) -> bool:
         if self.redis.exists(f"{self.terminate_key}_{celery_task_id}"):
@@ -188,6 +192,7 @@ class RedisConnectorIndex:
         return status
 
     def reset(self) -> None:
+        self.redis.srem(OnyxRedisConstants.ACTIVE_FENCES, self.fence_key)
         self.redis.delete(self.active_key)
         self.redis.delete(self.generator_lock_key)
         self.redis.delete(self.generator_progress_key)

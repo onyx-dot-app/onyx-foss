@@ -302,6 +302,10 @@ class OnyxRedisSignals:
     VALIDATE_INDEXING_FENCES = "signal:validate_indexing_fences"
 
 
+class OnyxRedisConstants:
+    ACTIVE_FENCES = "active_fences"
+
+
 class OnyxCeleryPriority(int, Enum):
     HIGHEST = 0
     HIGH = auto()
