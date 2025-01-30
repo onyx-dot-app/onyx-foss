@@ -24,7 +24,7 @@ from onyx.context.search.models import SearchRequest
 from onyx.context.search.postprocessing.postprocessing import cleanup_chunks
 from onyx.context.search.postprocessing.postprocessing import search_postprocessing
 from onyx.context.search.preprocessing.preprocessing import retrieval_preprocessing
-from onyx.context.search.retrieve_orig_question_documents.search_runner import (
+from onyx.context.search.retrieval.search_runner import (
     retrieve_chunks,
 )
 from onyx.context.search.utils import inference_section_from_chunks

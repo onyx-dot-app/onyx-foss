@@ -51,7 +51,7 @@ from onyx.context.search.enums import SearchType
 from onyx.context.search.models import InferenceSection
 from onyx.context.search.models import RetrievalDetails
 from onyx.context.search.models import SearchRequest
-from onyx.context.search.retrieve_orig_question_documents.search_runner import (
+from onyx.context.search.retrieval.search_runner import (
     inference_sections_from_ids,
 )
 from onyx.context.search.utils import chunks_or_sections_to_search_docs
