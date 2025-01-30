@@ -3,10 +3,10 @@ from datetime import datetime
 
 from langgraph.types import Send
 
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionInput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionOutput,
 )
 from onyx.agents.agent_search.deep_search_a.initial.initial_answer_generation.states import (

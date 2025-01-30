@@ -6,10 +6,10 @@ from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import merge_message_runs
 from langchain_core.runnables.config import RunnableConfig
 
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionState,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     QAGenerationUpdate,
 )
 from onyx.agents.agent_search.models import AgentSearchConfig

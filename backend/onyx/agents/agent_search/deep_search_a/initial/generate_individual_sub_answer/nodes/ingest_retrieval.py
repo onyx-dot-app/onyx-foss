@@ -1,4 +1,4 @@
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     RetrievalIngestionUpdate,
 )
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states import (

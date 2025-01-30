@@ -1,7 +1,7 @@
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionOutput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionState,
 )
 from onyx.agents.agent_search.shared_graph_utils.models import (

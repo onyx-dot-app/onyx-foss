@@ -2,25 +2,25 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.nodes.answer_check import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.answer_check import (
     answer_check,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.nodes.answer_generation import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.answer_generation import (
     answer_generation,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.nodes.format_answer import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.format_answer import (
     format_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.nodes.ingest_retrieval import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.ingest_retrieval import (
     ingest_retrieval,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionInput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionOutput,
 )
-from onyx.agents.agent_search.deep_search_a.initial.individual_sub_answer_generation.states import (
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionState,
 )
 from onyx.agents.agent_search.deep_search_a.refininement.sub_answer_consolidation.edges import (
