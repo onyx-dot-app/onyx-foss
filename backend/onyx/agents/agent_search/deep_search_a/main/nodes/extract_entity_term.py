@@ -25,7 +25,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import ENTITY_TERM_PROM
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 
 
-def entity_term_extraction_llm(
+def extract_entity_term(
     state: MainState, config: RunnableConfig
 ) -> EntityTermExtractionUpdate:
     now_start = datetime.now()

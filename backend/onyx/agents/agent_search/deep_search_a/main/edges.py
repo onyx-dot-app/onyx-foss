@@ -25,7 +25,7 @@ logger = setup_logger()
 
 def route_initial_tool_choice(
     state: MainState, config: RunnableConfig
-) -> Literal["tool_call", "agent_search_start", "logging_node"]:
+) -> Literal["tool_call", "start_agent_search", "logging_node"]:
     agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
     if state.tool_choice is not None:
         if (
@@ -33,7 +33,7 @@ def route_initial_tool_choice(
             and agent_config.search_tool is not None
             and state.tool_choice.tool.name == agent_config.search_tool.name
         ):
-            return "agent_search_start"
+            return "start_agent_search"
         else:
             return "tool_call"
     else:
@@ -83,9 +83,9 @@ def parallelize_initial_sub_question_answering(
 # Define the function that determines whether to continue or not
 def continue_to_refined_answer_or_end(
     state: RequireRefinedAnswerUpdate,
-) -> Literal["refined_sub_question_creation", "logging_node"]:
+) -> Literal["create_refined_sub_questions", "logging_node"]:
     if state.require_refined_answer_eval:
-        return "refined_sub_question_creation"
+        return "create_refined_sub_questions"
     else:
         return "logging_node"
 

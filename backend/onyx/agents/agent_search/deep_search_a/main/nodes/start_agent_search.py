@@ -17,7 +17,7 @@ from onyx.configs.agent_configs import AGENT_EXPLORATORY_SEARCH_RESULTS
 from onyx.context.search.models import InferenceSection
 
 
-def agent_search_start(
+def start_agent_search(
     state: MainState, config: RunnableConfig
 ) -> ExploratorySearchUpdate:
     now_start = datetime.now()

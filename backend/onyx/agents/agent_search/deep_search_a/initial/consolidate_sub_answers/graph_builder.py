@@ -53,8 +53,8 @@ def consolidate_sub_answers_graph_builder() -> StateGraph:
     # raph.add_edge(start_key=START, end_key="base_raw_search_subgraph")
 
     # graph.add_edge(
-    #     start_key="agent_search_start",
-    #     end_key="entity_term_extraction_llm",
+    #     start_key="start_agent_search",
+    #     end_key="extract_entity_term",
     # )
 
     graph.add_edge(

@@ -11,7 +11,7 @@ from onyx.agents.agent_search.deep_search_a.main.states import (
 from onyx.agents.agent_search.models import AgentSearchConfig
 
 
-def refined_answer_decision(
+def validate_refined_answer(
     state: MainState, config: RunnableConfig
 ) -> RequireRefinedAnswerUpdate:
     now_start = datetime.now()
@@ -19,12 +19,8 @@ def refined_answer_decision(
     logger.info(f"--------{now_start}--------REFINED ANSWER DECISION---")
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    if "?" in agent_a_config.search_request.query:
-        decision = False
-    else:
-        decision = True
 
-    decision = True
+    decision = True  # TODO: just for current testing purposes
 
     now_end = datetime.now()
 

@@ -14,17 +14,14 @@ from onyx.agents.agent_search.deep_search_a.main.edges import (
 from onyx.agents.agent_search.deep_search_a.main.edges import (
     route_initial_tool_choice,
 )
-from onyx.agents.agent_search.deep_search_a.main.nodes.agent_logging import (
-    agent_logging,
+from onyx.agents.agent_search.deep_search_a.main.nodes.compare_answers import (
+    compare_answers,
 )
-from onyx.agents.agent_search.deep_search_a.main.nodes.agent_search_start import (
-    agent_search_start,
+from onyx.agents.agent_search.deep_search_a.main.nodes.create_refined_sub_questions import (
+    create_refined_sub_questions,
 )
-from onyx.agents.agent_search.deep_search_a.main.nodes.answer_comparison import (
-    answer_comparison,
-)
-from onyx.agents.agent_search.deep_search_a.main.nodes.entity_term_extraction_llm import (
-    entity_term_extraction_llm,
+from onyx.agents.agent_search.deep_search_a.main.nodes.extract_entity_term import (
+    extract_entity_term,
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.generate_refined_answer import (
     generate_refined_answer,
@@ -32,11 +29,14 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.generate_refined_answer i
 from onyx.agents.agent_search.deep_search_a.main.nodes.ingest_refined_answers import (
     ingest_refined_answers,
 )
-from onyx.agents.agent_search.deep_search_a.main.nodes.refined_answer_decision import (
-    refined_answer_decision,
+from onyx.agents.agent_search.deep_search_a.main.nodes.persist_agent_results import (
+    persist_agent_results,
 )
-from onyx.agents.agent_search.deep_search_a.main.nodes.refined_sub_question_creation import (
-    refined_sub_question_creation,
+from onyx.agents.agent_search.deep_search_a.main.nodes.start_agent_search import (
+    start_agent_search,
+)
+from onyx.agents.agent_search.deep_search_a.main.nodes.validate_refined_answer import (
+    validate_refined_answer,
 )
 from onyx.agents.agent_search.deep_search_a.main.states import MainInput
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
@@ -65,20 +65,6 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         input=MainInput,
     )
 
-    # graph.add_node(
-    #     node="agent_path_decision",
-    #     action=agent_path_decision,
-    # )
-
-    # graph.add_node(
-    #     node="agent_path_routing",
-    #     action=agent_path_routing,
-    # )
-
-    # graph.add_node(
-    #     node="LLM",
-    #     action=direct_llm_handling,
-    # )
     graph.add_node(
         node="prepare_tool_input",
         action=prepare_tool_input,
@@ -97,14 +83,9 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=basic_use_tool_response,
     )
     graph.add_node(
-        node="agent_search_start",
-        action=agent_search_start,
+        node="start_agent_search",
+        action=start_agent_search,
     )
-
-    # graph.add_node(
-    #     node="initial_sub_question_creation",
-    #     action=initial_sub_question_creation,
-    # )
 
     generate_initial_answer_subgraph = generate_initial_answer_graph_builder().compile()
     graph.add_node(
@@ -112,27 +93,9 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=generate_initial_answer_subgraph,
     )
 
-    # answer_query_subgraph = answer_query_graph_builder().compile()
-    # graph.add_node(
-    #     node="answer_query_subgraph",
-    #     action=answer_query_subgraph,
-    # )
-
-    # base_raw_search_subgraph = base_raw_search_graph_builder().compile()
-    # graph.add_node(
-    #     node="base_raw_search_subgraph",
-    #     action=base_raw_search_subgraph,
-    # )
-
-    # refined_answer_subgraph = refined_answers_graph_builder().compile()
-    # graph.add_node(
-    #     node="refined_answer_subgraph",
-    #     action=refined_answer_subgraph,
-    # )
-
     graph.add_node(
-        node="refined_sub_question_creation",
-        action=refined_sub_question_creation,
+        node="create_refined_sub_questions",
+        action=create_refined_sub_questions,
     )
 
     answer_refined_question = answer_refined_query_graph_builder().compile()
@@ -151,70 +114,25 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=generate_refined_answer,
     )
 
-    # graph.add_node(
-    #     node="check_refined_answer",
-    #     action=check_refined_answer,
-    # )
-
-    # graph.add_node(
-    #     node="ingest_initial_retrieval",
-    #     action=ingest_initial_base_retrieval,
-    # )
-
-    # graph.add_node(
-    #     node="retrieval_consolidation",
-    #     action=retrieval_consolidation,
-    # )
-
-    # graph.add_node(
-    #     node="ingest_initial_sub_question_answers",
-    #     action=ingest_initial_sub_question_answers,
-    # )
-    # graph.add_node(
-    #     node="generate_initial_answer",
-    #     action=generate_initial_answer,
-    # )
-
-    # graph.add_node(
-    #     node="initial_answer_quality_check",
-    #     action=initial_answer_quality_check,
-    # )
-
     graph.add_node(
-        node="entity_term_extraction_llm",
-        action=entity_term_extraction_llm,
+        node="extract_entity_term",
+        action=extract_entity_term,
     )
     graph.add_node(
-        node="refined_answer_decision",
-        action=refined_answer_decision,
+        node="validate_refined_answer",
+        action=validate_refined_answer,
     )
     graph.add_node(
-        node="answer_comparison",
-        action=answer_comparison,
+        node="compare_answers",
+        action=compare_answers,
     )
     graph.add_node(
         node="logging_node",
-        action=agent_logging,
+        action=persist_agent_results,
     )
-    # if test_mode:
-    #     graph.add_node(
-    #         node="generate_initial_base_answer",
-    #         action=generate_initial_base_answer,
-    #     )
 
     ### Add edges ###
 
-    # raph.add_edge(start_key=START, end_key="base_raw_search_subgraph")
-
-    # graph.add_edge(
-    #     start_key=START,
-    #     end_key="agent_path_decision",
-    # )
-
-    # graph.add_edge(
-    #     start_key="agent_path_decision",
-    #     end_key="agent_path_routing",
-    # )
     graph.add_edge(start_key=START, end_key="prepare_tool_input")
 
     graph.add_edge(
@@ -225,7 +143,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     graph.add_conditional_edges(
         "initial_tool_choice",
         route_initial_tool_choice,
-        ["tool_call", "agent_search_start", "logging_node"],
+        ["tool_call", "start_agent_search", "logging_node"],
     )
 
     graph.add_edge(
@@ -238,96 +156,38 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     graph.add_edge(
+<<<<<<< HEAD
         start_key="agent_search_start",
         end_key="generate_initial_answer_subgraph",
-    )
-    # graph.add_edge(
-    #     start_key="agent_search_start",
-    #     end_key="base_raw_search_subgraph",
-    # )
-
-    graph.add_edge(
-        start_key="agent_search_start",
-        end_key="entity_term_extraction_llm",
+=======
+        start_key="start_agent_search",
+        end_key="initial_search_sq_subgraph",
+>>>>>>> ab2510c4d (main nodes renaming)
     )
 
-    # graph.add_edge(
-    #     start_key="agent_search_start",
-    #     end_key="initial_sub_question_creation",
-    # )
-
-    # graph.add_edge(
-    #     start_key="base_raw_search_subgraph",
-    #     end_key="ingest_initial_retrieval",
-    # )
-
-    # graph.add_edge(
-    #     start_key=["ingest_initial_retrieval", "ingest_initial_sub_question_answers"],
-    #     end_key="retrieval_consolidation",
-    # )
-
-    # graph.add_edge(
-    #     start_key="retrieval_consolidation",
-    #     end_key="generate_initial_answer",
-    # )
-
-    # graph.add_edge(
-    #     start_key="LLM",
-    #     end_key=END,
-    # )
-
-    # graph.add_edge(
-    #     start_key=START,
-    #     end_key="initial_sub_question_creation",
-    # )
-
-    # graph.add_conditional_edges(
-    #     source="initial_sub_question_creation",
-    #     path=parallelize_initial_sub_question_answering,
-    #     path_map=["answer_query_subgraph"],
-    # )
-    # graph.add_edge(
-    #     start_key="answer_query_subgraph",
-    #     end_key="ingest_initial_sub_question_answers",
-    # )
-
-    # graph.add_edge(
-    #     start_key="retrieval_consolidation",
-    #     end_key="generate_initial_answer",
-    # )
-
-    # graph.add_edge(
-    #     start_key="generate_initial_answer",
-    #     end_key="entity_term_extraction_llm",
-    # )
-
-    # graph.add_edge(
-    #     start_key="generate_initial_answer",
-    #     end_key="initial_answer_quality_check",
-    # )
-
-    # graph.add_edge(
-    #     start_key=["initial_answer_quality_check", "entity_term_extraction_llm"],
-    #     end_key="refined_answer_decision",
-    # )
-    # graph.add_edge(
-    #     start_key="initial_answer_quality_check",
-    #     end_key="refined_answer_decision",
-    # )
+    graph.add_edge(
+        start_key="start_agent_search",
+        end_key="extract_entity_term",
+    )
 
     graph.add_edge(
+<<<<<<< HEAD
         start_key=["generate_initial_answer_subgraph", "entity_term_extraction_llm"],
         end_key="refined_answer_decision",
+=======
+        start_key=["initial_search_sq_subgraph", "extract_entity_term"],
+        end_key="validate_refined_answer",
+>>>>>>> ab2510c4d (main nodes renaming)
     )
 
     graph.add_conditional_edges(
-        source="refined_answer_decision",
+        source="validate_refined_answer",
         path=continue_to_refined_answer_or_end,
-        path_map=["refined_sub_question_creation", "logging_node"],
+        path_map=["create_refined_sub_questions", "logging_node"],
     )
 
     graph.add_conditional_edges(
-        source="refined_sub_question_creation",  # DONE
+        source="create_refined_sub_questions",  # DONE
         path=parallelize_refined_sub_question_answering,
         path_map=["answer_refined_question"],
     )
@@ -341,23 +201,12 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         end_key="generate_refined_answer",
     )
 
-    # graph.add_conditional_edges(
-    #     source="refined_answer_decision",
-    #     path=continue_to_refined_answer_or_end,
-    #     path_map=["refined_answer_subgraph", END],
-    # )
-
-    # graph.add_edge(
-    #     start_key="refined_answer_subgraph",
-    #     end_key="generate_refined_answer",
-    # )
-
     graph.add_edge(
         start_key="generate_refined_answer",
-        end_key="answer_comparison",
+        end_key="compare_answers",
     )
     graph.add_edge(
-        start_key="answer_comparison",
+        start_key="compare_answers",
         end_key="logging_node",
     )
 
@@ -365,16 +214,6 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         start_key="logging_node",
         end_key=END,
     )
-
-    # graph.add_edge(
-    #     start_key="generate_refined_answer",
-    #     end_key="check_refined_answer",
-    # )
-
-    # graph.add_edge(
-    #     start_key="check_refined_answer",
-    #     end_key=END,
-    # )
 
     return graph
 

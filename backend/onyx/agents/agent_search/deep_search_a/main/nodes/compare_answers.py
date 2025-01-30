@@ -13,7 +13,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import ANSWER_COMPARISO
 from onyx.chat.models import RefinedAnswerImprovement
 
 
-def answer_comparison(state: MainState, config: RunnableConfig) -> AnswerComparison:
+def compare_answers(state: MainState, config: RunnableConfig) -> AnswerComparison:
     now_start = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
@@ -23,11 +23,11 @@ def answer_comparison(state: MainState, config: RunnableConfig) -> AnswerCompari
 
     logger.info(f"--------{now_start}--------ANSWER COMPARISON STARTED--")
 
-    answer_comparison_prompt = ANSWER_COMPARISON_PROMPT.format(
+    compare_answers_prompt = ANSWER_COMPARISON_PROMPT.format(
         question=question, initial_answer=initial_answer, refined_answer=refined_answer
     )
 
-    msg = [HumanMessage(content=answer_comparison_prompt)]
+    msg = [HumanMessage(content=compare_answers_prompt)]
 
     # Get the rewritten queries in a defined format
     model = agent_a_config.fast_llm

@@ -14,6 +14,5 @@ class QuestionAnswerResults(BaseModel):
     question: str
     answer: str
     quality: str
-    # expanded_retrieval_results: list[QueryResult]
     documents: list[InferenceSection]
     sub_question_retrieval_stats: AgentChunkStats

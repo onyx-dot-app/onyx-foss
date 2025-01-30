@@ -32,7 +32,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 from onyx.tools.models import ToolCallKickoff
 
 
-def refined_sub_question_creation(
+def create_refined_sub_questions(
     state: MainState, config: RunnableConfig
 ) -> FollowUpSubQuestionsUpdate:
     """ """

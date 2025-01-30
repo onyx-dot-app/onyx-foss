@@ -16,7 +16,7 @@ from onyx.db.chat import log_agent_metrics
 from onyx.db.chat import log_agent_sub_question_results
 
 
-def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
+def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutput:
     now_start = datetime.now()
 
     logger.info(f"--------{now_start}--------LOGGING NODE---")
@@ -93,16 +93,6 @@ def agent_logging(state: MainState, config: RunnableConfig) -> MainOutput:
                 primary_message_id=primary_message_id,
                 sub_question_answer_results=sub_question_answer_results,
             )
-
-        # if chat_session_id is not None and primary_message_id is not None and sub_question_id is not None:
-        #     create_sub_answer(
-        #         db_session=db_session,
-        #         chat_session_id=chat_session_id,
-        #         primary_message_id=primary_message_id,
-        #         sub_question_id=sub_question_id,
-        #         answer=answer_str,
-        # #     )
-        # pass
 
     now_end = datetime.now()
     main_output = MainOutput(
