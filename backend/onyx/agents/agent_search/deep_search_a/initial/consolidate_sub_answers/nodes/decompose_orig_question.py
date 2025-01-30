@@ -34,7 +34,7 @@ from onyx.chat.models import SubQuestionPiece
 from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
 
-def initial_sub_question_creation(
+def decompose_orig_question(
     state: SearchSQState, config: RunnableConfig
 ) -> BaseDecompUpdate:
     now_start = datetime.now()

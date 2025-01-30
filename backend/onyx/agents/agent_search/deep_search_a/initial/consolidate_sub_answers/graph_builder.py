@@ -5,11 +5,11 @@ from langgraph.graph import StateGraph
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.edges import (
     parallelize_initial_sub_question_answering,
 )
+from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.decompose_orig_question import (
+    decompose_orig_question,
+)
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.ingest_initial_sub_answers import (
     ingest_initial_sub_answers,
-)
-from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.nodes.initial_decomposition import (
-    initial_sub_question_creation,
 )
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.states import (
     SQInput,
@@ -34,8 +34,8 @@ def initial_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     graph.add_node(
-        node="initial_sub_question_creation",
-        action=initial_sub_question_creation,
+        node="decompose_orig_question",
+        action=decompose_orig_question,
     )
     answer_query_subgraph = answer_query_graph_builder().compile()
     graph.add_node(
@@ -59,7 +59,7 @@ def initial_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key=START,
-        end_key="initial_sub_question_creation",
+        end_key="decompose_orig_question",
     )
 
     # graph.add_edge(
@@ -73,7 +73,7 @@ def initial_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
     # )
 
     graph.add_conditional_edges(
-        source="initial_sub_question_creation",
+        source="decompose_orig_question",
         path=parallelize_initial_sub_question_answering,
         path_map=["answer_query_subgraph"],
     )
