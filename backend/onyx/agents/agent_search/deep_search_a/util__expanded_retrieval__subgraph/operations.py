@@ -51,23 +51,15 @@ def calculate_sub_question_retrieval_stats(
     raw_chunk_stats_counts: dict[str, int] = defaultdict(int)
     raw_chunk_stats_scores: dict[str, float] = defaultdict(float)
     for doc_chunk_id, chunk_data in chunk_scores.items():
-        if doc_chunk_id in verified_doc_chunk_ids:
-            raw_chunk_stats_counts["verified_count"] += 1
+        valid_chunk_scores = [
+            score for score in chunk_data["score"] if score is not None
+        ]
+        key = "verified" if doc_chunk_id in verified_doc_chunk_ids else "rejected"
+        raw_chunk_stats_counts[f"{key}_count"] += 1
 
-            valid_chunk_scores = [
-                score for score in chunk_data["score"] if score is not None
-            ]
-            raw_chunk_stats_scores["verified_scores"] += float(
-                np.mean(valid_chunk_scores)
-            )
-        else:
-            raw_chunk_stats_counts["rejected_count"] += 1
-            valid_chunk_scores = [
-                score for score in chunk_data["score"] if score is not None
-            ]
-            raw_chunk_stats_scores["rejected_scores"] += float(
-                np.mean(valid_chunk_scores)
-            )
+        raw_chunk_stats_scores[f"{key}_scores"] += float(np.mean(valid_chunk_scores))
+
+        if key == "rejected":
             dismissed_doc_chunk_ids.append(doc_chunk_id)
 
     if raw_chunk_stats_counts["verified_count"] == 0:

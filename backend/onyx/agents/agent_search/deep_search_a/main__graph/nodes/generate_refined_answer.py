@@ -137,7 +137,7 @@ def generate_refined_answer(
 
         decomp_questions.append(decomp_answer_result.question)
         if (
-            decomp_answer_result.quality.lower().startswith("yes")
+            decomp_answer_result.verified_high_quality
             and len(decomp_answer_result.answer) > 0
             and decomp_answer_result.answer != UNKNOWN_ANSWER
         ):

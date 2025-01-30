@@ -12,7 +12,6 @@ from onyx.agents.agent_search.deep_search_a.initial__individual_sub_answer__subg
     QACheckUpdate,
 )
 from onyx.agents.agent_search.models import AgentSearchConfig
-from onyx.agents.agent_search.shared_graph_utils.prompts import SUB_CHECK_NO
 from onyx.agents.agent_search.shared_graph_utils.prompts import SUB_CHECK_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
@@ -25,7 +24,7 @@ def answer_check(state: AnswerQuestionState, config: RunnableConfig) -> QACheckU
     if state.answer == UNKNOWN_ANSWER:
         now_end = datetime.now()
         return QACheckUpdate(
-            answer_quality=SUB_CHECK_NO,
+            answer_quality=False,
             log_messages=[
                 f"{now_start} -- Answer check SQ-{level}-{question_num} - unknown answer,  Time taken: {now_end - now_start}"
             ],
@@ -47,11 +46,12 @@ def answer_check(state: AnswerQuestionState, config: RunnableConfig) -> QACheckU
         )
     )
 
-    quality_str = merge_message_runs(response, chunk_separator="")[0].content
+    quality_str: str = merge_message_runs(response, chunk_separator="")[0].content
+    answer_quality = "yes" in quality_str.lower()
 
     now_end = datetime.now()
     return QACheckUpdate(
-        answer_quality=quality_str,
+        answer_quality=answer_quality,
         log_messages=[
             f"""{now_start} -- Answer check SQ-{level}-{question_num} - Answer quality: {quality_str},
  Time taken: {now_end - now_start}"""

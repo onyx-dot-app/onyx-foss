@@ -19,9 +19,8 @@ def parallel_retrieval_edge(
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question if state.question else agent_a_config.search_request.query
 
-    query_expansions = (
-        state.expanded_queries if state.expanded_queries else [] + [question]
-    )
+    query_expansions = state.expanded_queries + [question]
+
     return [
         Send(
             "doc_retrieval",

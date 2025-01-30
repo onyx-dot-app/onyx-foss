@@ -67,11 +67,11 @@ def refined_sub_question_creation(
     initial_question_answers = state.decomp_answer_results
 
     addressed_question_list = [
-        x.question for x in initial_question_answers if "yes" in x.quality.lower()
+        x.question for x in initial_question_answers if x.verified_high_quality
     ]
 
     failed_question_list = [
-        x.question for x in initial_question_answers if "no" in x.quality.lower()
+        x.question for x in initial_question_answers if not x.verified_high_quality
     ]
 
     msg = [

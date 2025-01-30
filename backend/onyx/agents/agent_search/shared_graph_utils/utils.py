@@ -40,6 +40,7 @@ from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import MAX_CHUNKS_FED_TO_CHAT
 from onyx.configs.constants import DEFAULT_PERSONA_ID
+from onyx.configs.constants import DISPATCH_SEP_CHAR
 from onyx.context.search.enums import LLMEvaluationType
 from onyx.context.search.models import InferenceSection
 from onyx.context.search.models import RetrievalDetails
@@ -55,6 +56,8 @@ from onyx.tools.tool_implementations.search.search_tool import (
 )
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
+
+BaseMessage_Content = str | list[str | dict[str, Any]]
 
 
 def normalize_whitespace(text: str) -> str:
@@ -289,14 +292,14 @@ def _dispatch_nonempty(
 
 
 def dispatch_separated(
-    token_itr: Iterator[BaseMessage],
+    tokens: Iterator[BaseMessage],
     dispatch_event: Callable[[str, int], None],
-    sep: str = "\n",
-) -> list[str | list[str | dict[str, Any]]]:
+    sep: str = DISPATCH_SEP_CHAR,
+) -> list[BaseMessage_Content]:
     num = 1
-    streamed_tokens: list[str | list[str | dict[str, Any]]] = [""]
-    for message in token_itr:
-        content = cast(str, message.content)
+    streamed_tokens: list[BaseMessage_Content] = []
+    for token in tokens:
+        content = cast(str, token.content)
         if sep in content:
             sub_question_parts = content.split(sep)
             _dispatch_nonempty(sub_question_parts[0], dispatch_event, num)

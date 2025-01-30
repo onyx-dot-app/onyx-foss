@@ -17,7 +17,7 @@ from onyx.context.search.models import InferenceSection
 
 ## Update States
 class QACheckUpdate(BaseModel):
-    answer_quality: str = ""
+    answer_quality: bool = False
     log_messages: list[str] = []
 
 

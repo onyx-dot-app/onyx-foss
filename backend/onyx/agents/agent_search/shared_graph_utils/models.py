@@ -103,7 +103,7 @@ class QuestionAnswerResults(BaseModel):
     question: str
     question_id: str
     answer: str
-    quality: str
+    verified_high_quality: bool
     expanded_retrieval_results: list[QueryResult]
     documents: list[InferenceSection]
     context_documents: list[InferenceSection]

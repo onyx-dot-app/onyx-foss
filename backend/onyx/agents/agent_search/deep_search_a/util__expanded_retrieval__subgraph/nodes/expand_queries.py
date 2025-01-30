@@ -33,11 +33,8 @@ def expand_queries(
     # Instead, we use the original question from the search request.
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     now_start = datetime.now()
-    question = (
-        state.question
-        if hasattr(state, "question")
-        else agent_a_config.search_request.query
-    )
+    question = state.question
+
     llm = agent_a_config.fast_llm
     chat_session_id = agent_a_config.chat_session_id
     sub_question_id = state.sub_question_id

@@ -30,7 +30,7 @@ class ExpandedRetrievalInput(SubgraphCoreState):
 
 
 class QueryExpansionUpdate(BaseModel):
-    expanded_queries: list[str] = ["aaa", "bbb"]
+    expanded_queries: list[str] = []
     log_messages: list[str] = []
 
 

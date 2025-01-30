@@ -45,7 +45,6 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
 from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
@@ -136,9 +135,8 @@ def generate_initial_answer(
 
         for decomp_answer_result in decomp_answer_results:
             decomp_questions.append(decomp_answer_result.question)
-            _, question_nr = parse_question_id(decomp_answer_result.question_id)
             if (
-                decomp_answer_result.quality.lower().startswith("yes")
+                decomp_answer_result.verified_high_quality
                 and len(decomp_answer_result.answer) > 0
                 and decomp_answer_result.answer != UNKNOWN_ANSWER
             ):
@@ -151,15 +149,12 @@ def generate_initial_answer(
                 )
             sub_question_nr += 1
 
-        if len(good_qa_list) > 0:
-            sub_question_answer_str = "\n\n------\n\n".join(good_qa_list)
-        else:
-            sub_question_answer_str = ""
-
         # Determine which base prompt to use given the sub-question information
         if len(good_qa_list) > 0:
+            sub_question_answer_str = "\n\n------\n\n".join(good_qa_list)
             base_prompt = INITIAL_RAG_PROMPT
         else:
+            sub_question_answer_str = ""
             base_prompt = INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS
 
         model = agent_a_config.fast_llm
@@ -182,7 +177,7 @@ def generate_initial_answer(
                     answered_sub_questions=remove_document_citations(
                         sub_question_answer_str
                     ),
-                    relevant_docs=format_docs(relevant_docs),
+                    relevant_docs=doc_context,
                     persona_specification=prompt_enrichment_components.persona_prompts.contextualized_prompt,
                     history=prompt_enrichment_components.history,
                     date_prompt=prompt_enrichment_components.date_str,

@@ -15,9 +15,7 @@ def format_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
             QuestionAnswerResults(
                 question=state.question,
                 question_id=state.question_id,
-                quality=state.answer_quality
-                if hasattr(state, "answer_quality")
-                else "No",
+                verified_high_quality=state.answer_quality,
                 answer=state.answer,
                 expanded_retrieval_results=state.expanded_retrieval_results,
                 documents=state.documents,

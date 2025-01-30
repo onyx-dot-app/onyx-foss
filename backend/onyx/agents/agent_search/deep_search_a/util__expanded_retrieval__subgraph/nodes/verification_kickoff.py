@@ -1,4 +1,3 @@
-from typing import cast
 from typing import Literal
 
 from langchain_core.runnables.config import RunnableConfig
@@ -11,7 +10,6 @@ from onyx.agents.agent_search.deep_search_a.util__expanded_retrieval__subgraph.s
 from onyx.agents.agent_search.deep_search_a.util__expanded_retrieval__subgraph.states import (
     ExpandedRetrievalState,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
 
 
 def verification_kickoff(
@@ -19,12 +17,8 @@ def verification_kickoff(
     config: RunnableConfig,
 ) -> Command[Literal["doc_verification"]]:
     documents = state.retrieved_documents
-    agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    verification_question = (
-        state.question
-        if hasattr(state, "question")
-        else agent_a_config.search_request.query
-    )
+    verification_question = state.question
+
     sub_question_id = state.sub_question_id
     return Command(
         update={},
