@@ -6,7 +6,7 @@ from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.stat
 from onyx.agents.agent_search.deep_search_a.main.states import LoggerUpdate
 
 
-def retrieval_consolidation(
+def consolidate_retrieved_documents(
     state: SearchSQState,
 ) -> LoggerUpdate:
     now_start = datetime.now()

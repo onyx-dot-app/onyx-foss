@@ -6,7 +6,7 @@ from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.grap
     initial_sq_subgraph_builder,
 )
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.consolidate_retrieved_documents import (
-    retrieval_consolidation,
+    consolidate_retrieved_documents,
 )
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.generate_initial_answer import (
     generate_initial_answer,
@@ -59,7 +59,7 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_node(
         node="retrieval_consolidation",
-        action=retrieval_consolidation,
+        action=consolidate_retrieved_documents,
     )
 
     graph.add_node(
