@@ -156,13 +156,8 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     graph.add_edge(
-<<<<<<< HEAD
-        start_key="agent_search_start",
-        end_key="generate_initial_answer_subgraph",
-=======
         start_key="start_agent_search",
-        end_key="initial_search_sq_subgraph",
->>>>>>> ab2510c4d (main nodes renaming)
+        end_key="generate_initial_answer_subgraph",
     )
 
     graph.add_edge(
@@ -171,13 +166,8 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     graph.add_edge(
-<<<<<<< HEAD
-        start_key=["generate_initial_answer_subgraph", "entity_term_extraction_llm"],
-        end_key="refined_answer_decision",
-=======
-        start_key=["initial_search_sq_subgraph", "extract_entity_term"],
+        start_key=["generate_initial_answer_subgraph", "extract_entity_term"],
         end_key="validate_refined_answer",
->>>>>>> ab2510c4d (main nodes renaming)
     )
 
     graph.add_conditional_edges(
