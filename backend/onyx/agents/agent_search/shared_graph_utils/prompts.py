@@ -1,8 +1,13 @@
+# The prompts for the agentic framework:
+
 UNKNOWN_ANSWER = "I do not have enough information to answer this question."
+
 
 NO_RECOVERED_DOCS = "No relevant information recovered"
 
+
 DATE_PROMPT = """Today is {date}.\n\n"""
+
 
 HISTORY_PROMPT = """\n
 For more context, here is the history of the conversation so far that preceded this question:
@@ -11,57 +16,62 @@ For more context, here is the history of the conversation so far that preceded t
 \n ------- \n\n
 """
 
+
 REWRITE_PROMPT_MULTI_ORIGINAL = """ \n
-    Please convert an initial user question into a 2-3 more appropriate short and pointed search queries for retrivel from a
-    document store. Particularly, try to think about resolving ambiguities and make the search queries more specific,
-    enabling the system to search more broadly.
-    Also, try to make the search queries not redundant, i.e. not too similar! \n\n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-    Formulate the queries separated by newlines (Do not say 'Query 1: ...', just write the querytext) as follows:
+Please convert an initial user question into a 2-3 more appropriate short and pointed search queries for retrivel from a
+document store. Particularly, try to think about resolving ambiguities and make the search queries more specific,
+enabling the system to search more broadly.
+Also, try to make the search queries not redundant, i.e. not too similar! \n\n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
+Formulate the queries separated by newlines (Do not say 'Query 1: ...', just write the querytext) as follows:
 <query 1>
 <query 2>
 ...
-    queries: """
+queries: """
+
 
 REWRITE_PROMPT_MULTI = """ \n
-    Please create a list of 2-3 sample documents that could answer an original question. Each document
-    should be about as long as the original question. \n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-    Formulate the sample documents separated by '--' (Do not say 'Document 1: ...', just write the text): """
+Please create a list of 2-3 sample documents that could answer an original question. Each document
+should be about as long as the original question. \n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
+Formulate the sample documents separated by '--' (Do not say 'Document 1: ...', just write the text): """
+
 
 # The prompt is only used if there is no persona prompt, so the placeholder is ''
 BASE_RAG_PROMPT = (
     """ \n
-    {persona_specification}
-    {date_prompt}
-    Use the context provided below - and only the
-    provided context - to answer the given question. (Note that the answer is in service of ansering a broader
-    question, given below as 'motivation'.)
+{persona_specification}
+{date_prompt}
+Use the context provided below - and only the
+provided context - to answer the given question. (Note that the answer is in service of ansering a broader
+question, given below as 'motivation'.)
 
-    Again, only use the provided context and do not use your internal knowledge! If you cannot answer the
-    question based on the context, say """
+Again, only use the provided context and do not use your internal knowledge! If you cannot answer the
+question based on the context, say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
-    It is a matter of life and death that you do NOT use your internal knowledge, just the provided`
-    information!
 
-    Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
-    (But keep other details as well.)
+It is a matter of life and death that you do NOT use your internal knowledge, just the provided`
+information!
 
-    \nContext:\n {context} \n
+Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal.
+(But keep other details as well.)
 
-    Motivation:\n {original_question} \n\n
-    \n\n
-    And here is the question I want you to answer based on the context above (with the motivation in mind):
-    \n--\n {question} \n--\n
-    """
+\nContext:\n {context} \n
+
+Motivation:\n {original_question} \n\n
+\n\n
+And here is the question I want you to answer based on the context above (with the motivation in mind):
+\n--\n {question} \n--\n
+"""
 )
+
 
 BASE_RAG_PROMPT_v2 = (
     """ \n
@@ -84,8 +94,10 @@ It is important that the citation is close to the information it supports.
 Proper citations are very important to the user!\n\n\n
 
 For your general information, here is the ultimate motivation:
-\n--\n {original_question} \n--\n
-\n\n
+\n--\n
+{original_question}
+\n--\n
+\n
 And here is the actual question I want you to answer based on the context above (with the motivation in mind):
 \n--\n {question} \n--\n
 
@@ -97,61 +109,72 @@ Answer:
 """
 )
 
+
 SUB_CHECK_YES = "yes"
 SUB_CHECK_NO = "no"
 
+
 SUB_CHECK_PROMPT = (
-    """
-    Your task is to see whether a given answer addresses a given question.
-    Please do not use any internal knowledge you may have - just focus on whether the answer
-    as given seems to largely address the question as given, or at least addresses part of the question.
-    Here is the question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-    Here is the suggested answer:
-    \n ------- \n
-    {base_answer}
-    \n ------- \n
-    Does the suggested answer address the question? Please answer with """
+    """\n
+Your task is to see whether a given answer addresses a given question.
+Please do not use any internal knowledge you may have - just focus on whether the answer
+as given seems to largely address the question as given, or at least addresses part of the question.
+Here is the question:
+\n ------- \n
+{question}
+\n ------- \n
+Here is the suggested answer:
+\n ------- \n
+{base_answer}
+\n ------- \n
+Does the suggested answer address the question? Please answer with """
     + f'"{SUB_CHECK_YES}" or "{SUB_CHECK_NO}".'
 )
 
 
 BASE_CHECK_PROMPT = """ \n
-    Please check whether 1) the suggested answer seems to fully address the original question AND 2)the
-    original question requests a simple, factual answer, and there are no ambiguities, judgements,
-    aggregations, or any other complications that may require extra context. (I.e., if the question is
-    somewhat addressed, but the answer would benefit from more context, then answer with 'no'.)
+Please check whether 1) the suggested answer seems to fully address the original question AND 2)the
+original question requests a simple, factual answer, and there are no ambiguities, judgements,
+aggregations, or any other complications that may require extra context. (I.e., if the question is
+somewhat addressed, but the answer would benefit from more context, then answer with 'no'.)
 
-    Please only answer with 'yes' or 'no' \n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-    Here is the proposed answer:
-    \n ------- \n
-    {initial_answer}
-    \n ------- \n
-    Please answer with yes or no:"""
+Please only answer with 'yes' or 'no' \n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
+Here is the proposed answer:
+\n ------- \n
+{initial_answer}
+\n ------- \n
+Please answer with yes or no:"""
+
 
 VERIFIER_PROMPT = """
 You are supposed to judge whether a document text contains data or information that is potentially relevant
 for a question. It does not have to be fully relevant, but check whether it has some information that
 would help - possibly in conjunction with other documents - to address the question.
 
+Be careful that you do not use a document where you are not sure whether the text applies to the objects
+or entities that are relevant for the question. For example, a book about chess could have long passage
+discussing the psychology of chess without - within the passage - mentioning chess. If now a question
+is asked about the psychology of football, one could be tempted to use the document as it does discuss
+psychology in sports. However, it is NOT about football and should not be deemed relevant. Please
+consider this logic.
+
 Here is a document text that you can take as a fact:
---
+
 DOCUMENT INFORMATION:
+\n ------- \n
 {document_content}
---
+\n ------- \n
 
 Do you think that this document text is useful and relevant to answer the following question?
 
---
 QUESTION:
+\n ------- \n
 {question}
---
+\n ------- \n
 
 Please answer with 'yes' or 'no':
 
@@ -181,41 +204,47 @@ Answer:
 """
 
 REWRITE_PROMPT_SINGLE = """ \n
-    Please convert an initial user question into a more appropriate search query for retrieval from a
-    document store. \n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
+Please convert an initial user question into a more appropriate search query for retrieval from a
+document store. \n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
 
-    Formulate the query: """
+Formulate the query: """
 
 MODIFIED_RAG_PROMPT = (
     """You are an assistant for question-answering tasks. Use the context provided below
-    - and only this context - to answer the question. It is a matter of life and death that you do NOT
-    use your internal knowledge, just the provided information!
-    If you don't have enough information to generate an answer, just say """
+- and only this context - to answer the question. It is a matter of life and death that you do NOT
+use your internal knowledge, just the provided information!
+If you don't have enough information to generate an answer, just say """
     + f'"{UNKNOWN_ANSWER}"'
     + """.
-    Use three sentences maximum and keep the answer concise.
-    Pay also particular attention to the sub-questions and their answers, at least it may enrich the answer.
-    Again, only use the provided context and do not use your internal knowledge!
+Use three sentences maximum and keep the answer concise.
+Pay also particular attention to the sub-questions and their answers, at least it may enrich the answer.
+Again, only use the provided context and do not use your internal knowledge!
 
-    \nQuestion: {question}
-    \nContext: {combined_context} \n
+\nQuestion:
+\n ------- \n
+{question}
+\n ------- \n
+\nContext:
+\n ------- \n
+{combined_context}
+\n ------- \n
 
-    Answer:"""
+Answer:"""
 )
 
 ERT_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
-    An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
-    good enough. Also, some sub-questions had been answered and this information has been used to provide
-    the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
-    were not directly answerable. Also, some entities, relationships and terms are givenm to you so that
-    you have an idea of how the available data looks like.
+An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
+good enough. Also, some sub-questions had been answered and this information has been used to provide
+the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
+were not directly answerable. Also, some entities, relationships and terms are givenm to you so that
+you have an idea of how the available data looks like.
 
-    Your role is to generate 3-5 new sub-questions that would help to answer the initial question,
-    considering:
+Your role is to generate 3-5 new sub-questions that would help to answer the initial question,
+considering:
 
     1) The initial question
     2) The initial answer that was found to be unsatisfactory
@@ -223,319 +252,325 @@ ERT_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
     4) The sub-questions that were suggested but not answered
     5) The entities, relationships and terms that were extracted from the context
 
-    The individual questions should be answerable by a good RAG system.
-    So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
-    question for different entities that may be involved in the original question, but in a way that does
-    not duplicate questions that were already tried.
+The individual questions should be answerable by a good RAG system.
+So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
+question for different entities that may be involved in the original question, but in a way that does
+not duplicate questions that were already tried.
 
-    Additional Guidelines:
+Additional Guidelines:
     - The sub-questions should be specific to the question and provide richer context for the question,
-    resolve ambiguities, or address shortcoming of the initial answer
     - Each sub-question - when answered - should be relevant for the answer to the original question
     - The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
     other complications that may require extra context.
     - The sub-questions MUST have the full context of the original question so that it can be executed by
     a RAG system independently without the original question available
-      (Example:
-        - initial question: "What is the capital of France?"
-        - bad sub-question: "What is the name of the river there?"
-        - good sub-question: "What is the name of the river that flows through Paris?"
-    - For each sub-question, please provide a short explanation for why it is a good sub-question. So
-    generate a list of dictionaries with the following format:
-      [{{"sub_question": <sub-question>, "explanation": <explanation>, "search_term": <rewrite the
-      sub-question using as a search phrase for the document store>}}, ...]
+    (Example:
+    - initial question: "What is the capital of France?"
+    - bad sub-question: "What is the name of the river there?"
+    - good sub-question: "What is the name of the river that flows through Paris?"
 
-    \n\n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
+For each sub-question, please provide a short explanation for why it is a good sub-question. So
+generate a list of dictionaries with the following format:
+    [{{"sub_question": <sub-question>, "explanation": <explanation>, "search_term": <rewrite the
+    sub-question using as a search phrase for the document store>}}, ...]
 
-    Here is the initial sub-optimal answer:
-    \n ------- \n
-    {base_answer}
-    \n ------- \n
+\n\n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
 
-    Here are the sub-questions that were answered:
-    \n ------- \n
-    {answered_sub_questions}
-    \n ------- \n
+Here is the initial sub-optimal answer:
+\n ------- \n
+{base_answer}
+\n ------- \n
 
-    Here are the sub-questions that were suggested but not answered:
-    \n ------- \n
-    {failed_sub_questions}
-    \n ------- \n
+Here are the sub-questions that were answered:
+\n ------- \n
+{answered_sub_questions}
+\n ------- \n
 
-    And here are the entities, relationships and terms extracted from the context:
-    \n ------- \n
-    {entity_term_extraction_str}
-    \n ------- \n
+Here are the sub-questions that were suggested but not answered:
+\n ------- \n
+{failed_sub_questions}
+\n ------- \n
 
-   Please generate the list of good, fully contextualized sub-questions that would help to address the
-   main question. Again, please find questions that are NOT overlapping too much with the already answered
-   sub-questions or those that already were suggested and failed.
-   In other words - what can we try in addition to what has been tried so far?
+And here are the entities, relationships and terms extracted from the context:
+\n ------- \n
+{entity_term_extraction_str}
+\n ------- \n
 
-   Please think through it step by step and then generate the list of json dictionaries with the following
-   format:
+Please generate the list of good, fully contextualized sub-questions that would help to address the
+main question. Again, please find questions that are NOT overlapping too much with the already answered
+sub-questions or those that already were suggested and failed.
+In other words - what can we try in addition to what has been tried so far?
 
-   {{"sub_questions": [{{"sub_question": <sub-question>,
-        "explanation": <explanation>,
-        "search_term": <rewrite the sub-question using as a search phrase for the document store>}},
-        ...]}} """
+Please think through it step by step and then generate the list of json dictionaries with the following
+format:
+
+{{"sub_questions": [{{"sub_question": <sub-question>,
+    "explanation": <explanation>,
+    "search_term": <rewrite the sub-question using as a search phrase for the document store>}},
+    ...]}} """
+
 
 DOC_INFORMED_DEEP_DECOMPOSE_PROMPT = """ \n
-    An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
-    good enough. Also, some sub-questions had been answered and this information has been used to provide
-    the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
-    were not directly answerable. Also, some entities, relationships and terms are given to you so that
-    you have an idea of how the avaiolable data looks like.
+An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
+good enough. Also, some sub-questions had been answered and this information has been used to provide
+the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
+were not directly answerable. Also, some entities, relationships and terms are given to you so that
+you have an idea of how the avaiolable data looks like.
 
-    Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
-    considering:
+Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
+considering:
 
-    1) The initial question
-    2) The initial answer that was found to be unsatisfactory
-    3) The sub-questions that were answered
-    4) The sub-questions that were suggested but not answered
-    5) A sample of the TYPE of documents that may be in the database in order to inform
-    you what type of entities, relationships, and terms you may want to consider asking about.
-    (But do not build the questions strictly on these documents! They are only examples!
-    Take the, as illustrations.)
+1) The initial question
+2) The initial answer that was found to be unsatisfactory
+3) The sub-questions that were answered
+4) The sub-questions that were suggested but not answered
+5) A sample of the TYPE of documents that may be in the database in order to inform
+you what type of entities, relationships, and terms you may want to consider asking about.
+(But do not build the questions strictly on these documents! They are only examples!
+Take the, as illustrations.)
 
-    The individual questions should be answerable by a good RAG system.
-    So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
-    question for different entities that may be involved in the original question, but in a way that does
-    not duplicate questions that were already tried.
+The individual questions should be answerable by a good RAG system.
+So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
+question for different entities that may be involved in the original question, but in a way that does
+not duplicate questions that were already tried.
 
-    Additional Guidelines:
-    - The sub-questions should be specific to the question and provide richer context for the question,
-    resolve ambiguities, or address shortcoming of the initial answer
-    - Each sub-question - when answered - should be relevant for the answer to the original question
-    - The sub-questions should be free from comparisions, ambiguities,judgements, aggregations, or any
-    other complications that may require extra context.
-    - The sub-questions MUST have the full context of the original question so that it can be executed by
-    a RAG system independently without the original question available
-      (Example:
-        - initial question: "What is the capital of France?"
-        - bad sub-question: "What is the name of the river there?"
-        - good sub-question: "What is the name of the river that flows through Paris?"
-    - For each sub-question, please also provide a search term that can be used to retrieve relevant
-    documents from a document store.
-    - Consider specifically the sub-questions that were suggested but not answered. This is a sign that they are not
-    answerable with the available context, and you should not ask similar questions.
-    \n\n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-    {history}
+Additional Guidelines:
+- The sub-questions should be specific to the question and provide richer context for the question,
+resolve ambiguities, or address shortcoming of the initial answer
+- Each sub-question - when answered - should be relevant for the answer to the original question
+- The sub-questions should be free from comparisions, ambiguities,judgements, aggregations, or any
+other complications that may require extra context.
+- The sub-questions MUST have the full context of the original question so that it can be executed by
+a RAG system independently without the original question available
+    (Example:
+    - initial question: "What is the capital of France?"
+    - bad sub-question: "What is the name of the river there?"
+    - good sub-question: "What is the name of the river that flows through Paris?"
+- For each sub-question, please also provide a search term that can be used to retrieve relevant
+documents from a document store.
+- Consider specifically the sub-questions that were suggested but not answered. This is a sign that they are not
+answerable with the available context, and you should not ask similar questions.
+\n\n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
+{history}
 
-    Here is the initial sub-optimal answer:
-    \n ------- \n
-    {base_answer}
-    \n ------- \n
+Here is the initial sub-optimal answer:
+\n ------- \n
+{base_answer}
+\n ------- \n
 
-    Here are the sub-questions that were answered:
-    \n ------- \n
-    {answered_sub_questions}
-    \n ------- \n
+Here are the sub-questions that were answered:
+\n ------- \n
+{answered_sub_questions}
+\n ------- \n
 
-    Here are the sub-questions that were suggested but not answered:
-    \n ------- \n
-    {failed_sub_questions}
-    \n ------- \n
+Here are the sub-questions that were suggested but not answered:
+\n ------- \n
+{failed_sub_questions}
+\n ------- \n
 
-    And here some reference documents that show you what type of entities, relationships,
-    and terms you may want to consider to be as relevant to your initial question.
-    \n ------- \n
-    {docs_str}
-    \n ------- \n
+And here some reference documents that show you what type of entities, relationships,
+and terms you may want to consider to be as relevant to your initial question.
+\n ------- \n
+{docs_str}
+\n ------- \n
 
-   Please generate the list of good, fully contextualized sub-questions that would help to address the
-   main question.
+Please generate the list of good, fully contextualized sub-questions that would help to address the
+main question.
 
-   Specifically pay attention also to the entities, relationships and terms extracted, as these indicate what type of
-   objects/relationships/terms you can ask about! Do not ask about entities, terms or relationships that are not
-   mentioned in the 'entities, relationships and terms' section.
+Specifically pay attention also to the entities, relationships and terms extracted, as these indicate what type of
+objects/relationships/terms you can ask about! Do not ask about entities, terms or relationships that are not
+mentioned in the 'entities, relationships and terms' section.
 
-   Again, please find questions that are NOT overlapping too much with the already answered
-   sub-questions or those that already were suggested and failed.
-   In other words - what can we try in addition to what has been tried so far?
+Again, please find questions that are NOT overlapping too much with the already answered
+sub-questions or those that already were suggested and failed.
+In other words - what can we try in addition to what has been tried so far?
 
-   Generate the list of questions separated by one new line like this:
+Generate the list of questions separated by one new line like this:
 <sub-question 1>
 <sub-question 2>
 <sub-question 3>
-   ...
-   """
+...
+"""
+
 
 DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES = """ \n
-    An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
-    good enough. Also, some sub-questions had been answered and this information has been used to provide
-    the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
-    were not directly answerable. Also, some entities, relationships and terms are given to you so that
-    you have an idea of how the available data looks like.
+An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
+good enough. Also, some sub-questions had been answered and this information has been used to provide
+the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
+were not directly answerable. Also, some entities, relationships and terms are given to you so that
+you have an idea of how the available data looks like.
 
-    Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
-    considering:
+Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
+considering:
 
-    1) The initial question
-    2) The initial answer that was found to be unsatisfactory
-    3) The sub-questions that were answered
-    4) The sub-questions that were suggested but not answered
-    5) The entities, relationships and terms that were extracted from the context
+1) The initial question
+2) The initial answer that was found to be unsatisfactory
+3) The sub-questions that were answered
+4) The sub-questions that were suggested but not answered
+5) The entities, relationships and terms that were extracted from the context
 
-    The individual questions should be answerable by a good RAG system.
-    So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
-    question for different entities that may be involved in the original question, but in a way that does
-    not duplicate questions that were already tried.
+The individual questions should be answerable by a good RAG system.
+So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
+question for different entities that may be involved in the original question, but in a way that does
+not duplicate questions that were already tried.
 
-    Additional Guidelines:
-    - The sub-questions should be specific to the question and provide richer context for the question,
-    resolve ambiguities, or address shortcoming of the initial answer
-    - Each sub-question - when answered - should be relevant for the answer to the original question
-    - The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
-    other complications that may require extra context.
-    - The sub-questions MUST have the full context of the original question so that it can be executed by
-    a RAG system independently without the original question available
-      (Example:
-        - initial question: "What is the capital of France?"
-        - bad sub-question: "What is the name of the river there?"
-        - good sub-question: "What is the name of the river that flows through Paris?"
-    - For each sub-question, please also provide a search term that can be used to retrieve relevant
-    documents from a document store.
-    - Consider specifically the sub-questions that were suggested but not answered. This is a sign that they are not
-    answerable with the available context, and you should not ask similar questions.
-    \n\n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
-    {history}
+Additional Guidelines:
+- The sub-questions should be specific to the question and provide richer context for the question,
+resolve ambiguities, or address shortcoming of the initial answer
+- Each sub-question - when answered - should be relevant for the answer to the original question
+- The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
+other complications that may require extra context.
+- The sub-questions MUST have the full context of the original question so that it can be executed by
+a RAG system independently without the original question available
+    (Example:
+    - initial question: "What is the capital of France?"
+    - bad sub-question: "What is the name of the river there?"
+    - good sub-question: "What is the name of the river that flows through Paris?"
+- For each sub-question, please also provide a search term that can be used to retrieve relevant
+documents from a document store.
+- Consider specifically the sub-questions that were suggested but not answered. This is a sign that they are not
+answerable with the available context, and you should not ask similar questions.
+\n\n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
+{history}
 
-    Here is the initial sub-optimal answer:
-    \n ------- \n
-    {base_answer}
-    \n ------- \n
+Here is the initial sub-optimal answer:
+\n ------- \n
+{base_answer}
+\n ------- \n
 
-    Here are the sub-questions that were answered:
-    \n ------- \n
-    {answered_sub_questions}
-    \n ------- \n
+Here are the sub-questions that were answered:
+\n ------- \n
+{answered_sub_questions}
+\n ------- \n
 
-    Here are the sub-questions that were suggested but not answered:
-    \n ------- \n
-    {failed_sub_questions}
-    \n ------- \n
+Here are the sub-questions that were suggested but not answered:
+\n ------- \n
+{failed_sub_questions}
+\n ------- \n
 
-    And here are the entities, relationships and terms extracted from the context:
-    \n ------- \n
-    {entity_term_extraction_str}
-    \n ------- \n
+And here are the entities, relationships and terms extracted from the context:
+\n ------- \n
+{entity_term_extraction_str}
+\n ------- \n
 
-   Please generate the list of good, fully contextualized sub-questions that would help to address the
-   main question.
+Please generate the list of good, fully contextualized sub-questions that would help to address the
+main question.
 
-   Specifically pay attention also to the entities, relationships and terms extracted, as these indicate what type of
-   objects/relationships/terms you can ask about! Do not ask about entities, terms or relationships that are not
-   mentioned in the 'entities, relationships and terms' section.
+Specifically pay attention also to the entities, relationships and terms extracted, as these indicate what type of
+objects/relationships/terms you can ask about! Do not ask about entities, terms or relationships that are not
+mentioned in the 'entities, relationships and terms' section.
 
-   Again, please find questions that are NOT overlapping too much with the already answered
-   sub-questions or those that already were suggested and failed.
-   In other words - what can we try in addition to what has been tried so far?
+Again, please find questions that are NOT overlapping too much with the already answered
+sub-questions or those that already were suggested and failed.
+In other words - what can we try in addition to what has been tried so far?
 
-   Generate the list of questions separated by one new line like this:
+Generate the list of questions separated by one new line like this:
 <sub-question 1>
 <sub-question 2>
 <sub-question 3>
-   ...
+...
    """
 
 DECOMPOSE_PROMPT = """ \n
-    For an initial user question, please generate at 5-10 individual sub-questions whose answers would help
-    \n to answer the initial question. The individual questions should be answerable by a good RAG system.
-    So a good idea would be to \n use the sub-questions to resolve ambiguities and/or to separate the
-    question for different entities that may be involved in the original question.
+For an initial user question, please generate at 5-10 individual sub-questions whose answers would help
+\n to answer the initial question. The individual questions should be answerable by a good RAG system.
+So a good idea would be to \n use the sub-questions to resolve ambiguities and/or to separate the
+question for different entities that may be involved in the original question.
 
-    In order to arrive at meaningful sub-questions, please also consider the context retrieved from the
-    document store, expressed as entities, relationships and terms. You can also think about the types
-    mentioned in brackets
+In order to arrive at meaningful sub-questions, please also consider the context retrieved from the
+document store, expressed as entities, relationships and terms. You can also think about the types
+mentioned in brackets
 
-    Guidelines:
-    - The sub-questions should be specific to the question and provide richer context for the question,
-    and or resolve ambiguities
-    - Each sub-question - when answered - should be relevant for the answer to the original question
-    - The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
-    other complications that may require extra context.
-    - The sub-questions MUST have the full context of the original question so that it can be executed by
-    a RAG system independently without the original question available
-      (Example:
-        - initial question: "What is the capital of France?"
-        - bad sub-question: "What is the name of the river there?"
-        - good sub-question: "What is the name of the river that flows through Paris?"
-    - For each sub-question, please provide a short explanation for why it is a good sub-question. So
-    generate a list of dictionaries with the following format:
-      [{{"sub_question": <sub-question>, "explanation": <explanation>}}, ...]
+Guidelines:
+- The sub-questions should be specific to the question and provide richer context for the question,
+and or resolve ambiguities
+- Each sub-question - when answered - should be relevant for the answer to the original question
+- The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
+other complications that may require extra context.
+- The sub-questions MUST have the full context of the original question so that it can be executed by
+a RAG system independently without the original question available
+    (Example:
+    - initial question: "What is the capital of France?"
+    - bad sub-question: "What is the name of the river there?"
+    - good sub-question: "What is the name of the river that flows through Paris?"
+- For each sub-question, please provide a short explanation for why it is a good sub-question. So
+generate a list of dictionaries with the following format:
+    [{{"sub_question": <sub-question>, "explanation": <explanation>}}, ...]
 
-    \n\n
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
+\n\n
+Here is the initial question:
+\n ------- \n
+{question}
+\n ------- \n
 
-    And here are the entities, relationships and terms extracted from the context:
-    \n ------- \n
-    {entity_term_extraction_str}
-    \n ------- \n
+And here are the entities, relationships and terms extracted from the context:
+\n ------- \n
+{entity_term_extraction_str}
+\n ------- \n
 
-   Please generate the list of good, fully contextualized sub-questions that would help to address the
-   main question. Don't be too specific unless the original question is specific.
-   Please think through it step by step and then generate the list of json dictionaries with the following
-   format:
-   {{"sub_questions": [{{"sub_question": <sub-question>,
-        "explanation": <explanation>,
-        "search_term": <rewrite the sub-question using as a search phrase for the document store>}},
-        ...]}} """
+Please generate the list of good, fully contextualized sub-questions that would help to address the
+main question. Don't be too specific unless the original question is specific.
+Please think through it step by step and then generate the list of json dictionaries with the following
+format:
+{{"sub_questions": [{{"sub_question": <sub-question>,
+    "explanation": <explanation>,
+    "search_term": <rewrite the sub-question using as a search phrase for the document store>}},
+    ...]}} """
 
 #### Consolidations
 COMBINED_CONTEXT = """-------
-    Below you will find useful information to answer the original question. First, you see a number of
-    sub-questions with their answers. This information should be considered to be more focussed and
-    somewhat more specific to the original question as it tries to contextualized facts.
-    After that will see the documents that were considered to be relevant to answer the original question.
+Below you will find useful information to answer the original question. First, you see a number of
+sub-questions with their answers. This information should be considered to be more focussed and
+somewhat more specific to the original question as it tries to contextualized facts.
+After that will see the documents that were considered to be relevant to answer the original question.
 
-    Here are the sub-questions and their answers:
-    \n\n {deep_answer_context} \n\n
-    \n\n Here are the documents that were considered to be relevant to answer the original question:
-    \n\n {formated_docs} \n\n
-    ----------------
-    """
+Here are the sub-questions and their answers:
+\n\n {deep_answer_context} \n\n
+\n\n Here are the documents that were considered to be relevant to answer the original question:
+\n\n {formated_docs} \n\n
+----------------
+"""
 
 SUB_QUESTION_EXPLANATION_RANKER_PROMPT = """-------
-    Below you will find a question that we ultimately want to answer (the original question) and a list of
-    motivations in arbitrary order for generated sub-questions that are supposed to help us answering the
-    original question. The motivations are formatted as <motivation number>:  <motivation explanation>.
-    (Again, the numbering is arbitrary and does not necessarily mean that 1 is the most relevant
-    motivation and 2 is less relevant.)
+Below you will find a question that we ultimately want to answer (the original question) and a list of
+motivations in arbitrary order for generated sub-questions that are supposed to help us answering the
+original question. The motivations are formatted as <motivation number>:  <motivation explanation>.
+(Again, the numbering is arbitrary and does not necessarily mean that 1 is the most relevant
+motivation and 2 is less relevant.)
 
-    Please rank the motivations in order of relevance for answering the original question. Also, try to
-    ensure that the top questions do not duplicate too much, i.e. that they are not too similar.
-    Ultimately, create a list with the motivation numbers where the number of the most relevant
-    motivation comes first.
+Please rank the motivations in order of relevance for answering the original question. Also, try to
+ensure that the top questions do not duplicate too much, i.e. that they are not too similar.
+Ultimately, create a list with the motivation numbers where the number of the most relevant
+motivation comes first.
 
-    Here is the original question:
-    \n\n {original_question} \n\n
-    \n\n Here is the list of sub-question motivations:
-    \n\n {sub_question_explanations} \n\n
-    ----------------
+Here is the original question:
+\n -------\n
+{original_question}
+\n -------\n
 
-    Please think step by step and then generate the ranked list of motivations.
+Here is the list of sub-question motivations:
+\n -------\n
+{sub_question_explanations}
+\n -------\n
 
-    Please format your answer as a json object in the following format:
-    {{"reasonning": <explain your reasoning for the ranking>,
-      "ranked_motivations": <ranked list of motivation numbers>}}
-    """
+Please think step by step and then generate the ranked list of motivations.
+
+Please format your answer as a json object in the following format:
+{{"reasonning": <explain your reasoning for the ranking>,
+    "ranked_motivations": <ranked list of motivation numbers>}}
+"""
 
 
 INITIAL_DECOMPOSITION_PROMPT_QUESTIONS = """
@@ -554,9 +589,9 @@ answer the original question. The purpose for this decomposition may be to
 If you think that a decomposition is not needed or helpful, please just return an empty string. That is ok too.
 
 Here is the initial question:
--------
+\n -------\n
 {question}
--------
+\n -------\n
 {history}
 
 Please formulate your answer as a newline-separated list of questions like so:
@@ -565,6 +600,7 @@ Please formulate your answer as a newline-separated list of questions like so:
  <sub-question>
 
 Answer:"""
+
 
 INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH = """
 If you think it is helpful, please decompose an initial user question into no more than 3 appropriate sub-questions that help to
@@ -589,14 +625,14 @@ disambiguations are most important!
 2) If you think that a decomposition is not needed or helpful, please just return an empty string. That is very much ok too.
 
 Here are the sample docs to give you some context:
--------
+\n -------\n
 {sample_doc_str}
--------
+\n -------\n
 
 And here is the initial question that you should think about decomposing:
--------
+\n -------\n
 {question}
--------
+\n -------\n
 
 {history}
 
@@ -608,32 +644,34 @@ Please formulate your answer as a newline-separated list of questions like so:
 
 Answer:"""
 
+
 INITIAL_DECOMPOSITION_PROMPT = """ \n
-    Please decompose an initial user question into 2 or 3 appropriate sub-questions that help to
-    answer the original question. The purpose for this decomposition is to isolate individual entities
-    (i.e., 'compare sales of company A and company B' -> 'what are sales for company A' + 'what are sales
-    for company B'), split ambiguous terms (i.e., 'what is our success with company A' -> 'what are our
-    sales with company A' + 'what is our market share with company A' + 'is company A a reference customer
-    for us'), etc. Each sub-question should realistically be answerable by a good RAG system. \n
+Please decompose an initial user question into 2 or 3 appropriate sub-questions that help to
+answer the original question. The purpose for this decomposition is to isolate individual entities
+(i.e., 'compare sales of company A and company B' -> 'what are sales for company A' + 'what are sales
+for company B'), split ambiguous terms (i.e., 'what is our success with company A' -> 'what are our
+sales with company A' + 'what is our market share with company A' + 'is company A a reference customer
+for us'), etc. Each sub-question should realistically be answerable by a good RAG system. \n
 
-    For each sub-question, please also create one search term that can be used to retrieve relevant
-    documents from a document store.
+For each sub-question, please also create one search term that can be used to retrieve relevant
+documents from a document store.
 
-    Here is the initial question:
-    \n ------- \n
-    {question}
-    \n ------- \n
+Here is the initial question:
+\n-------\n
+{question}
+\n-------\n
 
-    Please formulate your answer as a list of json objects with the following format:
+Please formulate your answer as a list of json objects with the following format:
 
-   [{{"sub_question": <sub-question>, "search_term": <search term>}}, ...]
+[{{"sub_question": <sub-question>, "search_term": <search term>}}, ...]
 
-    Answer:
-    """
+Answer:
+"""
+
 
 INITIAL_RAG_BASE_PROMPT = (
     """ \n
- You are an assistant for question-answering tasks. Use the information provided below - and only the
+You are an assistant for question-answering tasks. Use the information provided below - and only the
 provided information - to answer the provided question.
 
 The information provided below consists ofa number of documents that were deemed relevant for the question.
@@ -649,11 +687,12 @@ You may give some additional facts you learned, but do not try to invent an answ
 Try to keep your answer concise.
 
 Here is the contextual information from the document store:
-\n ------- \n
+\n -------\n
 {context} \n\n\n
-\n ------- \n
+\n -------\n
 And here is the question I want you to answer based on the context above (with the motivation in mind):
-\n--\n {question} \n--\n
+\n -------\n
+{question} \n-------\n
 Answer:"""
 )
 
@@ -673,9 +712,9 @@ the 'LLM' option.
 {history}
 
 Here is the initial question:
--------
+\n -------\n
 {question}
--------
+\n -------\n
 
 Please decide whether to use the agent search or the LLM to answer the question. Choose from two choices,
 'research' or 'LLM'.
@@ -698,14 +737,14 @@ you know the answer/can handle the request, you should choose the 'LLM' option.
 {history}
 
 Here is the initial question:
--------
+\n -------\n
 {question}
--------
+\n -------\n
 
 Here is the sample of documents that were retrieved from a document store:
--------
+\n -------\n
 {sample_doc_str}
--------
+\n -------\n
 
 Please decide whether to use the agent search ('research') or the LLM to answer the question. Choose from two choices,
 'research' or 'LLM'.
@@ -720,24 +759,42 @@ You are an assistant for question-answering tasks."""
 
 ASSISTANT_SYSTEM_PROMPT_PERSONA = """
 You are an assistant for question-answering tasks. Here is more information about you:
-\n ------- \n
+\n-------\n
 {persona_prompt}
-\n ------- \n
+\n-------\n
 """
 
-SUB_QUESTION_ANSWER_TEMPLATE = """
-    Sub-Question: Q{sub_question_nr}\n  Sub-Question:\n  - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
-    """
+SUB_QUESTION_ANSWER_TEMPLATE = """\n
+Sub-Question: Q{sub_question_nr}\n  Sub-Question:\n  - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
+"""
 
-SUB_QUESTION_ANSWER_TEMPLATE_REVISED = """
-    Sub-Question: Q{sub_question_nr}\n  Type: {level_type}\n Sub-Question:\n
+SUB_QUESTION_ANSWER_TEMPLATE_REVISED = """\n
+Sub-Question: Q{sub_question_nr}\n
+Type:
+\n----\n
+{sub_question_type}
+\n----\n
+Sub-Question:
+\n----\n
+{sub_question}
+\n----\n
+\nAnswer:
+\n----\n
+{sub_answer}
+\n----\n
+\n
+"""
+
+
+SUB_QUESTION_ANSWER_TEMPLATE_REVISED = """\n
+Sub-Question: Q{sub_question_nr}\n  Type: {sub_question_type}\n Sub-Question:\n
 - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
     """
 
-SUB_QUESTION_SEARCH_RESULTS_TEMPLATE = """
-    Sub-Question: Q{sub_question_nr}\n  Sub-Question:\n  - \n{sub_question}\n  --\nRelevant Documents:\n
-    -\n {formatted_sub_question_docs}\n\n
-    """
+SUB_QUESTION_SEARCH_RESULTS_TEMPLATE = """\n
+Sub-Question: Q{sub_question_nr}\n  Sub-Question:\n  - \n{sub_question}\n  --\nRelevant Documents:\n
+-\n {formatted_sub_question_docs}\n\n
+"""
 
 INITIAL_RAG_PROMPT_SUB_QUESTION_SEARCH = (
     """ \n
@@ -770,8 +827,10 @@ Try to keep your answer concise. But also highlight uncertainties you may have s
 or assumptions you made.
 
 Here is the contextual information:
-\n-------\n
+---------------
+
 *Answered Sub-questions (these should really help to organize your thoughts):
+\n-------\n
 {answered_sub_questions}
 
 And here are relevant document information that supports the sub-question answers, or that are relevant for the actual question:\n
@@ -781,9 +840,9 @@ And here are relevant document information that supports the sub-question answer
 \n-------\n
 \n
 And here is the main question I want you to answer based on the information above:
-\n--\n
+\n-------\n
 {question}
-\n--\n\n
+\n-------\n\n
 Answer:"""
 )
 
@@ -792,9 +851,9 @@ DIRECT_LLM_PROMPT = """ \n
 {persona_specification}
 
 Please answer the following question/address the request:
-\n--\n
+\n-------\n
 {question}
-\n--\n\n
+\n-------\n\n
 Answer:"""
 
 INITIAL_RAG_PROMPT = (
@@ -804,8 +863,7 @@ INITIAL_RAG_PROMPT = (
 Use the information provided below - and only the provided information - to answer the provided main question.
 
 The information provided below consists of:
-    1) a number of answered sub-questions - these are very important to help you organize your thoughts and your
-answer
+    1) a number of answered sub-questions - these are very important to help you organize your thoughts and your answer
     2) a number of documents that deemed relevant for the question.
 
 {history}
@@ -832,20 +890,22 @@ Try to keep your answer concise. But also highlight uncertainties you may have s
 or assumptions you made.
 
 Here is the contextual information:
-\n-------\n
+---------------
+
 *Answered Sub-questions (these should really matter!):
+\n-------\n
 {answered_sub_questions}
+\n-------\n
 
 And here are relevant document information that support the sub-question answers, or that are relevant for the actual question:\n
-
-{relevant_docs}
-
 \n-------\n
-\n
+{relevant_docs}
+\n-------\n
+
 And here is the question I want you to answer based on the information above:
-\n--\n
+\n-------\n
 {question}
-\n--\n\n
+\n-------\n\n
 
 Please keep your answer brief and concise, and focus on facts and data.
 
@@ -854,7 +914,8 @@ Answer:"""
 
 # sub_question_answer_str is empty
 INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS = (
-    """{answered_sub_questions}
+    """\n
+{answered_sub_questions}
 {persona_specification}
 {date_prompt}
 
@@ -885,9 +946,9 @@ Here are is the relevant context information:
 \n-------\n
 
 And here is the question I want you to answer based on the context above
-\n--\n
+\n-------\n
 {question}
-\n--\n
+\n-------\n
 
 Please keep your answer brief and concise, and focus on facts and data.
 
@@ -904,11 +965,11 @@ Use the information provided below - and only the provided information - to writ
 
 The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
-
     2) a number of answered sub-questions - these are very important(!) and definitely should help you to answer
-the main question. Note that the sub-questions have a type, 'initial' and 'revised'. The 'initial'
-ones were available for the initial answer, and the 'revised' were not, they are new. So please use
-the 'revised' sub-questions in particular to update/extend/correct the initial answer!
+the main question. Note that the sub-questions have a type, 'initial' and 'refined'. The 'initial'
+ones were available for the creation of the initial answer, but the 'refined' were not, they are new. So please use
+the 'refined' sub-questions in particular to update/extend/correct/enrich the initial answer and to add
+more details/new facts!
 
     3) a number of documents that were deemed relevant for the question. This the is the context that you use largely for
 citations (see below). So consider the answers to the sub-questions as guidelines to construct your new answer, but
@@ -942,25 +1003,27 @@ Try to keep your answer concise. But also highlight uncertainties you may have s
 or assumptions you made.
 
 Here is the contextual information:
-\n-------\n
+---------------
 
 *Initial Answer that was found to be lacking:
+\n-------\n
 {initial_answer}
+\n-------\n
 
 *Answered Sub-questions (these should really help you to research your answer! They also contain questions/answers
 that were not available when the original answer was constructed):
 {answered_sub_questions}
 
 And here are the relevant documents that support the sub-question answers, and that are relevant for the actual question:\n
-
-{relevant_docs}
-
 \n-------\n
+{relevant_docs}
+\n-------\n
+
 \n
 Lastly, here is the main question I want you to answer based on the information above:
-\n--\n
+\n-------\n
 {question}
-\n--\n\n
+\n-------\n
 
 Please keep your answer brief and concise, and focus on facts and data.
 
@@ -969,7 +1032,8 @@ Answer:"""
 
 # sub_question_answer_str is empty
 REVISED_RAG_PROMPT_NO_SUB_QUESTIONS = (
-    """{answered_sub_questions}\n
+    """\n
+{answered_sub_questions}\n
 {persona_specification}
 {date_prompt}
 Use the information provided below - and only the
@@ -982,9 +1046,9 @@ The information provided below consists of:
 It is critical that you provide proper] inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
  It is important that the citation is close to the information it supports. If you have multiple
 citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n
-
+\n-------\n
 {history}
-
+\n-------\n
 IMPORTANT RULES:
  - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
  You may give some additional facts you learned, but do not try to invent an answer.
@@ -1000,21 +1064,22 @@ Try to keep your answer concise. But also highlight uncertainties you may have s
 or assumptions you made.
 
 Here is the contextual information:
-\n-------\n
+---------------
 
 *Initial Answer that was found to be lacking:
+\n-------\n
 {initial_answer}
+\n-------\n
 
 And here are relevant document information that support the sub-question answers, or that are relevant for the actual question:\n
-
+\n-------\n
 {relevant_docs}
-
 \n-------\n
 \n
 Lastly, here is the question I want you to answer based on the information above:
-\n--\n
+\n-------\n
 {question}
-\n--\n\n
+\n-------\n\n
 Please keep your answer brief and concise, and focus on facts and data.
 
 Answer:"""
@@ -1056,53 +1121,57 @@ Please format your answer as a json object in the following format:
 }}
 }}
 
+
    """
 ANSWER_COMPARISON_PROMPT = """
 For the given question, please compare the initial answer and the refined answer and determine if
-the refined answer is substantially better than the initial answer. Better could mean:
+the refined answer is substantially better than the initial answer, not just a bit better. Better could mean:
  - additional information
  - more comprehensive information
  - more concise information
  - more structured information
+ - morde details
  - new bullet points
  - substantially more document citations ([[D1]](), [[D2]](), [[D3]](), etc.)
 
  Put yourself in the shoes of the user and think about whether the refined answer is really substantially
- better than the initial answer.
+ better and delivers really new insights than the initial answer.
 
 Here is the question:
---
+\n-------\n
 {question}
---
+\n-------\n
 
 Here is the initial answer:
---
+\n-------\n
 {initial_answer}
---
+\n-------\n
 
 Here is the refined answer:
---
+\n-------\n
 {refined_answer}
---
+\n-------\n
 
 With these criteria in mind, is the refined answer substantially better than the initial answer?
 
 Please answer with a simple 'yes' or 'no'.
 """
+
+
 HISTORY_CONTEXT_SUMMARY_PROMPT = """\n
 {persona_specification}
-You need to summarize the key parts of the history of a conversation between a user and an agent
-strictly for the purposed of providing the suitable context for a question.
-
-Here is the question:
-\n--\n
+You need to summarize the key parts of the history of a conversation between a user and an agent. The
+summary has two purposes:
+  1) providing the suitable context for a new question, and
+  2) To capture the key information that was discussed and that the user may have a follow-up question about.
+\n-------\n
 {question}
-\n--\n
+\n-------\n
 
 And here is the history:
-\n--\n
+\n-------\n
 {history}
-\n--\n
+\n-------\n
 
 Please provide a summarized context from the history so that the question makes sense and can - with
 suitable extra information - be answered.
