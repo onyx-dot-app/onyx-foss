@@ -3,7 +3,7 @@ from langgraph.graph import START
 from langgraph.graph import StateGraph
 
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.graph_builder import (
-    initial_sq_subgraph_builder,
+    consolidate_sub_answers_graph_builder,
 )
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.consolidate_retrieved_documents import (
     consolidate_retrieved_documents,
@@ -28,7 +28,7 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
+def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph:
     graph = StateGraph(
         state_schema=SearchSQState,
         input=SearchSQInput,
@@ -39,10 +39,10 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
     #     action=initial_sub_question_creation,
     # )
 
-    sub_question_answering_subgraph = initial_sq_subgraph_builder().compile()
+    consolidate_sub_answers = consolidate_sub_answers_graph_builder().compile()
     graph.add_node(
-        node="sub_question_answering_subgraph",
-        action=sub_question_answering_subgraph,
+        node="consolidate_sub_answers",
+        action=consolidate_sub_answers,
     )
 
     # answer_query_subgraph = answer_query_graph_builder().compile()
@@ -88,11 +88,11 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key=START,
-        end_key="sub_question_answering_subgraph",
+        end_key="consolidate_sub_answers",
     )
 
     graph.add_edge(
-        start_key=["base_raw_search_subgraph", "sub_question_answering_subgraph"],
+        start_key=["base_raw_search_subgraph", "consolidate_sub_answers"],
         end_key="retrieval_consolidation",
     )
 

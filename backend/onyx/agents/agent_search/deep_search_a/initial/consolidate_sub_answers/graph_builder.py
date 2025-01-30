@@ -27,7 +27,7 @@ logger = setup_logger()
 test_mode = False
 
 
-def initial_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
+def consolidate_sub_answers_graph_builder() -> StateGraph:
     graph = StateGraph(
         state_schema=SQState,
         input=SQInput,
