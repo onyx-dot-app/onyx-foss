@@ -12,7 +12,7 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def generate_raw_search_data(
+def format_orig_question_search_input(
     state: CoreState, config: RunnableConfig
 ) -> ExpandedRetrievalInput:
     logger.debug("generate_raw_search_data")

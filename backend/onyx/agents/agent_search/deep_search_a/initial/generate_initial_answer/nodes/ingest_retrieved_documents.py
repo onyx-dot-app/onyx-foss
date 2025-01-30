@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from onyx.agents.agent_search.deep_search_a.initial.retrieve_orig_question_documents.states import (
+from onyx.agents.agent_search.deep_search_a.initial.retrieve_orig_question_docs.states import (
     BaseRawSearchOutput,
 )
 from onyx.agents.agent_search.deep_search_a.main.operations import logger
@@ -10,7 +10,7 @@ from onyx.agents.agent_search.deep_search_a.main.states import (
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 
 
-def ingest_initial_base_retrieval(
+def ingest_retrieved_documents(
     state: BaseRawSearchOutput,
 ) -> ExpandedRetrievalUpdate:
     now_start = datetime.now()

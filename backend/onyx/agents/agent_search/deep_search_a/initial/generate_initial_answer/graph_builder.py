@@ -20,7 +20,7 @@ from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.stat
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
 )
-from onyx.agents.agent_search.deep_search_a.initial.retrieve_orig_question_documents.graph_builder import (
+from onyx.agents.agent_search.deep_search_a.initial.retrieve_orig_question_docs.graph_builder import (
     base_raw_search_graph_builder,
 )
 from onyx.utils.logger import setup_logger
