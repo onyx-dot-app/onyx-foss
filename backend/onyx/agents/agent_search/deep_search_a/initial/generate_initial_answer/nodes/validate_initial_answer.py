@@ -9,7 +9,7 @@ from onyx.agents.agent_search.deep_search_a.main.states import (
 )
 
 
-def initial_answer_quality_check(state: SearchSQState) -> InitialAnswerQualityUpdate:
+def validate_initial_answer(state: SearchSQState) -> InitialAnswerQualityUpdate:
     """
     Check whether the final output satisfies the original user question
 

@@ -2,17 +2,17 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.answer_check import (
-    answer_check,
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.check_sub_answer import (
+    check_sub_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.answer_generation import (
-    answer_generation,
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.format_sub_answer import (
+    format_sub_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.format_answer import (
-    format_answer,
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.generate_sub_answer import (
+    generate_sub_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.ingest_retrieval import (
-    ingest_retrieval,
+from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.nodes.ingest_retrieved_documents import (
+    ingest_retrieved_documents,
 )
 from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionInput,
@@ -50,19 +50,19 @@ def answer_refined_query_graph_builder() -> StateGraph:
     )
     graph.add_node(
         node="refined_sub_answer_check",
-        action=answer_check,
+        action=check_sub_answer,
     )
     graph.add_node(
-        node="refined_sub_answer_generation",
-        action=answer_generation,
+        node="generate_refined_sub_answer",
+        action=generate_sub_answer,
     )
     graph.add_node(
         node="format_refined_sub_answer",
-        action=format_answer,
+        action=format_sub_answer,
     )
     graph.add_node(
         node="ingest_refined_retrieval",
-        action=ingest_retrieval,
+        action=ingest_retrieved_documents,
     )
 
     ### Add edges ###
@@ -78,10 +78,10 @@ def answer_refined_query_graph_builder() -> StateGraph:
     )
     graph.add_edge(
         start_key="ingest_refined_retrieval",
-        end_key="refined_sub_answer_generation",
+        end_key="generate_refined_sub_answer",
     )
     graph.add_edge(
-        start_key="refined_sub_answer_generation",
+        start_key="generate_refined_sub_answer",
         end_key="refined_sub_answer_check",
     )
     graph.add_edge(

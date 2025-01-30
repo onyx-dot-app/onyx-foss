@@ -9,7 +9,7 @@ from onyx.agents.agent_search.shared_graph_utils.models import (
 )
 
 
-def format_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
+def format_sub_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
     return AnswerQuestionOutput(
         answer_results=[
             QuestionAnswerResults(

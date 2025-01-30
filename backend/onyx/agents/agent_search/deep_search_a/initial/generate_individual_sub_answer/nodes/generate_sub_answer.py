@@ -31,7 +31,7 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def answer_generation(
+def generate_sub_answer(
     state: AnswerQuestionState, config: RunnableConfig
 ) -> QAGenerationUpdate:
     now_start = datetime.now()

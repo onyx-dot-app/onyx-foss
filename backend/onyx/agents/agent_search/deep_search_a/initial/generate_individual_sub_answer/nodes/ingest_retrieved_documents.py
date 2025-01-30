@@ -7,7 +7,9 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 
 
-def ingest_retrieval(state: ExpandedRetrievalOutput) -> RetrievalIngestionUpdate:
+def ingest_retrieved_documents(
+    state: ExpandedRetrievalOutput,
+) -> RetrievalIngestionUpdate:
     sub_question_retrieval_stats = (
         state.expanded_retrieval_result.sub_question_retrieval_stats
     )

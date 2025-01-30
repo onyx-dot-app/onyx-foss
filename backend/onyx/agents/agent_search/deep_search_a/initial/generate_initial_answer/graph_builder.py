@@ -5,14 +5,14 @@ from langgraph.graph import StateGraph
 from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.graph_builder import (
     initial_sq_subgraph_builder,
 )
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.consolidate_retrieved_documents import (
+    retrieval_consolidation,
+)
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.generate_initial_answer import (
     generate_initial_answer,
 )
-from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.initial_answer_quality_check import (
-    initial_answer_quality_check,
-)
-from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.retrieval_consolidation import (
-    retrieval_consolidation,
+from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.validate_initial_answer import (
+    validate_initial_answer,
 )
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQInput,
@@ -68,8 +68,8 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     graph.add_node(
-        node="initial_answer_quality_check",
-        action=initial_answer_quality_check,
+        node="validate_initial_answer",
+        action=validate_initial_answer,
     )
 
     ### Add edges ###
@@ -118,11 +118,11 @@ def initial_search_sq_subgraph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key="generate_initial_answer",
-        end_key="initial_answer_quality_check",
+        end_key="validate_initial_answer",
     )
 
     graph.add_edge(
-        start_key="initial_answer_quality_check",
+        start_key="validate_initial_answer",
         end_key=END,
     )
 

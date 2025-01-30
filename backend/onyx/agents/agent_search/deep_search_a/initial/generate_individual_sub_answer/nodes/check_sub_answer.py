@@ -17,7 +17,9 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 
 
-def answer_check(state: AnswerQuestionState, config: RunnableConfig) -> QACheckUpdate:
+def check_sub_answer(
+    state: AnswerQuestionState, config: RunnableConfig
+) -> QACheckUpdate:
     now_start = datetime.now()
 
     level, question_num = parse_question_id(state.question_id)
