@@ -38,7 +38,7 @@ def retrieve_orig_question_docs_graph_builder() -> StateGraph:
 
     expanded_retrieval = expanded_retrieval_graph_builder().compile()
     graph.add_node(
-        node="expanded_retrieval_base_search",
+        node="retrieve_orig_question_docs_subgraph",
         action=expanded_retrieval,
     )
     graph.add_node(
@@ -52,10 +52,10 @@ def retrieve_orig_question_docs_graph_builder() -> StateGraph:
 
     graph.add_edge(
         start_key="format_orig_question_search_input",
-        end_key="expanded_retrieval_base_search",
+        end_key="retrieve_orig_question_docs_subgraph",
     )
     graph.add_edge(
-        start_key="expanded_retrieval_base_search",
+        start_key="retrieve_orig_question_docs_subgraph",
         end_key="format_orig_question_search_output",
     )
 

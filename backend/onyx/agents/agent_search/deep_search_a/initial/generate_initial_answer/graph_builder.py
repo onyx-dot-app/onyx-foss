@@ -2,9 +2,6 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
-from onyx.agents.agent_search.deep_search_a.initial.consolidate_sub_answers.graph_builder import (
-    consolidate_sub_answers_graph_builder,
-)
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.nodes.generate_initial_answer import (
     generate_initial_answer,
 )
@@ -16,6 +13,9 @@ from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.stat
 )
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
+)
+from onyx.agents.agent_search.deep_search_a.initial.generate_sub_answers.graph_builder import (
+    generate_sub_answers_graph_builder,
 )
 from onyx.agents.agent_search.deep_search_a.initial.retrieve_orig_question_docs.graph_builder import (
     retrieve_orig_question_docs_graph_builder,
@@ -31,15 +31,15 @@ def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph
         input=SearchSQInput,
     )
 
-    consolidate_sub_answers = consolidate_sub_answers_graph_builder().compile()
+    generate_sub_answers = generate_sub_answers_graph_builder().compile()
     graph.add_node(
-        node="consolidate_sub_answers_subgraph",
-        action=consolidate_sub_answers,
+        node="generate_sub_answers_subgraph",
+        action=generate_sub_answers,
     )
 
     retrieve_orig_question_docs = retrieve_orig_question_docs_graph_builder().compile()
     graph.add_node(
-        node="retrieve_orig_question_docs_subgraph",
+        node="retrieve_orig_question_docs_subgraph_wrapper",
         action=retrieve_orig_question_docs,
     )
 
@@ -62,18 +62,18 @@ def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph
 
     graph.add_edge(
         start_key=START,
-        end_key="retrieve_orig_question_docs_subgraph",
+        end_key="retrieve_orig_question_docs_subgraph_wrapper",
     )
 
     graph.add_edge(
         start_key=START,
-        end_key="consolidate_sub_answers_subgraph",
+        end_key="generate_sub_answers_subgraph",
     )
 
     graph.add_edge(
         start_key=[
-            "retrieve_orig_question_docs_subgraph",
-            "consolidate_sub_answers_subgraph",
+            "retrieve_orig_question_docs_subgraph_wrapper",
+            "generate_sub_answers_subgraph",
         ],
         end_key="generate_initial_answer",
     )

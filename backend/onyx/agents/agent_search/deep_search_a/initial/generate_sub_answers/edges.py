@@ -32,7 +32,7 @@ def parallelize_initial_sub_question_answering(
 
         return [
             Send(
-                "answer_sub_question_subgraph",
+                "answer_sub_question_subgraphs",
                 AnswerQuestionInput(
                     question=question,
                     question_id=make_question_id(0, question_nr + 1),
