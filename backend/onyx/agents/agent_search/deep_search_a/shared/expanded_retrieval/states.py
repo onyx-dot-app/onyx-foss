@@ -4,6 +4,7 @@ from typing import Annotated
 from pydantic import BaseModel
 
 from onyx.agents.agent_search.core_state import SubgraphCoreState
+from onyx.agents.agent_search.deep_search_a.main.states import LoggerUpdate
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.models import (
     ExpandedRetrievalResult,
 )
@@ -13,7 +14,6 @@ from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
 )
 from onyx.context.search.models import InferenceSection
-
 
 ### States ###
 
@@ -29,7 +29,7 @@ class ExpandedRetrievalInput(SubgraphCoreState):
 ## Update/Return States
 
 
-class QueryExpansionUpdate(BaseModel):
+class QueryExpansionUpdate(LoggerUpdate, BaseModel):
     expanded_queries: list[str] = []
     log_messages: list[str] = []
 
@@ -38,31 +38,28 @@ class DocVerificationUpdate(BaseModel):
     verified_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
 
 
-class DocRetrievalUpdate(BaseModel):
+class DocRetrievalUpdate(LoggerUpdate, BaseModel):
     expanded_retrieval_results: Annotated[list[QueryResult], add] = []
     retrieved_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ] = []
-    log_messages: list[str] = []
 
 
-class DocRerankingUpdate(BaseModel):
+class DocRerankingUpdate(LoggerUpdate, BaseModel):
     reranked_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     sub_question_retrieval_stats: RetrievalFitStats | None = None
-    log_messages: list[str] = []
 
 
-class ExpandedRetrievalUpdate(BaseModel):
+class ExpandedRetrievalUpdate(LoggerUpdate, BaseModel):
     expanded_retrieval_result: ExpandedRetrievalResult
 
 
 ## Graph Output State
 
 
-class ExpandedRetrievalOutput(BaseModel):
+class ExpandedRetrievalOutput(LoggerUpdate, BaseModel):
     expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
     base_expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
-    log_messages: list[str] = []
 
 
 ## Graph State

@@ -9,9 +9,6 @@ from langgraph.types import StreamWriter
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.operations import (
     dispatch_subquery,
 )
-from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.operations import (
-    logger,
-)
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states import (
     ExpandedRetrievalInput,
 )
@@ -23,6 +20,9 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
     REWRITE_PROMPT_MULTI_ORIGINAL,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 
 
@@ -35,7 +35,7 @@ def expand_queries(
     # When we are running this node on the original question, no question is explictly passed in.
     # Instead, we use the original question from the search request.
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    now_start = datetime.now()
+    node_start_time = datetime.now()
     question = state.question
 
     llm = agent_a_config.fast_llm
@@ -62,13 +62,15 @@ def expand_queries(
     llm_response = merge_message_runs(llm_response_list, chunk_separator="")[0].content
 
     rewritten_queries = llm_response.split("\n")
-    now_end = datetime.now()
-    logger.info(
-        f"{now_start} -- Expanded Retrieval - Query Expansion - Time taken: {now_end - now_start}"
-    )
+
     return QueryExpansionUpdate(
         expanded_queries=rewritten_queries,
         log_messages=[
-            f"{now_start} -- Expanded Retrieval - Query Expansion - Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="shared - expanded retrieval",
+                node_name="expand queries",
+                node_start_time=node_start_time,
+                result=f"Number of expanded queries: {len(rewritten_queries)}",
+            )
         ],
     )

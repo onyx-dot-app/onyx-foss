@@ -43,6 +43,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
@@ -56,9 +59,7 @@ from onyx.tools.tool_implementations.search.search_tool import yield_search_resp
 def generate_refined_answer(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> RefinedAnswerUpdate:
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------GENERATE REFINED ANSWER---")
+    node_start_time = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -180,7 +181,7 @@ def generate_refined_answer(
 
     # original answer
 
-    initial_answer = state.initial_answer
+    initial_answer = state.initial_answer or ""
 
     # Determine which persona-specification prompt to use
 
@@ -212,7 +213,9 @@ def generate_refined_answer(
                     sub_question_answer_str
                 ),
                 relevant_docs=relevant_docs,
-                initial_answer=remove_document_citations(initial_answer),
+                initial_answer=remove_document_citations(initial_answer)
+                if initial_answer
+                else None,
                 persona_specification=persona_contextualized_prompt,
                 date_prompt=prompt_enrichment_components.date_str,
             )
@@ -305,12 +308,6 @@ def generate_refined_answer(
             f"Revision Question Factor: {refined_agent_stats.revision_question_efficiency}"
         )
 
-    now_end = datetime.now()
-
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------INITIAL AGENT ANSWER  END---\n\n"
-    )
-
     agent_refined_end_time = datetime.now()
     if state.agent_refined_start_time:
         agent_refined_duration = (
@@ -325,12 +322,6 @@ def generate_refined_answer(
         duration__s=agent_refined_duration,
     )
 
-    now_end = datetime.now()
-
-    logger.info(
-        f"{now_start} -- MAIN - Generate refined answer,  Time taken: {now_end - now_start}"
-    )
-
     return RefinedAnswerUpdate(
         refined_answer=answer,
         refined_answer_quality=True,  # TODO: replace this with the actual check value
@@ -338,6 +329,10 @@ def generate_refined_answer(
         agent_refined_end_time=agent_refined_end_time,
         agent_refined_metrics=agent_refined_metrics,
         log_messages=[
-            f"{now_start} -- MAIN - Generate refined answer,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="generate refined answer",
+                node_start_time=node_start_time,
+            )
         ],
     )

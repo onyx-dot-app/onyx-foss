@@ -9,6 +9,6 @@ from onyx.agents.agent_search.deep_search_a.main.states import LoggerUpdate
 def consolidate_retrieved_documents(
     state: SearchSQState,
 ) -> LoggerUpdate:
-    now_start = datetime.now()
+    node_start_time = datetime.now()
 
-    return LoggerUpdate(log_messages=[f"{now_start} -- Retrieval consolidation"])
+    return LoggerUpdate(log_messages=[f"{node_start_time} -- Retrieval consolidation"])

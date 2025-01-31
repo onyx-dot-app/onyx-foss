@@ -12,14 +12,15 @@ from onyx.agents.agent_search.deep_search_a.main.states import MainOutput
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.models import CombinedAgentMetrics
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.db.chat import log_agent_metrics
 from onyx.db.chat import log_agent_sub_question_results
 
 
 def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutput:
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------LOGGING NODE---")
+    node_start_time = datetime.now()
 
     agent_start_time = state.agent_start_time
     agent_base_end_time = state.agent_base_end_time
@@ -94,19 +95,18 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
                 sub_question_answer_results=sub_question_answer_results,
             )
 
-    now_end = datetime.now()
     main_output = MainOutput(
         log_messages=[
-            f"{now_start} -- Main - Logging,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="persist agent results",
+                node_start_time=node_start_time,
+            )
         ],
     )
 
-    logger.info(f"--------{now_end}--{now_end - now_start}--------LOGGING NODE END---")
-
     for log_message in state.log_messages:
         logger.info(log_message)
-
-    logger.info("")
 
     if state.agent_base_metrics:
         logger.info(f"Initial loop: {state.agent_base_metrics.duration__s}")

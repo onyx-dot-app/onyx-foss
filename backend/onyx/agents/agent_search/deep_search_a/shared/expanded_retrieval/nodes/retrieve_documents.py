@@ -15,6 +15,9 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
 from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.configs.agent_configs import AGENT_MAX_QUERY_RETRIEVAL_RESULTS
 from onyx.configs.agent_configs import AGENT_RETRIEVAL_STATS
 from onyx.context.search.models import InferenceSection
@@ -40,7 +43,7 @@ def retrieve_documents(
         expanded_retrieval_results: list[ExpandedRetrievalResult]
         retrieved_documents: list[InferenceSection]
     """
-    now_start = datetime.now()
+    node_start_time = datetime.now()
     query_to_retrieve = state.query_to_retrieve
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     search_tool = agent_a_config.search_tool
@@ -48,12 +51,17 @@ def retrieve_documents(
     retrieved_docs: list[InferenceSection] = []
     if not query_to_retrieve.strip():
         logger.warning("Empty query, skipping retrieval")
-        now_end = datetime.now()
+
         return DocRetrievalUpdate(
             expanded_retrieval_results=[],
             retrieved_documents=[],
             log_messages=[
-                f"{now_start} -- Expanded Retrieval - Retrieval - Empty Query - Time taken: {now_end - now_start}"
+                get_langgraph_node_log_string(
+                    graph_component="shared - expanded retrieval",
+                    node_name="retrieve documents",
+                    node_start_time=node_start_time,
+                    result="Empty query, skipping retrieval",
+                )
             ],
         )
 
@@ -99,14 +107,15 @@ def retrieve_documents(
         stats=fit_scores,
         query_info=query_info,
     )
-    now_end = datetime.now()
-    logger.info(
-        f"{now_start} -- Expanded Retrieval - Retrieval - Time taken: {now_end - now_start}"
-    )
+
     return DocRetrievalUpdate(
         expanded_retrieval_results=[expanded_retrieval_result],
         retrieved_documents=retrieved_docs,
         log_messages=[
-            f"{now_start} -- Expanded Retrieval - Retrieval - Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="shared - expanded retrieval",
+                node_name="retrieve documents",
+                node_start_time=node_start_time,
+            )
         ],
     )

@@ -23,18 +23,18 @@ from onyx.agents.agent_search.shared_graph_utils.models import Relationship
 from onyx.agents.agent_search.shared_graph_utils.models import Term
 from onyx.agents.agent_search.shared_graph_utils.prompts import ENTITY_TERM_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 
 
 def extract_entities_terms(
     state: MainState, config: RunnableConfig
 ) -> EntityTermExtractionUpdate:
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------GENERATE ENTITIES & TERMS---")
+    node_start_time = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     if not agent_a_config.allow_refinement:
-        now_end = datetime.now()
         return EntityTermExtractionUpdate(
             entity_relation_term_extractions=EntityRelationshipTermExtraction(
                 entities=[],
@@ -42,7 +42,12 @@ def extract_entities_terms(
                 terms=[],
             ),
             log_messages=[
-                f"{now_start} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
+                get_langgraph_node_log_string(
+                    graph_component="main",
+                    node_name="extract entities terms",
+                    node_start_time=node_start_time,
+                    result="Refinement is not allowed",
+                )
             ],
         )
 
@@ -115,12 +120,6 @@ def extract_entities_terms(
                 )
             )
 
-    now_end = datetime.now()
-
-    logger.info(
-        f"{now_start} -- MAIN - Entity term extraction,  Time taken: {now_end - now_start}"
-    )
-
     return EntityTermExtractionUpdate(
         entity_relation_term_extractions=EntityRelationshipTermExtraction(
             entities=entities,
@@ -128,6 +127,10 @@ def extract_entities_terms(
             terms=terms,
         ),
         log_messages=[
-            f"{now_start} -- Main - ETR Extraction,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="extract entities terms",
+                node_start_time=node_start_time,
+            )
         ],
     )

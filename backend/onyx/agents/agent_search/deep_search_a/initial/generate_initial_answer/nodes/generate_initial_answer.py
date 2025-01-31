@@ -45,6 +45,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     dispatch_main_answer_stop_info,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
@@ -58,9 +61,7 @@ from onyx.tools.tool_implementations.search.search_tool import yield_search_resp
 def generate_initial_answer(
     state: SearchSQState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> InitialAnswerUpdate:
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------GENERATE INITIAL---")
+    node_start_time = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -240,8 +241,6 @@ def generate_initial_answer(
             logger.debug(initial_agent_stats.sub_questions)
             logger.debug(initial_agent_stats.agent_effectiveness)
 
-    now_end = datetime.now()
-
     agent_base_end_time = datetime.now()
 
     if agent_base_end_time and state.agent_start_time:
@@ -268,10 +267,6 @@ def generate_initial_answer(
         duration__s=duration__s,
     )
 
-    logger.info(
-        f"{now_start} -- Main - Initial Answer generation,  Time taken: {now_end - now_start}"
-    )
-
     return InitialAnswerUpdate(
         initial_answer=answer,
         initial_agent_stats=initial_agent_stats,
@@ -279,6 +274,11 @@ def generate_initial_answer(
         agent_base_end_time=agent_base_end_time,
         agent_base_metrics=agent_base_metrics,
         log_messages=[
-            f"{now_start} -- Main - Initial Answer generation,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="initial - generate initial answer",
+                node_name="generate initial answer",
+                node_start_time=node_start_time,
+                result="",
+            )
         ],
     )

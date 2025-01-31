@@ -12,7 +12,6 @@ from onyx.agents.agent_search.deep_search_a.main.models import (
 from onyx.agents.agent_search.deep_search_a.main.operations import (
     dispatch_subquestion,
 )
-from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import (
     FollowUpSubQuestionsUpdate,
 )
@@ -27,6 +26,9 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     format_entity_term_extraction,
+)
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
@@ -50,9 +52,7 @@ def create_refined_sub_questions(
         writer,
     )
 
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------FOLLOW UP DECOMPOSE---")
+    node_start_time = datetime.now()
 
     agent_refined_start_time = datetime.now()
 
@@ -114,13 +114,15 @@ def create_refined_sub_questions(
 
         refined_sub_question_dict[sub_question_nr + 1] = refined_sub_question
 
-    now_end = datetime.now()
-
-    logger.info(
-        f"{now_start} -- MAIN - Refined sub question creation,  Time taken: {now_end - now_start}"
-    )
-
     return FollowUpSubQuestionsUpdate(
         refined_sub_questions=refined_sub_question_dict,
         agent_refined_start_time=agent_refined_start_time,
+        log_messages=[
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="create refined sub questions",
+                node_start_time=node_start_time,
+                result=f"Created {len(refined_sub_question_dict)} refined sub questions",
+            )
+        ],
     )

@@ -5,11 +5,13 @@ from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 
-from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import AnswerComparison
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import ANSWER_COMPARISON_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import RefinedAnswerImprovement
 
@@ -17,14 +19,12 @@ from onyx.chat.models import RefinedAnswerImprovement
 def compare_answers(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> AnswerComparison:
-    now_start = datetime.now()
+    node_start_time = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
     initial_answer = state.initial_answer
     refined_answer = state.refined_answer
-
-    logger.info(f"--------{now_start}--------ANSWER COMPARISON STARTED--")
 
     compare_answers_prompt = ANSWER_COMPARISON_PROMPT.format(
         question=question, initial_answer=initial_answer, refined_answer=refined_answer
@@ -50,15 +50,14 @@ def compare_answers(
         writer,
     )
 
-    now_end = datetime.now()
-
-    logger.info(
-        f"{now_start} -- MAIN - Answer comparison,  Time taken: {now_end - now_start}"
-    )
-
     return AnswerComparison(
         refined_answer_improvement_eval=refined_answer_improvement,
         log_messages=[
-            f"{now_start} -- Answer comparison: {refined_answer_improvement},  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="compare answers",
+                node_start_time=node_start_time,
+                result=f"Answer comparison: {refined_answer_improvement}",
+            )
         ],
     )

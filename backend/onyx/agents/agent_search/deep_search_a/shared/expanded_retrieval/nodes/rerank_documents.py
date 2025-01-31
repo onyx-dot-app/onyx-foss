@@ -15,6 +15,9 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
 from onyx.agents.agent_search.shared_graph_utils.models import RetrievalFitStats
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.configs.agent_configs import AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS
 from onyx.configs.agent_configs import AGENT_RERANKING_STATS
 from onyx.context.search.models import InferenceSection
@@ -27,7 +30,7 @@ from onyx.db.engine import get_session_context_manager
 def rerank_documents(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> DocRerankingUpdate:
-    now_start = datetime.now()
+    node_start_time = datetime.now()
     verified_documents = state.verified_documents
 
     # Rerank post retrieval and verification. First, create a search query
@@ -80,16 +83,16 @@ def rerank_documents(
     else:
         fit_scores = RetrievalFitStats(fit_score_lift=0, rerank_effect=0, fit_scores={})
 
-    now_end = datetime.now()
-    logger.info(
-        f"{now_start} -- Expanded Retrieval - Reranking - Time taken: {now_end - now_start}"
-    )
     return DocRerankingUpdate(
         reranked_documents=[
             doc for doc in reranked_documents if type(doc) == InferenceSection
         ][:AGENT_RERANKING_MAX_QUERY_RETRIEVAL_RESULTS],
         sub_question_retrieval_stats=fit_scores,
         log_messages=[
-            f"{now_start} -- Expanded Retrieval - Reranking - Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="shared - expanded retrieval",
+                node_name="rerank documents",
+                node_start_time=node_start_time,
+            )
         ],
     )

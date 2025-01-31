@@ -18,7 +18,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 def parallelize_initial_sub_question_answering(
     state: SearchSQState,
 ) -> list[Send | Hashable]:
-    now_start = datetime.now()
+    edge_start_time = datetime.now()
     if len(state.initial_decomp_questions) > 0:
         # sub_question_record_ids = [subq_record.id for subq_record in state["sub_question_records"]]
         # if len(state["sub_question_records"]) == 0:
@@ -37,7 +37,7 @@ def parallelize_initial_sub_question_answering(
                     question=question,
                     question_id=make_question_id(0, question_nr + 1),
                     log_messages=[
-                        f"{now_start} -- Main Edge - Parallelize Initial Sub-question Answering"
+                        f"{edge_start_time} -- Main Edge - Parallelize Initial Sub-question Answering"
                     ],
                 ),
             )

@@ -160,23 +160,6 @@ def _format_time_delta(time: timedelta) -> str:
     return f"{seconds_from_start}.{microseconds_from_start}"
 
 
-def generate_log_message(
-    message: str,
-    node_start_time: datetime,
-    graph_start_time: datetime | None = None,
-) -> str:
-    current_time = datetime.now()
-
-    if graph_start_time is not None:
-        graph_time_str = _format_time_delta(current_time - graph_start_time)
-    else:
-        graph_time_str = "N/A"
-
-    node_time_str = _format_time_delta(current_time - node_start_time)
-
-    return f"{graph_time_str} ({node_time_str} s): {message}"
-
-
 def get_test_config(
     db_session: Session,
     primary_llm: LLM,
@@ -405,3 +388,16 @@ def relevance_from_docs(
         )
         for doc in relevant_docs
     ]
+
+
+def get_langgraph_node_log_string(
+    graph_component: str,
+    node_name: str,
+    node_start_time: datetime,
+    result: str | None = None,
+) -> str:
+    duration = datetime.now() - node_start_time
+    if result is None:
+        return f"{node_start_time} -- {graph_component} - {node_name} -- Time taken: {duration}"
+    else:
+        return f"{node_start_time} -- {graph_component} - {node_name} -- Time taken: {duration} -- Result: {result}"

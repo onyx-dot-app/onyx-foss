@@ -3,7 +3,6 @@ from typing import cast
 
 from langchain_core.runnables import RunnableConfig
 
-from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import (
     ExploratorySearchUpdate,
 )
@@ -11,6 +10,9 @@ from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
+)
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import retrieve_search_docs
 from onyx.configs.agent_configs import AGENT_EXPLORATORY_SEARCH_RESULTS
@@ -20,9 +22,7 @@ from onyx.context.search.models import InferenceSection
 def start_agent_search(
     state: MainState, config: RunnableConfig
 ) -> ExploratorySearchUpdate:
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------EXPLORATORY SEARCH START---")
+    node_start_time = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -45,15 +45,15 @@ def start_agent_search(
     retrieved_docs: list[InferenceSection] = retrieve_search_docs(search_tool, question)
 
     exploratory_search_results = retrieved_docs[:AGENT_EXPLORATORY_SEARCH_RESULTS]
-    now_end = datetime.now()
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------EXPLORATORY SEARCH END---"
-    )
 
     return ExploratorySearchUpdate(
         exploratory_search_results=exploratory_search_results,
         previous_history_summary=history,
         log_messages=[
-            f"{now_start} -- Main - Exploratory Search,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="start agent search",
+                node_start_time=node_start_time,
+            )
         ],
     )

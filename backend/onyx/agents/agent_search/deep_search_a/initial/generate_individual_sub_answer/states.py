@@ -4,6 +4,7 @@ from typing import Annotated
 from pydantic import BaseModel
 
 from onyx.agents.agent_search.core_state import SubgraphCoreState
+from onyx.agents.agent_search.deep_search_a.main.states import LoggerUpdate
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
 from onyx.agents.agent_search.shared_graph_utils.models import (
@@ -16,19 +17,19 @@ from onyx.context.search.models import InferenceSection
 
 
 ## Update States
-class QACheckUpdate(BaseModel):
+class QACheckUpdate(LoggerUpdate, BaseModel):
     answer_quality: bool = False
     log_messages: list[str] = []
 
 
-class QAGenerationUpdate(BaseModel):
+class QAGenerationUpdate(LoggerUpdate, BaseModel):
     answer: str = ""
     log_messages: list[str] = []
     cited_docs: Annotated[list[InferenceSection], dedup_inference_sections] = []
     # answer_stat: AnswerStats
 
 
-class RetrievalIngestionUpdate(BaseModel):
+class RetrievalIngestionUpdate(LoggerUpdate, BaseModel):
     expanded_retrieval_results: list[QueryResult] = []
     documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
@@ -62,7 +63,7 @@ class AnswerQuestionState(
 ## Graph Output State
 
 
-class AnswerQuestionOutput(BaseModel):
+class AnswerQuestionOutput(LoggerUpdate, BaseModel):
     """
     This is a list of results even though each call of this subgraph only returns one result.
     This is because if we parallelize the answer query subgraph, there will be multiple

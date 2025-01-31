@@ -19,6 +19,9 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
 from onyx.agents.agent_search.shared_graph_utils.prompts import NO_RECOVERED_DOCS
 from onyx.agents.agent_search.shared_graph_utils.utils import get_answer_citation_ids
 from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
+from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_persona_agent_prompt_expressions,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
@@ -37,8 +40,7 @@ def generate_sub_answer(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> QAGenerationUpdate:
-    now_start = datetime.now()
-    logger.info(f"--------{now_start}--------START ANSWER GENERATION---")
+    node_start_time = datetime.now()
 
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question
@@ -62,8 +64,6 @@ def generate_sub_answer(
             writer,
         )
     else:
-        logger.debug(f"Number of verified retrieval docs: {len(context_docs)}")
-
         fast_llm = agent_search_config.fast_llm
         msg = build_sub_question_answer_prompt(
             question=question,
@@ -119,15 +119,15 @@ def generate_sub_answer(
     )
     write_custom_event("stream_finished", stop_event, writer)
 
-    now_end = datetime.now()
-
-    logger.info(
-        f"{now_start} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
-    )
     return QAGenerationUpdate(
         answer=answer_str,
         cited_docs=cited_docs,
         log_messages=[
-            f"{now_start} -- Answer generation SQ-{level} - Q{question_nr} - Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="initial - generate individual sub answer",
+                node_name="generate sub answer",
+                node_start_time=node_start_time,
+                result="",
+            )
         ],
     )

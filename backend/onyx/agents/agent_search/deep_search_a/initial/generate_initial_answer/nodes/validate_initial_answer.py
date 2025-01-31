@@ -7,6 +7,9 @@ from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import (
     InitialAnswerQualityUpdate,
 )
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 
 
 def validate_initial_answer(state: SearchSQState) -> InitialAnswerQualityUpdate:
@@ -20,23 +23,22 @@ def validate_initial_answer(state: SearchSQState) -> InitialAnswerQualityUpdate:
         InitialAnswerQualityUpdate
     """
 
-    now_start = datetime.now()
+    node_start_time = datetime.now()
 
     logger.debug(
-        f"--------{now_start}--------Checking for base answer validity - for not set True/False manually"
+        f"--------{node_start_time}--------Checking for base answer validity - for not set True/False manually"
     )
 
     verdict = True
 
-    now_end = datetime.now()
-
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------INITIAL ANSWER QUALITY CHECK END---"
-    )
-
     return InitialAnswerQualityUpdate(
         initial_answer_quality_eval=verdict,
         log_messages=[
-            f"{now_start} -- Main - Initial answer quality check,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="initial - generate initial answer",
+                node_name="validate initial answer",
+                node_start_time=node_start_time,
+                result="",
+            )
         ],
     )

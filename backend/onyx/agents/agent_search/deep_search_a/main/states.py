@@ -55,7 +55,7 @@ class RefinedAgentEndStats(BaseModel):
     agent_refined_metrics: AgentRefinedMetrics = AgentRefinedMetrics()
 
 
-class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats):
+class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats, LoggerUpdate):
     agent_start_time: datetime | None = None
     previous_history: str | None = None
     initial_decomp_questions: list[str] = []
@@ -76,19 +76,19 @@ class RoutingDecision(LoggerUpdate):
 
 # Not used in current graph
 class InitialAnswerBASEUpdate(BaseModel):
-    initial_base_answer: str
+    initial_base_answer: str | None = None
 
 
 class InitialAnswerUpdate(LoggerUpdate):
-    initial_answer: str
+    initial_answer: str | None = None
     initial_agent_stats: InitialAgentResultStats | None = None
     generated_sub_questions: list[str] = []
-    agent_base_end_time: datetime
+    agent_base_end_time: datetime | None = None
     agent_base_metrics: AgentBaseMetrics | None = None
 
 
 class RefinedAnswerUpdate(RefinedAgentEndStats, LoggerUpdate):
-    refined_answer: str
+    refined_answer: str | None = None
     refined_agent_stats: RefinedAgentStats | None = None
     refined_answer_quality: bool = False
 
@@ -131,7 +131,7 @@ class EntityTermExtractionUpdate(LoggerUpdate):
     )
 
 
-class FollowUpSubQuestionsUpdate(RefinedAgentStartStats):
+class FollowUpSubQuestionsUpdate(RefinedAgentStartStats, LoggerUpdate):
     refined_sub_questions: dict[int, FollowUpSubQuestion] = {}
 
 

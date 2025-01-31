@@ -202,13 +202,13 @@ def run_basic_graph(
 if __name__ == "__main__":
     from onyx.llm.factory import get_default_llms
 
-    for _ in range(2):
-        now_start = datetime.now()
-        logger.debug(f"Start at {now_start}")
+    for _ in range(1):
+        query_start_time = datetime.now()
+        logger.debug(f"Start at {query_start_time}")
         graph = main_graph_builder_a()
         compiled_graph = graph.compile()
-        now_end = datetime.now()
-        logger.debug(f"Graph compiled in {now_end - now_start} seconds")
+        query_end_time = datetime.now()
+        logger.debug(f"Graph compiled in {query_end_time - query_start_time} seconds")
         primary_llm, fast_llm = get_default_llms()
         search_request = SearchRequest(
             # query="what can you do with gitlab?",

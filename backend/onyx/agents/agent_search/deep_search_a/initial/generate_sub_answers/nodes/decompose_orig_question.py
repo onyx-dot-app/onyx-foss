@@ -15,7 +15,6 @@ from onyx.agents.agent_search.deep_search_a.main.models import (
 from onyx.agents.agent_search.deep_search_a.main.operations import (
     dispatch_subquestion,
 )
-from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import BaseDecompUpdate
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
@@ -28,6 +27,9 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
     INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
@@ -38,9 +40,7 @@ from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 def decompose_orig_question(
     state: SearchSQState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> BaseDecompUpdate:
-    now_start = datetime.now()
-
-    logger.info(f"--------{now_start}--------BASE DECOMP START---")
+    node_start_time = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = agent_a_config.search_request.query
@@ -123,12 +123,6 @@ def decompose_orig_question(
 
     decomp_list: list[str] = [sq.strip() for sq in list_of_subqs if sq.strip() != ""]
 
-    now_end = datetime.now()
-
-    logger.info(
-        f"{now_start} -- INITIAL SUBQUESTION ANSWERING - Base Decomposition,  Time taken: {now_end - now_start}"
-    )
-
     return BaseDecompUpdate(
         initial_decomp_questions=decomp_list,
         agent_start_time=agent_start_time,
@@ -139,4 +133,12 @@ def decompose_orig_question(
             refined_question_boost_factor=None,
             duration__s=None,
         ),
+        log_messages=[
+            get_langgraph_node_log_string(
+                graph_component="initial - generate sub answers",
+                node_name="decompose original question",
+                node_start_time=node_start_time,
+                result=f"decomposed original question into {len(decomp_list)} subquestions",
+            )
+        ],
     )
