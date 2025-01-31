@@ -1178,5 +1178,5 @@ suitable extra information - be answered.
 
 Please do not use more than three or four sentences.
 
-Context summary:
+History summary:
 """
