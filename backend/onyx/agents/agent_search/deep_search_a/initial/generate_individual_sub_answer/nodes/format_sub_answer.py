@@ -18,9 +18,9 @@ def format_sub_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
                 verified_high_quality=state.answer_quality,
                 answer=state.answer,
                 expanded_retrieval_results=state.expanded_retrieval_results,
-                documents=state.documents,
+                verified_reranked_documents=state.verified_reranked_documents,
                 context_documents=state.context_documents,
-                cited_docs=state.cited_docs,
+                cited_documents=state.cited_documents,
                 sub_question_retrieval_stats=state.sub_question_retrieval_stats,
             )
         ],

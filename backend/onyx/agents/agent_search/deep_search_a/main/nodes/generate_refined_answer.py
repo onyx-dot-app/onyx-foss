@@ -69,16 +69,16 @@ def generate_refined_answer(
         prompt_enrichment_components.persona_prompts.contextualized_prompt
     )
 
-    initial_documents = state.documents
+    initial_documents = state.verified_reranked_documents
     refined_documents = state.refined_documents
-    sub_questions_cited_docs = state.cited_documents
+    sub_questions_cited_documents = state.cited_documents
     all_original_question_documents = state.all_original_question_documents
 
-    consolidated_context_docs: list[InferenceSection] = sub_questions_cited_docs
+    consolidated_context_docs: list[InferenceSection] = sub_questions_cited_documents
 
     counter = 0
     for original_doc_number, original_doc in enumerate(all_original_question_documents):
-        if original_doc_number not in sub_questions_cited_docs:
+        if original_doc_number not in sub_questions_cited_documents:
             if (
                 counter <= AGENT_MIN_ORIG_QUESTION_DOCS
                 or len(consolidated_context_docs)

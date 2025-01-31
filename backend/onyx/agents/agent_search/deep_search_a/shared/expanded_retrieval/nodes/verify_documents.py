@@ -31,8 +31,8 @@ def verify_documents(
     """
 
     question = state.question
-    doc_to_verify = state.doc_to_verify
-    document_content = doc_to_verify.combined_content
+    retrieved_document_to_verify = state.retrieved_document_to_verify
+    document_content = retrieved_document_to_verify.combined_content
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     fast_llm = agent_a_config.fast_llm
@@ -53,7 +53,7 @@ def verify_documents(
 
     verified_documents = []
     if isinstance(response.content, str) and "yes" in response.content.lower():
-        verified_documents.append(doc_to_verify)
+        verified_documents.append(retrieved_document_to_verify)
 
     return DocVerificationUpdate(
         verified_documents=verified_documents,

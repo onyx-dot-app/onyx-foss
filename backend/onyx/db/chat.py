@@ -1018,7 +1018,7 @@ def log_agent_sub_question_results(
         sub_question = sub_question_answer_result.question
         sub_answer = sub_question_answer_result.answer
         sub_document_results = _create_citation_format_list(
-            sub_question_answer_result.documents
+            sub_question_answer_result.verified_reranked_documents
         )
 
         sub_question_object = AgentSubQuestion(

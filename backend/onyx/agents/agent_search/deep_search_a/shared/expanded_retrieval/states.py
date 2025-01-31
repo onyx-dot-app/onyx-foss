@@ -81,7 +81,7 @@ class ExpandedRetrievalState(
 
 
 class DocVerificationInput(ExpandedRetrievalInput):
-    doc_to_verify: InferenceSection
+    retrieved_document_to_verify: InferenceSection
 
 
 class RetrievalInput(ExpandedRetrievalInput):

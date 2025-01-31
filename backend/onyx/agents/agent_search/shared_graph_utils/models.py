@@ -105,9 +105,9 @@ class QuestionAnswerResults(BaseModel):
     answer: str
     verified_high_quality: bool
     expanded_retrieval_results: list[QueryResult]
-    documents: list[InferenceSection]
+    verified_reranked_documents: list[InferenceSection]
     context_documents: list[InferenceSection]
-    cited_docs: list[InferenceSection]
+    cited_documents: list[InferenceSection]
     sub_question_retrieval_stats: AgentChunkStats
 
 

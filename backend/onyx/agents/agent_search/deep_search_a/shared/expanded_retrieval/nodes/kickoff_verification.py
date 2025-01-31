@@ -16,7 +16,7 @@ def kickoff_verification(
     state: ExpandedRetrievalState,
     config: RunnableConfig,
 ) -> Command[Literal["verify_documents"]]:
-    documents = state.retrieved_documents
+    retrieved_documents = state.retrieved_documents
     verification_question = state.question
 
     sub_question_id = state.sub_question_id
@@ -26,13 +26,13 @@ def kickoff_verification(
             Send(
                 node="verify_documents",
                 arg=DocVerificationInput(
-                    doc_to_verify=doc,
+                    retrieved_document_to_verify=document,
                     question=verification_question,
                     base_search=False,
                     sub_question_id=sub_question_id,
                     log_messages=[],
                 ),
             )
-            for doc in documents
+            for document in retrieved_documents
         ],
     )

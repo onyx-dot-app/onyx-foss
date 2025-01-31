@@ -22,12 +22,12 @@ def ingest_refined_answers(
     documents = []
     answer_results = state.answer_results if hasattr(state, "answer_results") else []
     for answer_result in answer_results:
-        documents.extend(answer_result.documents)
+        documents.extend(answer_result.verified_reranked_documents)
 
     return DecompAnswersUpdate(
         # Deduping is done by the documents operator for the main graph
         # so we might not need to dedup here
-        documents=dedup_inference_sections(documents, []),
+        verified_reranked_documents=dedup_inference_sections(documents, []),
         sub_question_results=answer_results,
         log_messages=[
             get_langgraph_node_log_string(

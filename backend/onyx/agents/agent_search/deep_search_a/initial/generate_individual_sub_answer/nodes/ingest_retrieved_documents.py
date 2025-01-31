@@ -18,7 +18,7 @@ def ingest_retrieved_documents(
 
     return RetrievalIngestionUpdate(
         expanded_retrieval_results=state.expanded_retrieval_result.expanded_queries_results,
-        documents=state.expanded_retrieval_result.reranked_documents,
+        verified_reranked_documents=state.expanded_retrieval_result.verified_reranked_documents,
         context_documents=state.expanded_retrieval_result.context_documents,
         sub_question_retrieval_stats=sub_question_retrieval_stats,
     )

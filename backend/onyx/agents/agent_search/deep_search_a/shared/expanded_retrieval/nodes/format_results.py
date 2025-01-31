@@ -79,7 +79,7 @@ def format_results(
     return ExpandedRetrievalUpdate(
         expanded_retrieval_result=ExpandedRetrievalResult(
             expanded_queries_results=state.expanded_retrieval_results,
-            reranked_documents=reranked_documents,
+            verified_reranked_documents=reranked_documents,
             context_documents=state.reranked_documents,
             sub_question_retrieval_stats=sub_question_retrieval_stats,
         ),

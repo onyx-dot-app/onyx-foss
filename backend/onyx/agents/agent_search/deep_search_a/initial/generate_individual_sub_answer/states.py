@@ -25,13 +25,15 @@ class QACheckUpdate(LoggerUpdate, BaseModel):
 class QAGenerationUpdate(LoggerUpdate, BaseModel):
     answer: str = ""
     log_messages: list[str] = []
-    cited_docs: Annotated[list[InferenceSection], dedup_inference_sections] = []
+    cited_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     # answer_stat: AnswerStats
 
 
 class RetrievalIngestionUpdate(LoggerUpdate, BaseModel):
     expanded_retrieval_results: list[QueryResult] = []
-    documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
+    verified_reranked_documents: Annotated[
+        list[InferenceSection], dedup_inference_sections
+    ] = []
     context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     sub_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
 

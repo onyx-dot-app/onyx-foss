@@ -44,7 +44,7 @@ def generate_sub_answer(
 
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
     question = state.question
-    state.documents
+    state.verified_reranked_documents
     level, question_nr = parse_question_id(state.question_id)
     context_docs = state.context_documents[:AGENT_MAX_ANSWER_CONTEXT_DOCS]
     persona_contextualized_prompt = get_persona_agent_prompt_expressions(
@@ -107,7 +107,7 @@ def generate_sub_answer(
         )
 
     answer_citation_ids = get_answer_citation_ids(answer_str)
-    cited_docs = [
+    cited_documents = [
         context_docs[id] for id in answer_citation_ids if id < len(context_docs)
     ]
 
@@ -121,7 +121,7 @@ def generate_sub_answer(
 
     return QAGenerationUpdate(
         answer=answer_str,
-        cited_docs=cited_docs,
+        cited_documents=cited_documents,
         log_messages=[
             get_langgraph_node_log_string(
                 graph_component="initial - generate individual sub answer",

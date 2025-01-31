@@ -7,6 +7,6 @@ from onyx.context.search.models import InferenceSection
 
 class ExpandedRetrievalResult(BaseModel):
     expanded_queries_results: list[QueryResult] = []
-    reranked_documents: list[InferenceSection] = []
+    verified_reranked_documents: list[InferenceSection] = []
     context_documents: list[InferenceSection] = []
     sub_question_retrieval_stats: AgentChunkStats = AgentChunkStats()

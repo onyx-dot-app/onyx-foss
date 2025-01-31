@@ -102,7 +102,9 @@ class RequireRefinedAnswerUpdate(LoggerUpdate):
 
 
 class DecompAnswersUpdate(LoggerUpdate):
-    documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
+    verified_reranked_documents: Annotated[
+        list[InferenceSection], dedup_inference_sections
+    ] = []
     context_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
     cited_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
