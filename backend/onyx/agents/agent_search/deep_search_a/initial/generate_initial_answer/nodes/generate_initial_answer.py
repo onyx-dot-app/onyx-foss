@@ -67,7 +67,7 @@ def generate_initial_answer(
     question = agent_a_config.search_request.query
     prompt_enrichment_components = get_prompt_enrichment_components(agent_a_config)
 
-    sub_questions_cited_docs = state.cited_docs
+    sub_questions_cited_docs = state.cited_documents
     all_original_question_documents = state.all_original_question_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_docs

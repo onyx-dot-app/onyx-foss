@@ -71,7 +71,7 @@ def generate_refined_answer(
 
     initial_documents = state.documents
     refined_documents = state.refined_documents
-    sub_questions_cited_docs = state.cited_docs
+    sub_questions_cited_docs = state.cited_documents
     all_original_question_documents = state.all_original_question_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_docs
