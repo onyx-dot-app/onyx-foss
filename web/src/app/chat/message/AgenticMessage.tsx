@@ -251,9 +251,13 @@ export const AgenticMessage = ({
               : docs
         }
         subQuestions={
-          isViewingInitialAnswer
-            ? subQuestions || []
-            : [...(subQuestions || []), ...(secondLevelSubquestions || [])]
+          (isViewingInitialAnswer
+            ? subQuestions && subQuestions.length > 0
+              ? subQuestions
+              : secondLevelSubquestions
+            : secondLevelSubquestions && secondLevelSubquestions.length > 0
+              ? secondLevelSubquestions
+              : subQuestions) || undefined
         }
         openQuestion={openQuestion}
       >
