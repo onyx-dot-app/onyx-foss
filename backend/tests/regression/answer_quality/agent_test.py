@@ -5,10 +5,10 @@ import os
 
 import yaml
 
-from onyx.agents.agent_search.deep_search_a.main__graph.graph_builder import (
+from onyx.agents.agent_search.deep_search.main__graph.graph_builder import (
     main_graph_builder,
 )
-from onyx.agents.agent_search.deep_search_a.main__graph.states import MainInput
+from onyx.agents.agent_search.deep_search.main__graph.states import MainInput
 from onyx.agents.agent_search.shared_graph_utils.utils import get_test_config
 from onyx.context.search.models import SearchRequest
 from onyx.db.engine import get_session_context_manager

@@ -10,10 +10,10 @@ from langgraph.graph.state import CompiledStateGraph
 
 from onyx.agents.agent_search.basic.graph_builder import basic_graph_builder
 from onyx.agents.agent_search.basic.states import BasicInput
-from onyx.agents.agent_search.deep_search_a.main.graph_builder import (
+from onyx.agents.agent_search.deep_search.main.graph_builder import (
     main_graph_builder as main_graph_builder_a,
 )
-from onyx.agents.agent_search.deep_search_a.main.states import (
+from onyx.agents.agent_search.deep_search.main.states import (
     MainInput as MainInput_a,
 )
 from onyx.agents.agent_search.models import AgentSearchConfig

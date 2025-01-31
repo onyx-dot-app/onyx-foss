@@ -397,7 +397,5 @@ def get_langgraph_node_log_string(
     result: str | None = None,
 ) -> str:
     duration = datetime.now() - node_start_time
-    if result is None:
-        return f"{node_start_time} -- {graph_component} - {node_name} -- Time taken: {duration}"
-    else:
-        return f"{node_start_time} -- {graph_component} - {node_name} -- Time taken: {duration} -- Result: {result}"
+    results_str = "" if result is None else f" -- Result: {result}"
+    return f"{node_start_time} -- {graph_component} - {node_name} -- Time taken: {duration}{results_str}"
