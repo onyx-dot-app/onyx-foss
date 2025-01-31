@@ -69,10 +69,9 @@ def generate_refined_answer(
         prompt_enrichment_components.persona_prompts.contextualized_prompt
     )
 
-    initial_documents = state.verified_reranked_documents
-    refined_documents = state.refined_documents
+    verified_reranked_documents = state.verified_reranked_documents
     sub_questions_cited_documents = state.cited_documents
-    all_original_question_documents = state.all_original_question_documents
+    all_original_question_documents = state.orig_question_retrieval_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_documents
 
@@ -93,7 +92,7 @@ def generate_refined_answer(
         consolidated_context_docs, consolidated_context_docs
     )
 
-    query_info = get_query_info(state.original_question_retrieval_results)
+    query_info = get_query_info(state.orig_question_query_retrieval_results)
     if agent_search_config.search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
     # stream refined answer docs
@@ -117,15 +116,14 @@ def generate_refined_answer(
             writer,
         )
 
-    if len(initial_documents) > 0:
-        revision_doc_effectiveness = len(relevant_docs) / len(initial_documents)
-    elif len(refined_documents) == 0:
-        revision_doc_effectiveness = 0.0
+    if len(verified_reranked_documents) > 0:
+        refined_doc_effectiveness = len(relevant_docs) / len(
+            verified_reranked_documents
+        )
     else:
-        revision_doc_effectiveness = 10.0
+        refined_doc_effectiveness = 10.0
 
     decomp_answer_results = state.sub_question_results
-    # revised_answer_results = state.refined_decomp_answer_results
 
     answered_qa_list: list[str] = []
     decomp_questions = []
@@ -261,7 +259,7 @@ def generate_refined_answer(
     # )
 
     refined_agent_stats = RefinedAgentStats(
-        revision_doc_efficiency=revision_doc_effectiveness,
+        revision_doc_efficiency=refined_doc_effectiveness,
         revision_question_efficiency=revision_question_efficiency,
     )
 

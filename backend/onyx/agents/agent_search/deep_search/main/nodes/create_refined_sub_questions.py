@@ -12,10 +12,10 @@ from onyx.agents.agent_search.deep_search.main.models import (
 from onyx.agents.agent_search.deep_search.main.operations import (
     dispatch_subquestion,
 )
-from onyx.agents.agent_search.deep_search.main.states import (
-    FollowUpSubQuestionsUpdate,
-)
 from onyx.agents.agent_search.deep_search.main.states import MainState
+from onyx.agents.agent_search.deep_search.main.states import (
+    RefinedQuestionDecompositionUpdate,
+)
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
@@ -37,7 +37,7 @@ from onyx.tools.models import ToolCallKickoff
 
 def create_refined_sub_questions(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
-) -> FollowUpSubQuestionsUpdate:
+) -> RefinedQuestionDecompositionUpdate:
     """ """
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
     write_custom_event(
@@ -114,7 +114,7 @@ def create_refined_sub_questions(
 
         refined_sub_question_dict[sub_question_nr + 1] = refined_sub_question
 
-    return FollowUpSubQuestionsUpdate(
+    return RefinedQuestionDecompositionUpdate(
         refined_sub_questions=refined_sub_question_dict,
         agent_refined_start_time=agent_refined_start_time,
         log_messages=[

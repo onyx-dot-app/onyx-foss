@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from onyx.agents.agent_search.deep_search.main.states import (
-    ExpandedRetrievalUpdate,
+    OrigQuestionRetrievalUpdate,
 )
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.models import (
     ExpandedRetrievalResult,
@@ -39,6 +39,6 @@ class BaseRawSearchOutput(BaseModel):
 
 
 class BaseRawSearchState(
-    BaseRawSearchInput, BaseRawSearchOutput, ExpandedRetrievalUpdate
+    BaseRawSearchInput, BaseRawSearchOutput, OrigQuestionRetrievalUpdate
 ):
     pass

@@ -55,10 +55,12 @@ class RefinedAgentEndStats(BaseModel):
     agent_refined_metrics: AgentRefinedMetrics = AgentRefinedMetrics()
 
 
-class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats, LoggerUpdate):
+class InitialQuestionDecompositionUpdate(
+    RefinedAgentStartStats, RefinedAgentEndStats, LoggerUpdate
+):
     agent_start_time: datetime | None = None
     previous_history: str | None = None
-    initial_decomp_questions: list[str] = []
+    initial_sub_questions: list[str] = []
 
 
 class ExploratorySearchUpdate(LoggerUpdate):
@@ -66,11 +68,11 @@ class ExploratorySearchUpdate(LoggerUpdate):
     previous_history_summary: str | None = None
 
 
-class AnswerComparison(LoggerUpdate):
+class InitialVRefinedAnswerComparisonUpdate(LoggerUpdate):
     refined_answer_improvement_eval: bool = False
 
 
-class RoutingDecision(LoggerUpdate):
+class RoutingDecisionUpdate(LoggerUpdate):
     routing_decision: str | None = None
 
 
@@ -97,11 +99,11 @@ class InitialAnswerQualityUpdate(LoggerUpdate):
     initial_answer_quality_eval: bool = False
 
 
-class RequireRefinedAnswerUpdate(LoggerUpdate):
+class RequireRefinementUpdate(LoggerUpdate):
     require_refined_answer_eval: bool = True
 
 
-class DecompAnswersUpdate(LoggerUpdate):
+class SubQuestionResultsUpdate(LoggerUpdate):
     verified_reranked_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ] = []
@@ -114,17 +116,12 @@ class DecompAnswersUpdate(LoggerUpdate):
     ] = []
 
 
-class FollowUpDecompAnswersUpdate(LoggerUpdate):
-    refined_documents: Annotated[list[InferenceSection], dedup_inference_sections] = []
-    refined_decomp_answer_results: Annotated[list[QuestionAnswerResults], add] = []
-
-
-class ExpandedRetrievalUpdate(LoggerUpdate):
-    all_original_question_documents: Annotated[
+class OrigQuestionRetrievalUpdate(LoggerUpdate):
+    orig_question_retrieval_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ]
-    original_question_retrieval_results: list[QueryResult] = []
-    original_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
+    orig_question_query_retrieval_results: list[QueryResult] = []
+    orig_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
 
 
 class EntityTermExtractionUpdate(LoggerUpdate):
@@ -133,7 +130,7 @@ class EntityTermExtractionUpdate(LoggerUpdate):
     )
 
 
-class FollowUpSubQuestionsUpdate(RefinedAgentStartStats, LoggerUpdate):
+class RefinedQuestionDecompositionUpdate(RefinedAgentStartStats, LoggerUpdate):
     refined_sub_questions: dict[int, FollowUpSubQuestion] = {}
 
 
@@ -154,21 +151,20 @@ class MainState(
     ToolChoiceInput,
     ToolCallUpdate,
     ToolChoiceUpdate,
-    BaseDecompUpdate,
+    InitialQuestionDecompositionUpdate,
     InitialAnswerUpdate,
     InitialAnswerBASEUpdate,
-    DecompAnswersUpdate,
-    ExpandedRetrievalUpdate,
+    SubQuestionResultsUpdate,
+    OrigQuestionRetrievalUpdate,
     EntityTermExtractionUpdate,
     InitialAnswerQualityUpdate,
-    RequireRefinedAnswerUpdate,
-    FollowUpSubQuestionsUpdate,
-    FollowUpDecompAnswersUpdate,
+    RequireRefinementUpdate,
+    RefinedQuestionDecompositionUpdate,
     RefinedAnswerUpdate,
     RefinedAgentStartStats,
     RefinedAgentEndStats,
-    RoutingDecision,
-    AnswerComparison,
+    RoutingDecisionUpdate,
+    InitialVRefinedAnswerComparisonUpdate,
     ExploratorySearchUpdate,
 ):
     # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]

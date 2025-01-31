@@ -53,7 +53,7 @@ def retrieve_documents(
         logger.warning("Empty query, skipping retrieval")
 
         return DocRetrievalUpdate(
-            expanded_retrieval_results=[],
+            query_retrieval_results=[],
             retrieved_documents=[],
             log_messages=[
                 get_langgraph_node_log_string(
@@ -109,7 +109,7 @@ def retrieve_documents(
     )
 
     return DocRetrievalUpdate(
-        expanded_retrieval_results=[expanded_retrieval_result],
+        query_retrieval_results=[expanded_retrieval_result],
         retrieved_documents=retrieved_docs,
         log_messages=[
             get_langgraph_node_log_string(

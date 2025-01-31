@@ -39,7 +39,7 @@ class DocVerificationUpdate(BaseModel):
 
 
 class DocRetrievalUpdate(LoggerUpdate, BaseModel):
-    expanded_retrieval_results: Annotated[list[QueryResult], add] = []
+    query_retrieval_results: Annotated[list[QueryResult], add] = []
     retrieved_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ] = []

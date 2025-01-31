@@ -19,7 +19,7 @@ def parallelize_initial_sub_question_answering(
     state: SearchSQState,
 ) -> list[Send | Hashable]:
     edge_start_time = datetime.now()
-    if len(state.initial_decomp_questions) > 0:
+    if len(state.initial_sub_questions) > 0:
         # sub_question_record_ids = [subq_record.id for subq_record in state["sub_question_records"]]
         # if len(state["sub_question_records"]) == 0:
         #     if state["config"].use_persistence:
@@ -41,7 +41,7 @@ def parallelize_initial_sub_question_answering(
                     ],
                 ),
             )
-            for question_nr, question in enumerate(state.initial_decomp_questions)
+            for question_nr, question in enumerate(state.initial_sub_questions)
         ]
 
     else:

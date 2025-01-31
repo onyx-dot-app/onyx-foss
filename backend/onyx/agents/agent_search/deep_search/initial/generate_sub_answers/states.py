@@ -1,12 +1,14 @@
 from typing import TypedDict
 
 from onyx.agents.agent_search.core_state import CoreState
-from onyx.agents.agent_search.deep_search.main.states import BaseDecompUpdate
-from onyx.agents.agent_search.deep_search.main.states import (
-    DecompAnswersUpdate,
-)
 from onyx.agents.agent_search.deep_search.main.states import (
     InitialAnswerUpdate,
+)
+from onyx.agents.agent_search.deep_search.main.states import (
+    InitialQuestionDecompositionUpdate,
+)
+from onyx.agents.agent_search.deep_search.main.states import (
+    SubQuestionResultsUpdate,
 )
 
 ### States ###
@@ -22,9 +24,9 @@ class SQInput(CoreState):
 class SQState(
     # This includes the core state
     SQInput,
-    BaseDecompUpdate,
+    InitialQuestionDecompositionUpdate,
     InitialAnswerUpdate,
-    DecompAnswersUpdate,
+    SubQuestionResultsUpdate,
 ):
     # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
     pass

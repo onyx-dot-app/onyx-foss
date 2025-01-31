@@ -14,7 +14,7 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
 )
 from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
-    RequireRefinedAnswerUpdate,
+    RequireRefinementUpdate,
 )
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
@@ -44,7 +44,7 @@ def parallelize_initial_sub_question_answering(
     state: MainState,
 ) -> list[Send | Hashable]:
     edge_start_time = datetime.now()
-    if len(state.initial_decomp_questions) > 0:
+    if len(state.initial_sub_questions) > 0:
         # sub_question_record_ids = [subq_record.id for subq_record in state["sub_question_records"]]
         # if len(state["sub_question_records"]) == 0:
         #     if state["config"].use_persistence:
@@ -66,7 +66,7 @@ def parallelize_initial_sub_question_answering(
                     ],
                 ),
             )
-            for question_nr, question in enumerate(state.initial_decomp_questions)
+            for question_nr, question in enumerate(state.initial_sub_questions)
         ]
 
     else:
@@ -82,7 +82,7 @@ def parallelize_initial_sub_question_answering(
 
 # Define the function that determines whether to continue or not
 def continue_to_refined_answer_or_end(
-    state: RequireRefinedAnswerUpdate,
+    state: RequireRefinementUpdate,
 ) -> Literal["create_refined_sub_questions", "logging_node"]:
     if state.require_refined_answer_eval:
         return "create_refined_sub_questions"

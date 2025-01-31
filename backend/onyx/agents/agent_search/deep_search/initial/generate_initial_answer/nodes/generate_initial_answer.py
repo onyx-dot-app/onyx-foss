@@ -68,11 +68,13 @@ def generate_initial_answer(
     prompt_enrichment_components = get_prompt_enrichment_components(agent_search_config)
 
     sub_questions_cited_documents = state.cited_documents
-    all_original_question_documents = state.all_original_question_documents
+    orig_question_retrieval_documents = state.orig_question_retrieval_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_documents
     counter = 0
-    for original_doc_number, original_doc in enumerate(all_original_question_documents):
+    for original_doc_number, original_doc in enumerate(
+        orig_question_retrieval_documents
+    ):
         if original_doc_number not in sub_questions_cited_documents:
             if (
                 counter <= AGENT_MIN_ORIG_QUESTION_DOCS
@@ -89,7 +91,7 @@ def generate_initial_answer(
     decomp_questions = []
 
     # Use the query info from the base document retrieval
-    query_info = get_query_info(state.original_question_retrieval_results)
+    query_info = get_query_info(state.orig_question_query_retrieval_results)
 
     if agent_search_config.search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
@@ -229,7 +231,7 @@ def generate_initial_answer(
         answer = cast(str, response)
 
         initial_agent_stats = calculate_initial_agent_stats(
-            state.sub_question_results, state.original_question_retrieval_stats
+            state.sub_question_results, state.orig_question_retrieval_stats
         )
 
         logger.debug(
@@ -250,8 +252,8 @@ def generate_initial_answer(
 
     agent_base_metrics = AgentBaseMetrics(
         num_verified_documents_total=len(relevant_docs),
-        num_verified_documents_core=state.original_question_retrieval_stats.verified_count,
-        verified_avg_score_core=state.original_question_retrieval_stats.verified_avg_scores,
+        num_verified_documents_core=state.orig_question_retrieval_stats.verified_count,
+        verified_avg_score_core=state.orig_question_retrieval_stats.verified_avg_scores,
         num_verified_documents_base=initial_agent_stats.sub_questions.get(
             "num_verified_documents"
         ),

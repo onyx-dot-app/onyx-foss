@@ -15,7 +15,9 @@ from onyx.agents.agent_search.deep_search.main.models import (
 from onyx.agents.agent_search.deep_search.main.operations import (
     dispatch_subquestion,
 )
-from onyx.agents.agent_search.deep_search.main.states import BaseDecompUpdate
+from onyx.agents.agent_search.deep_search.main.states import (
+    InitialQuestionDecompositionUpdate,
+)
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
@@ -39,7 +41,7 @@ from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
 def decompose_orig_question(
     state: SearchSQState, config: RunnableConfig, writer: StreamWriter = lambda _: None
-) -> BaseDecompUpdate:
+) -> InitialQuestionDecompositionUpdate:
     node_start_time = datetime.now()
 
     agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
@@ -123,8 +125,8 @@ def decompose_orig_question(
 
     decomp_list: list[str] = [sq.strip() for sq in list_of_subqs if sq.strip() != ""]
 
-    return BaseDecompUpdate(
-        initial_decomp_questions=decomp_list,
+    return InitialQuestionDecompositionUpdate(
+        initial_sub_questions=decomp_list,
         agent_start_time=agent_start_time,
         agent_refined_start_time=None,
         agent_refined_end_time=None,

@@ -1,4 +1,4 @@
-from onyx.agents.agent_search.deep_search.main.states import ExpandedRetrievalUpdate
+from onyx.agents.agent_search.deep_search.main.states import OrigQuestionRetrievalUpdate
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     ExpandedRetrievalOutput,
 )
@@ -10,7 +10,7 @@ logger = setup_logger()
 
 def format_orig_question_search_output(
     state: ExpandedRetrievalOutput,
-) -> ExpandedRetrievalUpdate:
+) -> OrigQuestionRetrievalUpdate:
     # return BaseRawSearchOutput(
     #     base_expanded_retrieval_result=state.expanded_retrieval_result,
     #     # base_retrieval_results=[state.expanded_retrieval_result],
@@ -25,9 +25,9 @@ def format_orig_question_search_output(
     else:
         sub_question_retrieval_stats = sub_question_retrieval_stats
 
-    return ExpandedRetrievalUpdate(
-        original_question_retrieval_results=state.expanded_retrieval_result.expanded_queries_results,
-        all_original_question_documents=state.expanded_retrieval_result.context_documents,
-        original_question_retrieval_stats=sub_question_retrieval_stats,
+    return OrigQuestionRetrievalUpdate(
+        orig_question_query_retrieval_results=state.expanded_retrieval_result.expanded_queries_results,
+        orig_question_retrieval_documents=state.expanded_retrieval_result.context_documents,
+        orig_question_retrieval_stats=sub_question_retrieval_stats,
         log_messages=[],
     )

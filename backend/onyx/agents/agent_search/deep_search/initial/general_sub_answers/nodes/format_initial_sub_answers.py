@@ -5,7 +5,7 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
 )
 from onyx.agents.agent_search.deep_search.main.operations import logger
 from onyx.agents.agent_search.deep_search.main.states import (
-    DecompAnswersUpdate,
+    SubQuestionResultsUpdate,
 )
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
@@ -14,7 +14,7 @@ from onyx.agents.agent_search.shared_graph_utils.operators import (
 
 def format_initial_sub_answers(
     state: AnswerQuestionOutput,
-) -> DecompAnswersUpdate:
+) -> SubQuestionResultsUpdate:
     now_start = datetime.now()
 
     logger.info(f"--------{now_start}--------INGEST ANSWERS---")
@@ -32,7 +32,7 @@ def format_initial_sub_answers(
         f"--------{now_end}--{now_end - now_start}--------INGEST ANSWERS END---"
     )
 
-    return DecompAnswersUpdate(
+    return SubQuestionResultsUpdate(
         # Deduping is done by the documents operator for the main graph
         # so we might not need to dedup here
         verified_reranked_documents=dedup_inference_sections(documents, []),
