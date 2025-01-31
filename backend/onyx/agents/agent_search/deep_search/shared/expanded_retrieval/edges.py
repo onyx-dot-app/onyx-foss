@@ -10,15 +10,15 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     RetrievalInput,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 
 
 def parallel_retrieval_edge(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> list[Send | Hashable]:
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
     question = (
-        state.question if state.question else agent_search_config.search_request.query
+        state.question if state.question else graph_config.inputs.search_request.query
     )
 
     query_expansions = state.expanded_queries + [question]

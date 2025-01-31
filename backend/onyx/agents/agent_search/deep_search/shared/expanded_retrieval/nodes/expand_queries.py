@@ -15,7 +15,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     QueryExpansionUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     REWRITE_PROMPT_MULTI_ORIGINAL,
 )
@@ -34,20 +34,16 @@ def expand_queries(
     # Sometimes we want to expand the original question, sometimes we want to expand a sub-question.
     # When we are running this node on the original question, no question is explictly passed in.
     # Instead, we use the original question from the search request.
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
     node_start_time = datetime.now()
     question = state.question
 
-    llm = agent_search_config.fast_llm
-    chat_session_id = agent_search_config.chat_session_id
+    llm = graph_config.tooling.fast_llm
     sub_question_id = state.sub_question_id
     if sub_question_id is None:
         level, question_nr = 0, 0
     else:
         level, question_nr = parse_question_id(sub_question_id)
-
-    if chat_session_id is None:
-        raise ValueError("chat_session_id must be provided for agent search")
 
     msg = [
         HumanMessage(

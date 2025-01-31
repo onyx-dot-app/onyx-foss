@@ -7,7 +7,7 @@ from langgraph.types import StreamWriter
 from onyx.agents.agent_search.basic.states import BasicOutput
 from onyx.agents.agent_search.basic.states import BasicState
 from onyx.agents.agent_search.basic.utils import process_llm_stream
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.chat.models import LlmDoc
 from onyx.tools.tool_implementations.search.search_tool import (
     SEARCH_DOC_CONTENT_ID,
@@ -23,14 +23,14 @@ logger = setup_logger()
 def basic_use_tool_response(
     state: BasicState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> BasicOutput:
-    agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    structured_response_format = agent_config.structured_response_format
-    llm = agent_config.primary_llm
+    agent_config = cast(GraphConfig, config["metadata"]["config"])
+    structured_response_format = agent_config.inputs.structured_response_format
+    llm = agent_config.tooling.primary_llm
     tool_choice = state.tool_choice
     if tool_choice is None:
         raise ValueError("Tool choice is None")
     tool = tool_choice.tool
-    prompt_builder = agent_config.prompt_builder
+    prompt_builder = agent_config.inputs.prompt_builder
     if state.tool_call_output is None:
         raise ValueError("Tool call output is None")
     tool_call_output = state.tool_call_output
@@ -41,7 +41,7 @@ def basic_use_tool_response(
         prompt_builder=prompt_builder,
         tool_call_summary=tool_call_summary,
         tool_responses=tool_call_responses,
-        using_tool_calling_llm=agent_config.using_tool_calling_llm,
+        using_tool_calling_llm=agent_config.tooling.using_tool_calling_llm,
     )
 
     final_search_results = []
@@ -58,7 +58,7 @@ def basic_use_tool_response(
             initial_search_results = cast(list[LlmDoc], initial_search_results)
 
     new_tool_call_chunk = AIMessageChunk(content="")
-    if not agent_config.skip_gen_ai_answer_generation:
+    if not agent_config.behavior.skip_gen_ai_answer_generation:
         stream = llm.stream(
             prompt=new_prompt_builder.build(),
             structured_response_format=structured_response_format,

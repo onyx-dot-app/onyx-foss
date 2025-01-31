@@ -10,7 +10,7 @@ from onyx.agents.agent_search.deep_search.main.models import AgentTimings
 from onyx.agents.agent_search.deep_search.main.operations import logger
 from onyx.agents.agent_search.deep_search.main.states import MainOutput
 from onyx.agents.agent_search.deep_search.main.states import MainState
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.models import CombinedAgentMetrics
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
@@ -59,21 +59,23 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
     )
 
     persona_id = None
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    if agent_search_config.search_request.persona:
-        persona_id = agent_search_config.search_request.persona.id
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    if graph_config.inputs.search_request.persona:
+        persona_id = graph_config.inputs.search_request.persona.id
 
     user_id = None
-    if agent_search_config.search_tool is not None:
-        user = agent_search_config.search_tool.user
-        if user:
-            user_id = user.id
+    assert (
+        graph_config.tooling.search_tool
+    ), "search_tool must be provided for agentic search"
+    user = graph_config.tooling.search_tool.user
+    if user:
+        user_id = user.id
 
     # log the agent metrics
-    if agent_search_config.db_session is not None:
+    if graph_config.persistence:
         if agent_base_duration is not None:
             log_agent_metrics(
-                db_session=agent_search_config.db_session,
+                db_session=graph_config.persistence.db_session,
                 user_id=user_id,
                 persona_id=persona_id,
                 agent_type=agent_type,
@@ -81,19 +83,18 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
                 agent_metrics=combined_agent_metrics,
             )
 
-        if agent_search_config.use_agentic_persistence:
-            # Persist the sub-answer in the database
-            db_session = agent_search_config.db_session
-            chat_session_id = agent_search_config.chat_session_id
-            primary_message_id = agent_search_config.message_id
-            sub_question_answer_results = state.sub_question_results
+        # Persist the sub-answer in the database
+        db_session = graph_config.persistence.db_session
+        chat_session_id = graph_config.persistence.chat_session_id
+        primary_message_id = graph_config.persistence.message_id
+        sub_question_answer_results = state.sub_question_results
 
-            log_agent_sub_question_results(
-                db_session=db_session,
-                chat_session_id=chat_session_id,
-                primary_message_id=primary_message_id,
-                sub_question_answer_results=sub_question_answer_results,
-            )
+        log_agent_sub_question_results(
+            db_session=db_session,
+            chat_session_id=chat_session_id,
+            primary_message_id=primary_message_id,
+            sub_question_answer_results=sub_question_answer_results,
+        )
 
     main_output = MainOutput(
         log_messages=[

@@ -221,17 +221,17 @@ if __name__ == "__main__":
 
     with get_session_context_manager() as db_session:
         search_request = SearchRequest(query="Who created Excel?")
-        agent_search_config, search_tool = get_test_config(
+        graph_config = get_test_config(
             db_session, primary_llm, fast_llm, search_request
         )
 
         inputs = MainInput(
-            base_question=agent_search_config.search_request.query, log_messages=[]
+            base_question=graph_config.inputs.search_request.query, log_messages=[]
         )
 
         for thing in compiled_graph.stream(
             input=inputs,
-            config={"configurable": {"config": agent_search_config}},
+            config={"configurable": {"config": graph_config}},
             # stream_mode="debug",
             # debug=True,
             subgraphs=True,

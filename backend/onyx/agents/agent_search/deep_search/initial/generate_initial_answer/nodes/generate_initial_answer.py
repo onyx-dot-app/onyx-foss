@@ -19,7 +19,7 @@ from onyx.agents.agent_search.deep_search.main.operations import logger
 from onyx.agents.agent_search.deep_search.main.states import (
     InitialAnswerUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     get_prompt_enrichment_components,
 )
@@ -63,9 +63,9 @@ def generate_initial_answer(
 ) -> InitialAnswerUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    question = agent_search_config.search_request.query
-    prompt_enrichment_components = get_prompt_enrichment_components(agent_search_config)
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    question = graph_config.inputs.search_request.query
+    prompt_enrichment_components = get_prompt_enrichment_components(graph_config)
 
     sub_questions_cited_documents = state.cited_documents
     orig_question_retrieval_documents = state.orig_question_retrieval_documents
@@ -93,8 +93,9 @@ def generate_initial_answer(
     # Use the query info from the base document retrieval
     query_info = get_query_info(state.orig_question_query_retrieval_results)
 
-    if agent_search_config.search_tool is None:
-        raise ValueError("search_tool must be provided for agentic search")
+    assert (
+        graph_config.tooling.search_tool
+    ), "search_tool must be provided for agentic search"
 
     relevance_list = relevance_from_docs(relevant_docs)
     for tool_response in yield_search_responses(
@@ -103,7 +104,7 @@ def generate_initial_answer(
         final_context_sections=relevant_docs,
         search_query_info=query_info,
         get_section_relevance=lambda: relevance_list,
-        search_tool=agent_search_config.search_tool,
+        search_tool=graph_config.tooling.search_tool,
     ):
         write_custom_event(
             "tool_response",
@@ -167,7 +168,7 @@ def generate_initial_answer(
             sub_question_answer_str = ""
             base_prompt = INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS
 
-        model = agent_search_config.fast_llm
+        model = graph_config.tooling.fast_llm
 
         doc_context = format_docs(relevant_docs)
         doc_context = trim_prompt_piece(

@@ -109,7 +109,7 @@ if __name__ == "__main__":
         query="what can you do with onyx or danswer?",
     )
     with get_session_context_manager() as db_session:
-        agent_search_config, search_tool = get_test_config(
+        graph_config, search_tool = get_test_config(
             db_session, primary_llm, fast_llm, search_request
         )
         inputs = AnswerQuestionInput(
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         )
         for thing in compiled_graph.stream(
             input=inputs,
-            config={"configurable": {"config": agent_search_config}},
+            config={"configurable": {"config": graph_config}},
             # debug=True,
             # subgraphs=True,
         ):

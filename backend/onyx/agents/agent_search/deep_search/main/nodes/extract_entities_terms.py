@@ -11,7 +11,7 @@ from onyx.agents.agent_search.deep_search.main.states import (
     EntityTermExtractionUpdate,
 )
 from onyx.agents.agent_search.deep_search.main.states import MainState
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
 )
@@ -33,8 +33,8 @@ def extract_entities_terms(
 ) -> EntityTermExtractionUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    if not agent_search_config.allow_refinement:
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    if not graph_config.behavior.allow_refinement:
         return EntityTermExtractionUpdate(
             entity_relation_term_extractions=EntityRelationshipTermExtraction(
                 entities=[],
@@ -52,21 +52,21 @@ def extract_entities_terms(
         )
 
     # first four lines duplicates from generate_initial_answer
-    question = agent_search_config.search_request.query
+    question = graph_config.inputs.search_request.query
     initial_search_docs = state.exploratory_search_results[:15]
 
     # start with the entity/term/extraction
     doc_context = format_docs(initial_search_docs)
 
     doc_context = trim_prompt_piece(
-        agent_search_config.fast_llm.config, doc_context, ENTITY_TERM_PROMPT + question
+        graph_config.tooling.fast_llm.config, doc_context, ENTITY_TERM_PROMPT + question
     )
     msg = [
         HumanMessage(
             content=ENTITY_TERM_PROMPT.format(question=question, context=doc_context),
         )
     ]
-    fast_llm = agent_search_config.fast_llm
+    fast_llm = graph_config.tooling.fast_llm
     # Grader
     llm_response = fast_llm.invoke(
         prompt=msg,

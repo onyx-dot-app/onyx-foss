@@ -12,7 +12,7 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
     QAGenerationUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_sub_question_answer_prompt,
 )
@@ -42,13 +42,13 @@ def generate_sub_answer(
 ) -> QAGenerationUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
     question = state.question
     state.verified_reranked_documents
     level, question_nr = parse_question_id(state.question_id)
     context_docs = state.context_documents[:AGENT_MAX_ANSWER_CONTEXT_DOCS]
     persona_contextualized_prompt = get_persona_agent_prompt_expressions(
-        agent_search_config.search_request.persona
+        graph_config.inputs.search_request.persona
     ).contextualized_prompt
 
     if len(context_docs) == 0:
@@ -64,10 +64,10 @@ def generate_sub_answer(
             writer,
         )
     else:
-        fast_llm = agent_search_config.fast_llm
+        fast_llm = graph_config.tooling.fast_llm
         msg = build_sub_question_answer_prompt(
             question=question,
-            original_question=agent_search_config.search_request.query,
+            original_question=graph_config.inputs.search_request.query,
             docs=context_docs,
             persona_specification=persona_contextualized_prompt,
             config=fast_llm.config,

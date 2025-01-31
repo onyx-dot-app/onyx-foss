@@ -1,5 +1,3 @@
-import asyncio
-from collections.abc import AsyncIterable
 from collections.abc import Iterable
 from datetime import datetime
 from typing import cast
@@ -16,7 +14,7 @@ from onyx.agents.agent_search.deep_search.main.graph_builder import (
 from onyx.agents.agent_search.deep_search.main.states import (
     MainInput as MainInput_a,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import get_test_config
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import AnswerPacket
@@ -37,14 +35,6 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 _COMPILED_GRAPH: CompiledStateGraph | None = None
-
-
-def _set_combined_token_value(
-    combined_token: str, parsed_object: AgentAnswerPiece
-) -> AgentAnswerPiece:
-    parsed_object.answer_piece = combined_token
-
-    return parsed_object
 
 
 def _parse_agent_event(
@@ -84,63 +74,12 @@ def _parse_agent_event(
     return None
 
 
-# https://stackoverflow.com/questions/60226557/how-to-forcefully-close-an-async-generator
-# https://stackoverflow.com/questions/40897428/please-explain-task-was-destroyed-but-it-is-pending-after-cancelling-tasks
-task_references: set[asyncio.Task[StreamEvent]] = set()
-
-
-def _manage_async_event_streaming(
-    compiled_graph: CompiledStateGraph,
-    config: AgentSearchConfig | None,
-    graph_input: MainInput_a | BasicInput,
-) -> Iterable[StreamEvent]:
-    async def _run_async_event_stream() -> AsyncIterable[StreamEvent]:
-        message_id = config.message_id if config else None
-        async for event in compiled_graph.astream_events(
-            input=graph_input,
-            config={"metadata": {"config": config, "thread_id": str(message_id)}},
-            # debug=True,
-            # indicating v2 here deserves further scrutiny
-            version="v2",
-        ):
-            yield event
-
-    # This might be able to be simplified
-    def _yield_async_to_sync() -> Iterable[StreamEvent]:
-        loop = asyncio.new_event_loop()
-        try:
-            # Get the async generator
-            async_gen = _run_async_event_stream()
-            # Convert to AsyncIterator
-            async_iter = async_gen.__aiter__()
-            while True:
-                try:
-                    # Create a coroutine by calling anext with the async iterator
-                    next_coro = anext(async_iter)
-                    task = asyncio.ensure_future(next_coro, loop=loop)
-                    task_references.add(task)
-                    # Run the coroutine to get the next event
-                    event = loop.run_until_complete(task)
-                    yield event
-                except (StopAsyncIteration, GeneratorExit):
-                    break
-        finally:
-            try:
-                for task in task_references.pop():
-                    task.cancel()
-            except StopAsyncIteration:
-                pass
-            loop.close()
-
-    return _yield_async_to_sync()
-
-
 def manage_sync_streaming(
     compiled_graph: CompiledStateGraph,
-    config: AgentSearchConfig,
+    config: GraphConfig,
     graph_input: BasicInput | MainInput_a,
 ) -> Iterable[StreamEvent]:
-    message_id = config.message_id if config else None
+    message_id = config.persistence.message_id if config.persistence else None
     for event in compiled_graph.stream(
         stream_mode="custom",
         input=graph_input,
@@ -151,11 +90,13 @@ def manage_sync_streaming(
 
 def run_graph(
     compiled_graph: CompiledStateGraph,
-    config: AgentSearchConfig,
+    config: GraphConfig,
     input: BasicInput | MainInput_a,
 ) -> AnswerStream:
-    config.perform_initial_search_decomposition = INITIAL_SEARCH_DECOMPOSITION_ENABLED
-    config.allow_refinement = ALLOW_REFINEMENT
+    config.behavior.perform_initial_search_decomposition = (
+        INITIAL_SEARCH_DECOMPOSITION_ENABLED
+    )
+    config.behavior.allow_refinement = ALLOW_REFINEMENT
 
     for event in manage_sync_streaming(
         compiled_graph=compiled_graph, config=config, graph_input=input
@@ -177,21 +118,24 @@ def load_compiled_graph() -> CompiledStateGraph:
 
 
 def run_main_graph(
-    config: AgentSearchConfig,
+    config: GraphConfig,
 ) -> AnswerStream:
     compiled_graph = load_compiled_graph()
-    input = MainInput_a(base_question=config.search_request.query, log_messages=[])
+
+    input = MainInput_a(
+        base_question=config.inputs.search_request.query, log_messages=[]
+    )
 
     # Agent search is not a Tool per se, but this is helpful for the frontend
     yield ToolCallKickoff(
         tool_name="agent_search_0",
-        tool_args={"query": config.search_request.query},
+        tool_args={"query": config.inputs.search_request.query},
     )
     yield from run_graph(compiled_graph, config, input)
 
 
 def run_basic_graph(
-    config: AgentSearchConfig,
+    config: GraphConfig,
 ) -> AnswerStream:
     graph = basic_graph_builder()
     compiled_graph = graph.compile()
@@ -222,15 +166,16 @@ if __name__ == "__main__":
         # Joachim custom persona
 
         with get_session_context_manager() as db_session:
-            config, search_tool = get_test_config(
-                db_session, primary_llm, fast_llm, search_request
-            )
+            config = get_test_config(db_session, primary_llm, fast_llm, search_request)
+            assert (
+                config.persistence is not None
+            ), "set a chat session id to run this test"
+
             # search_request.persona = get_persona_by_id(1, None, db_session)
-            config.use_agentic_persistence = True
             # config.perform_initial_search_path_decision = False
-            config.perform_initial_search_decomposition = True
+            config.behavior.perform_initial_search_decomposition = True
             input = MainInput_a(
-                base_question=config.search_request.query, log_messages=[]
+                base_question=config.inputs.search_request.query, log_messages=[]
             )
 
             # with open("output.txt", "w") as f:

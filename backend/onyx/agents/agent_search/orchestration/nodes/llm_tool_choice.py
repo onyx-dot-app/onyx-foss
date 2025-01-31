@@ -6,7 +6,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.basic.utils import process_llm_stream
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.orchestration.states import ToolChoice
 from onyx.agents.agent_search.orchestration.states import ToolChoiceState
 from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
@@ -36,16 +36,18 @@ def llm_tool_choice(
     """
     should_stream_answer = state.should_stream_answer
 
-    agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    using_tool_calling_llm = agent_config.using_tool_calling_llm
-    prompt_builder = state.prompt_snapshot or agent_config.prompt_builder
+    agent_config = cast(GraphConfig, config["metadata"]["config"])
+    using_tool_calling_llm = agent_config.tooling.using_tool_calling_llm
+    prompt_builder = state.prompt_snapshot or agent_config.inputs.prompt_builder
 
-    llm = agent_config.primary_llm
-    skip_gen_ai_answer_generation = agent_config.skip_gen_ai_answer_generation
+    llm = agent_config.tooling.primary_llm
+    skip_gen_ai_answer_generation = agent_config.behavior.skip_gen_ai_answer_generation
 
-    structured_response_format = agent_config.structured_response_format
-    tools = [tool for tool in (agent_config.tools or []) if tool.name in state.tools]
-    force_use_tool = agent_config.force_use_tool
+    structured_response_format = agent_config.inputs.structured_response_format
+    tools = [
+        tool for tool in (agent_config.tooling.tools or []) if tool.name in state.tools
+    ]
+    force_use_tool = agent_config.tooling.force_use_tool
 
     tool, tool_args = None, None
     if force_use_tool.force_use and force_use_tool.args is not None:
@@ -103,7 +105,8 @@ def llm_tool_choice(
 
     tool_message = process_llm_stream(
         stream,
-        should_stream_answer and not agent_config.skip_gen_ai_answer_generation,
+        should_stream_answer
+        and not agent_config.behavior.skip_gen_ai_answer_generation,
         writer,
     )
 

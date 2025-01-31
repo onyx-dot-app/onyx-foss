@@ -1,5 +1,6 @@
 import ast
 import json
+import os
 import re
 from collections.abc import Callable
 from collections.abc import Iterator
@@ -17,7 +18,11 @@ from langchain_core.messages import HumanMessage
 from langgraph.types import StreamWriter
 from sqlalchemy.orm import Session
 
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
+from onyx.agents.agent_search.models import GraphInputs
+from onyx.agents.agent_search.models import GraphPersistence
+from onyx.agents.agent_search.models import GraphSearchConfig
+from onyx.agents.agent_search.models import GraphTooling
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
@@ -60,6 +65,7 @@ from onyx.tools.tool_implementations.search.search_tool import (
 )
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
+from onyx.tools.utils import explicit_tool_calling_supported
 
 BaseMessage_Content = str | list[str | dict[str, Any]]
 
@@ -166,7 +172,7 @@ def get_test_config(
     fast_llm: LLM,
     search_request: SearchRequest,
     use_agentic_search: bool = True,
-) -> tuple[AgentSearchConfig, SearchTool]:
+) -> GraphConfig:
     persona = get_persona_by_id(DEFAULT_PERSONA_ID, None, db_session)
     document_pruning_config = DocumentPruningConfig(
         max_chunks=int(
@@ -221,12 +227,8 @@ def get_test_config(
         bypass_acl=search_tool_config.bypass_acl,
     )
 
-    config = AgentSearchConfig(
+    graph_inputs = GraphInputs(
         search_request=search_request,
-        primary_llm=primary_llm,
-        fast_llm=fast_llm,
-        search_tool=search_tool,
-        force_use_tool=ForceUseTool(force_use=False, tool_name=""),
         prompt_builder=AnswerPromptBuilder(
             user_message=HumanMessage(content=search_request.query),
             message_history=[],
@@ -234,17 +236,42 @@ def get_test_config(
             raw_user_query=search_request.query,
             raw_user_uploaded_files=[],
         ),
-        # chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
-        chat_session_id=UUID("edda10d5-6cef-45d8-acfb-39317552a1f4"),  # Joachim
-        # chat_session_id=UUID("d1acd613-2692-4bc3-9d65-c6d3da62e58e"),  # Evan
-        message_id=1,
-        use_agentic_persistence=True,
-        db_session=db_session,
-        tools=[search_tool],
-        use_agentic_search=use_agentic_search,
+        structured_response_format=answer_style_config.structured_response_format,
     )
 
-    return config, search_tool
+    using_tool_calling_llm = explicit_tool_calling_supported(
+        primary_llm.config.model_provider, primary_llm.config.model_name
+    )
+    graph_tooling = GraphTooling(
+        primary_llm=primary_llm,
+        fast_llm=fast_llm,
+        search_tool=search_tool,
+        tools=[search_tool],
+        force_use_tool=ForceUseTool(force_use=False, tool_name=""),
+        using_tool_calling_llm=using_tool_calling_llm,
+    )
+
+    graph_persistence = None
+    if chat_session_id := os.environ.get("ONYX_AS_CHAT_SESSION_ID"):
+        graph_persistence = GraphPersistence(
+            db_session=db_session,
+            chat_session_id=UUID(chat_session_id),
+            message_id=1,
+        )
+
+    search_behavior_config = GraphSearchConfig(
+        use_agentic_search=use_agentic_search,
+        skip_gen_ai_answer_generation=False,
+        allow_refinement=True,
+    )
+    graph_config = GraphConfig(
+        inputs=graph_inputs,
+        tooling=graph_tooling,
+        persistence=graph_persistence,
+        behavior=search_behavior_config,
+    )
+
+    return graph_config
 
 
 def get_persona_agent_prompt_expressions(persona: Persona | None) -> PersonaExpressions:

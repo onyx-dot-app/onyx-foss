@@ -12,7 +12,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     ExpandedRetrievalState,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
 from onyx.agents.agent_search.shared_graph_utils.models import RetrievalFitStats
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -36,12 +36,13 @@ def rerank_documents(
     # Rerank post retrieval and verification. First, create a search query
     # then create the list of reranked sections
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
     question = (
-        state.question if state.question else agent_search_config.search_request.query
+        state.question if state.question else graph_config.inputs.search_request.query
     )
-    if agent_search_config.search_tool is None:
-        raise ValueError("search_tool must be provided for agentic search")
+    assert (
+        graph_config.tooling.search_tool
+    ), "search_tool must be provided for agentic search"
     with get_session_context_manager() as db_session:
         # we ignore some of the user specified fields since this search is
         # internal to agentic search, but we still want to pass through
@@ -49,13 +50,13 @@ def rerank_documents(
         # (to not make an unnecessary db call).
         search_request = SearchRequest(
             query=question,
-            persona=agent_search_config.search_request.persona,
-            rerank_settings=agent_search_config.search_request.rerank_settings,
+            persona=graph_config.inputs.search_request.persona,
+            rerank_settings=graph_config.inputs.search_request.rerank_settings,
         )
         _search_query = retrieval_preprocessing(
             search_request=search_request,
-            user=agent_search_config.search_tool.user,  # bit of a hack
-            llm=agent_search_config.fast_llm,
+            user=graph_config.tooling.search_tool.user,  # bit of a hack
+            llm=graph_config.tooling.fast_llm,
             db_session=db_session,
         )
 

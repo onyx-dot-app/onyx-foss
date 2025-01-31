@@ -70,13 +70,13 @@ def answer_instance(
 
 
 def test_basic_answer(answer_instance: Answer) -> None:
-    mock_llm = cast(Mock, answer_instance.agent_search_config.primary_llm)
+    mock_llm = cast(Mock, answer_instance.graph_config.tooling.primary_llm)
     mock_llm.stream.return_value = [
         AIMessageChunk(content="This is a "),
         AIMessageChunk(content="mock answer."),
     ]
-    answer_instance.agent_search_config.fast_llm = mock_llm
-    answer_instance.agent_search_config.primary_llm = mock_llm
+    answer_instance.graph_config.tooling.fast_llm = mock_llm
+    answer_instance.graph_config.tooling.primary_llm = mock_llm
 
     output = list(answer_instance.processed_streamed_output)
     assert len(output) == 2
@@ -128,11 +128,11 @@ def test_answer_with_search_call(
     force_use_tool: ForceUseTool,
     expected_tool_args: dict,
 ) -> None:
-    answer_instance.agent_search_config.tools = [mock_search_tool]
-    answer_instance.agent_search_config.force_use_tool = force_use_tool
+    answer_instance.graph_config.tooling.tools = [mock_search_tool]
+    answer_instance.graph_config.tooling.force_use_tool = force_use_tool
 
     # Set up the LLM mock to return search results and then an answer
-    mock_llm = cast(Mock, answer_instance.agent_search_config.primary_llm)
+    mock_llm = cast(Mock, answer_instance.graph_config.tooling.primary_llm)
 
     stream_side_effect: list[list[BaseMessage]] = []
 
@@ -253,10 +253,10 @@ def test_answer_with_search_no_tool_calling(
     mock_contexts: OnyxContexts,
     mock_search_tool: MagicMock,
 ) -> None:
-    answer_instance.agent_search_config.tools = [mock_search_tool]
+    answer_instance.graph_config.tooling.tools = [mock_search_tool]
 
     # Set up the LLM mock to return an answer
-    mock_llm = cast(Mock, answer_instance.agent_search_config.primary_llm)
+    mock_llm = cast(Mock, answer_instance.graph_config.tooling.primary_llm)
     mock_llm.stream.return_value = [
         AIMessageChunk(content="Based on the search results, "),
         AIMessageChunk(content="the answer is abc[1]. "),
@@ -264,7 +264,7 @@ def test_answer_with_search_no_tool_calling(
     ]
 
     # Force non-tool calling behavior
-    answer_instance.agent_search_config.using_tool_calling_llm = False
+    answer_instance.graph_config.tooling.using_tool_calling_llm = False
 
     # Process the output
     output = list(answer_instance.processed_streamed_output)
@@ -319,7 +319,7 @@ def test_answer_with_search_no_tool_calling(
 
     # Verify that get_args_for_non_tool_calling_llm was called on the mock_search_tool
     mock_search_tool.get_args_for_non_tool_calling_llm.assert_called_once_with(
-        QUERY, [], answer_instance.llm
+        QUERY, [], answer_instance.graph_config.tooling.primary_llm
     )
 
     # Verify that the search tool's run method was called
@@ -329,8 +329,8 @@ def test_answer_with_search_no_tool_calling(
 def test_is_cancelled(answer_instance: Answer) -> None:
     # Set up the LLM mock to return multiple chunks
     mock_llm = Mock()
-    answer_instance.agent_search_config.primary_llm = mock_llm
-    answer_instance.agent_search_config.fast_llm = mock_llm
+    answer_instance.graph_config.tooling.primary_llm = mock_llm
+    answer_instance.graph_config.tooling.fast_llm = mock_llm
     mock_llm.stream.return_value = [
         AIMessageChunk(content="This is the "),
         AIMessageChunk(content="first part."),

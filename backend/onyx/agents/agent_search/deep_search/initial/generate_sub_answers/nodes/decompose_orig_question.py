@@ -18,7 +18,7 @@ from onyx.agents.agent_search.deep_search.main.operations import (
 from onyx.agents.agent_search.deep_search.main.states import (
     InitialQuestionDecompositionUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
 )
@@ -44,25 +44,18 @@ def decompose_orig_question(
 ) -> InitialQuestionDecompositionUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    question = agent_search_config.search_request.query
-    chat_session_id = agent_search_config.chat_session_id
-    primary_message_id = agent_search_config.message_id
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    question = graph_config.inputs.search_request.query
     perform_initial_search_decomposition = (
-        agent_search_config.perform_initial_search_decomposition
+        graph_config.behavior.perform_initial_search_decomposition
     )
     # Get the rewritten queries in a defined format
-    model = agent_search_config.fast_llm
+    model = graph_config.tooling.fast_llm
 
-    history = build_history_prompt(agent_search_config, question)
+    history = build_history_prompt(graph_config, question)
 
     # Use the initial search results to inform the decomposition
     sample_doc_str = state.sample_doc_str if hasattr(state, "sample_doc_str") else ""
-
-    if not chat_session_id or not primary_message_id:
-        raise ValueError(
-            "chat_session_id and message_id must be provided for agent search"
-        )
     agent_start_time = datetime.now()
 
     # Initial search to inform decomposition. Just get top 3 fits

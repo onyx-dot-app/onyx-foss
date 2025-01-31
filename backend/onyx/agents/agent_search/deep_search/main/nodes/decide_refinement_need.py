@@ -7,7 +7,7 @@ from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
     RequireRefinementUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
@@ -18,7 +18,7 @@ def decide_refinement_need(
 ) -> RequireRefinementUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
 
     decision = True  # TODO: just for current testing purposes
 
@@ -31,7 +31,7 @@ def decide_refinement_need(
         )
     ]
 
-    if agent_search_config.allow_refinement:
+    if graph_config.behavior.allow_refinement:
         return RequireRefinementUpdate(
             require_refined_answer_eval=decision,
             log_messages=log_messages,

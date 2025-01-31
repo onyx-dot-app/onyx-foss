@@ -16,7 +16,7 @@ from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
     RequireRefinementUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 from onyx.utils.logger import setup_logger
 
@@ -26,12 +26,12 @@ logger = setup_logger()
 def route_initial_tool_choice(
     state: MainState, config: RunnableConfig
 ) -> Literal["tool_call", "start_agent_search", "logging_node"]:
-    agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    agent_config = cast(GraphConfig, config["metadata"]["config"])
     if state.tool_choice is not None:
         if (
-            agent_config.use_agentic_search
-            and agent_config.search_tool is not None
-            and state.tool_choice.tool.name == agent_config.search_tool.name
+            agent_config.behavior.use_agentic_search
+            and agent_config.tooling.search_tool is not None
+            and state.tool_choice.tool.name == agent_config.tooling.search_tool.name
         ):
             return "start_agent_search"
         else:

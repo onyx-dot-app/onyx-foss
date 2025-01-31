@@ -5,7 +5,7 @@ from langchain_core.messages.tool import ToolCall
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.types import StreamWriter
 
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.orchestration.states import ToolCallOutput
 from onyx.agents.agent_search.orchestration.states import ToolCallUpdate
 from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
@@ -31,7 +31,7 @@ def tool_call(
 ) -> ToolCallUpdate:
     """Calls the tool specified in the state and updates the state with the result"""
 
-    cast(AgentSearchConfig, config["metadata"]["config"])
+    cast(GraphConfig, config["metadata"]["config"])
 
     tool_choice = state.tool_choice
     if tool_choice is None:

@@ -11,7 +11,7 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
     QACheckUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import SUB_CHECK_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -47,8 +47,8 @@ def check_sub_answer(
         )
     ]
 
-    agent_searchch_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    fast_llm = agent_searchch_config.fast_llm
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    fast_llm = graph_config.tooling.fast_llm
     response = list(
         fast_llm.stream(
             prompt=msg,

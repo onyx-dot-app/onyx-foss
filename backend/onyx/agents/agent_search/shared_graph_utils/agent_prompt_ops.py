@@ -4,7 +4,7 @@ from langchain.schema import SystemMessage
 from langchain_core.messages.tool import ToolMessage
 
 from onyx.agents.agent_search.models import AgentPromptEnrichmentComponents
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import BASE_RAG_PROMPT_v2
 from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -80,11 +80,11 @@ def trim_prompt_piece(config: LLMConfig, prompt_piece: str, reserved_str: str) -
     )
 
 
-def build_history_prompt(config: AgentSearchConfig, question: str) -> str:
-    prompt_builder = config.prompt_builder
-    model = config.fast_llm
+def build_history_prompt(config: GraphConfig, question: str) -> str:
+    prompt_builder = config.inputs.prompt_builder
+    model = config.tooling.fast_llm
     persona_base = get_persona_agent_prompt_expressions(
-        config.search_request.persona
+        config.inputs.search_request.persona
     ).base_prompt
 
     if prompt_builder is None:
@@ -118,13 +118,13 @@ def build_history_prompt(config: AgentSearchConfig, question: str) -> str:
 
 
 def get_prompt_enrichment_components(
-    config: AgentSearchConfig,
+    config: GraphConfig,
 ) -> AgentPromptEnrichmentComponents:
     persona_prompts = get_persona_agent_prompt_expressions(
-        config.search_request.persona
+        config.inputs.search_request.persona
     )
 
-    history = build_history_prompt(config, config.search_request.query)
+    history = build_history_prompt(config, config.inputs.search_request.query)
 
     date_str = get_today_prompt()
 

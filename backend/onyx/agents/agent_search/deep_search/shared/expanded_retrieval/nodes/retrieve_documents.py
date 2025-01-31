@@ -12,7 +12,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     RetrievalInput,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
 from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -45,8 +45,8 @@ def retrieve_documents(
     """
     node_start_time = datetime.now()
     query_to_retrieve = state.query_to_retrieve
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    search_tool = agent_search_config.search_tool
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    search_tool = graph_config.tooling.search_tool
 
     retrieved_docs: list[InferenceSection] = []
     if not query_to_retrieve.strip():

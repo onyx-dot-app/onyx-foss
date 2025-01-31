@@ -9,7 +9,7 @@ from onyx.agents.agent_search.deep_search.main.states import (
     InitialVRefinedAnswerComparisonUpdate,
 )
 from onyx.agents.agent_search.deep_search.main.states import MainState
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import ANSWER_COMPARISON_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
@@ -23,8 +23,8 @@ def compare_answers(
 ) -> InitialVRefinedAnswerComparisonUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    question = agent_search_config.search_request.query
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    question = graph_config.inputs.search_request.query
     initial_answer = state.initial_answer
     refined_answer = state.refined_answer
 
@@ -35,7 +35,7 @@ def compare_answers(
     msg = [HumanMessage(content=compare_answers_prompt)]
 
     # Get the rewritten queries in a defined format
-    model = agent_search_config.fast_llm
+    model = graph_config.tooling.fast_llm
 
     # no need to stream this
     resp = model.invoke(msg)

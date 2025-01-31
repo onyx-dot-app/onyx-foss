@@ -9,7 +9,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     DocVerificationUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
 )
@@ -34,8 +34,8 @@ def verify_documents(
     retrieved_document_to_verify = state.retrieved_document_to_verify
     document_content = retrieved_document_to_verify.combined_content
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    fast_llm = agent_search_config.fast_llm
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    fast_llm = graph_config.tooling.fast_llm
 
     document_content = trim_prompt_piece(
         fast_llm.config, document_content, VERIFIER_PROMPT + question

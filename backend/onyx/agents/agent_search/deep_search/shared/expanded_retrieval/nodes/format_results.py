@@ -16,7 +16,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     ExpandedRetrievalUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
@@ -33,7 +33,7 @@ def format_results(
     level, question_nr = parse_question_id(state.sub_question_id or "0_0")
     query_info = get_query_info(state.query_retrieval_results)
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
     # main question docs will be sent later after aggregation and deduping with sub-question docs
 
     reranked_documents = state.reranked_documents
@@ -44,8 +44,9 @@ def format_results(
             # the top 3 for that one. We may want to revisit this.
             reranked_documents = state.query_retrieval_results[-1].search_results[:3]
 
-        if agent_search_config.search_tool is None:
-            raise ValueError("search_tool must be provided for agentic search")
+        assert (
+            graph_config.tooling.search_tool
+        ), "search_tool must be provided for agentic search"
 
         relevance_list = relevance_from_docs(reranked_documents)
         for tool_response in yield_search_responses(
@@ -54,7 +55,7 @@ def format_results(
             final_context_sections=reranked_documents,
             search_query_info=query_info,
             get_section_relevance=lambda: relevance_list,
-            search_tool=agent_search_config.search_tool,
+            search_tool=graph_config.tooling.search_tool,
         ):
             write_custom_event(
                 "tool_response",

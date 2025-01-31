@@ -16,7 +16,7 @@ from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
     RefinedAnswerUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     get_prompt_enrichment_components,
 )
@@ -61,9 +61,9 @@ def generate_refined_answer(
 ) -> RefinedAnswerUpdate:
     node_start_time = datetime.now()
 
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    question = agent_search_config.search_request.query
-    prompt_enrichment_components = get_prompt_enrichment_components(agent_search_config)
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
+    question = graph_config.inputs.search_request.query
+    prompt_enrichment_components = get_prompt_enrichment_components(graph_config)
 
     persona_contextualized_prompt = (
         prompt_enrichment_components.persona_prompts.contextualized_prompt
@@ -93,8 +93,9 @@ def generate_refined_answer(
     )
 
     query_info = get_query_info(state.orig_question_query_retrieval_results)
-    if agent_search_config.search_tool is None:
-        raise ValueError("search_tool must be provided for agentic search")
+    assert (
+        graph_config.tooling.search_tool
+    ), "search_tool must be provided for agentic search"
     # stream refined answer docs
     relevance_list = relevance_from_docs(relevant_docs)
     for tool_response in yield_search_responses(
@@ -103,7 +104,7 @@ def generate_refined_answer(
         final_context_sections=relevant_docs,
         search_query_info=query_info,
         get_section_relevance=lambda: relevance_list,
-        search_tool=agent_search_config.search_tool,
+        search_tool=graph_config.tooling.search_tool,
     ):
         write_custom_event(
             "tool_response",
@@ -189,7 +190,7 @@ def generate_refined_answer(
     else:
         base_prompt = REVISED_RAG_PROMPT_NO_SUB_QUESTIONS
 
-    model = agent_search_config.fast_llm
+    model = graph_config.tooling.fast_llm
     relevant_docs_str = format_docs(relevant_docs)
     relevant_docs_str = trim_prompt_piece(
         model.config,

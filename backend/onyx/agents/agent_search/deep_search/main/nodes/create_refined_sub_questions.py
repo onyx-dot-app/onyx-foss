@@ -16,7 +16,7 @@ from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
     RefinedQuestionDecompositionUpdate,
 )
-from onyx.agents.agent_search.models import AgentSearchConfig
+from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
 )
@@ -39,13 +39,13 @@ def create_refined_sub_questions(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> RefinedQuestionDecompositionUpdate:
     """ """
-    agent_search_config = cast(AgentSearchConfig, config["metadata"]["config"])
+    graph_config = cast(GraphConfig, config["metadata"]["config"])
     write_custom_event(
         "start_refined_answer_creation",
         ToolCallKickoff(
             tool_name="agent_search_1",
             tool_args={
-                "query": agent_search_config.search_request.query,
+                "query": graph_config.inputs.search_request.query,
                 "answer": state.initial_answer,
             },
         ),
@@ -56,9 +56,9 @@ def create_refined_sub_questions(
 
     agent_refined_start_time = datetime.now()
 
-    question = agent_search_config.search_request.query
+    question = graph_config.inputs.search_request.query
     base_answer = state.initial_answer
-    history = build_history_prompt(agent_search_config, question)
+    history = build_history_prompt(graph_config, question)
     # get the entity term extraction dict and properly format it
     entity_retlation_term_extractions = state.entity_relation_term_extractions
 
@@ -90,7 +90,7 @@ def create_refined_sub_questions(
     ]
 
     # Grader
-    model = agent_search_config.fast_llm
+    model = graph_config.tooling.fast_llm
 
     streamed_tokens = dispatch_separated(
         model.stream(msg), dispatch_subquestion(1, writer)
