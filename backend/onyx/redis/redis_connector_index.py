@@ -35,8 +35,8 @@ class RedisConnectorIndex:
     TERMINATE_TTL = 600
 
     # used to signal the overall workflow is still active
-    # there are gaps in time between states where we need some slack
-    # to correctly transition
+    # it's impossible to get the exact state of the system at a single point in time
+    # so we need a signal with a TTL to bridge gaps in our checks
     ACTIVE_PREFIX = PREFIX + "_active"
     ACTIVE_TTL = 3600
 

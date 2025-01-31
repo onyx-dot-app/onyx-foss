@@ -75,6 +75,8 @@ def document_by_cc_pair_cleanup_task(
     """
     task_logger.debug(f"Task start: doc={document_id}")
 
+    start = time.monotonic()
+
     try:
         with get_session_with_tenant(tenant_id) as db_session:
             action = "skip"
@@ -154,11 +156,13 @@ def document_by_cc_pair_cleanup_task(
 
             db_session.commit()
 
+            elapsed = time.monotonic() - start
             task_logger.info(
                 f"doc={document_id} "
                 f"action={action} "
                 f"refcount={count} "
-                f"chunks={chunks_affected}"
+                f"chunks={chunks_affected} "
+                f"elapsed={elapsed:.2f}"
             )
     except SoftTimeLimitExceeded:
         task_logger.info(f"SoftTimeLimitExceeded exception. doc={document_id}")

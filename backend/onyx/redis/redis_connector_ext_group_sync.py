@@ -11,6 +11,7 @@ from onyx.redis.redis_pool import SCAN_ITER_COUNT_DEFAULT
 
 
 class RedisConnectorExternalGroupSyncPayload(BaseModel):
+    submitted: datetime
     started: datetime | None
     celery_task_id: str | None
 
@@ -134,6 +135,12 @@ class RedisConnectorExternalGroupSync:
         lock: RedisLock | None,
     ) -> int | None:
         pass
+
+    def reset(self) -> None:
+        self.redis.delete(self.generator_progress_key)
+        self.redis.delete(self.generator_complete_key)
+        self.redis.delete(self.taskset_key)
+        self.redis.delete(self.fence_key)
 
     @staticmethod
     def remove_from_taskset(id: int, task_id: str, r: redis.Redis) -> None:
