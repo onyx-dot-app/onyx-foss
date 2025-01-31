@@ -897,7 +897,9 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
             # this is just a migration concern and should be unnecessary once
             # lookup tables are rolled out
             for key_bytes in r_replica.scan_iter(count=SCAN_ITER_COUNT_DEFAULT):
-                if is_fence(key_bytes):
+                if is_fence(key_bytes) and not r.sismember(
+                    OnyxRedisConstants.ACTIVE_FENCES, key_bytes
+                ):
                     logger.warning(f"Adding {key_bytes} to the lookup table.")
                     r.sadd(OnyxRedisConstants.ACTIVE_FENCES, key_bytes)
 

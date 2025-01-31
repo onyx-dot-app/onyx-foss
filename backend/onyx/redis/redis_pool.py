@@ -114,6 +114,7 @@ class TenantRedis(redis.Redis):
             "create_lock",
             "startswith",
             "smembers",
+            "sismember",
             "sadd",
             "srem",
             "scard",
