@@ -11,8 +11,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_persona_agent_prompt_expressions,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
+from onyx.agents.agent_search.shared_graph_utils.utils import remove_document_citations
 from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
-from onyx.configs.agent_configs import AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH
+from onyx.configs.agent_configs import AGENT_MAX_STATIC_HISTORY_WORD_LENGTH
 from onyx.context.search.models import InferenceSection
 from onyx.llm.interfaces import LLMConfig
 from onyx.llm.utils import get_max_input_tokens
@@ -109,8 +110,8 @@ def build_history_prompt(config: AgentSearchConfig, question: str) -> str:
             else:
                 continue
         history = "\n".join(history_components)
-
-        if len(history) > AGENT_MAX_STATIC_HISTORY_CHAR_LENGTH:
+        history = remove_document_citations(history)
+        if len(history.split()) > AGENT_MAX_STATIC_HISTORY_WORD_LENGTH:
             history = summarize_history(history, question, persona_base, model)
 
     return HISTORY_PROMPT.format(history=history) if history else ""

@@ -1160,7 +1160,8 @@ Please answer with a simple 'yes' or 'no'.
 
 HISTORY_CONTEXT_SUMMARY_PROMPT = """\n
 {persona_specification}
-You need to summarize the key parts of the history of a conversation between a user and an agent. The
+
+Your task now is to summarize the key parts of the history of a conversation between a user and an agent. The
 summary has two purposes:
   1) providing the suitable context for a new question, and
   2) To capture the key information that was discussed and that the user may have a follow-up question about.

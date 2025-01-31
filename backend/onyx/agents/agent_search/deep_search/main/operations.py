@@ -1,4 +1,3 @@
-import re
 from collections.abc import Callable
 
 from langgraph.types import StreamWriter
@@ -16,27 +15,6 @@ from onyx.tools.models import SearchQueryInfo
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
-
-
-def remove_document_citations(text: str) -> str:
-    """
-    Removes citation expressions of format '[[D1]]()' from text.
-    The number after D can vary.
-
-    Args:
-        text: Input text containing citations
-
-    Returns:
-        Text with citations removed
-    """
-    # Pattern explanation:
-    # \[\[D\d+\]\]\(\)  matches:
-    #   \[\[ - literal [[ characters
-    #   D    - literal D character
-    #   \d+  - one or more digits
-    #   \]\] - literal ]] characters
-    #   \(\) - literal () characters
-    return re.sub(r"\[\[(?:D|Q)\d+\]\]\(\)", "", text)
 
 
 def dispatch_subquestion(

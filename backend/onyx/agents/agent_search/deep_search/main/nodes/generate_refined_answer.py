@@ -12,9 +12,6 @@ from onyx.agents.agent_search.deep_search.main.models import (
 )
 from onyx.agents.agent_search.deep_search.main.operations import get_query_info
 from onyx.agents.agent_search.deep_search.main.operations import logger
-from onyx.agents.agent_search.deep_search.main.operations import (
-    remove_document_citations,
-)
 from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
     RefinedAnswerUpdate,
@@ -48,6 +45,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    remove_document_citations,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse

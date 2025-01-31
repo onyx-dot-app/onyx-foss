@@ -16,9 +16,6 @@ from onyx.agents.agent_search.deep_search.main.operations import (
 )
 from onyx.agents.agent_search.deep_search.main.operations import get_query_info
 from onyx.agents.agent_search.deep_search.main.operations import logger
-from onyx.agents.agent_search.deep_search.main.operations import (
-    remove_document_citations,
-)
 from onyx.agents.agent_search.deep_search.main.states import (
     InitialAnswerUpdate,
 )
@@ -49,6 +46,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    remove_document_citations,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse

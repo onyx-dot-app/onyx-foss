@@ -343,8 +343,12 @@ def get_answer_citation_ids(answer_str: str) -> list[int]:
 def summarize_history(
     history: str, question: str, persona_specification: str, model: LLM
 ) -> str:
-    history_context_prompt = HISTORY_CONTEXT_SUMMARY_PROMPT.format(
-        persona_specification=persona_specification, question=question, history=history
+    history_context_prompt = remove_document_citations(
+        HISTORY_CONTEXT_SUMMARY_PROMPT.format(
+            persona_specification=persona_specification,
+            question=question,
+            history=history,
+        )
     )
 
     history_response = model.invoke(history_context_prompt)
@@ -399,3 +403,24 @@ def get_langgraph_node_log_string(
     duration = datetime.now() - node_start_time
     results_str = "" if result is None else f" -- Result: {result}"
     return f"{node_start_time} -- {graph_component} - {node_name} -- Time taken: {duration}{results_str}"
+
+
+def remove_document_citations(text: str) -> str:
+    """
+    Removes citation expressions of format '[[D1]]()' from text.
+    The number after D can vary.
+
+    Args:
+        text: Input text containing citations
+
+    Returns:
+        Text with citations removed
+    """
+    # Pattern explanation:
+    # \[\[D\d+\]\]\(\)  matches:
+    #   \[\[ - literal [[ characters
+    #   D    - literal D character
+    #   \d+  - one or more digits
+    #   \]\] - literal ]] characters
+    #   \(\) - literal () characters
+    return re.sub(r"\[\[(?:D|Q)?\d+\]\](?:\([^)]*\))?", "", text)
