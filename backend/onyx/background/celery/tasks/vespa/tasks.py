@@ -989,6 +989,10 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
         task_logger.info(
             "Soft time limit exceeded, task is being terminated gracefully."
         )
+        return False
+    except Exception:
+        task_logger.exception("monitor_vespa_sync exceptioned.")
+        return False
     finally:
         if lock_beat.owned():
             lock_beat.release()
@@ -1078,6 +1082,7 @@ def vespa_metadata_sync_task(
             )
     except SoftTimeLimitExceeded:
         task_logger.info(f"SoftTimeLimitExceeded exception. doc={document_id}")
+        return False
     except Exception as ex:
         if isinstance(ex, RetryError):
             task_logger.warning(

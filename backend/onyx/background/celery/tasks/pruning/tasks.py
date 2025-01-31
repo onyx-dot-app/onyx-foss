@@ -39,6 +39,7 @@ from onyx.db.sync_record import insert_sync_record
 from onyx.db.sync_record import update_sync_record_status
 from onyx.redis.redis_connector import RedisConnector
 from onyx.redis.redis_pool import get_redis_client
+from onyx.utils.logger import LoggerContextVars
 from onyx.utils.logger import pruning_ctx
 from onyx.utils.logger import setup_logger
 
@@ -251,6 +252,8 @@ def connector_pruning_generator_task(
     and compares those IDs to locally stored documents and deletes all locally stored IDs missing
     from the most recently pulled document ID list"""
 
+    LoggerContextVars.reset()
+
     pruning_ctx_dict = pruning_ctx.get()
     pruning_ctx_dict["cc_pair_id"] = cc_pair_id
     pruning_ctx_dict["request_id"] = self.request.id
@@ -399,7 +402,7 @@ def monitor_ccpair_pruning_taskset(
 
     mark_ccpair_as_pruned(int(cc_pair_id), db_session)
     task_logger.info(
-        f"Successfully pruned connector credential pair. cc_pair={cc_pair_id}"
+        f"Connector pruning finished: cc_pair={cc_pair_id} num_pruned={initial}"
     )
 
     update_sync_record_status(

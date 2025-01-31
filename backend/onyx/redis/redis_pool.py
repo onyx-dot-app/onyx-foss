@@ -122,7 +122,7 @@ class TenantRedis(redis.Redis):
             "ttl",
         ]  # Regular methods that need simple prefixing
 
-        if item == "scan_iter":
+        if item == "scan_iter" or item == "sscan_iter":
             return self._prefix_scan_iter(original_attr)
         elif item in methods_to_wrap and callable(original_attr):
             return self._prefix_method(original_attr)
