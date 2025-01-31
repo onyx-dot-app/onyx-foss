@@ -147,7 +147,7 @@ export const AgenticMessage = ({
 
     processed = processed.replace(/\]\](?!\()/g, "]]()");
 
-    return preprocessLaTeX(processed) + (!isComplete ? " [*]() " : "");
+    return preprocessLaTeX(processed);
   };
 
   const finalContent = processContent(content) as string;
@@ -322,10 +322,11 @@ export const AgenticMessage = ({
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypePrism, { ignoreMissing: true }], rehypeKatex]}
       >
-        {streamedContent}
+        {streamedContent +
+          (!isComplete && !secondLevelGenerating ? " [*]() " : "")}
       </ReactMarkdown>
     );
-  }, [streamedContent, markdownComponents]);
+  }, [streamedContent, markdownComponents, isComplete]);
 
   const includeMessageSwitcher =
     currentMessageInd !== undefined &&
@@ -335,10 +336,6 @@ export const AgenticMessage = ({
 
   useEffect(() => {
     if (!allowStreaming) {
-      //   if (typeof content === "string") {
-      //     setStreamedContent(finalContent);
-      //     setLastKnownContentLength(finalContent.length);
-      //   }
       return;
     }
 

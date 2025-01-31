@@ -31,7 +31,7 @@ export const MemoizedAnchor = memo(
     if (value?.startsWith("[") && value?.endsWith("]")) {
       const match = value.match(/\[(D|Q)?(\d+)\]/);
       if (match) {
-        const index = parseInt(match[1], 10) - 1;
+        const index = parseInt(match[2], 10) - 1;
         const associatedDoc = docs?.[index];
         if (!associatedDoc) {
           return <a href={children as string}>{children}</a>;
@@ -53,7 +53,7 @@ export const MemoizedAnchor = memo(
         if (!associatedDoc && !associatedSubQuestion) {
           return (
             <>
-              {children}
+              l{children}
               {/* No associated docs or subquestions.
               <div className="text-sm text-gray-600">
                 <p>Number of questions: {subQuestions?.length}</p>
@@ -114,7 +114,7 @@ export const MemoizedAnchor = memo(
     }
     return (
       <MemoizedLink updatePresentingDocument={updatePresentingDocument}>
-        {children}
+        {children}l
       </MemoizedLink>
     );
   }

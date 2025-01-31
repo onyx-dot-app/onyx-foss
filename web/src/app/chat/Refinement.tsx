@@ -28,11 +28,7 @@ export function useOrderedPhases(externalPhase: StreamingPhase) {
   // Whenever externalPhase changes, add any missing steps into the queue
   useEffect(() => {
     setPhaseQueue((prevQueue) => {
-      const lastDisplayed = displayedPhases[displayedPhases.length - 1];
       const lastIndex = finalPhaseIndex.current || 0;
-      //  lastDisplayed
-      //   ? getPhaseIndex(lastDisplayed)
-      //   : getPhaseIndex(StreamingPhase.WAITING);
 
       let targetPhase = externalPhase;
       let targetIndex = getPhaseIndex(targetPhase);
@@ -50,11 +46,6 @@ export function useOrderedPhases(externalPhase: StreamingPhase) {
         targetIndex + 1
       );
 
-      // [];
-
-      // for (let i = lastIndex + 1; i <= targetIndex; i++) {
-      //   missingPhases= PHASES_ORDER[i]);
-      // }
       return [...prevQueue, ...missingPhases];
     });
   }, [externalPhase, displayedPhases]);
@@ -125,6 +116,7 @@ export function RefinemenetBadge({
 
   // Expand/collapse, hover states
   const [expanded, setExpanded] = useState(true);
+  const [toolTipHoveredInternal, setToolTipHoveredInternal] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [shouldShow, setShouldShow] = useState(true);
 
@@ -145,7 +137,7 @@ export function RefinemenetBadge({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <Tooltip>
+      <Tooltip open={isHovered || toolTipHoveredInternal}>
         <div
           className="relative w-fit max-w-sm"
           onMouseEnter={() => setIsHovered(true)}
@@ -167,10 +159,16 @@ export function RefinemenetBadge({
           </TooltipTrigger>
           {expanded && (
             <TooltipContent
-              onMouseEnter={() => setToolTipHovered(true)}
+              onMouseEnter={() => {
+                setToolTipHoveredInternal(true);
+                setToolTipHovered(true);
+              }}
+              onMouseLeave={() => {
+                setToolTipHoveredInternal(false);
+              }}
               side="bottom"
               align="start"
-              className="w-fit p-4 bg-white border-2 border-border shadow-lg rounded-md"
+              className="w-fit  -mt-1 p-4 bg-white border-2 border-border shadow-lg rounded-md"
             >
               {/* If not done, show the "Refining" box + a chevron */}
 
@@ -322,7 +320,9 @@ export function StatusRefinement({
                 <Badge
                   // NOTE: This is a hack to make the badge slightly higher
                   className="cursor-pointer mt-[1px]"
-                  variant="agent"
+                  variant={`${
+                    isViewingInitialAnswer ? "agent" : "agent-faded"
+                  }`}
                   onClick={() => {
                     const viewInitialAnswer = !isViewingInitialAnswer;
                     setIsViewingInitialAnswer(viewInitialAnswer);
