@@ -37,6 +37,7 @@ from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationConfig
 from onyx.chat.models import DocumentPruningConfig
 from onyx.chat.models import PromptConfig
+from onyx.chat.models import SectionRelevancePiece
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
@@ -59,7 +60,6 @@ from onyx.tools.tool_implementations.search.search_tool import (
 )
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
-
 
 BaseMessage_Content = str | list[str | dict[str, Any]]
 
@@ -391,3 +391,17 @@ def write_custom_event(
     name: str, event: AnswerPacket, stream_writer: StreamWriter
 ) -> None:
     stream_writer(CustomStreamEvent(event="on_custom_event", name=name, data=event))
+
+
+def relevance_from_docs(
+    relevant_docs: list[InferenceSection],
+) -> list[SectionRelevancePiece]:
+    return [
+        SectionRelevancePiece(
+            relevant=True,
+            content=doc.center_chunk.content,
+            document_id=doc.center_chunk.document_id,
+            chunk_id=doc.center_chunk.chunk_id,
+        )
+        for doc in relevant_docs
+    ]

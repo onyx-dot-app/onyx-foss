@@ -3,6 +3,7 @@ from typing import cast
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.types import StreamWriter
 
+from onyx.agents.agent_search.deep_search_a.main.operations import get_query_info
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.models import (
     ExpandedRetrievalResult,
 )
@@ -18,6 +19,7 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import ExtendedToolResponse
 from onyx.tools.tool_implementations.search.search_tool import yield_search_responses
@@ -29,13 +31,7 @@ def format_results(
     writer: StreamWriter = lambda _: None,
 ) -> ExpandedRetrievalUpdate:
     level, question_nr = parse_question_id(state.sub_question_id or "0_0")
-    query_infos = [
-        result.query_info
-        for result in state.expanded_retrieval_results
-        if result.query_info is not None
-    ]
-    if len(query_infos) == 0:
-        raise ValueError("No query info found")
+    query_info = get_query_info(state.expanded_retrieval_results)
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
     # main question docs will be sent later after aggregation and deduping with sub-question docs
@@ -50,12 +46,14 @@ def format_results(
 
         if agent_a_config.search_tool is None:
             raise ValueError("search_tool must be provided for agentic search")
+
+        relevance_list = relevance_from_docs(reranked_documents)
         for tool_response in yield_search_responses(
             query=state.question,
-            reranked_sections=state.retrieved_documents,  # TODO: rename params. (sections pre-merging here.)
+            reranked_sections=state.retrieved_documents,
             final_context_sections=reranked_documents,
-            search_query_info=query_infos[0],  # TODO: handle differing query infos?
-            get_section_relevance=lambda: None,  # TODO: add relevance
+            search_query_info=query_info,
+            get_section_relevance=lambda: relevance_list,
             search_tool=agent_a_config.search_tool,
         ):
             write_custom_event(

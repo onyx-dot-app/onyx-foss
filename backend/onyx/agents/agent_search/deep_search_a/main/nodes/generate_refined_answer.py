@@ -44,6 +44,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
@@ -95,12 +96,13 @@ def generate_refined_answer(
     if agent_a_config.search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
     # stream refined answer docs
+    relevance_list = relevance_from_docs(relevant_docs)
     for tool_response in yield_search_responses(
         query=question,
         reranked_sections=relevant_docs,
         final_context_sections=relevant_docs,
         search_query_info=query_info,
-        get_section_relevance=lambda: None,  # TODO: add relevance
+        get_section_relevance=lambda: relevance_list,
         search_tool=agent_a_config.search_tool,
     ):
         write_custom_event(

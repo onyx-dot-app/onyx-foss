@@ -80,7 +80,6 @@ def rerank_documents(
     else:
         fit_scores = RetrievalFitStats(fit_score_lift=0, rerank_effect=0, fit_scores={})
 
-    # TODO: stream deduped docs here, or decide to use search tool ranking/verification
     now_end = datetime.now()
     logger.info(
         f"{now_start} -- Expanded Retrieval - Reranking - Time taken: {now_end - now_start}"

@@ -141,15 +141,14 @@ def calculate_initial_agent_stats(
 
 def get_query_info(results: list[QueryResult]) -> SearchQueryInfo:
     # Use the query info from the base document retrieval
-    # TODO: see if this is the right way to do this
-    query_infos = [
-        result.query_info for result in results if result.query_info is not None
-    ]
-    if len(query_infos) == 0:
-        return SearchQueryInfo(
-            predicted_search=None,
-            final_filters=IndexFilters(access_control_list=None),
-            recency_bias_multiplier=1.0,
-        )
-        raise ValueError("No query info found")
-    return query_infos[0]
+    # this is used for some fields that are the same across the searches done
+    query_info = None
+    for result in results:
+        if result.query_info is not None:
+            query_info = result.query_info
+            break
+    return query_info or SearchQueryInfo(
+        predicted_search=None,
+        final_filters=IndexFilters(access_control_list=None),
+        recency_bias_multiplier=1.0,
+    )
