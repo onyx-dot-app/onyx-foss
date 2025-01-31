@@ -1,7 +1,7 @@
 import re
 from collections.abc import Callable
 
-from langchain_core.callbacks.manager import dispatch_custom_event
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.models import InitialAgentResultStats
@@ -9,6 +9,7 @@ from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
 from onyx.agents.agent_search.shared_graph_utils.models import (
     QuestionAnswerResults,
 )
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import SubQuestionPiece
 from onyx.context.search.models import IndexFilters
 from onyx.tools.models import SearchQueryInfo
@@ -38,15 +39,18 @@ def remove_document_citations(text: str) -> str:
     return re.sub(r"\[\[(?:D|Q)\d+\]\]\(\)", "", text)
 
 
-def dispatch_subquestion(level: int) -> Callable[[str, int], None]:
+def dispatch_subquestion(
+    level: int, writer: StreamWriter
+) -> Callable[[str, int], None]:
     def _helper(sub_question_part: str, num: int) -> None:
-        dispatch_custom_event(
+        write_custom_event(
             "decomp_qs",
             SubQuestionPiece(
                 sub_question=sub_question_part,
                 level=level,
                 level_question_nr=num,
             ),
+            writer,
         )
 
     return _helper

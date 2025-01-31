@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import merge_content
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.main.models import (
     FollowUpSubQuestion,
@@ -29,15 +29,16 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     format_entity_term_extraction,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.tools.models import ToolCallKickoff
 
 
 def create_refined_sub_questions(
-    state: MainState, config: RunnableConfig
+    state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> FollowUpSubQuestionsUpdate:
     """ """
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
-    dispatch_custom_event(
+    write_custom_event(
         "start_refined_answer_creation",
         ToolCallKickoff(
             tool_name="agent_search_1",
@@ -46,6 +47,7 @@ def create_refined_sub_questions(
                 "answer": state.initial_answer,
             },
         ),
+        writer,
     )
 
     now_start = datetime.now()
@@ -90,7 +92,9 @@ def create_refined_sub_questions(
     # Grader
     model = agent_a_config.fast_llm
 
-    streamed_tokens = dispatch_separated(model.stream(msg), dispatch_subquestion(1))
+    streamed_tokens = dispatch_separated(
+        model.stream(msg), dispatch_subquestion(1, writer)
+    )
     response = merge_content(*streamed_tokens)
 
     if isinstance(response, str):

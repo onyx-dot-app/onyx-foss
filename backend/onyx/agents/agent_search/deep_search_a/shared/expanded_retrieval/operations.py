@@ -2,10 +2,11 @@ from collections import defaultdict
 from collections.abc import Callable
 
 import numpy as np
-from langchain_core.callbacks.manager import dispatch_custom_event
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import SubQueryPiece
 from onyx.context.search.models import InferenceSection
 from onyx.utils.logger import setup_logger
@@ -13,9 +14,11 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def dispatch_subquery(level: int, question_nr: int) -> Callable[[str, int], None]:
+def dispatch_subquery(
+    level: int, question_nr: int, writer: StreamWriter
+) -> Callable[[str, int], None]:
     def helper(token: str, num: int) -> None:
-        dispatch_custom_event(
+        write_custom_event(
             "subqueries",
             SubQueryPiece(
                 sub_query=token,
@@ -23,6 +26,7 @@ def dispatch_subquery(level: int, question_nr: int) -> Callable[[str, int], None
                 level_question_nr=question_nr,
                 query_id=num,
             ),
+            writer,
         )
 
     return helper

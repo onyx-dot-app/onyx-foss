@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from langchain_core.messages import ToolCall
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.basic.utils import process_llm_stream
 from onyx.agents.agent_search.models import AgentSearchConfig
@@ -24,7 +25,11 @@ logger = setup_logger()
 # and a function that handles extracting the necessary fields
 # from the state and config
 # TODO: fan-out to multiple tool call nodes? Make this configurable?
-def llm_tool_choice(state: ToolChoiceState, config: RunnableConfig) -> ToolChoiceUpdate:
+def llm_tool_choice(
+    state: ToolChoiceState,
+    config: RunnableConfig,
+    writer: StreamWriter = lambda _: None,
+) -> ToolChoiceUpdate:
     """
     This node is responsible for calling the LLM to choose a tool. If no tool is chosen,
     The node MAY emit an answer, depending on whether state["should_stream_answer"] is set.
@@ -97,7 +102,9 @@ def llm_tool_choice(state: ToolChoiceState, config: RunnableConfig) -> ToolChoic
     )
 
     tool_message = process_llm_stream(
-        stream, should_stream_answer and not agent_config.skip_gen_ai_answer_generation
+        stream,
+        should_stream_answer and not agent_config.skip_gen_ai_answer_generation,
+        writer,
     )
 
     # If no tool calls are emitted by the LLM, we should not choose a tool

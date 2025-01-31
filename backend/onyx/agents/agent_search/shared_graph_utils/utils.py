@@ -8,11 +8,13 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Any
 from typing import cast
+from typing import Literal
+from typing import TypedDict
 from uuid import UUID
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import BaseMessage
 from langchain_core.messages import HumanMessage
+from langgraph.types import StreamWriter
 from sqlalchemy.orm import Session
 
 from onyx.agents.agent_search.models import AgentSearchConfig
@@ -30,6 +32,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import DATE_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     HISTORY_CONTEXT_SUMMARY_PROMPT,
 )
+from onyx.chat.models import AnswerPacket
 from onyx.chat.models import AnswerStyleConfig
 from onyx.chat.models import CitationConfig
 from onyx.chat.models import DocumentPruningConfig
@@ -56,6 +59,7 @@ from onyx.tools.tool_implementations.search.search_tool import (
 )
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
+
 
 BaseMessage_Content = str | list[str | dict[str, Any]]
 
@@ -314,13 +318,13 @@ def dispatch_separated(
     return streamed_tokens
 
 
-def dispatch_main_answer_stop_info(level: int) -> None:
+def dispatch_main_answer_stop_info(level: int, writer: StreamWriter) -> None:
     stop_event = StreamStopInfo(
         stop_reason=StreamStopReason.FINISHED,
         stream_type="main_answer",
         level=level,
     )
-    dispatch_custom_event("stream_finished", stop_event)
+    write_custom_event("stream_finished", stop_event, writer)
 
 
 def get_today_prompt() -> str:
@@ -368,3 +372,22 @@ def summarize_history(
         history_context_response_str = ""
 
     return history_context_response_str
+
+
+# taken from langchain_core.runnables.schema
+# we don't use the one from their library because
+# it includes ids they generate
+class CustomStreamEvent(TypedDict):
+    # Overwrite the event field to be more specific.
+    event: Literal["on_custom_event"]  # type: ignore[misc]
+    """The event type."""
+    name: str
+    """User defined name for the event."""
+    data: Any
+    """The data associated with the event. Free form and can be anything."""
+
+
+def write_custom_event(
+    name: str, event: AnswerPacket, stream_writer: StreamWriter
+) -> None:
+    stream_writer(CustomStreamEvent(event="on_custom_event", name=name, data=event))

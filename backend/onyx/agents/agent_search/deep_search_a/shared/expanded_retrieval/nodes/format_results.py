@@ -1,7 +1,7 @@
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.models import (
     ExpandedRetrievalResult,
@@ -18,12 +18,15 @@ from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.states imp
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import ExtendedToolResponse
 from onyx.tools.tool_implementations.search.search_tool import yield_search_responses
 
 
 def format_results(
-    state: ExpandedRetrievalState, config: RunnableConfig
+    state: ExpandedRetrievalState,
+    config: RunnableConfig,
+    writer: StreamWriter = lambda _: None,
 ) -> ExpandedRetrievalUpdate:
     level, question_nr = parse_question_id(state.sub_question_id or "0_0")
     query_infos = [
@@ -55,7 +58,7 @@ def format_results(
             get_section_relevance=lambda: None,  # TODO: add relevance
             search_tool=agent_a_config.search_tool,
         ):
-            dispatch_custom_event(
+            write_custom_event(
                 "tool_response",
                 ExtendedToolResponse(
                     id=tool_response.id,
@@ -63,6 +66,7 @@ def format_results(
                     level=level,
                     level_question_nr=question_nr,
                 ),
+                writer,
             )
     sub_question_retrieval_stats = calculate_sub_question_retrieval_stats(
         verified_documents=state.verified_documents,

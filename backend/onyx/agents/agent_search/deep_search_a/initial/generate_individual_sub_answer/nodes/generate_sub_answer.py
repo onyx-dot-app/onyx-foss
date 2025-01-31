@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import Any
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import merge_message_runs
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.initial.generate_individual_sub_answer.states import (
     AnswerQuestionState,
@@ -22,6 +22,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_persona_agent_prompt_expressions,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
@@ -32,7 +33,9 @@ logger = setup_logger()
 
 
 def generate_sub_answer(
-    state: AnswerQuestionState, config: RunnableConfig
+    state: AnswerQuestionState,
+    config: RunnableConfig,
+    writer: StreamWriter = lambda _: None,
 ) -> QAGenerationUpdate:
     now_start = datetime.now()
     logger.info(f"--------{now_start}--------START ANSWER GENERATION---")
@@ -48,7 +51,7 @@ def generate_sub_answer(
 
     if len(context_docs) == 0:
         answer_str = NO_RECOVERED_DOCS
-        dispatch_custom_event(
+        write_custom_event(
             "sub_answers",
             AgentAnswerPiece(
                 answer_piece=answer_str,
@@ -56,6 +59,7 @@ def generate_sub_answer(
                 level_question_nr=question_nr,
                 answer_type="agent_sub_answer",
             ),
+            writer,
         )
     else:
         logger.debug(f"Number of verified retrieval docs: {len(context_docs)}")
@@ -81,7 +85,7 @@ def generate_sub_answer(
                     f"Expected content to be a string, but got {type(content)}"
                 )
             start_stream_token = datetime.now()
-            dispatch_custom_event(
+            write_custom_event(
                 "sub_answers",
                 AgentAnswerPiece(
                     answer_piece=content,
@@ -89,6 +93,7 @@ def generate_sub_answer(
                     level_question_nr=question_nr,
                     answer_type="agent_sub_answer",
                 ),
+                writer,
             )
             end_stream_token = datetime.now()
             dispatch_timings.append(
@@ -112,7 +117,7 @@ def generate_sub_answer(
         level=level,
         level_question_nr=question_nr,
     )
-    dispatch_custom_event("stream_finished", stop_event)
+    write_custom_event("stream_finished", stop_event, writer)
 
     now_end = datetime.now()
 

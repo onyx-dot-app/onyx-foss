@@ -1,10 +1,11 @@
 from collections.abc import Iterator
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import AIMessageChunk
 from langchain_core.messages import BaseMessage
+from langgraph.types import StreamWriter
 
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import LlmDoc
 from onyx.chat.stream_processing.answer_response_handler import AnswerResponseHandler
 from onyx.chat.stream_processing.answer_response_handler import CitationResponseHandler
@@ -20,6 +21,7 @@ logger = setup_logger()
 def process_llm_stream(
     messages: Iterator[BaseMessage],
     should_stream_answer: bool,
+    writer: StreamWriter,
     final_search_results: list[LlmDoc] | None = None,
     displayed_search_results: list[LlmDoc] | None = None,
 ) -> AIMessageChunk:
@@ -52,9 +54,10 @@ def process_llm_stream(
             tool_call_chunk += message  # type: ignore
         elif should_stream_answer:
             for response_part in answer_handler.handle_response_part(message, []):
-                dispatch_custom_event(
+                write_custom_event(
                     "basic_response",
                     response_part,
+                    writer,
                 )
 
     logger.info(f"Full answer: {full_answer}")

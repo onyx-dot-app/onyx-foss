@@ -4,6 +4,7 @@ from typing import cast
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import merge_message_runs
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.shared.expanded_retrieval.operations import (
     dispatch_subquery,
@@ -26,7 +27,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 
 
 def expand_queries(
-    state: ExpandedRetrievalInput, config: RunnableConfig
+    state: ExpandedRetrievalInput,
+    config: RunnableConfig,
+    writer: StreamWriter = lambda _: None,
 ) -> QueryExpansionUpdate:
     # Sometimes we want to expand the original question, sometimes we want to expand a sub-question.
     # When we are running this node on the original question, no question is explictly passed in.
@@ -53,7 +56,7 @@ def expand_queries(
     ]
 
     llm_response_list = dispatch_separated(
-        llm.stream(prompt=msg), dispatch_subquery(level, question_nr)
+        llm.stream(prompt=msg), dispatch_subquery(level, question_nr, writer)
     )
 
     llm_response = merge_message_runs(llm_response_list, chunk_separator="")[0].content

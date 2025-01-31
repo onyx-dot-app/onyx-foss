@@ -1,19 +1,22 @@
 from datetime import datetime
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.main.operations import logger
 from onyx.agents.agent_search.deep_search_a.main.states import AnswerComparison
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
 from onyx.agents.agent_search.models import AgentSearchConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import ANSWER_COMPARISON_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import RefinedAnswerImprovement
 
 
-def compare_answers(state: MainState, config: RunnableConfig) -> AnswerComparison:
+def compare_answers(
+    state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
+) -> AnswerComparison:
     now_start = datetime.now()
 
     agent_a_config = cast(AgentSearchConfig, config["metadata"]["config"])
@@ -39,11 +42,12 @@ def compare_answers(state: MainState, config: RunnableConfig) -> AnswerCompariso
         isinstance(resp.content, str) and "yes" in resp.content.lower()
     )
 
-    dispatch_custom_event(
+    write_custom_event(
         "refined_answer_improvement",
         RefinedAnswerImprovement(
             refined_answer_improvement=refined_answer_improvement,
         ),
+        writer,
     )
 
     now_end = datetime.now()

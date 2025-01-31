@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import cast
 
+from langchain_core.runnables.schema import CustomStreamEvent
 from langchain_core.runnables.schema import StreamEvent
 from langgraph.graph.state import CompiledStateGraph
 
@@ -144,11 +145,8 @@ def manage_sync_streaming(
         stream_mode="custom",
         input=graph_input,
         config={"metadata": {"config": config, "thread_id": str(message_id)}},
-        # debug=True,
     ):
-        print(event)
-
-    return []
+        yield cast(CustomStreamEvent, event)
 
 
 def run_graph(
@@ -159,7 +157,7 @@ def run_graph(
     config.perform_initial_search_decomposition = INITIAL_SEARCH_DECOMPOSITION_ENABLED
     config.allow_refinement = ALLOW_REFINEMENT
 
-    for event in _manage_async_event_streaming(
+    for event in manage_sync_streaming(
         compiled_graph=compiled_graph, config=config, graph_input=input
     ):
         if not (parsed_object := _parse_agent_event(event)):

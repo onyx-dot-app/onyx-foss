@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import merge_content
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.initial.generate_initial_answer.states import (
     SearchSQState,
@@ -28,6 +28,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
     INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
 from onyx.chat.models import SubQuestionPiece
@@ -35,7 +36,7 @@ from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
 
 def decompose_orig_question(
-    state: SearchSQState, config: RunnableConfig
+    state: SearchSQState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> BaseDecompUpdate:
     now_start = datetime.now()
 
@@ -90,23 +91,26 @@ def decompose_orig_question(
     msg = [HumanMessage(content=decomposition_prompt)]
 
     # Send the initial question as a subquestion with number 0
-    dispatch_custom_event(
+    write_custom_event(
         "decomp_qs",
         SubQuestionPiece(
             sub_question=question,
             level=0,
             level_question_nr=0,
         ),
+        writer,
     )
     # dispatches custom events for subquestion tokens, adding in subquestion ids.
-    streamed_tokens = dispatch_separated(model.stream(msg), dispatch_subquestion(0))
+    streamed_tokens = dispatch_separated(
+        model.stream(msg), dispatch_subquestion(0, writer)
+    )
 
     stop_event = StreamStopInfo(
         stop_reason=StreamStopReason.FINISHED,
         stream_type="sub_questions",
         level=0,
     )
-    dispatch_custom_event("stream_finished", stop_event)
+    write_custom_event("stream_finished", stop_event, writer)
 
     deomposition_response = merge_content(*streamed_tokens)
 

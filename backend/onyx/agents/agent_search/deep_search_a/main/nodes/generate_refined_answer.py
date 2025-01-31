@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Any
 from typing import cast
 
-from langchain_core.callbacks.manager import dispatch_custom_event
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import merge_content
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search_a.main.models import (
     AgentRefinedMetrics,
@@ -44,6 +44,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
+from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
 from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
@@ -52,7 +53,7 @@ from onyx.tools.tool_implementations.search.search_tool import yield_search_resp
 
 
 def generate_refined_answer(
-    state: MainState, config: RunnableConfig
+    state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> RefinedAnswerUpdate:
     now_start = datetime.now()
 
@@ -102,7 +103,7 @@ def generate_refined_answer(
         get_section_relevance=lambda: None,  # TODO: add relevance
         search_tool=agent_a_config.search_tool,
     ):
-        dispatch_custom_event(
+        write_custom_event(
             "tool_response",
             ExtendedToolResponse(
                 id=tool_response.id,
@@ -110,6 +111,7 @@ def generate_refined_answer(
                 level=1,
                 level_question_nr=0,  # 0, 0 is the base question
             ),
+            writer,
         )
 
     if len(initial_documents) > 0:
@@ -228,7 +230,7 @@ def generate_refined_answer(
             )
 
         start_stream_token = datetime.now()
-        dispatch_custom_event(
+        write_custom_event(
             "refined_agent_answer",
             AgentAnswerPiece(
                 answer_piece=content,
@@ -236,6 +238,7 @@ def generate_refined_answer(
                 level_question_nr=0,
                 answer_type="agent_level_answer",
             ),
+            writer,
         )
         end_stream_token = datetime.now()
         dispatch_timings.append((end_stream_token - start_stream_token).microseconds)
@@ -244,7 +247,7 @@ def generate_refined_answer(
     logger.info(
         f"Average dispatch time for refined answer: {sum(dispatch_timings) / len(dispatch_timings)}"
     )
-    dispatch_main_answer_stop_info(1)
+    dispatch_main_answer_stop_info(1, writer)
     response = merge_content(*streamed_tokens)
     answer = cast(str, response)
 

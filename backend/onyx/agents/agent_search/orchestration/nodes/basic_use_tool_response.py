@@ -2,6 +2,7 @@ from typing import cast
 
 from langchain_core.messages import AIMessageChunk
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.basic.states import BasicOutput
 from onyx.agents.agent_search.basic.states import BasicState
@@ -19,7 +20,9 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def basic_use_tool_response(state: BasicState, config: RunnableConfig) -> BasicOutput:
+def basic_use_tool_response(
+    state: BasicState, config: RunnableConfig, writer: StreamWriter = lambda _: None
+) -> BasicOutput:
     agent_config = cast(AgentSearchConfig, config["metadata"]["config"])
     structured_response_format = agent_config.structured_response_format
     llm = agent_config.primary_llm
@@ -65,6 +68,7 @@ def basic_use_tool_response(state: BasicState, config: RunnableConfig) -> BasicO
         new_tool_call_chunk = process_llm_stream(
             stream,
             True,
+            writer,
             final_search_results=final_search_results,
             displayed_search_results=initial_search_results,
         )
