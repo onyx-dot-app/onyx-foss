@@ -158,7 +158,7 @@ def check_for_doc_permissions_sync(self: Task, *, tenant_id: str | None) -> bool
 
         # we want to run this less frequently than the overall task
         lock_beat.reacquire()
-        if not r.exists(OnyxRedisSignals.VALIDATE_PERMISSION_SYNC_FENCES):
+        if not r.exists(OnyxRedisSignals.BLOCK_VALIDATE_PERMISSION_SYNC_FENCES):
             # clear any permission fences that don't have associated celery tasks in progress
             # tasks can be in the queue in redis, in reserved tasks (prefetched by the worker),
             # or be currently executing
@@ -169,7 +169,7 @@ def check_for_doc_permissions_sync(self: Task, *, tenant_id: str | None) -> bool
                     "Exception while validating permission sync fences"
                 )
 
-            r.set(OnyxRedisSignals.VALIDATE_PERMISSION_SYNC_FENCES, 1, ex=60)
+            r.set(OnyxRedisSignals.BLOCK_VALIDATE_PERMISSION_SYNC_FENCES, 1, ex=60)
     except SoftTimeLimitExceeded:
         task_logger.info(
             "Soft time limit exceeded, task is being terminated gracefully."

@@ -892,7 +892,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
             )
 
         # we want to run this less frequently than the overall task
-        if not r.exists(OnyxRedisSignals.BUILD_FENCE_LOOKUP_TABLE):
+        if not r.exists(OnyxRedisSignals.BLOCK_BUILD_FENCE_LOOKUP_TABLE):
             # build a lookup table of existing fences
             # this is just a migration concern and should be unnecessary once
             # lookup tables are rolled out
@@ -903,7 +903,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
                     logger.warning(f"Adding {key_bytes} to the lookup table.")
                     r.sadd(OnyxRedisConstants.ACTIVE_FENCES, key_bytes)
 
-            r.set(OnyxRedisSignals.BUILD_FENCE_LOOKUP_TABLE, 1, ex=120)
+            r.set(OnyxRedisSignals.BLOCK_BUILD_FENCE_LOOKUP_TABLE, 1, ex=120)
 
         # use a lookup table to find active fences. We still have to verify the fence
         # exists since it is an optimization and not the source of truth.

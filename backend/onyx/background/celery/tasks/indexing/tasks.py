@@ -224,7 +224,7 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
 
         lock_beat.reacquire()
         # we want to run this less frequently than the overall task
-        if not redis_client.exists(OnyxRedisSignals.VALIDATE_INDEXING_FENCES):
+        if not redis_client.exists(OnyxRedisSignals.BLOCK_VALIDATE_INDEXING_FENCES):
             # clear any indexing fences that don't have associated celery tasks in progress
             # tasks can be in the queue in redis, in reserved tasks (prefetched by the worker),
             # or be currently executing
@@ -235,7 +235,7 @@ def check_for_indexing(self: Task, *, tenant_id: str | None) -> int | None:
             except Exception:
                 task_logger.exception("Exception while validating indexing fences")
 
-            redis_client.set(OnyxRedisSignals.VALIDATE_INDEXING_FENCES, 1, ex=60)
+            redis_client.set(OnyxRedisSignals.BLOCK_VALIDATE_INDEXING_FENCES, 1, ex=60)
     except SoftTimeLimitExceeded:
         task_logger.info(
             "Soft time limit exceeded, task is being terminated gracefully."
