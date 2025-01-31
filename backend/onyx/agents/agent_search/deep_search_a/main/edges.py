@@ -97,7 +97,7 @@ def parallelize_refined_sub_question_answering(
     if len(state.refined_sub_questions) > 0:
         return [
             Send(
-                "answer_refined_question",
+                "answer_refined_question_subgraphs",
                 AnswerQuestionInput(
                     question=question_data.sub_question,
                     question_id=make_question_id(1, question_nr),

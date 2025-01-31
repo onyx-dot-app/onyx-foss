@@ -20,6 +20,9 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.compare_answers import (
 from onyx.agents.agent_search.deep_search_a.main.nodes.create_refined_sub_questions import (
     create_refined_sub_questions,
 )
+from onyx.agents.agent_search.deep_search_a.main.nodes.decide_refinement_need import (
+    decide_refinement_need,
+)
 from onyx.agents.agent_search.deep_search_a.main.nodes.extract_entity_term import (
     extract_entity_term,
 )
@@ -34,9 +37,6 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.persist_agent_results imp
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.start_agent_search import (
     start_agent_search,
-)
-from onyx.agents.agent_search.deep_search_a.main.nodes.validate_refined_answer import (
-    validate_refined_answer,
 )
 from onyx.agents.agent_search.deep_search_a.main.states import MainInput
 from onyx.agents.agent_search.deep_search_a.main.states import MainState
@@ -119,8 +119,8 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=extract_entity_term,
     )
     graph.add_node(
-        node="validate_refined_answer",
-        action=validate_refined_answer,
+        node="decide_refinement_need",
+        action=decide_refinement_need,
     )
     graph.add_node(
         node="compare_answers",
@@ -167,11 +167,11 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_edge(
         start_key=["generate_initial_answer_subgraph", "extract_entity_term"],
-        end_key="validate_refined_answer",
+        end_key="decide_refinement_need",
     )
 
     graph.add_conditional_edges(
-        source="validate_refined_answer",
+        source="decide_refinement_need",
         path=continue_to_refined_answer_or_end,
         path_map=["create_refined_sub_questions", "logging_node"],
     )

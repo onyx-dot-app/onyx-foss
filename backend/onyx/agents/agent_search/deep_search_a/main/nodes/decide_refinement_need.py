@@ -11,7 +11,7 @@ from onyx.agents.agent_search.deep_search_a.main.states import (
 from onyx.agents.agent_search.models import AgentSearchConfig
 
 
-def validate_refined_answer(
+def decide_refinement_need(
     state: MainState, config: RunnableConfig
 ) -> RequireRefinedAnswerUpdate:
     now_start = datetime.now()
