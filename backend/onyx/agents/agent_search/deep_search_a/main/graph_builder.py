@@ -100,7 +100,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     answer_refined_question = answer_refined_query_graph_builder().compile()
     graph.add_node(
-        node="answer_refined_question",
+        node="answer_refined_question_subgraphs",
         action=answer_refined_question,
     )
 
@@ -179,10 +179,10 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     graph.add_conditional_edges(
         source="create_refined_sub_questions",  # DONE
         path=parallelize_refined_sub_question_answering,
-        path_map=["answer_refined_question"],
+        path_map=["answer_refined_question_subgraphs"],
     )
     graph.add_edge(
-        start_key="answer_refined_question",  # HERE
+        start_key="answer_refined_question_subgraphs",  # HERE
         end_key="ingest_refined_answers",
     )
 
