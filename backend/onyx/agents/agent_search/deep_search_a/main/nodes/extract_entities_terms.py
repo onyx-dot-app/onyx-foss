@@ -25,7 +25,7 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import ENTITY_TERM_PROM
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 
 
-def extract_entity_term(
+def extract_entities_terms(
     state: MainState, config: RunnableConfig
 ) -> EntityTermExtractionUpdate:
     now_start = datetime.now()
@@ -68,7 +68,11 @@ def extract_entity_term(
     )
 
     cleaned_response = re.sub(r"```json\n|\n```", "", str(llm_response.content))
-    parsed_response = json.loads(cleaned_response)
+    try:
+        parsed_response = json.loads(cleaned_response)
+    except json.JSONDecodeError:
+        logger.error("Failed to parse LLM response as JSON in Entity-Term Extraction")
+        parsed_response = {}
 
     entities = []
     relationships = []
@@ -76,37 +80,40 @@ def extract_entity_term(
     for entity in parsed_response.get("retrieved_entities_relationships", {}).get(
         "entities", {}
     ):
-        entity_name = entity.get("entity_name", "")
-        entity_type = entity.get("entity_type", "")
-        entities.append(Entity(entity_name=entity_name, entity_type=entity_type))
+        entity_name = entity.get("entity_name")
+        entity_type = entity.get("entity_type")
+        if entity_name and entity_type:
+            entities.append(Entity(entity_name=entity_name, entity_type=entity_type))
 
     for relationship in parsed_response.get("retrieved_entities_relationships", {}).get(
         "relationships", {}
     ):
-        relationship_name = relationship.get("relationship_name", "")
-        relationship_type = relationship.get("relationship_type", "")
-        relationship_entities = relationship.get("relationship_entities", [])
-        relationships.append(
-            Relationship(
-                relationship_name=relationship_name,
-                relationship_type=relationship_type,
-                relationship_entities=relationship_entities,
+        relationship_name = relationship.get("relationship_name")
+        relationship_type = relationship.get("relationship_type")
+        relationship_entities = relationship.get("relationship_entities")
+        if relationship_name and relationship_type and relationship_entities:
+            relationships.append(
+                Relationship(
+                    relationship_name=relationship_name,
+                    relationship_type=relationship_type,
+                    relationship_entities=relationship_entities,
+                )
             )
-        )
 
     for term in parsed_response.get("retrieved_entities_relationships", {}).get(
         "terms", {}
     ):
-        term_name = term.get("term_name", "")
-        term_type = term.get("term_type", "")
-        term_similar_to = term.get("term_similar_to", [])
-        terms.append(
-            Term(
-                term_name=term_name,
-                term_type=term_type,
-                term_similar_to=term_similar_to,
+        term_name = term.get("term_name")
+        term_type = term.get("term_type")
+        term_similar_to = term.get("term_similar_to")
+        if term_name and term_type and term_similar_to:
+            terms.append(
+                Term(
+                    term_name=term_name,
+                    term_type=term_type,
+                    term_similar_to=term_similar_to,
+                )
             )
-        )
 
     now_end = datetime.now()
 

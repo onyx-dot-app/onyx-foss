@@ -73,7 +73,7 @@ def calculate_sub_question_retrieval_stats(
             raw_chunk_stats_counts["verified_count"]
         )
 
-    rejected_scores = raw_chunk_stats_scores.get("rejected_scores", None)
+    rejected_scores = raw_chunk_stats_scores.get("rejected_scores")
     if rejected_scores is not None:
         rejected_avg_scores = rejected_scores / float(
             raw_chunk_stats_counts["rejected_count"]

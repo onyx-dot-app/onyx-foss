@@ -953,7 +953,7 @@ def log_agent_metrics(
     user_id: UUID | None,
     persona_id: int | None,  # Can be none if temporary persona is used
     agent_type: str,
-    start_time: datetime,
+    start_time: datetime | None,
     agent_metrics: CombinedAgentMetrics,
 ) -> AgentSearchMetrics:
     agent_timings = agent_metrics.timings

@@ -28,7 +28,7 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
     agent_end_time = agent_refined_end_time or agent_base_end_time
 
     agent_base_duration = None
-    if agent_base_end_time:
+    if agent_base_end_time and agent_start_time:
         agent_base_duration = (agent_base_end_time - agent_start_time).total_seconds()
 
     agent_refined_duration = None
@@ -38,7 +38,7 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
         ).total_seconds()
 
     agent_full_duration = None
-    if agent_end_time:
+    if agent_end_time and agent_start_time:
         agent_full_duration = (agent_end_time - agent_start_time).total_seconds()
 
     agent_type = "refined" if agent_refined_duration else "base"

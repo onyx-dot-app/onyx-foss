@@ -56,14 +56,14 @@ class RefinedAgentEndStats(BaseModel):
 
 
 class BaseDecompUpdate(RefinedAgentStartStats, RefinedAgentEndStats):
-    agent_start_time: datetime = datetime.now()
-    previous_history: str = ""
+    agent_start_time: datetime | None = None
+    previous_history: str | None = None
     initial_decomp_questions: list[str] = []
 
 
 class ExploratorySearchUpdate(LoggerUpdate):
     exploratory_search_results: list[InferenceSection] = []
-    previous_history_summary: str = ""
+    previous_history_summary: str | None = None
 
 
 class AnswerComparison(LoggerUpdate):
@@ -71,24 +71,24 @@ class AnswerComparison(LoggerUpdate):
 
 
 class RoutingDecision(LoggerUpdate):
-    routing_decision: str = ""
+    routing_decision: str | None = None
 
 
 # Not used in current graph
 class InitialAnswerBASEUpdate(BaseModel):
-    initial_base_answer: str = ""
+    initial_base_answer: str
 
 
 class InitialAnswerUpdate(LoggerUpdate):
-    initial_answer: str = ""
+    initial_answer: str
     initial_agent_stats: InitialAgentResultStats | None = None
     generated_sub_questions: list[str] = []
-    agent_base_end_time: datetime | None = None
+    agent_base_end_time: datetime
     agent_base_metrics: AgentBaseMetrics | None = None
 
 
 class RefinedAnswerUpdate(RefinedAgentEndStats, LoggerUpdate):
-    refined_answer: str = ""
+    refined_answer: str
     refined_agent_stats: RefinedAgentStats | None = None
     refined_answer_quality: bool = False
 

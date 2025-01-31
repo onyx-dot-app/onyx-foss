@@ -23,8 +23,8 @@ from onyx.agents.agent_search.deep_search_a.main.nodes.create_refined_sub_questi
 from onyx.agents.agent_search.deep_search_a.main.nodes.decide_refinement_need import (
     decide_refinement_need,
 )
-from onyx.agents.agent_search.deep_search_a.main.nodes.extract_entity_term import (
-    extract_entity_term,
+from onyx.agents.agent_search.deep_search_a.main.nodes.extract_entities_terms import (
+    extract_entities_terms,
 )
 from onyx.agents.agent_search.deep_search_a.main.nodes.generate_refined_answer import (
     generate_refined_answer,
@@ -116,7 +116,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
 
     graph.add_node(
         node="extract_entity_term",
-        action=extract_entity_term,
+        action=extract_entities_terms,
     )
     graph.add_node(
         node="decide_refinement_need",

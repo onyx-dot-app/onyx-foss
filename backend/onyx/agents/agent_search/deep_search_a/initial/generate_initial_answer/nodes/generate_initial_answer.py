@@ -244,23 +244,28 @@ def generate_initial_answer(
 
     agent_base_end_time = datetime.now()
 
+    if agent_base_end_time and state.agent_start_time:
+        duration__s = (agent_base_end_time - state.agent_start_time).total_seconds()
+    else:
+        duration__s = None
+
     agent_base_metrics = AgentBaseMetrics(
         num_verified_documents_total=len(relevant_docs),
         num_verified_documents_core=state.original_question_retrieval_stats.verified_count,
         verified_avg_score_core=state.original_question_retrieval_stats.verified_avg_scores,
         num_verified_documents_base=initial_agent_stats.sub_questions.get(
-            "num_verified_documents", None
+            "num_verified_documents"
         ),
         verified_avg_score_base=initial_agent_stats.sub_questions.get(
-            "verified_avg_score", None
+            "verified_avg_score"
         ),
         base_doc_boost_factor=initial_agent_stats.agent_effectiveness.get(
-            "utilized_chunk_ratio", None
+            "utilized_chunk_ratio"
         ),
         support_boost_factor=initial_agent_stats.agent_effectiveness.get(
-            "support_ratio", None
+            "support_ratio"
         ),
-        duration__s=(agent_base_end_time - state.agent_start_time).total_seconds(),
+        duration__s=duration__s,
     )
 
     logger.info(
