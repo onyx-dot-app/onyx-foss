@@ -112,8 +112,6 @@ class SearchTool(Tool):
         self.fast_llm = fast_llm
         self.evaluation_type = evaluation_type
 
-        self.search_pipeline: SearchPipeline | None = None
-
         self.selected_sections = selected_sections
 
         self.full_doc = full_doc
@@ -282,6 +280,10 @@ class SearchTool(Tool):
         query = cast(str, kwargs["query"])
         force_no_rerank = cast(bool, kwargs.get("force_no_rerank", False))
         alternate_db_session = cast(Session, kwargs.get("alternate_db_session", None))
+        retrieved_sections_callback = cast(
+            Callable[[list[InferenceSection]], None],
+            kwargs.get("retrieved_sections_callback"),
+        )
 
         if self.selected_sections:
             yield from self._build_response_for_specified_sections(query)
@@ -326,8 +328,8 @@ class SearchTool(Tool):
             bypass_acl=self.bypass_acl,
             db_session=alternate_db_session or self.db_session,
             prompt_config=self.prompt_config,
+            retrieved_sections_callback=retrieved_sections_callback,
         )
-        self.search_pipeline = search_pipeline  # used for agent_search metrics
 
         search_query_info = SearchQueryInfo(
             predicted_search=search_pipeline.search_query.search_type,

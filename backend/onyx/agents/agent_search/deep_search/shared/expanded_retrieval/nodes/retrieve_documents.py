@@ -68,12 +68,16 @@ def retrieve_documents(
     query_info = None
     if search_tool is None:
         raise ValueError("search_tool must be provided for agentic search")
+
+    callback_container: list[list[InferenceSection]] = []
+
     # new db session to avoid concurrency issues
     with get_session_context_manager() as db_session:
         for tool_response in search_tool.run(
             query=query_to_retrieve,
             force_no_rerank=True,
             alternate_db_session=db_session,
+            retrieved_sections_callback=callback_container.append,
         ):
             # get retrieved docs to send to the rest of the graph
             if tool_response.id == SEARCH_RESPONSE_SUMMARY_ID:
@@ -87,13 +91,9 @@ def retrieve_documents(
                 break
 
     retrieved_docs = retrieved_docs[:AGENT_MAX_QUERY_RETRIEVAL_RESULTS]
-    pre_rerank_docs = retrieved_docs
-    if search_tool.search_pipeline is not None:
-        pre_rerank_docs = (
-            search_tool.search_pipeline._retrieved_sections or retrieved_docs
-        )
 
     if AGENT_RETRIEVAL_STATS:
+        pre_rerank_docs = callback_container[0]
         fit_scores = get_fit_scores(
             pre_rerank_docs,
             retrieved_docs,

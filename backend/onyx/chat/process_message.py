@@ -982,9 +982,10 @@ def stream_chat_message_objects(
 
         # Saving Gen AI answer and responding with message info
 
+        basic_key = SubQuestionKey(level=BASIC_KEY[0], question_num=BASIC_KEY[1])
         info = (
-            info_by_subq[SubQuestionKey(level=BASIC_KEY[0], question_num=BASIC_KEY[1])]
-            if BASIC_KEY in info_by_subq
+            info_by_subq[basic_key]
+            if basic_key in info_by_subq
             else info_by_subq[
                 SubQuestionKey(
                     level=AGENT_SEARCH_INITIAL_KEY[0],
@@ -1018,7 +1019,7 @@ def stream_chat_message_objects(
             ),
         )
 
-        # TODO: add answers for levels >= 1, where each level has the previous as its parent. Use
+        # add answers for levels >= 1, where each level has the previous as its parent. Use
         # the answer_by_level method in answer.py to get the answers for each level
         next_level = 1
         prev_message = gen_ai_response_message

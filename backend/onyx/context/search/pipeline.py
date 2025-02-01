@@ -56,6 +56,8 @@ class SearchPipeline:
         retrieval_metrics_callback: (
             Callable[[RetrievalMetricsContainer], None] | None
         ) = None,
+        retrieved_sections_callback: Callable[[list[InferenceSection]], None]
+        | None = None,
         rerank_metrics_callback: Callable[[RerankMetricsContainer], None] | None = None,
         prompt_config: PromptConfig | None = None,
     ):
@@ -80,6 +82,8 @@ class SearchPipeline:
         self._retrieved_chunks: list[InferenceChunk] | None = None
         # Another call made to the document index to get surrounding sections
         self._retrieved_sections: list[InferenceSection] | None = None
+
+        self.retrieved_sections_callback = retrieved_sections_callback
         # Reranking and LLM section selection can be run together
         # If only LLM selection is on, the reranked chunks are yielded immediatly
         self._reranked_sections: list[InferenceSection] | None = None
@@ -328,9 +332,13 @@ class SearchPipeline:
         if self._reranked_sections is not None:
             return self._reranked_sections
 
+        retrieved_sections = self._get_sections()
+        if self.retrieved_sections_callback is not None:
+            self.retrieved_sections_callback(retrieved_sections)
+
         self._postprocessing_generator = search_postprocessing(
             search_query=self.search_query,
-            retrieved_sections=self._get_sections(),
+            retrieved_sections=retrieved_sections,
             llm=self.fast_llm,
             rerank_metrics_callback=self.rerank_metrics_callback,
         )
