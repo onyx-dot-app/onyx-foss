@@ -93,9 +93,3 @@ class GraphConfig(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-
-
-# class AgentDocumentCitations(BaseModel):
-#     document_id: str
-#     document_title: str
-#     link: str

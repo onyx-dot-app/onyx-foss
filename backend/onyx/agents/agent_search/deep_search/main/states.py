@@ -73,13 +73,6 @@ class InitialRefinedAnswerComparisonUpdate(LoggerUpdate):
     refined_answer_improvement_eval: bool = False
 
 
-# class RoutingDecisionUpdate(LoggerUpdate):
-#     """
-#     Routing decision for which agent flow to use
-#     """
-#     routing_decision: str | None = None
-
-
 # Not used in current graph
 class InitialAnswerBASEUpdate(BaseModel):
     initial_base_answer: str | None = None
@@ -181,7 +174,6 @@ class MainState(
     InitialRefinedAnswerComparisonUpdate,
     ExploratorySearchUpdate,
 ):
-    # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
     pass
 
 

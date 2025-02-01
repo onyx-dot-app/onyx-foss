@@ -28,7 +28,6 @@ class SubQuestionAnsweringState(
     InitialAnswerUpdate,
     SubQuestionResultsUpdate,
 ):
-    # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
     pass
 
 

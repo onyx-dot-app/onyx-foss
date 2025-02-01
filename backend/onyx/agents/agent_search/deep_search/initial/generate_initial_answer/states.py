@@ -45,7 +45,6 @@ class SubQuestionRetrievalState(
     InitialAnswerQualityUpdate,
     ExploratorySearchUpdate,
 ):
-    # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
     base_raw_search_result: Annotated[list[QuestionRetrievalResult], add]
 
 

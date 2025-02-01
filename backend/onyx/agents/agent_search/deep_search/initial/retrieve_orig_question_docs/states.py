@@ -30,8 +30,6 @@ class BaseRawSearchOutput(BaseModel):
       results in a list so the add operator is used to add them together.
     """
 
-    # base_search_documents: Annotated[list[InferenceSection], dedup_inference_sections]
-    # base_retrieval_results: Annotated[list[ExpandedRetrievalResult], add]
     base_expanded_retrieval_result: QuestionRetrievalResult = QuestionRetrievalResult()
 
 
