@@ -586,11 +586,12 @@ def connector_indexing_proxy_task(
 
         # if the job is done, clean up and break
         if job.done():
+            exit_code: int | None
             try:
                 if job.status == "error":
                     ignore_exitcode = False
 
-                    exit_code: int | None = None
+                    exit_code = None
                     if job.process:
                         exit_code = job.process.exitcode
 

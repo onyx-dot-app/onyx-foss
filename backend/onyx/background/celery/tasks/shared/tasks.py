@@ -247,6 +247,7 @@ def cloud_beat_task_generator(
         return None
 
     last_lock_time = time.monotonic()
+    tenant_ids: list[str] | list[None] = []
 
     try:
         tenant_ids = get_all_tenant_ids()

@@ -438,6 +438,7 @@ def try_creating_indexing_task(
     if not acquired:
         return None
 
+    redis_connector_index: RedisConnectorIndex
     try:
         redis_connector = RedisConnector(tenant_id, cc_pair.id)
         redis_connector_index = redis_connector.new_index(search_settings.id)

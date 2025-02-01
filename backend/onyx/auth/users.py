@@ -245,6 +245,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             referral_source=referral_source,
             request=request,
         )
+        user: User
+
         async with get_async_session_with_tenant(tenant_id) as db_session:
             token = CURRENT_TENANT_ID_CONTEXTVAR.set(tenant_id)
             verify_email_is_invited(user_create.email)
@@ -367,6 +369,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
                 "expires_at": expires_at,
                 "refresh_token": refresh_token,
             }
+
+            user: User
 
             try:
                 # Attempt to get user by OAuth account

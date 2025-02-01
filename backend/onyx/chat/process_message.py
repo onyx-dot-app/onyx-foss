@@ -87,6 +87,7 @@ from onyx.file_store.utils import save_files
 from onyx.llm.exceptions import GenAIDisabledException
 from onyx.llm.factory import get_llms_for_persona
 from onyx.llm.factory import get_main_llm_from_tuple
+from onyx.llm.interfaces import LLM
 from onyx.llm.models import PreviousMessage
 from onyx.llm.utils import litellm_exception_to_error_msg
 from onyx.natural_language_processing.utils import get_tokenizer
@@ -349,7 +350,8 @@ def stream_chat_message_objects(
     new_msg_req.chunks_above = 0
     new_msg_req.chunks_below = 0
 
-    llm = None
+    llm: LLM
+
     try:
         user_id = user.id if user is not None else None
 

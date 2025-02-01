@@ -221,6 +221,7 @@ def insert_document_set(
             group_ids=document_set_creation_request.groups or [],
         )
 
+    new_document_set_row: DocumentSetDBModel
     try:
         new_document_set_row = DocumentSetDBModel(
             name=document_set_creation_request.name,

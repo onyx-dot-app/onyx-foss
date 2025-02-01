@@ -365,7 +365,7 @@ def extract_file_text(
                     f"Failed to process with Unstructured: {str(unstructured_error)}. Falling back to normal processing."
                 )
                 # Fall through to normal processing
-
+        final_extension: str
         if file_name or extension:
             if extension is not None:
                 final_extension = extension

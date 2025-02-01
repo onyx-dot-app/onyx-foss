@@ -239,6 +239,7 @@ def _run_indexing(
         callback=callback,
     )
 
+    tracer: OnyxTracer
     if INDEXING_TRACER_INTERVAL > 0:
         logger.debug(f"Memory tracer starting: interval={INDEXING_TRACER_INTERVAL}")
         tracer = OnyxTracer()

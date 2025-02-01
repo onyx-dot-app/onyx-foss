@@ -369,11 +369,12 @@ class AirtableConnector(LoadConnector):
         # Process records in parallel batches using ThreadPoolExecutor
         PARALLEL_BATCH_SIZE = 8
         max_workers = min(PARALLEL_BATCH_SIZE, len(records))
+        record_documents: list[Document] = []
 
         # Process records in batches
         for i in range(0, len(records), PARALLEL_BATCH_SIZE):
             batch_records = records[i : i + PARALLEL_BATCH_SIZE]
-            record_documents: list[Document] = []
+            record_documents = []
 
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 # Submit batch tasks
