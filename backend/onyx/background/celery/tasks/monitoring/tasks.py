@@ -39,6 +39,7 @@ from onyx.redis.redis_pool import get_redis_client
 from onyx.redis.redis_pool import redis_lock_dump
 from onyx.utils.telemetry import optional_telemetry
 from onyx.utils.telemetry import RecordType
+from shared_configs.contextvars import CURRENT_TENANT_ID_CONTEXTVAR
 
 
 _MONITORING_SOFT_TIME_LIMIT = 60 * 5  # 5 minutes
@@ -657,6 +658,9 @@ def monitor_background_processes(self: Task, *, tenant_id: str | None) -> None:
     - Syncing speed metrics
     - Worker status and task counts
     """
+    if tenant_id is not None:
+        CURRENT_TENANT_ID_CONTEXTVAR.set(tenant_id)
+
     task_logger.info("Starting background monitoring")
     r = get_redis_client(tenant_id=tenant_id)
 
@@ -688,11 +692,13 @@ def monitor_background_processes(self: Task, *, tenant_id: str | None) -> None:
                 metrics = metric_fn()
                 for metric in metrics:
                     # double check to make sure we aren't double-emitting metrics
-                    if metric.key is not None and not _has_metric_been_emitted(
+                    if metric.key is None or not _has_metric_been_emitted(
                         redis_std, metric.key
                     ):
                         metric.log()
                         metric.emit(tenant_id)
+
+                    if metric.key is not None:
                         _mark_metric_as_emitted(redis_std, metric.key)
 
         task_logger.info("Successfully collected background metrics")
