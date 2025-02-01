@@ -368,6 +368,13 @@ export interface LlmOverrideManager {
   liveAssistant: Persona | null;
 }
 
+// Things to test
+// 1. User override
+// 2. User preference (defaults to system wide default if no preference set)
+// 3. Current assistant
+// 4. Current chat session
+// 5. Live assistant
+
 /*
 LLM Override is as follows (i.e. this order)
 - User override (explicitly set in the chat input bar)
@@ -386,6 +393,8 @@ Changes take place as
 - (uploadLLMOverride) User explicitly setting a model override (and we explicitly override and set the userSpecifiedOverride which we'll use in place of the user preferences unless overridden by an assistant)
 
 If we have a live assistant, we should use that model override
+
+Relevant test: `llm_ordering.spec.ts`.
 */
 
 export function useLlmOverride(

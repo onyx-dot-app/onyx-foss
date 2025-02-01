@@ -402,7 +402,7 @@ export const AIMessage = ({
 
   return (
     <div
-      id="onyx-ai-message"
+      id={isComplete ? "onyx-ai-message" : undefined}
       ref={trackedElementRef}
       className={`py-5 ml-4 lg:px-5 relative flex `}
     >

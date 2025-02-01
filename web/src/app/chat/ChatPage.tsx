@@ -297,6 +297,7 @@ export function ChatPage({
   // 2. Selected assistant (assistnat default in this chat session)
   // 3. First pinned assistants (ordered list of pinned assistants)
   // 4. Available assistants (ordered list of available assistants)
+  // Relevant test: `live_assistant.spec.ts`
   const liveAssistant: Persona | undefined = useMemo(
     () =>
       alternativeAssistant ||

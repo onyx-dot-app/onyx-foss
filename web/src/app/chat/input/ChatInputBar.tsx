@@ -478,6 +478,7 @@ export function ChatInputBar({
               onKeyDownCapture={handleKeyDown}
               onChange={handleInputChange}
               ref={textAreaRef}
+              id="onyx-chat-input-textarea"
               className={`
                 m-0
                 w-full
@@ -703,6 +704,7 @@ export function ChatInputBar({
               </div>
               <div className="flex my-auto">
                 <button
+                  id="onyx-chat-input-send-button"
                   className={`cursor-pointer ${
                     chatState == "streaming" ||
                     chatState == "toolBuilding" ||

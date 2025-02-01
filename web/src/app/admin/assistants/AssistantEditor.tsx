@@ -720,7 +720,6 @@ export function AssistantEditor({
                 name="description"
                 label="Description"
                 placeholder="Use this Assistant to help draft professional emails"
-                data-testid="assistant-description-input"
                 className="[&_input]:placeholder:text-text-muted/50"
               />
 

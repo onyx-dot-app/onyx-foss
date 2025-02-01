@@ -91,7 +91,10 @@ export default function LLMPopover({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <button className="focus:outline-none">
+        <button
+          className="focus:outline-none"
+          data-testid="llm-popover-trigger"
+        >
           <ChatInputOption
             minimize
             toggle

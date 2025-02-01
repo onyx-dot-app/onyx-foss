@@ -129,6 +129,7 @@ const SortableAssistant: React.FC<SortableAssistantProps> = ({
         className="w-3 ml-[2px] mr-[2px] group-hover:visible invisible flex-none cursor-grab"
       />
       <button
+        data-testid={`assistant-[${assistant.id}]`}
         onClick={(e) => {
           e.preventDefault();
           if (!isDragging) {

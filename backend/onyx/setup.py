@@ -37,6 +37,7 @@ from onyx.document_index.vespa.index import VespaIndex
 from onyx.indexing.models import IndexingSetting
 from onyx.key_value_store.factory import get_kv_store
 from onyx.key_value_store.interface import KvKeyNotFoundError
+from onyx.llm.llm_provider_options import OPEN_AI_MODEL_NAMES
 from onyx.natural_language_processing.search_nlp_models import EmbeddingModel
 from onyx.natural_language_processing.search_nlp_models import warm_up_bi_encoder
 from onyx.natural_language_processing.search_nlp_models import warm_up_cross_encoder
@@ -279,6 +280,7 @@ def setup_postgres(db_session: Session) -> None:
     if GEN_AI_API_KEY and fetch_default_provider(db_session) is None:
         # Only for dev flows
         logger.notice("Setting up default OpenAI LLM for dev.")
+
         llm_model = GEN_AI_MODEL_VERSION or "gpt-4o-mini"
         fast_model = FAST_GEN_AI_MODEL_VERSION or "gpt-4o-mini"
         model_req = LLMProviderUpsertRequest(
@@ -292,8 +294,8 @@ def setup_postgres(db_session: Session) -> None:
             fast_default_model_name=fast_model,
             is_public=True,
             groups=[],
-            display_model_names=[llm_model, fast_model],
-            model_names=[llm_model, fast_model],
+            display_model_names=OPEN_AI_MODEL_NAMES,
+            model_names=OPEN_AI_MODEL_NAMES,
         )
         new_llm_provider = upsert_llm_provider(
             llm_provider=model_req, db_session=db_session
