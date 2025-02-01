@@ -18,7 +18,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from onyx.auth.users import current_chat_accesssible_user
-from onyx.auth.users import current_limited_user
 from onyx.auth.users import current_user
 from onyx.chat.chat_utils import create_chat_chain
 from onyx.chat.chat_utils import extract_headers
@@ -422,7 +421,7 @@ def set_message_as_latest(
 @router.post("/create-chat-message-feedback")
 def create_chat_feedback(
     feedback: ChatFeedbackRequest,
-    user: User | None = Depends(current_limited_user),
+    user: User | None = Depends(current_chat_accesssible_user),
     db_session: Session = Depends(get_session),
 ) -> None:
     user_id = user.id if user else None
