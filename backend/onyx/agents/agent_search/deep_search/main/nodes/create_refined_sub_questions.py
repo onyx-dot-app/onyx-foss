@@ -7,7 +7,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search.main.models import (
-    FollowUpSubQuestion,
+    RefinementSubQuestion,
 )
 from onyx.agents.agent_search.deep_search.main.operations import (
     dispatch_subquestion,
@@ -104,7 +104,7 @@ def create_refined_sub_questions(
 
     refined_sub_question_dict = {}
     for sub_question_num, sub_question in enumerate(parsed_response):
-        refined_sub_question = FollowUpSubQuestion(
+        refined_sub_question = RefinementSubQuestion(
             sub_question=sub_question,
             sub_question_id=make_question_id(1, sub_question_num + 1),
             verified=False,

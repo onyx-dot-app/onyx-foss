@@ -4,8 +4,8 @@ from collections.abc import Callable
 import numpy as np
 from langgraph.types import StreamWriter
 
-from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
-from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
+from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkRetrievalStats
+from onyx.agents.agent_search.shared_graph_utils.models import QueryRetrievalResult
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import SubQueryPiece
 from onyx.context.search.models import InferenceSection
@@ -34,14 +34,14 @@ def dispatch_subquery(
 
 def calculate_sub_question_retrieval_stats(
     verified_documents: list[InferenceSection],
-    expanded_retrieval_results: list[QueryResult],
-) -> AgentChunkStats:
+    expanded_retrieval_results: list[QueryRetrievalResult],
+) -> AgentChunkRetrievalStats:
     chunk_scores: dict[str, dict[str, list[int | float]]] = defaultdict(
         lambda: defaultdict(list)
     )
 
     for expanded_retrieval_result in expanded_retrieval_results:
-        for doc in expanded_retrieval_result.search_results:
+        for doc in expanded_retrieval_result.retrieved_documents:
             doc_chunk_id = f"{doc.center_chunk.document_id}_{doc.center_chunk.chunk_id}"
             if doc.center_chunk.score is not None:
                 chunk_scores[doc_chunk_id]["score"].append(doc.center_chunk.score)
@@ -81,7 +81,7 @@ def calculate_sub_question_retrieval_stats(
     else:
         rejected_avg_scores = None
 
-    chunk_stats = AgentChunkStats(
+    chunk_stats = AgentChunkRetrievalStats(
         verified_count=raw_chunk_stats_counts["verified_count"],
         verified_avg_scores=verified_avg_scores,
         rejected_count=raw_chunk_stats_counts["rejected_count"],

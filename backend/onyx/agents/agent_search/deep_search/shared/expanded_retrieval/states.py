@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from onyx.agents.agent_search.core_state import SubgraphCoreState
 from onyx.agents.agent_search.deep_search.main.states import LoggerUpdate
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.models import (
-    ExpandedRetrievalResult,
+    QuestionRetrievalResult,
 )
-from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
+from onyx.agents.agent_search.shared_graph_utils.models import QueryRetrievalResult
 from onyx.agents.agent_search.shared_graph_utils.models import RetrievalFitStats
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
@@ -39,7 +39,7 @@ class DocVerificationUpdate(BaseModel):
 
 
 class DocRetrievalUpdate(LoggerUpdate, BaseModel):
-    query_retrieval_results: Annotated[list[QueryResult], add] = []
+    query_retrieval_results: Annotated[list[QueryRetrievalResult], add] = []
     retrieved_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ] = []
@@ -51,15 +51,15 @@ class DocRerankingUpdate(LoggerUpdate, BaseModel):
 
 
 class ExpandedRetrievalUpdate(LoggerUpdate, BaseModel):
-    expanded_retrieval_result: ExpandedRetrievalResult
+    expanded_retrieval_result: QuestionRetrievalResult
 
 
 ## Graph Output State
 
 
 class ExpandedRetrievalOutput(LoggerUpdate, BaseModel):
-    expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
-    base_expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
+    expanded_retrieval_result: QuestionRetrievalResult = QuestionRetrievalResult()
+    base_expanded_retrieval_result: QuestionRetrievalResult = QuestionRetrievalResult()
 
 
 ## Graph State

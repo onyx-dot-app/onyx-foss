@@ -5,19 +5,19 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
     AnswerQuestionState,
 )
 from onyx.agents.agent_search.shared_graph_utils.models import (
-    QuestionAnswerResults,
+    SubQuestionAnswerResults,
 )
 
 
 def format_sub_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
     return AnswerQuestionOutput(
         answer_results=[
-            QuestionAnswerResults(
+            SubQuestionAnswerResults(
                 question=state.question,
                 question_id=state.question_id,
                 verified_high_quality=state.answer_quality,
                 answer=state.answer,
-                expanded_retrieval_results=state.expanded_retrieval_results,
+                sub_query_retrieval_results=state.expanded_retrieval_results,
                 verified_reranked_documents=state.verified_reranked_documents,
                 context_documents=state.context_documents,
                 cited_documents=state.cited_documents,

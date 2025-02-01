@@ -71,7 +71,7 @@ def generate_refined_answer(
 
     verified_reranked_documents = state.verified_reranked_documents
     sub_questions_cited_documents = state.cited_documents
-    all_original_question_documents = state.orig_question_retrieval_documents
+    all_original_question_documents = state.orig_question_retrieved_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_documents
 
@@ -92,7 +92,7 @@ def generate_refined_answer(
         consolidated_context_docs, consolidated_context_docs
     )
 
-    query_info = get_query_info(state.orig_question_query_retrieval_results)
+    query_info = get_query_info(state.orig_question_sub_query_retrieval_results)
     assert (
         graph_config.tooling.search_tool
     ), "search_tool must be provided for agentic search"

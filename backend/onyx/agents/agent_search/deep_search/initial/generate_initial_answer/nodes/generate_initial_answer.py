@@ -8,7 +8,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search.initial.generate_initial_answer.states import (
-    SearchSQState,
+    SubQuestionRetrievalState,
 )
 from onyx.agents.agent_search.deep_search.main.models import AgentBaseMetrics
 from onyx.agents.agent_search.deep_search.main.operations import (
@@ -59,7 +59,9 @@ from onyx.tools.tool_implementations.search.search_tool import yield_search_resp
 
 
 def generate_initial_answer(
-    state: SearchSQState, config: RunnableConfig, writer: StreamWriter = lambda _: None
+    state: SubQuestionRetrievalState,
+    config: RunnableConfig,
+    writer: StreamWriter = lambda _: None,
 ) -> InitialAnswerUpdate:
     node_start_time = datetime.now()
 
@@ -68,7 +70,7 @@ def generate_initial_answer(
     prompt_enrichment_components = get_prompt_enrichment_components(graph_config)
 
     sub_questions_cited_documents = state.cited_documents
-    orig_question_retrieval_documents = state.orig_question_retrieval_documents
+    orig_question_retrieval_documents = state.orig_question_retrieved_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_documents
     counter = 0
@@ -91,7 +93,7 @@ def generate_initial_answer(
     decomp_questions = []
 
     # Use the query info from the base document retrieval
-    query_info = get_query_info(state.orig_question_query_retrieval_results)
+    query_info = get_query_info(state.orig_question_sub_query_retrieval_results)
 
     assert (
         graph_config.tooling.search_tool

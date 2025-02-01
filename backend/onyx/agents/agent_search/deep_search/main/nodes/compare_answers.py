@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search.main.states import (
-    InitialVRefinedAnswerComparisonUpdate,
+    InitialRefinedAnswerComparisonUpdate,
 )
 from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.models import GraphConfig
@@ -20,7 +20,7 @@ from onyx.chat.models import RefinedAnswerImprovement
 
 def compare_answers(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
-) -> InitialVRefinedAnswerComparisonUpdate:
+) -> InitialRefinedAnswerComparisonUpdate:
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
@@ -52,7 +52,7 @@ def compare_answers(
         writer,
     )
 
-    return InitialVRefinedAnswerComparisonUpdate(
+    return InitialRefinedAnswerComparisonUpdate(
         refined_answer_improvement_eval=refined_answer_improvement,
         log_messages=[
             get_langgraph_node_log_string(

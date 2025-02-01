@@ -7,7 +7,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search.initial.generate_initial_answer.states import (
-    SearchSQState,
+    SubQuestionRetrievalState,
 )
 from onyx.agents.agent_search.deep_search.main.models import (
     AgentRefinedMetrics,
@@ -41,7 +41,9 @@ from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
 
 def decompose_orig_question(
-    state: SearchSQState, config: RunnableConfig, writer: StreamWriter = lambda _: None
+    state: SubQuestionRetrievalState,
+    config: RunnableConfig,
+    writer: StreamWriter = lambda _: None,
 ) -> InitialQuestionDecompositionUpdate:
     node_start_time = datetime.now()
 

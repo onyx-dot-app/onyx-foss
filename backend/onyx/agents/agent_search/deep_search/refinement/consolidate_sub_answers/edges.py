@@ -4,7 +4,7 @@ from datetime import datetime
 from langgraph.types import Send
 
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
-    AnswerQuestionInput,
+    SubQuestionAnsweringInput,
 )
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     ExpandedRetrievalInput,
@@ -14,7 +14,9 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def send_to_expanded_refined_retrieval(state: AnswerQuestionInput) -> Send | Hashable:
+def send_to_expanded_refined_retrieval(
+    state: SubQuestionAnsweringInput,
+) -> Send | Hashable:
     logger.debug("sending to expanded retrieval for follow up question via edge")
     datetime.now()
     return Send(

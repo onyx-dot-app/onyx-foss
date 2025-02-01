@@ -3,8 +3,10 @@ from langchain.schema import HumanMessage
 from langchain.schema import SystemMessage
 from langchain_core.messages.tool import ToolMessage
 
-from onyx.agents.agent_search.models import AgentPromptEnrichmentComponents
 from onyx.agents.agent_search.models import GraphConfig
+from onyx.agents.agent_search.shared_graph_utils.models import (
+    AgentPromptEnrichmentComponents,
+)
 from onyx.agents.agent_search.shared_graph_utils.prompts import BASE_RAG_PROMPT_v2
 from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import (

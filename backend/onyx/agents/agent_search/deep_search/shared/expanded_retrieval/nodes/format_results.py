@@ -5,7 +5,7 @@ from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.deep_search.main.operations import get_query_info
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.models import (
-    ExpandedRetrievalResult,
+    QuestionRetrievalResult,
 )
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.operations import (
     calculate_sub_question_retrieval_stats,
@@ -17,7 +17,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
     ExpandedRetrievalUpdate,
 )
 from onyx.agents.agent_search.models import GraphConfig
-from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
+from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkRetrievalStats
 from onyx.agents.agent_search.shared_graph_utils.utils import parse_question_id
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
@@ -42,7 +42,9 @@ def format_results(
         if len(reranked_documents) == 0:
             # The sub-question is used as the last query. If no verified documents are found, stream
             # the top 3 for that one. We may want to revisit this.
-            reranked_documents = state.query_retrieval_results[-1].search_results[:3]
+            reranked_documents = state.query_retrieval_results[-1].retrieved_documents[
+                :3
+            ]
 
         assert (
             graph_config.tooling.search_tool
@@ -73,15 +75,15 @@ def format_results(
     )
 
     if sub_question_retrieval_stats is None:
-        sub_question_retrieval_stats = AgentChunkStats()
+        sub_question_retrieval_stats = AgentChunkRetrievalStats()
     # else:
     #    sub_question_retrieval_stats = [sub_question_retrieval_stats]
 
     return ExpandedRetrievalUpdate(
-        expanded_retrieval_result=ExpandedRetrievalResult(
-            expanded_queries_results=state.query_retrieval_results,
+        expanded_retrieval_result=QuestionRetrievalResult(
+            expanded_query_results=state.query_retrieval_results,
             verified_reranked_documents=reranked_documents,
             context_documents=state.reranked_documents,
-            sub_question_retrieval_stats=sub_question_retrieval_stats,
+            retrieval_stats=sub_question_retrieval_stats,
         ),
     )

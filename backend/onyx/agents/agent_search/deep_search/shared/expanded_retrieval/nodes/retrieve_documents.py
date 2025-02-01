@@ -14,7 +14,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 )
 from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.calculations import get_fit_scores
-from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
+from onyx.agents.agent_search.shared_graph_utils.models import QueryRetrievalResult
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
@@ -101,9 +101,9 @@ def retrieve_documents(
     else:
         fit_scores = None
 
-    expanded_retrieval_result = QueryResult(
+    expanded_retrieval_result = QueryRetrievalResult(
         query=query_to_retrieve,
-        search_results=retrieved_docs,
+        retrieved_documents=retrieved_docs,
         stats=fit_scores,
         query_info=query_info,
     )

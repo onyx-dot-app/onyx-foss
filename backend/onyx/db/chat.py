@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from onyx.agents.agent_search.shared_graph_utils.models import CombinedAgentMetrics
 from onyx.agents.agent_search.shared_graph_utils.models import (
-    QuestionAnswerResults,
+    SubQuestionAnswerResults,
 )
 from onyx.auth.schemas import UserRole
 from onyx.chat.models import DocumentRelevance
@@ -985,7 +985,7 @@ def log_agent_sub_question_results(
     db_session: Session,
     chat_session_id: UUID | None,
     primary_message_id: int | None,
-    sub_question_answer_results: list[QuestionAnswerResults],
+    sub_question_answer_results: list[SubQuestionAnswerResults],
 ) -> None:
     def _create_citation_format_list(
         document_citations: list[InferenceSection],
@@ -1036,7 +1036,7 @@ def log_agent_sub_question_results(
 
         sub_question_id = sub_question_object.id
 
-        for sub_query in sub_question_answer_result.expanded_retrieval_results:
+        for sub_query in sub_question_answer_result.sub_query_retrieval_results:
             sub_query_object = AgentSubQuery(
                 parent_question_id=sub_question_id,
                 chat_session_id=chat_session_id,
@@ -1047,7 +1047,9 @@ def log_agent_sub_question_results(
             db_session.add(sub_query_object)
             db_session.commit()
 
-            search_docs = chunks_or_sections_to_search_docs(sub_query.search_results)
+            search_docs = chunks_or_sections_to_search_docs(
+                sub_query.retrieved_documents
+            )
             for doc in search_docs:
                 db_doc = create_db_search_doc(doc, db_session)
                 db_session.add(db_doc)

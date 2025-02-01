@@ -26,7 +26,7 @@ from onyx.agents.agent_search.models import GraphTooling
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
-from onyx.agents.agent_search.shared_graph_utils.models import PersonaExpressions
+from onyx.agents.agent_search.shared_graph_utils.models import PersonaPromptExpressions
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     ASSISTANT_SYSTEM_PROMPT_DEFAULT,
 )
@@ -275,7 +275,9 @@ def get_test_config(
     return graph_config
 
 
-def get_persona_agent_prompt_expressions(persona: Persona | None) -> PersonaExpressions:
+def get_persona_agent_prompt_expressions(
+    persona: Persona | None,
+) -> PersonaPromptExpressions:
     if persona is None:
         persona_prompt = ASSISTANT_SYSTEM_PROMPT_DEFAULT
         persona_base = ""
@@ -285,7 +287,7 @@ def get_persona_agent_prompt_expressions(persona: Persona | None) -> PersonaExpr
         persona_prompt = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
             persona_prompt=persona_base
         )
-    return PersonaExpressions(
+    return PersonaPromptExpressions(
         contextualized_prompt=persona_prompt, base_prompt=persona_base
     )
 

@@ -4,7 +4,7 @@ from onyx.agents.agent_search.deep_search.main.states import (
     OrigQuestionRetrievalUpdate,
 )
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.models import (
-    ExpandedRetrievalResult,
+    QuestionRetrievalResult,
 )
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states import (
     ExpandedRetrievalInput,
@@ -32,7 +32,7 @@ class BaseRawSearchOutput(BaseModel):
 
     # base_search_documents: Annotated[list[InferenceSection], dedup_inference_sections]
     # base_retrieval_results: Annotated[list[ExpandedRetrievalResult], add]
-    base_expanded_retrieval_result: ExpandedRetrievalResult = ExpandedRetrievalResult()
+    base_expanded_retrieval_result: QuestionRetrievalResult = QuestionRetrievalResult()
 
 
 ## Graph State

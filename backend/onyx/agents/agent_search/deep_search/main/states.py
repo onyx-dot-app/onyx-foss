@@ -11,24 +11,21 @@ from onyx.agents.agent_search.deep_search.main.models import (
     AgentRefinedMetrics,
 )
 from onyx.agents.agent_search.deep_search.main.models import (
-    FollowUpSubQuestion,
-)
-from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.models import (
-    ExpandedRetrievalResult,
+    RefinementSubQuestion,
 )
 from onyx.agents.agent_search.orchestration.states import ToolCallUpdate
 from onyx.agents.agent_search.orchestration.states import ToolChoiceInput
 from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
-from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
+from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkRetrievalStats
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
 from onyx.agents.agent_search.shared_graph_utils.models import InitialAgentResultStats
-from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
-from onyx.agents.agent_search.shared_graph_utils.models import (
-    QuestionAnswerResults,
-)
+from onyx.agents.agent_search.shared_graph_utils.models import QueryRetrievalResult
 from onyx.agents.agent_search.shared_graph_utils.models import RefinedAgentStats
+from onyx.agents.agent_search.shared_graph_utils.models import (
+    SubQuestionAnswerResults,
+)
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
 )
@@ -68,12 +65,19 @@ class ExploratorySearchUpdate(LoggerUpdate):
     previous_history_summary: str | None = None
 
 
-class InitialVRefinedAnswerComparisonUpdate(LoggerUpdate):
+class InitialRefinedAnswerComparisonUpdate(LoggerUpdate):
+    """
+    Evaluation of whether the refined answer is better than the initial answer
+    """
+
     refined_answer_improvement_eval: bool = False
 
 
-class RoutingDecisionUpdate(LoggerUpdate):
-    routing_decision: str | None = None
+# class RoutingDecisionUpdate(LoggerUpdate):
+#     """
+#     Routing decision for which agent flow to use
+#     """
+#     routing_decision: str | None = None
 
 
 # Not used in current graph
@@ -82,6 +86,10 @@ class InitialAnswerBASEUpdate(BaseModel):
 
 
 class InitialAnswerUpdate(LoggerUpdate):
+    """
+    Initial answer information
+    """
+
     initial_answer: str | None = None
     initial_agent_stats: InitialAgentResultStats | None = None
     generated_sub_questions: list[str] = []
@@ -90,16 +98,24 @@ class InitialAnswerUpdate(LoggerUpdate):
 
 
 class RefinedAnswerUpdate(RefinedAgentEndStats, LoggerUpdate):
+    """
+    Refined answer information
+    """
+
     refined_answer: str | None = None
     refined_agent_stats: RefinedAgentStats | None = None
     refined_answer_quality: bool = False
 
 
 class InitialAnswerQualityUpdate(LoggerUpdate):
+    """
+    Initial answer quality evaluation
+    """
+
     initial_answer_quality_eval: bool = False
 
 
-class RequireRefinementUpdate(LoggerUpdate):
+class RequireRefinemenEvalUpdate(LoggerUpdate):
     require_refined_answer_eval: bool = True
 
 
@@ -112,16 +128,16 @@ class SubQuestionResultsUpdate(LoggerUpdate):
         list[InferenceSection], dedup_inference_sections
     ] = []  # cited docs from sub-answers are used for answer context
     sub_question_results: Annotated[
-        list[QuestionAnswerResults], dedup_question_answer_results
+        list[SubQuestionAnswerResults], dedup_question_answer_results
     ] = []
 
 
 class OrigQuestionRetrievalUpdate(LoggerUpdate):
-    orig_question_retrieval_documents: Annotated[
+    orig_question_retrieved_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ]
-    orig_question_query_retrieval_results: list[QueryResult] = []
-    orig_question_retrieval_stats: AgentChunkStats = AgentChunkStats()
+    orig_question_sub_query_retrieval_results: list[QueryRetrievalResult] = []
+    orig_question_retrieval_stats: AgentChunkRetrievalStats = AgentChunkRetrievalStats()
 
 
 class EntityTermExtractionUpdate(LoggerUpdate):
@@ -131,10 +147,9 @@ class EntityTermExtractionUpdate(LoggerUpdate):
 
 
 class RefinedQuestionDecompositionUpdate(RefinedAgentStartStats, LoggerUpdate):
-    refined_sub_questions: dict[int, FollowUpSubQuestion] = {}
+    refined_sub_questions: dict[int, RefinementSubQuestion] = {}
 
 
-## Graph Input State
 ## Graph Input State
 
 
@@ -158,17 +173,16 @@ class MainState(
     OrigQuestionRetrievalUpdate,
     EntityTermExtractionUpdate,
     InitialAnswerQualityUpdate,
-    RequireRefinementUpdate,
+    RequireRefinemenEvalUpdate,
     RefinedQuestionDecompositionUpdate,
     RefinedAnswerUpdate,
     RefinedAgentStartStats,
     RefinedAgentEndStats,
-    RoutingDecisionUpdate,
-    InitialVRefinedAnswerComparisonUpdate,
+    InitialRefinedAnswerComparisonUpdate,
     ExploratorySearchUpdate,
 ):
     # expanded_retrieval_result: Annotated[list[ExpandedRetrievalResult], add]
-    base_raw_search_result: Annotated[list[ExpandedRetrievalResult], add]
+    pass
 
 
 ## Graph Output State - presently not used

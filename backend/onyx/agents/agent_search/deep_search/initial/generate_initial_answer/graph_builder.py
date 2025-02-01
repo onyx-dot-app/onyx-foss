@@ -9,10 +9,10 @@ from onyx.agents.agent_search.deep_search.initial.generate_initial_answer.nodes.
     validate_initial_answer,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_initial_answer.states import (
-    SearchSQInput,
+    SubQuestionRetrievalInput,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_initial_answer.states import (
-    SearchSQState,
+    SubQuestionRetrievalState,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_sub_answers.graph_builder import (
     generate_sub_answers_graph_builder,
@@ -27,8 +27,8 @@ logger = setup_logger()
 
 def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph:
     graph = StateGraph(
-        state_schema=SearchSQState,
-        input=SearchSQInput,
+        state_schema=SubQuestionRetrievalState,
+        input=SubQuestionRetrievalInput,
     )
 
     generate_sub_answers = generate_sub_answers_graph_builder().compile()

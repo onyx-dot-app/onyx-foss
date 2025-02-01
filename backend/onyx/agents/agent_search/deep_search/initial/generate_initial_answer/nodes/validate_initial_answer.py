@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from onyx.agents.agent_search.deep_search.initial.generate_initial_answer.states import (
-    SearchSQState,
+    SubQuestionRetrievalState,
 )
 from onyx.agents.agent_search.deep_search.main.operations import logger
 from onyx.agents.agent_search.deep_search.main.states import (
@@ -12,7 +12,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 )
 
 
-def validate_initial_answer(state: SearchSQState) -> InitialAnswerQualityUpdate:
+def validate_initial_answer(
+    state: SubQuestionRetrievalState,
+) -> InitialAnswerQualityUpdate:
     """
     Check whether the final output satisfies the original user question
 

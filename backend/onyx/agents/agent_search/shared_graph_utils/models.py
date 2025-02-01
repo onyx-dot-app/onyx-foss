@@ -1,5 +1,3 @@
-from typing import Literal
-
 from pydantic import BaseModel
 
 from onyx.agents.agent_search.deep_search.main.models import (
@@ -15,17 +13,17 @@ from onyx.tools.models import SearchQueryInfo
 
 
 # Pydantic models for structured outputs
-class RewrittenQueries(BaseModel):
-    rewritten_queries: list[str]
+# class RewrittenQueries(BaseModel):
+#     rewritten_queries: list[str]
 
 
-class BinaryDecision(BaseModel):
-    decision: Literal["yes", "no"]
+# class BinaryDecision(BaseModel):
+#     decision: Literal["yes", "no"]
 
 
-class BinaryDecisionWithReasoning(BaseModel):
-    reasoning: str
-    decision: Literal["yes", "no"]
+# class BinaryDecisionWithReasoning(BaseModel):
+#     reasoning: str
+#     decision: Literal["yes", "no"]
 
 
 class RetrievalFitScoreMetrics(BaseModel):
@@ -39,11 +37,11 @@ class RetrievalFitStats(BaseModel):
     fit_scores: dict[str, RetrievalFitScoreMetrics]
 
 
-class AgentChunkScores(BaseModel):
-    scores: dict[str, dict[str, list[int | float]]]
+# class AgentChunkScores(BaseModel):
+#     scores: dict[str, dict[str, list[int | float]]]
 
 
-class AgentChunkStats(BaseModel):
+class AgentChunkRetrievalStats(BaseModel):
     verified_count: int | None = None
     verified_avg_scores: float | None = None
     rejected_count: int | None = None
@@ -89,26 +87,23 @@ class EntityRelationshipTermExtraction(BaseModel):
     terms: list[Term] = []
 
 
-### Models ###
-
-
-class QueryResult(BaseModel):
+class QueryRetrievalResult(BaseModel):
     query: str
-    search_results: list[InferenceSection]
+    retrieved_documents: list[InferenceSection]
     stats: RetrievalFitStats | None
     query_info: SearchQueryInfo | None
 
 
-class QuestionAnswerResults(BaseModel):
+class SubQuestionAnswerResults(BaseModel):
     question: str
     question_id: str
     answer: str
     verified_high_quality: bool
-    expanded_retrieval_results: list[QueryResult]
+    sub_query_retrieval_results: list[QueryRetrievalResult]
     verified_reranked_documents: list[InferenceSection]
     context_documents: list[InferenceSection]
     cited_documents: list[InferenceSection]
-    sub_question_retrieval_stats: AgentChunkStats
+    sub_question_retrieval_stats: AgentChunkRetrievalStats
 
 
 class CombinedAgentMetrics(BaseModel):
@@ -118,6 +113,12 @@ class CombinedAgentMetrics(BaseModel):
     additional_metrics: AgentAdditionalMetrics
 
 
-class PersonaExpressions(BaseModel):
+class PersonaPromptExpressions(BaseModel):
     contextualized_prompt: str
     base_prompt: str
+
+
+class AgentPromptEnrichmentComponents(BaseModel):
+    persona_prompts: PersonaPromptExpressions
+    history: str
+    date_str: str

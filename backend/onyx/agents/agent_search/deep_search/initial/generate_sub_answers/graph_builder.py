@@ -15,10 +15,10 @@ from onyx.agents.agent_search.deep_search.initial.generate_sub_answers.nodes.for
     format_initial_sub_answers,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_sub_answers.states import (
-    SQInput,
+    SubQuestionAnsweringInput,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_sub_answers.states import (
-    SQState,
+    SubQuestionAnsweringState,
 )
 from onyx.utils.logger import setup_logger
 
@@ -29,8 +29,8 @@ test_mode = False
 
 def generate_sub_answers_graph_builder() -> StateGraph:
     graph = StateGraph(
-        state_schema=SQState,
-        input=SQInput,
+        state_schema=SubQuestionAnsweringState,
+        input=SubQuestionAnsweringInput,
     )
 
     graph.add_node(

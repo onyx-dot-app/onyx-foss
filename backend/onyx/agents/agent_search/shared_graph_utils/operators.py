@@ -1,5 +1,5 @@
 from onyx.agents.agent_search.shared_graph_utils.models import (
-    QuestionAnswerResults,
+    SubQuestionAnswerResults,
 )
 from onyx.chat.prune_and_merge import _merge_sections
 from onyx.context.search.models import InferenceSection
@@ -13,11 +13,11 @@ def dedup_inference_sections(
 
 
 def dedup_question_answer_results(
-    question_answer_results_1: list[QuestionAnswerResults],
-    question_answer_results_2: list[QuestionAnswerResults],
-) -> list[QuestionAnswerResults]:
+    question_answer_results_1: list[SubQuestionAnswerResults],
+    question_answer_results_2: list[SubQuestionAnswerResults],
+) -> list[SubQuestionAnswerResults]:
     deduped_question_answer_results: list[
-        QuestionAnswerResults
+        SubQuestionAnswerResults
     ] = question_answer_results_1
     utilized_question_ids: set[str] = set(
         [x.question_id for x in question_answer_results_1]

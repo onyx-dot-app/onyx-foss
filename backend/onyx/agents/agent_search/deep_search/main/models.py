@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class FollowUpSubQuestion(BaseModel):
+class RefinementSubQuestion(BaseModel):
     sub_question: str
     sub_question_id: str
     verified: bool

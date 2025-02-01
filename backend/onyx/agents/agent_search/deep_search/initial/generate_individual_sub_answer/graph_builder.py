@@ -18,13 +18,13 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
     ingest_retrieved_documents,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
-    AnswerQuestionInput,
-)
-from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
     AnswerQuestionOutput,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
     AnswerQuestionState,
+)
+from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
+    SubQuestionAnsweringInput,
 )
 from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.graph_builder import (
     expanded_retrieval_graph_builder,
@@ -38,7 +38,7 @@ logger = setup_logger()
 def answer_query_graph_builder() -> StateGraph:
     graph = StateGraph(
         state_schema=AnswerQuestionState,
-        input=AnswerQuestionInput,
+        input=SubQuestionAnsweringInput,
         output=AnswerQuestionOutput,
     )
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         graph_config, search_tool = get_test_config(
             db_session, primary_llm, fast_llm, search_request
         )
-        inputs = AnswerQuestionInput(
+        inputs = SubQuestionAnsweringInput(
             question="what can you do with onyx?",
             question_id="0_0",
             log_messages=[],

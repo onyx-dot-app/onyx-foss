@@ -2,11 +2,11 @@ from collections.abc import Callable
 
 from langgraph.types import StreamWriter
 
-from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkStats
+from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkRetrievalStats
 from onyx.agents.agent_search.shared_graph_utils.models import InitialAgentResultStats
-from onyx.agents.agent_search.shared_graph_utils.models import QueryResult
+from onyx.agents.agent_search.shared_graph_utils.models import QueryRetrievalResult
 from onyx.agents.agent_search.shared_graph_utils.models import (
-    QuestionAnswerResults,
+    SubQuestionAnswerResults,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import SubQuestionPiece
@@ -35,8 +35,8 @@ def dispatch_subquestion(
 
 
 def calculate_initial_agent_stats(
-    decomp_answer_results: list[QuestionAnswerResults],
-    original_question_stats: AgentChunkStats,
+    decomp_answer_results: list[SubQuestionAnswerResults],
+    original_question_stats: AgentChunkRetrievalStats,
 ) -> InitialAgentResultStats:
     initial_agent_result_stats: InitialAgentResultStats = InitialAgentResultStats(
         sub_questions={},
@@ -117,7 +117,7 @@ def calculate_initial_agent_stats(
     return initial_agent_result_stats
 
 
-def get_query_info(results: list[QueryResult]) -> SearchQueryInfo:
+def get_query_info(results: list[QueryRetrievalResult]) -> SearchQueryInfo:
     # Use the query info from the base document retrieval
     # this is used for some fields that are the same across the searches done
     query_info = None

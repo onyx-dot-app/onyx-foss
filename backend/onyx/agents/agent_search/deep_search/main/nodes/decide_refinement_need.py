@@ -5,7 +5,7 @@ from langchain_core.runnables import RunnableConfig
 
 from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
-    RequireRefinementUpdate,
+    RequireRefinemenEvalUpdate,
 )
 from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -15,7 +15,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 
 def decide_refinement_need(
     state: MainState, config: RunnableConfig
-) -> RequireRefinementUpdate:
+) -> RequireRefinemenEvalUpdate:
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
@@ -32,12 +32,12 @@ def decide_refinement_need(
     ]
 
     if graph_config.behavior.allow_refinement:
-        return RequireRefinementUpdate(
+        return RequireRefinemenEvalUpdate(
             require_refined_answer_eval=decision,
             log_messages=log_messages,
         )
     else:
-        return RequireRefinementUpdate(
+        return RequireRefinemenEvalUpdate(
             require_refined_answer_eval=False,
             log_messages=log_messages,
         )

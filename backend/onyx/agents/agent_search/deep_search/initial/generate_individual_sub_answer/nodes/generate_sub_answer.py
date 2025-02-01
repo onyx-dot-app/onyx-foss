@@ -10,7 +10,7 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
     AnswerQuestionState,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
-    QAGenerationUpdate,
+    SubQuestionAnswerGenerationUpdate,
 )
 from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
@@ -40,7 +40,7 @@ def generate_sub_answer(
     state: AnswerQuestionState,
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
-) -> QAGenerationUpdate:
+) -> SubQuestionAnswerGenerationUpdate:
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
@@ -120,7 +120,7 @@ def generate_sub_answer(
     )
     write_custom_event("stream_finished", stop_event, writer)
 
-    return QAGenerationUpdate(
+    return SubQuestionAnswerGenerationUpdate(
         answer=answer_str,
         cited_documents=cited_documents,
         log_messages=[

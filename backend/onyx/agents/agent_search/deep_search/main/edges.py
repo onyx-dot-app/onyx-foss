@@ -7,14 +7,14 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import Send
 
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
-    AnswerQuestionInput,
+    AnswerQuestionOutput,
 )
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
-    AnswerQuestionOutput,
+    SubQuestionAnsweringInput,
 )
 from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.deep_search.main.states import (
-    RequireRefinementUpdate,
+    RequireRefinemenEvalUpdate,
 )
 from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
@@ -58,7 +58,7 @@ def parallelize_initial_sub_question_answering(
         return [
             Send(
                 "answer_query_subgraph",
-                AnswerQuestionInput(
+                SubQuestionAnsweringInput(
                     question=question,
                     question_id=make_question_id(0, question_num + 1),
                     log_messages=[
@@ -82,7 +82,7 @@ def parallelize_initial_sub_question_answering(
 
 # Define the function that determines whether to continue or not
 def continue_to_refined_answer_or_end(
-    state: RequireRefinementUpdate,
+    state: RequireRefinemenEvalUpdate,
 ) -> Literal["create_refined_sub_questions", "logging_node"]:
     if state.require_refined_answer_eval:
         return "create_refined_sub_questions"
@@ -98,7 +98,7 @@ def parallelize_refined_sub_question_answering(
         return [
             Send(
                 "answer_refined_question_subgraphs",
-                AnswerQuestionInput(
+                SubQuestionAnsweringInput(
                     question=question_data.sub_question,
                     question_id=make_question_id(1, question_num),
                     log_messages=[
