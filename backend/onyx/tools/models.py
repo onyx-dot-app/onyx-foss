@@ -43,7 +43,7 @@ class ToolCallFinalResult(ToolCallKickoff):
     )
     # agentic additions; only need to set during agentic tool calls
     level: int | None = None
-    level_question_nr: int | None = None
+    level_question_num: int | None = None
 
 
 class DynamicSchemaInfo(BaseModel):

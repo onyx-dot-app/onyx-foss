@@ -22,7 +22,7 @@ def format_initial_sub_answers(
     documents = []
     context_documents = []
     cited_documents = []
-    answer_results = state.answer_results if hasattr(state, "answer_results") else []
+    answer_results = state.answer_results
     for answer_result in answer_results:
         documents.extend(answer_result.verified_reranked_documents)
         context_documents.extend(answer_result.context_documents)

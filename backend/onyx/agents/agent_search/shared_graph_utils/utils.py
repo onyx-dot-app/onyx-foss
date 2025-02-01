@@ -33,7 +33,6 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import (
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     ASSISTANT_SYSTEM_PROMPT_PERSONA,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import DATE_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     HISTORY_CONTEXT_SUMMARY_PROMPT,
 )
@@ -45,11 +44,13 @@ from onyx.chat.models import PromptConfig
 from onyx.chat.models import SectionRelevancePiece
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.chat.models import StreamType
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import MAX_CHUNKS_FED_TO_CHAT
 from onyx.configs.constants import DEFAULT_PERSONA_ID
 from onyx.configs.constants import DISPATCH_SEP_CHAR
+from onyx.configs.constants import FORMAT_DOCS_SEPARATOR
 from onyx.context.search.enums import LLMEvaluationType
 from onyx.context.search.models import InferenceSection
 from onyx.context.search.models import RetrievalDetails
@@ -81,10 +82,10 @@ def normalize_whitespace(text: str) -> str:
 def format_docs(docs: Sequence[InferenceSection]) -> str:
     formatted_doc_list = []
 
-    for doc_nr, doc in enumerate(docs):
-        formatted_doc_list.append(f"Document D{doc_nr + 1}:\n{doc.combined_content}")
+    for doc_num, doc in enumerate(docs):
+        formatted_doc_list.append(f"Document D{doc_num + 1}:\n{doc.combined_content}")
 
-    return "\n\n".join(formatted_doc_list)
+    return FORMAT_DOCS_SEPARATOR.join(formatted_doc_list)
 
 
 def format_docs_content_flat(docs: Sequence[InferenceSection]) -> str:
@@ -93,7 +94,7 @@ def format_docs_content_flat(docs: Sequence[InferenceSection]) -> str:
     for _, doc in enumerate(docs):
         formatted_doc_list.append(f"\n...{doc.combined_content}\n")
 
-    return "\n\n".join(formatted_doc_list)
+    return FORMAT_DOCS_SEPARATOR.join(formatted_doc_list)
 
 
 def clean_and_parse_list_string(json_string: str) -> list[dict]:
@@ -289,20 +290,27 @@ def get_persona_agent_prompt_expressions(persona: Persona | None) -> PersonaExpr
     )
 
 
-def make_question_id(level: int, question_nr: int) -> str:
-    return f"{level}_{question_nr}"
+def make_question_id(level: int, question_num: int) -> str:
+    return f"{level}_{question_num}"
 
 
 def parse_question_id(question_id: str) -> tuple[int, int]:
-    level, question_nr = question_id.split("_")
-    return int(level), int(question_nr)
+    level, question_num = question_id.split("_")
+    return int(level), int(question_num)
 
 
 def _dispatch_nonempty(
-    content: str, dispatch_event: Callable[[str, int], None], num: int
+    content: str, dispatch_event: Callable[[str, int], None], sep_num: int
 ) -> None:
+    """
+    Dispatch a content string if it is not empty using the given callback.
+    This function is used in the context of dispatching some arbitrary number
+    of similar objects which are separated by a separator during the LLM stream.
+    The callback expects a sep_num denoting which object is being dispatched; these
+    numbers go from 1 to however many strings the LLM decides to stream.
+    """
     if content != "":
-        dispatch_event(content, num)
+        dispatch_event(content, sep_num)
 
 
 def dispatch_separated(
@@ -331,14 +339,10 @@ def dispatch_separated(
 def dispatch_main_answer_stop_info(level: int, writer: StreamWriter) -> None:
     stop_event = StreamStopInfo(
         stop_reason=StreamStopReason.FINISHED,
-        stream_type="main_answer",
+        stream_type=StreamType.MAIN_ANSWER,
         level=level,
     )
     write_custom_event("stream_finished", stop_event, writer)
-
-
-def get_today_prompt() -> str:
-    return DATE_PROMPT.format(date=datetime.now().strftime("%A, %B %d, %Y"))
 
 
 def retrieve_search_docs(
@@ -379,13 +383,8 @@ def summarize_history(
     )
 
     history_response = model.invoke(history_context_prompt)
-
-    if isinstance(history_response.content, str):
-        history_context_response_str = history_response.content
-    else:
-        history_context_response_str = ""
-
-    return history_context_response_str
+    assert isinstance(history_response.content, str)
+    return history_response.content
 
 
 # taken from langchain_core.runnables.schema

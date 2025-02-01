@@ -21,7 +21,7 @@ export interface ProSearchPacket {
   sub_query?: string;
   tool_response?: ToolResponse;
   level: number;
-  level_question_nr: number;
+  level_question_num: number;
 }
 
 export interface RefinedAnswerImprovement {
@@ -31,26 +31,26 @@ export interface RefinedAnswerImprovement {
 export interface AgentAnswerPiece {
   answer_piece: string;
   level: number;
-  level_question_nr: number;
+  level_question_num: number;
   answer_type: "agent_sub_answer" | "agent_level_answer";
 }
 
 export interface SubQuestionPiece {
   sub_question: string;
   level: number;
-  level_question_nr: number;
+  level_question_num: number;
 }
 
 export interface SubQueryPiece {
   sub_query: string;
   level: number;
-  level_question_nr: number;
+  level_question_num: number;
   query_id: number;
 }
 
 export interface SubQuestionSearchDoc {
   context_docs: OnyxDocument[];
-  level_question_nr: number;
+  level_question_num: number;
   level: number;
 }
 
@@ -60,7 +60,7 @@ export interface ToolResponse {
 }
 export interface ExtendedToolResponse extends ToolResponse {
   level: number;
-  level_question_nr: number;
+  level_question_num: number;
 }
 
 export interface AnswerPiecePacket {
@@ -75,7 +75,7 @@ export enum StreamStopReason {
 export interface StreamStopInfo {
   stop_reason: StreamStopReason;
   level?: number;
-  level_question_nr?: number;
+  level_question_num?: number;
 }
 
 export interface ErrorMessagePacket {

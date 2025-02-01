@@ -429,8 +429,6 @@ def handle_new_chat_message(
                 ),
                 is_connected=is_connected_func,
             ):
-                # with open('chat_packets.log', 'a') as log_file:
-                #     log_file.write(json.dumps(packet) + '\n')
                 yield json.dumps(packet) if isinstance(packet, dict) else packet
 
         except Exception as e:

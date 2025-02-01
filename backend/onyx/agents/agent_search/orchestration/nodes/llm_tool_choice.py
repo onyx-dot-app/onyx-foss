@@ -112,7 +112,7 @@ def llm_tool_choice(
 
     # If no tool calls are emitted by the LLM, we should not choose a tool
     if len(tool_message.tool_calls) == 0:
-        logger.info("No tool calls emitted by LLM")
+        logger.debug("No tool calls emitted by LLM")
         return ToolChoiceUpdate(
             tool_choice=None,
         )
@@ -142,7 +142,7 @@ def llm_tool_choice(
             f"Tool call attempted with tool {selected_tool}, request {selected_tool_call_request}"
         )
 
-    logger.info(f"Selected tool: {selected_tool.name}")
+    logger.debug(f"Selected tool: {selected_tool.name}")
     logger.debug(f"Selected tool call request: {selected_tool_call_request}")
 
     return ToolChoiceUpdate(

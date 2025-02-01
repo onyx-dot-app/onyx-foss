@@ -112,7 +112,7 @@ def generate_initial_answer(
                 id=tool_response.id,
                 response=tool_response.response,
                 level=0,
-                level_question_nr=0,  # 0, 0 is the base question
+                level_question_num=0,  # 0, 0 is the base question
             ),
             writer,
         )
@@ -123,7 +123,7 @@ def generate_initial_answer(
             AgentAnswerPiece(
                 answer_piece=UNKNOWN_ANSWER,
                 level=0,
-                level_question_nr=0,
+                level_question_num=0,
                 answer_type="agent_level_answer",
             ),
             writer,
@@ -142,7 +142,7 @@ def generate_initial_answer(
 
         good_qa_list: list[str] = []
 
-        sub_question_nr = 1
+        sub_question_num = 1
 
         for decomp_answer_result in decomp_answer_results:
             decomp_questions.append(decomp_answer_result.question)
@@ -155,10 +155,10 @@ def generate_initial_answer(
                     SUB_QUESTION_ANSWER_TEMPLATE.format(
                         sub_question=decomp_answer_result.question,
                         sub_answer=decomp_answer_result.answer,
-                        sub_question_nr=sub_question_nr,
+                        sub_question_num=sub_question_num,
                     )
                 )
-            sub_question_nr += 1
+            sub_question_num += 1
 
         # Determine which base prompt to use given the sub-question information
         if len(good_qa_list) > 0:
@@ -212,7 +212,7 @@ def generate_initial_answer(
                 AgentAnswerPiece(
                     answer_piece=content,
                     level=0,
-                    level_question_nr=0,
+                    level_question_num=0,
                     answer_type="agent_level_answer",
                 ),
                 writer,

@@ -17,11 +17,11 @@ def format_initial_sub_answers(
 ) -> SubQuestionResultsUpdate:
     now_start = datetime.now()
 
-    logger.info(f"--------{now_start}--------INGEST ANSWERS---")
+    logger.debug(f"--------{now_start}--------INGEST ANSWERS---")
     documents = []
     context_documents = []
     cited_documents = []
-    answer_results = state.answer_results if hasattr(state, "answer_results") else []
+    answer_results = state.answer_results
     for answer_result in answer_results:
         documents.extend(answer_result.verified_reranked_documents)
         context_documents.extend(answer_result.context_documents)

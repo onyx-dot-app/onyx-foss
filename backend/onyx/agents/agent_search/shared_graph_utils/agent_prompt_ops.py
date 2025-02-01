@@ -10,7 +10,6 @@ from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_persona_agent_prompt_expressions,
 )
-from onyx.agents.agent_search.shared_graph_utils.utils import get_today_prompt
 from onyx.agents.agent_search.shared_graph_utils.utils import remove_document_citations
 from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
 from onyx.configs.agent_configs import AGENT_MAX_STATIC_HISTORY_WORD_LENGTH
@@ -19,6 +18,7 @@ from onyx.llm.interfaces import LLMConfig
 from onyx.llm.utils import get_max_input_tokens
 from onyx.natural_language_processing.utils import get_tokenizer
 from onyx.natural_language_processing.utils import tokenizer_trim_content
+from onyx.prompts.prompt_utils import build_date_time_string
 
 
 def build_sub_question_answer_prompt(
@@ -32,12 +32,12 @@ def build_sub_question_answer_prompt(
         content=persona_specification,
     )
 
-    date_str = get_today_prompt()
+    date_str = build_date_time_string()
 
     docs_format_list = [
-        f"""Document Number: [D{doc_nr + 1}]\n
+        f"""Document Number: [D{doc_num + 1}]\n
                              Content: {doc.combined_content}\n\n"""
-        for doc_nr, doc in enumerate(docs)
+        for doc_num, doc in enumerate(docs)
     ]
 
     docs_str = "\n\n".join(docs_format_list)
@@ -126,7 +126,7 @@ def get_prompt_enrichment_components(
 
     history = build_history_prompt(config, config.inputs.search_request.query)
 
-    date_str = get_today_prompt()
+    date_str = build_date_time_string()
 
     return AgentPromptEnrichmentComponents(
         persona_prompts=persona_prompts,

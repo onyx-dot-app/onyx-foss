@@ -19,6 +19,7 @@ from onyx.chat.models import CitationInfo
 from onyx.chat.models import OnyxAnswerPiece
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.chat.models import SubQuestionKey
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.configs.constants import BASIC_KEY
 from onyx.context.search.models import SearchRequest
@@ -31,6 +32,8 @@ from onyx.tools.utils import explicit_tool_calling_supported
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
+
+BASIC_SQ_KEY = SubQuestionKey(level=BASIC_KEY[0], question_num=BASIC_KEY[1])
 
 
 class Answer:
@@ -164,6 +167,7 @@ class Answer:
                 and packet.answer_piece
                 and packet.answer_type == "agent_level_answer"
             ):
+                assert packet.level is not None
                 answer_by_level[packet.level] += packet.answer_piece
             elif isinstance(packet, OnyxAnswerPiece) and packet.answer_piece:
                 answer_by_level[BASIC_KEY[0]] += packet.answer_piece
@@ -178,19 +182,20 @@ class Answer:
 
         return citations
 
-    # TODO: replace tuple of ints with SubQuestionId EVERYWHERE
-    def citations_by_subquestion(self) -> dict[tuple[int, int], list[CitationInfo]]:
+    def citations_by_subquestion(self) -> dict[SubQuestionKey, list[CitationInfo]]:
         citations_by_subquestion: dict[
-            tuple[int, int], list[CitationInfo]
+            SubQuestionKey, list[CitationInfo]
         ] = defaultdict(list)
         for packet in self.processed_streamed_output:
             if isinstance(packet, CitationInfo):
-                if packet.level_question_nr is not None and packet.level is not None:
+                if packet.level_question_num is not None and packet.level is not None:
                     citations_by_subquestion[
-                        (packet.level, packet.level_question_nr)
+                        SubQuestionKey(
+                            level=packet.level, question_num=packet.level_question_num
+                        )
                     ].append(packet)
                 elif packet.level is None:
-                    citations_by_subquestion[BASIC_KEY].append(packet)
+                    citations_by_subquestion[BASIC_SQ_KEY].append(packet)
         return citations_by_subquestion
 
     def is_cancelled(self) -> bool:

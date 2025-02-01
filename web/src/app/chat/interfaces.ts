@@ -158,7 +158,7 @@ export interface DocumentsResponse {
   top_documents: OnyxDocument[];
   rephrased_query: string | null;
   level?: number | null;
-  level_question_nr?: number | null;
+  level_question_num?: number | null;
 }
 
 export interface FileChatDisplay {
@@ -209,7 +209,7 @@ export interface PromptData {
 
 export interface BaseQuestionIdentifier {
   level: number;
-  level_question_nr: number;
+  level_question_num: number;
 }
 
 export interface SubQuestionDetail extends BaseQuestionIdentifier {
@@ -239,34 +239,34 @@ export const constructSubQuestions = (
   if (!newDetail) {
     return subQuestions;
   }
-  if (newDetail.level_question_nr == 0) {
+  if (newDetail.level_question_num == 0) {
     return subQuestions;
   }
 
   const updatedSubQuestions = [...subQuestions];
   // .filter(
-  //   (sq) => sq.level_question_nr !== 0
+  //   (sq) => sq.level_question_num !== 0
   // );
 
   if ("stop_reason" in newDetail) {
     console.log("STOP REASON");
     console.log(newDetail);
-    const { level, level_question_nr } = newDetail;
+    const { level, level_question_num } = newDetail;
     let subQuestion = updatedSubQuestions.find(
-      (sq) => sq.level === level && sq.level_question_nr === level_question_nr
+      (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
     if (subQuestion) {
       subQuestion.is_complete = true;
     }
   } else if ("top_documents" in newDetail) {
-    const { level, level_question_nr, top_documents } = newDetail;
+    const { level, level_question_num, top_documents } = newDetail;
     let subQuestion = updatedSubQuestions.find(
-      (sq) => sq.level === level && sq.level_question_nr === level_question_nr
+      (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
     if (!subQuestion) {
       subQuestion = {
         level: level ?? 0,
-        level_question_nr: level_question_nr ?? 0,
+        level_question_num: level_question_num ?? 0,
         question: "",
         answer: "",
         sub_queries: [],
@@ -277,16 +277,16 @@ export const constructSubQuestions = (
     }
   } else if ("answer_piece" in newDetail) {
     // Handle AgentAnswerPiece
-    const { level, level_question_nr, answer_piece } = newDetail;
+    const { level, level_question_num, answer_piece } = newDetail;
     // Find or create the relevant SubQuestionDetail
     let subQuestion = updatedSubQuestions.find(
-      (sq) => sq.level === level && sq.level_question_nr === level_question_nr
+      (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
 
     if (!subQuestion) {
       subQuestion = {
         level,
-        level_question_nr,
+        level_question_num,
         question: "",
         answer: "",
         sub_queries: [],
@@ -299,17 +299,17 @@ export const constructSubQuestions = (
     subQuestion.answer += answer_piece;
   } else if ("sub_question" in newDetail) {
     // Handle SubQuestionPiece
-    const { level, level_question_nr, sub_question } = newDetail;
+    const { level, level_question_num, sub_question } = newDetail;
 
     // Find or create the relevant SubQuestionDetail
     let subQuestion = updatedSubQuestions.find(
-      (sq) => sq.level === level && sq.level_question_nr === level_question_nr
+      (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
 
     if (!subQuestion) {
       subQuestion = {
         level,
-        level_question_nr,
+        level_question_num,
         question: "",
         answer: "",
         sub_queries: [],
@@ -322,18 +322,18 @@ export const constructSubQuestions = (
     subQuestion.question += sub_question;
   } else if ("sub_query" in newDetail) {
     // Handle SubQueryPiece
-    const { level, level_question_nr, query_id, sub_query } = newDetail;
+    const { level, level_question_num, query_id, sub_query } = newDetail;
 
     // Find the relevant SubQuestionDetail
     let subQuestion = updatedSubQuestions.find(
-      (sq) => sq.level === level && sq.level_question_nr === level_question_nr
+      (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
 
     if (!subQuestion) {
       // If we receive a sub_query before its parent question, create a placeholder
       subQuestion = {
         level,
-        level_question_nr: level_question_nr,
+        level_question_num: level_question_num,
         question: "",
         answer: "",
         sub_queries: [],

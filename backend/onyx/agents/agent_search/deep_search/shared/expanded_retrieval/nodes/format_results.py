@@ -30,7 +30,7 @@ def format_results(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> ExpandedRetrievalUpdate:
-    level, question_nr = parse_question_id(state.sub_question_id or "0_0")
+    level, question_num = parse_question_id(state.sub_question_id or "0_0")
     query_info = get_query_info(state.query_retrieval_results)
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
@@ -38,7 +38,7 @@ def format_results(
 
     reranked_documents = state.reranked_documents
 
-    if not (level == 0 and question_nr == 0):
+    if not (level == 0 and question_num == 0):
         if len(reranked_documents) == 0:
             # The sub-question is used as the last query. If no verified documents are found, stream
             # the top 3 for that one. We may want to revisit this.
@@ -63,7 +63,7 @@ def format_results(
                     id=tool_response.id,
                     response=tool_response.response,
                     level=level,
-                    level_question_nr=question_nr,
+                    level_question_num=question_num,
                 ),
                 writer,
             )

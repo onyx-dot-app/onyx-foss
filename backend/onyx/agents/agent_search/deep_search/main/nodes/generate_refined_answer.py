@@ -112,7 +112,7 @@ def generate_refined_answer(
                 id=tool_response.id,
                 response=tool_response.response,
                 level=1,
-                level_question_nr=0,  # 0, 0 is the base question
+                level_question_num=0,  # 0, 0 is the base question
             ),
             writer,
         )
@@ -132,10 +132,10 @@ def generate_refined_answer(
     initial_good_sub_questions: list[str] = []
     new_revised_good_sub_questions: list[str] = []
 
-    sub_question_nr = 1
+    sub_question_num = 1
 
     for decomp_answer_result in decomp_answer_results:
-        question_level, question_nr = parse_question_id(
+        question_level, question_num = parse_question_id(
             decomp_answer_result.question_id
         )
 
@@ -155,12 +155,12 @@ def generate_refined_answer(
                 SUB_QUESTION_ANSWER_TEMPLATE_REVISED.format(
                     sub_question=decomp_answer_result.question,
                     sub_answer=decomp_answer_result.answer,
-                    sub_question_nr=sub_question_nr,
+                    sub_question_num=sub_question_num,
                     sub_question_type=sub_question_type,
                 )
             )
 
-        sub_question_nr += 1
+        sub_question_num += 1
 
     initial_good_sub_questions = list(set(initial_good_sub_questions))
     new_revised_good_sub_questions = list(set(new_revised_good_sub_questions))
@@ -239,7 +239,7 @@ def generate_refined_answer(
             AgentAnswerPiece(
                 answer_piece=content,
                 level=1,
-                level_question_nr=0,
+                level_question_num=0,
                 answer_type="agent_level_answer",
             ),
             writer,

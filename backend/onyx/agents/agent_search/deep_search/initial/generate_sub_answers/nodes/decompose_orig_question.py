@@ -35,6 +35,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.chat.models import StreamType
 from onyx.chat.models import SubQuestionPiece
 from onyx.configs.agent_configs import AGENT_NUM_DOCS_FOR_DECOMPOSITION
 
@@ -55,7 +56,6 @@ def decompose_orig_question(
     history = build_history_prompt(graph_config, question)
 
     # Use the initial search results to inform the decomposition
-    sample_doc_str = state.sample_doc_str if hasattr(state, "sample_doc_str") else ""
     agent_start_time = datetime.now()
 
     # Initial search to inform decomposition. Just get top 3 fits
@@ -91,7 +91,7 @@ def decompose_orig_question(
         SubQuestionPiece(
             sub_question=question,
             level=0,
-            level_question_nr=0,
+            level_question_num=0,
         ),
         writer,
     )
@@ -102,7 +102,7 @@ def decompose_orig_question(
 
     stop_event = StreamStopInfo(
         stop_reason=StreamStopReason.FINISHED,
-        stream_type="sub_questions",
+        stream_type=StreamType.SUB_QUESTIONS,
         level=0,
     )
     write_custom_event("stream_finished", stop_event, writer)

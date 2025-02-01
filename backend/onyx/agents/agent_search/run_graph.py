@@ -29,6 +29,7 @@ from onyx.configs.agent_configs import ALLOW_REFINEMENT
 from onyx.configs.agent_configs import INITIAL_SEARCH_DECOMPOSITION_ENABLED
 from onyx.context.search.models import SearchRequest
 from onyx.db.engine import get_session_context_manager
+from onyx.llm.factory import get_default_llms
 from onyx.tools.tool_runner import ToolCallKickoff
 from onyx.utils.logger import setup_logger
 
@@ -144,8 +145,6 @@ def run_basic_graph(
 
 
 if __name__ == "__main__":
-    from onyx.llm.factory import get_default_llms
-
     for _ in range(1):
         query_start_time = datetime.now()
         logger.debug(f"Start at {query_start_time}")
@@ -188,29 +187,29 @@ if __name__ == "__main__":
                 elif isinstance(output, ExtendedToolResponse):
                     tool_responses.append(output.response)
                     logger.info(
-                        f"   ---- ET {output.level} - {output.level_question_nr} |  "
+                        f"   ---- ET {output.level} - {output.level_question_num} |  "
                     )
                 elif isinstance(output, SubQueryPiece):
                     logger.info(
-                        f"Sq {output.level} - {output.level_question_nr} - {output.sub_query} | "
+                        f"Sq {output.level} - {output.level_question_num} - {output.sub_query} | "
                     )
                 elif isinstance(output, SubQuestionPiece):
                     logger.info(
-                        f"SQ {output.level} - {output.level_question_nr} - {output.sub_question} | "
+                        f"SQ {output.level} - {output.level_question_num} - {output.sub_question} | "
                     )
                 elif (
                     isinstance(output, AgentAnswerPiece)
                     and output.answer_type == "agent_sub_answer"
                 ):
                     logger.info(
-                        f"   ---- SA {output.level} - {output.level_question_nr} {output.answer_piece} | "
+                        f"   ---- SA {output.level} - {output.level_question_num} {output.answer_piece} | "
                     )
                 elif (
                     isinstance(output, AgentAnswerPiece)
                     and output.answer_type == "agent_level_answer"
                 ):
                     logger.info(
-                        f"   ---------- FA {output.level} - {output.level_question_nr}  {output.answer_piece} | "
+                        f"   ---------- FA {output.level} - {output.level_question_num}  {output.answer_piece} | "
                     )
                 elif isinstance(output, RefinedAnswerImprovement):
                     logger.info(

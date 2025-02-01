@@ -889,7 +889,7 @@ def translate_db_sub_questions_to_server_objects(
         sub_questions.append(
             SubQuestionDetail(
                 level=sub_question.level,
-                level_question_nr=sub_question.level_question_num,
+                level_question_num=sub_question.level_question_num,
                 question=sub_question.sub_question,
                 answer=sub_question.sub_answer,
                 sub_queries=sub_queries,
@@ -1012,7 +1012,7 @@ def log_agent_sub_question_results(
     now = datetime.now()
 
     for sub_question_answer_result in sub_question_answer_results:
-        level, level_question_nr = [
+        level, level_question_num = [
             int(x) for x in sub_question_answer_result.question_id.split("_")
         ]
         sub_question = sub_question_answer_result.question
@@ -1025,7 +1025,7 @@ def log_agent_sub_question_results(
             chat_session_id=chat_session_id,
             primary_question_id=primary_message_id,
             level=level,
-            level_question_num=level_question_nr,
+            level_question_num=level_question_num,
             sub_question=sub_question,
             sub_answer=sub_answer,
             sub_question_doc_results=sub_document_results,
@@ -1033,7 +1033,6 @@ def log_agent_sub_question_results(
 
         db_session.add(sub_question_object)
         db_session.commit()
-        # db_session.flush()
 
         sub_question_id = sub_question_object.id
 
@@ -1047,7 +1046,6 @@ def log_agent_sub_question_results(
 
             db_session.add(sub_query_object)
             db_session.commit()
-            # db_session.flush()
 
             search_docs = chunks_or_sections_to_search_docs(sub_query.search_results)
             for doc in search_docs:

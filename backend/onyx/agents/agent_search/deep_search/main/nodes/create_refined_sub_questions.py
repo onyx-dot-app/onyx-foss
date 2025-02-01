@@ -103,16 +103,16 @@ def create_refined_sub_questions(
         raise ValueError("LLM response is not a string")
 
     refined_sub_question_dict = {}
-    for sub_question_nr, sub_question in enumerate(parsed_response):
+    for sub_question_num, sub_question in enumerate(parsed_response):
         refined_sub_question = FollowUpSubQuestion(
             sub_question=sub_question,
-            sub_question_id=make_question_id(1, sub_question_nr + 1),
+            sub_question_id=make_question_id(1, sub_question_num + 1),
             verified=False,
             answered=False,
             answer="",
         )
 
-        refined_sub_question_dict[sub_question_nr + 1] = refined_sub_question
+        refined_sub_question_dict[sub_question_num + 1] = refined_sub_question
 
     return RefinedQuestionDecompositionUpdate(
         refined_sub_questions=refined_sub_question_dict,

@@ -41,9 +41,9 @@ def expand_queries(
     llm = graph_config.tooling.fast_llm
     sub_question_id = state.sub_question_id
     if sub_question_id is None:
-        level, question_nr = 0, 0
+        level, question_num = 0, 0
     else:
-        level, question_nr = parse_question_id(sub_question_id)
+        level, question_num = parse_question_id(sub_question_id)
 
     msg = [
         HumanMessage(
@@ -52,7 +52,7 @@ def expand_queries(
     ]
 
     llm_response_list = dispatch_separated(
-        llm.stream(prompt=msg), dispatch_subquery(level, question_nr, writer)
+        llm.stream(prompt=msg), dispatch_subquery(level, question_num, writer)
     )
 
     llm_response = merge_message_runs(llm_response_list, chunk_separator="")[0].content

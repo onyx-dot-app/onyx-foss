@@ -60,13 +60,13 @@ def parallelize_initial_sub_question_answering(
                 "answer_query_subgraph",
                 AnswerQuestionInput(
                     question=question,
-                    question_id=make_question_id(0, question_nr + 1),
+                    question_id=make_question_id(0, question_num + 1),
                     log_messages=[
                         f"{edge_start_time} -- Main Edge - Parallelize Initial Sub-question Answering"
                     ],
                 ),
             )
-            for question_nr, question in enumerate(state.initial_sub_questions)
+            for question_num, question in enumerate(state.initial_sub_questions)
         ]
 
     else:
@@ -100,13 +100,13 @@ def parallelize_refined_sub_question_answering(
                 "answer_refined_question_subgraphs",
                 AnswerQuestionInput(
                     question=question_data.sub_question,
-                    question_id=make_question_id(1, question_nr),
+                    question_id=make_question_id(1, question_num),
                     log_messages=[
                         f"{edge_start_time} -- Main Edge - Parallelize Refined Sub-question Answering"
                     ],
                 ),
             )
-            for question_nr, question_data in state.refined_sub_questions.items()
+            for question_num, question_data in state.refined_sub_questions.items()
         ]
 
     else:

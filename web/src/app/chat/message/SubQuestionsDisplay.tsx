@@ -634,16 +634,16 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
           <SubQuestionDisplay
             currentlyOpen={
               currentlyOpenQuestion?.level === subQuestion.level &&
-              currentlyOpenQuestion?.level_question_nr ===
-                subQuestion.level_question_nr
+              currentlyOpenQuestion?.level_question_num ===
+                subQuestion.level_question_num
             }
             currentlyClosed={
               currentlyOpenQuestion != null &&
               currentlyOpenQuestion != undefined &&
               !(
                 currentlyOpenQuestion.level === subQuestion.level &&
-                currentlyOpenQuestion.level_question_nr ===
-                  subQuestion.level_question_nr
+                currentlyOpenQuestion.level_question_num ===
+                  subQuestion.level_question_num
               )
             }
             key={index}
@@ -681,16 +681,16 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
               }
               currentlyOpen={
                 currentlyOpenQuestion?.level === subQuestion.level &&
-                currentlyOpenQuestion?.level_question_nr ===
-                  subQuestion.level_question_nr
+                currentlyOpenQuestion?.level_question_num ===
+                  subQuestion.level_question_num
               }
               currentlyClosed={
                 currentlyOpenQuestion != null &&
                 currentlyOpenQuestion != undefined &&
                 !(
                   currentlyOpenQuestion.level === subQuestion.level &&
-                  currentlyOpenQuestion.level_question_nr ===
-                    subQuestion.level_question_nr
+                  currentlyOpenQuestion.level_question_num ===
+                    subQuestion.level_question_num
                 )
               }
               key={index}

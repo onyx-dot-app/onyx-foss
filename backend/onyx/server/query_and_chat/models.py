@@ -215,7 +215,7 @@ class SubQueryDetail(BaseModel):
 
 class SubQuestionDetail(BaseModel):
     level: int
-    level_question_nr: int
+    level_question_num: int
     question: str
     answer: str
     sub_queries: list[SubQueryDetail] | None = None

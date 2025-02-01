@@ -15,7 +15,7 @@ logger = setup_logger()
 
 
 def dispatch_subquery(
-    level: int, question_nr: int, writer: StreamWriter
+    level: int, question_num: int, writer: StreamWriter
 ) -> Callable[[str, int], None]:
     def helper(token: str, num: int) -> None:
         write_custom_event(
@@ -23,7 +23,7 @@ def dispatch_subquery(
             SubQueryPiece(
                 sub_query=token,
                 level=level,
-                level_question_nr=question_nr,
+                level_question_num=question_num,
                 query_id=num,
             ),
             writer,

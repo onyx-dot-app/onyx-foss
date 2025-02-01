@@ -60,5 +60,5 @@ def process_llm_stream(
                     writer,
                 )
 
-    logger.info(f"Full answer: {full_answer}")
+    logger.debug(f"Full answer: {full_answer}")
     return cast(AIMessageChunk, tool_call_chunk)

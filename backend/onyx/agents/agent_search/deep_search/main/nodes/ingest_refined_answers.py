@@ -20,7 +20,7 @@ def ingest_refined_answers(
     node_start_time = datetime.now()
 
     documents = []
-    answer_results = state.answer_results if hasattr(state, "answer_results") else []
+    answer_results = state.answer_results
     for answer_result in answer_results:
         documents.extend(answer_result.verified_reranked_documents)
 

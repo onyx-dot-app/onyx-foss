@@ -30,7 +30,7 @@ const SubQuestionProgress: React.FC<SubQuestionProgressProps> = ({
           {subQuestions.map((sq, index) => (
             <TableRow key={index}>
               <TableCell>
-                Level {sq.level}, Q{sq.level_question_nr}
+                Level {sq.level}, Q{sq.level_question_num}
               </TableCell>
               <TableCell>
                 <Popover>

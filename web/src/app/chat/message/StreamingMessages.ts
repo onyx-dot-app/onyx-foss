@@ -93,7 +93,7 @@ export const useStreamingMessages = (
       if (!dynamicSubQuestionsRef.current[i]) {
         dynamicSubQuestionsRef.current[i] = {
           level: sq.level,
-          level_question_nr: sq.level_question_nr,
+          level_question_num: sq.level_question_num,
           question: "",
           answer: "",
           sub_queries: [],
@@ -270,11 +270,11 @@ export const useStreamingMessages = (
                   // Check if this is the last subquestion at level 0
                   if (
                     sq.level === 0 &&
-                    sq.level_question_nr ===
+                    sq.level_question_num ===
                       Math.max(
                         ...subQuestions
                           .filter((q) => q.level === 0)
-                          .map((q) => q.level_question_nr)
+                          .map((q) => q.level_question_num)
                       )
                   ) {
                     console.log("ALLOW STREAMING");

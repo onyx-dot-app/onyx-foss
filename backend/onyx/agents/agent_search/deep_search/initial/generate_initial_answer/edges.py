@@ -35,13 +35,13 @@ def parallelize_initial_sub_question_answering(
                 "answer_query_subgraph",
                 AnswerQuestionInput(
                     question=question,
-                    question_id=make_question_id(0, question_nr + 1),
+                    question_id=make_question_id(0, question_num + 1),
                     log_messages=[
                         f"{edge_start_time} -- Main Edge - Parallelize Initial Sub-question Answering"
                     ],
                 ),
             )
-            for question_nr, question in enumerate(state.initial_sub_questions)
+            for question_num, question in enumerate(state.initial_sub_questions)
         ]
 
     else:

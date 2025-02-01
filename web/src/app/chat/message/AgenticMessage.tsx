@@ -227,7 +227,7 @@ export const AgenticMessage = ({
     (question: SubQuestionDetail) => {
       setCurrentlyOpenQuestion({
         level: question.level,
-        level_question_nr: question.level_question_nr,
+        level_question_num: question.level_question_num,
       });
       setTimeout(() => {
         console.log("closing question");

@@ -26,6 +26,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
+from onyx.configs.constants import NUM_EXPLORATORY_DOCS
 
 
 def extract_entities_terms(
@@ -53,7 +54,7 @@ def extract_entities_terms(
 
     # first four lines duplicates from generate_initial_answer
     question = graph_config.inputs.search_request.query
-    initial_search_docs = state.exploratory_search_results[:15]
+    initial_search_docs = state.exploratory_search_results[:NUM_EXPLORATORY_DOCS]
 
     # start with the entity/term/extraction
     doc_context = format_docs(initial_search_docs)

@@ -765,11 +765,11 @@ You are an assistant for question-answering tasks. Here is more information abou
 """
 
 SUB_QUESTION_ANSWER_TEMPLATE = """\n
-Sub-Question: Q{sub_question_nr}\n  Sub-Question:\n  - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
+Sub-Question: Q{sub_question_num}\n  Sub-Question:\n  - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
 """
 
 SUB_QUESTION_ANSWER_TEMPLATE_REVISED = """\n
-Sub-Question: Q{sub_question_nr}\n
+Sub-Question: Q{sub_question_num}\n
 Type:
 \n----\n
 {sub_question_type}
@@ -787,12 +787,12 @@ Sub-Question:
 
 
 SUB_QUESTION_ANSWER_TEMPLATE_REVISED = """\n
-Sub-Question: Q{sub_question_nr}\n  Type: {sub_question_type}\n Sub-Question:\n
+Sub-Question: Q{sub_question_num}\n  Type: {sub_question_type}\n Sub-Question:\n
 - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
     """
 
 SUB_QUESTION_SEARCH_RESULTS_TEMPLATE = """\n
-Sub-Question: Q{sub_question_nr}\n  Sub-Question:\n  - \n{sub_question}\n  --\nRelevant Documents:\n
+Sub-Question: Q{sub_question_num}\n  Sub-Question:\n  - \n{sub_question}\n  --\nRelevant Documents:\n
 -\n {formatted_sub_question_docs}\n\n
 """
 

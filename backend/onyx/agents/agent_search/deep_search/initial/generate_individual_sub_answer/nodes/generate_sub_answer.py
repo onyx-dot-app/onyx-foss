@@ -29,6 +29,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import StreamStopInfo
 from onyx.chat.models import StreamStopReason
+from onyx.chat.models import StreamType
 from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
 from onyx.utils.logger import setup_logger
 
@@ -45,7 +46,7 @@ def generate_sub_answer(
     graph_config = cast(GraphConfig, config["metadata"]["config"])
     question = state.question
     state.verified_reranked_documents
-    level, question_nr = parse_question_id(state.question_id)
+    level, question_num = parse_question_id(state.question_id)
     context_docs = state.context_documents[:AGENT_MAX_ANSWER_CONTEXT_DOCS]
     persona_contextualized_prompt = get_persona_agent_prompt_expressions(
         graph_config.inputs.search_request.persona
@@ -58,7 +59,7 @@ def generate_sub_answer(
             AgentAnswerPiece(
                 answer_piece=answer_str,
                 level=level,
-                level_question_nr=question_nr,
+                level_question_num=question_num,
                 answer_type="agent_sub_answer",
             ),
             writer,
@@ -90,7 +91,7 @@ def generate_sub_answer(
                 AgentAnswerPiece(
                     answer_piece=content,
                     level=level,
-                    level_question_nr=question_nr,
+                    level_question_num=question_num,
                     answer_type="agent_sub_answer",
                 ),
                 writer,
@@ -113,9 +114,9 @@ def generate_sub_answer(
 
     stop_event = StreamStopInfo(
         stop_reason=StreamStopReason.FINISHED,
-        stream_type="sub_answer",
+        stream_type=StreamType.SUB_ANSWER,
         level=level,
-        level_question_nr=question_nr,
+        level_question_num=question_num,
     )
     write_custom_event("stream_finished", stop_event, writer)
 

@@ -20,13 +20,13 @@ logger = setup_logger()
 def dispatch_subquestion(
     level: int, writer: StreamWriter
 ) -> Callable[[str, int], None]:
-    def _helper(sub_question_part: str, num: int) -> None:
+    def _helper(sub_question_part: str, sep_num: int) -> None:
         write_custom_event(
             "decomp_qs",
             SubQuestionPiece(
                 sub_question=sub_question_part,
                 level=level,
-                level_question_nr=num,
+                level_question_num=sep_num,
             ),
             writer,
         )
