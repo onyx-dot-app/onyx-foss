@@ -83,7 +83,7 @@ class GraphConfig(BaseModel):
     tooling: GraphTooling
     behavior: GraphSearchConfig
     # Only needed for agentic search
-    persistence: GraphPersistence | None = None
+    persistence: GraphPersistence
 
     @model_validator(mode="after")
     def validate_search_tool(self) -> "GraphConfig":

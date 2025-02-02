@@ -199,13 +199,15 @@ def get_test_config(
         using_tool_calling_llm=using_tool_calling_llm,
     )
 
-    graph_persistence = None
-    if chat_session_id := os.environ.get("ONYX_AS_CHAT_SESSION_ID"):
-        graph_persistence = GraphPersistence(
-            db_session=db_session,
-            chat_session_id=UUID(chat_session_id),
-            message_id=1,
-        )
+    chat_session_id = os.environ.get("ONYX_AS_CHAT_SESSION_ID")
+    assert (
+        chat_session_id is not None
+    ), "ONYX_AS_CHAT_SESSION_ID must be set for backend tests"
+    graph_persistence = GraphPersistence(
+        db_session=db_session,
+        chat_session_id=UUID(chat_session_id),
+        message_id=1,
+    )
 
     search_behavior_config = GraphSearchConfig(
         use_agentic_search=use_agentic_search,

@@ -47,6 +47,7 @@ class Answer:
         search_request: SearchRequest,
         chat_session_id: UUID,
         current_agent_message_id: int,
+        db_session: Session,
         # newly passed in files to include as part of this question
         # TODO THIS NEEDS TO BE HANDLED
         latest_query_files: list[InMemoryChatFile] | None = None,
@@ -57,9 +58,7 @@ class Answer:
         skip_explicit_tool_calling: bool = False,
         skip_gen_ai_answer_generation: bool = False,
         is_connected: Callable[[], bool] | None = None,
-        db_session: Session | None = None,
         use_agentic_search: bool = False,
-        use_agentic_persistence: bool = True,
     ) -> None:
         self.is_connected: Callable[[], bool] | None = is_connected
         self._processed_stream: (list[AnswerPacket] | None) = None
@@ -95,14 +94,12 @@ class Answer:
             force_use_tool=force_use_tool,
             using_tool_calling_llm=using_tool_calling_llm,
         )
-        self.graph_persistence = None
-        if use_agentic_persistence:
-            assert db_session, "db_session must be provided for agentic persistence"
-            self.graph_persistence = GraphPersistence(
-                db_session=db_session,
-                chat_session_id=chat_session_id,
-                message_id=current_agent_message_id,
-            )
+        assert db_session, "db_session must be provided for agentic persistence"
+        self.graph_persistence = GraphPersistence(
+            db_session=db_session,
+            chat_session_id=chat_session_id,
+            message_id=current_agent_message_id,
+        )
         self.search_behavior_config = GraphSearchConfig(
             use_agentic_search=use_agentic_search,
             skip_gen_ai_answer_generation=skip_gen_ai_answer_generation,

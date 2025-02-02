@@ -5,6 +5,7 @@ from uuid import UUID
 import pytest
 from langchain_core.messages import HumanMessage
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import Session
 
 from onyx.chat.answer import Answer
 from onyx.chat.models import AnswerStyleConfig
@@ -46,6 +47,7 @@ def test_skip_gen_ai_answer_generation_flag(
     mock_llm.stream.return_value = [Mock()]
 
     answer = Answer(
+        db_session=Mock(spec=Session),
         answer_style_config=answer_style_config,
         llm=mock_llm,
         fast_llm=mock_llm,
@@ -67,7 +69,6 @@ def test_skip_gen_ai_answer_generation_flag(
         ),
         chat_session_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
         current_agent_message_id=0,
-        use_agentic_persistence=False,
     )
     results = list(answer.processed_streamed_output)
     for res in results:
