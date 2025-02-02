@@ -87,6 +87,10 @@ class EntityRelationshipTermExtraction(BaseModel):
     terms: list[Term] = []
 
 
+class EntityExtractionResult(BaseModel):
+    retrieved_entities_relationships: EntityRelationshipTermExtraction
+
+
 class QueryRetrievalResult(BaseModel):
     query: str
     retrieved_documents: list[InferenceSection]

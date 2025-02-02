@@ -1,12 +1,9 @@
-import ast
-import json
 import os
 import re
 from collections.abc import Callable
 from collections.abc import Iterator
 from collections.abc import Sequence
 from datetime import datetime
-from datetime import timedelta
 from typing import Any
 from typing import cast
 from typing import Literal
@@ -71,13 +68,6 @@ from onyx.tools.utils import explicit_tool_calling_supported
 BaseMessage_Content = str | list[str | dict[str, Any]]
 
 
-def normalize_whitespace(text: str) -> str:
-    """Normalize whitespace in text to single spaces and strip leading/trailing whitespace."""
-    import re
-
-    return re.sub(r"\s+", " ", text.strip())
-
-
 # Post-processing
 def format_docs(docs: Sequence[InferenceSection]) -> str:
     formatted_doc_list = []
@@ -86,43 +76,6 @@ def format_docs(docs: Sequence[InferenceSection]) -> str:
         formatted_doc_list.append(f"Document D{doc_num + 1}:\n{doc.combined_content}")
 
     return FORMAT_DOCS_SEPARATOR.join(formatted_doc_list)
-
-
-def format_docs_content_flat(docs: Sequence[InferenceSection]) -> str:
-    formatted_doc_list = []
-
-    for _, doc in enumerate(docs):
-        formatted_doc_list.append(f"\n...{doc.combined_content}\n")
-
-    return FORMAT_DOCS_SEPARATOR.join(formatted_doc_list)
-
-
-def clean_and_parse_list_string(json_string: str) -> list[dict]:
-    # Remove any prefixes/labels before the actual JSON content
-    json_string = re.sub(r"^.*?(?=\[)", "", json_string, flags=re.DOTALL)
-
-    # Remove markdown code block markers and any newline prefixes
-    cleaned_string = re.sub(r"```json\n|\n```", "", json_string)
-    cleaned_string = cleaned_string.replace("\\n", " ").replace("\n", " ")
-    cleaned_string = " ".join(cleaned_string.split())
-
-    # Try parsing with json.loads first, fall back to ast.literal_eval
-    try:
-        return json.loads(cleaned_string)
-    except json.JSONDecodeError:
-        try:
-            return ast.literal_eval(cleaned_string)
-        except (ValueError, SyntaxError) as e:
-            raise ValueError(f"Failed to parse JSON string: {cleaned_string}") from e
-
-
-def clean_and_parse_json_string(json_string: str) -> dict[str, Any]:
-    # Remove markdown code block markers and any newline prefixes
-    cleaned_string = re.sub(r"```json\n|\n```", "", json_string)
-    cleaned_string = cleaned_string.replace("\\n", " ").replace("\n", " ")
-    cleaned_string = " ".join(cleaned_string.split())
-    # Parse the cleaned string into a Python dictionary
-    return json.loads(cleaned_string)
 
 
 def format_entity_term_extraction(
@@ -159,12 +112,6 @@ def format_entity_term_extraction(
     term_str = "\n - ".join(term_strs)
 
     return "\n".join(entity_strs + relationship_strs + term_strs)
-
-
-def _format_time_delta(time: timedelta) -> str:
-    seconds_from_start = f"{((time).seconds):03d}"
-    microseconds_from_start = f"{((time).microseconds):06d}"
-    return f"{seconds_from_start}.{microseconds_from_start}"
 
 
 def get_test_config(
@@ -279,11 +226,10 @@ def get_persona_agent_prompt_expressions(
     persona: Persona | None,
 ) -> PersonaPromptExpressions:
     if persona is None:
-        persona_prompt = ASSISTANT_SYSTEM_PROMPT_DEFAULT
         persona_base = ""
+        persona_prompt = ASSISTANT_SYSTEM_PROMPT_DEFAULT
     else:
         persona_base = "\n".join([x.system_prompt for x in persona.prompts])
-
         persona_prompt = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
             persona_prompt=persona_base
         )
