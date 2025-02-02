@@ -1047,6 +1047,8 @@ async def api_key_dep(
     if AUTH_TYPE == AuthType.DISABLED:
         return None
 
+    user: User | None = None
+
     hashed_api_key = get_hashed_api_key_from_request(request)
     if not hashed_api_key:
         raise HTTPException(status_code=401, detail="Missing API key")

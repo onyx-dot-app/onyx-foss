@@ -54,6 +54,7 @@ def google_drive_test_env_setup() -> (
 
     service_account_key = os.environ["FULL_CONTROL_DRIVE_SERVICE_ACCOUNT"]
     drive_id: str | None = None
+    drive_service: GoogleDriveService | None = None
 
     try:
         credentials = {

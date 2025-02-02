@@ -168,6 +168,7 @@ def document_by_cc_pair_cleanup_task(
         task_logger.info(f"SoftTimeLimitExceeded exception. doc={document_id}")
         return False
     except Exception as ex:
+        e: Exception | None = None
         if isinstance(ex, RetryError):
             task_logger.warning(
                 f"Tenacity retry failed: num_attempts={ex.last_attempt.attempt_number}"
