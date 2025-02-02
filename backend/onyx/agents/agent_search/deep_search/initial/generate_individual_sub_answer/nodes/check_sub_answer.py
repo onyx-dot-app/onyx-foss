@@ -12,7 +12,7 @@ from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer
     SubQuestionAnswerCheckUpdate,
 )
 from onyx.agents.agent_search.models import GraphConfig
-from onyx.agents.agent_search.shared_graph_utils.prompts import SUB_CHECK_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import SUB_ANSWER_CHECK_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
@@ -40,7 +40,7 @@ def check_sub_answer(
         )
     msg = [
         HumanMessage(
-            content=SUB_CHECK_PROMPT.format(
+            content=SUB_ANSWER_CHECK_PROMPT.format(
                 question=state.question,
                 base_answer=state.answer,
             )

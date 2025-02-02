@@ -24,8 +24,9 @@ def format_orig_question_search_output(
         sub_question_retrieval_stats = sub_question_retrieval_stats
 
     return OrigQuestionRetrievalUpdate(
+        orig_question_verified_reranked_documents=state.expanded_retrieval_result.verified_reranked_documents,
         orig_question_sub_query_retrieval_results=state.expanded_retrieval_result.expanded_query_results,
-        orig_question_retrieved_documents=state.expanded_retrieval_result.context_documents,
+        orig_question_retrieved_documents=state.retrieved_documents,
         orig_question_retrieval_stats=sub_question_retrieval_stats,
         log_messages=[],
     )

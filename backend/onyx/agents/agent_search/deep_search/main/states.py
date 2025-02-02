@@ -129,6 +129,9 @@ class OrigQuestionRetrievalUpdate(LoggerUpdate):
     orig_question_retrieved_documents: Annotated[
         list[InferenceSection], dedup_inference_sections
     ]
+    orig_question_verified_reranked_documents: Annotated[
+        list[InferenceSection], dedup_inference_sections
+    ]
     orig_question_sub_query_retrieval_results: list[QueryRetrievalResult] = []
     orig_question_retrieval_stats: AgentChunkRetrievalStats = AgentChunkRetrievalStats()
 

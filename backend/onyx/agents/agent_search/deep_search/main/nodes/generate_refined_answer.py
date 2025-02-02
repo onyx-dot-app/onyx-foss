@@ -28,12 +28,14 @@ from onyx.agents.agent_search.shared_graph_utils.models import RefinedAgentStats
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import REVISED_RAG_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    REVISED_RAG_PROMPT_NO_SUB_QUESTIONS,
+    REFINED_ANSWER_PROMPT_W_SUB_QUESTIONS,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    SUB_QUESTION_ANSWER_TEMPLATE_REVISED,
+    REFINED_ANSWER_PROMPT_WO_SUB_QUESTIONS,
+)
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    SUB_QUESTION_ANSWER_TEMPLATE_REFINED,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import UNKNOWN_ANSWER
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -71,12 +73,17 @@ def generate_refined_answer(
 
     verified_reranked_documents = state.verified_reranked_documents
     sub_questions_cited_documents = state.cited_documents
-    all_original_question_documents = state.orig_question_retrieved_documents
+    original_question_verified_documents = (
+        state.orig_question_verified_reranked_documents
+    )
+    original_question_retrieved_documents = state.orig_question_retrieved_documents
 
     consolidated_context_docs: list[InferenceSection] = sub_questions_cited_documents
 
     counter = 0
-    for original_doc_number, original_doc in enumerate(all_original_question_documents):
+    for original_doc_number, original_doc in enumerate(
+        original_question_verified_documents
+    ):
         if original_doc_number not in sub_questions_cited_documents:
             if (
                 counter <= AGENT_MIN_ORIG_QUESTION_DOCS
@@ -92,16 +99,22 @@ def generate_refined_answer(
         consolidated_context_docs, consolidated_context_docs
     )
 
+    streaming_docs = (
+        relevant_docs
+        if len(relevant_docs) > 0
+        else original_question_retrieved_documents[:15]
+    )
+
     query_info = get_query_info(state.orig_question_sub_query_retrieval_results)
     assert (
         graph_config.tooling.search_tool
     ), "search_tool must be provided for agentic search"
-    # stream refined answer docs
+    # stream refined answer docs, or original question docs if no relevant docs are found
     relevance_list = relevance_from_docs(relevant_docs)
     for tool_response in yield_search_responses(
         query=question,
-        reranked_sections=relevant_docs,
-        final_context_sections=relevant_docs,
+        reranked_sections=streaming_docs,
+        final_context_sections=streaming_docs,
         search_query_info=query_info,
         get_section_relevance=lambda: relevance_list,
         search_tool=graph_config.tooling.search_tool,
@@ -124,71 +137,62 @@ def generate_refined_answer(
     else:
         refined_doc_effectiveness = 10.0
 
-    decomp_answer_results = state.sub_question_results
+    sub_question_answer_results = state.sub_question_results
 
-    answered_qa_list: list[str] = []
-    decomp_questions = []
+    answered_sub_question_answer_list: list[str] = []
+    sub_questions: list[str] = []
+    initial_answered_sub_questions: set[str] = set()
+    refined_answered_sub_questions: set[str] = set()
 
-    initial_good_sub_questions: list[str] = []
-    new_revised_good_sub_questions: list[str] = []
+    for i, result in enumerate(sub_question_answer_results, 1):
+        question_level, _ = parse_question_id(result.question_id)
+        sub_questions.append(result.question)
 
-    sub_question_num = 1
-
-    for decomp_answer_result in decomp_answer_results:
-        question_level, question_num = parse_question_id(
-            decomp_answer_result.question_id
-        )
-
-        decomp_questions.append(decomp_answer_result.question)
         if (
-            decomp_answer_result.verified_high_quality
-            and len(decomp_answer_result.answer) > 0
-            and decomp_answer_result.answer != UNKNOWN_ANSWER
+            result.verified_high_quality
+            and result.answer
+            and result.answer != UNKNOWN_ANSWER
         ):
-            if question_level == 0:
-                initial_good_sub_questions.append(decomp_answer_result.question)
-                sub_question_type = "initial"
-            else:
-                new_revised_good_sub_questions.append(decomp_answer_result.question)
-                sub_question_type = "refined"
-            answered_qa_list.append(
-                SUB_QUESTION_ANSWER_TEMPLATE_REVISED.format(
-                    sub_question=decomp_answer_result.question,
-                    sub_answer=decomp_answer_result.answer,
-                    sub_question_num=sub_question_num,
+            sub_question_type = "initial" if question_level == 0 else "refined"
+            question_set = (
+                initial_answered_sub_questions
+                if question_level == 0
+                else refined_answered_sub_questions
+            )
+            question_set.add(result.question)
+
+            answered_sub_question_answer_list.append(
+                SUB_QUESTION_ANSWER_TEMPLATE_REFINED.format(
+                    sub_question=result.question,
+                    sub_answer=result.answer,
+                    sub_question_num=i,
                     sub_question_type=sub_question_type,
                 )
             )
 
-        sub_question_num += 1
-
-    initial_good_sub_questions = list(set(initial_good_sub_questions))
-    new_revised_good_sub_questions = list(set(new_revised_good_sub_questions))
-    total_good_sub_questions = list(
-        set(initial_good_sub_questions + new_revised_good_sub_questions)
+    # Calculate efficiency
+    total_answered_questions = (
+        initial_answered_sub_questions | refined_answered_sub_questions
     )
-    if len(initial_good_sub_questions) > 0:
-        revision_question_efficiency: float = len(total_good_sub_questions) / len(
-            initial_good_sub_questions
-        )
-    elif len(new_revised_good_sub_questions) > 0:
-        revision_question_efficiency = 10.0
-    else:
-        revision_question_efficiency = 1.0
+    revision_question_efficiency = (
+        len(total_answered_questions) / len(initial_answered_sub_questions)
+        if initial_answered_sub_questions
+        else 10.0
+        if refined_answered_sub_questions
+        else 1.0
+    )
 
-    sub_question_answer_str = "\n\n------\n\n".join(list(set(answered_qa_list)))
-
-    # original answer
-
+    sub_question_answer_str = "\n\n------\n\n".join(
+        set(answered_sub_question_answer_list)
+    )
     initial_answer = state.initial_answer or ""
 
-    # Determine which persona-specification prompt to use
-
-    # Determine which base prompt to use given the sub-question information
-    if len(answered_qa_list) > 0:
-        base_prompt = REVISED_RAG_PROMPT
-    else:
-        base_prompt = REVISED_RAG_PROMPT_NO_SUB_QUESTIONS
+    # Choose appropriate prompt template
+    base_prompt = (
+        REFINED_ANSWER_PROMPT_W_SUB_QUESTIONS
+        if answered_sub_question_answer_list
+        else REFINED_ANSWER_PROMPT_WO_SUB_QUESTIONS
+    )
 
     model = graph_config.tooling.fast_llm
     relevant_docs_str = format_docs(relevant_docs)
@@ -211,7 +215,7 @@ def generate_refined_answer(
                 answered_sub_questions=remove_document_citations(
                     sub_question_answer_str
                 ),
-                relevant_docs=relevant_docs,
+                relevant_docs=relevant_docs_str,
                 initial_answer=remove_document_citations(initial_answer)
                 if initial_answer
                 else None,
@@ -220,8 +224,6 @@ def generate_refined_answer(
             )
         )
     ]
-
-    # Grader
 
     streamed_tokens: list[str | list[str | dict[str, Any]]] = [""]
     dispatch_timings: list[float] = []
@@ -248,7 +250,7 @@ def generate_refined_answer(
         dispatch_timings.append((end_stream_token - start_stream_token).microseconds)
         streamed_tokens.append(content)
 
-    logger.info(
+    logger.debug(
         f"Average dispatch time for refined answer: {sum(dispatch_timings) / len(dispatch_timings)}"
     )
     dispatch_main_answer_stop_info(1, writer)

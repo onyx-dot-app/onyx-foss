@@ -73,7 +73,7 @@ def format_docs(docs: Sequence[InferenceSection]) -> str:
     formatted_doc_list = []
 
     for doc_num, doc in enumerate(docs):
-        formatted_doc_list.append(f"Document D{doc_num + 1}:\n{doc.combined_content}")
+        formatted_doc_list.append(f"**Document D{doc_num + 1}:\n{doc.combined_content}")
 
     return FORMAT_DOCS_SEPARATOR.join(formatted_doc_list)
 

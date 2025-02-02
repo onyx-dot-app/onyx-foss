@@ -18,7 +18,14 @@ from onyx.agents.agent_search.shared_graph_utils.models import EntityExtractionR
 from onyx.agents.agent_search.shared_graph_utils.models import (
     EntityRelationshipTermExtraction,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import ENTITY_TERM_PROMPT
+
+
+from onyx.agents.agent_search.shared_graph_utils.models import Relationship
+from onyx.agents.agent_search.shared_graph_utils.models import Term
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    ENTITY_TERM_EXTRACTION_PROMPT,
+)
+
 from onyx.agents.agent_search.shared_graph_utils.utils import format_docs
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
@@ -57,11 +64,15 @@ def extract_entities_terms(
     doc_context = format_docs(initial_search_docs)
 
     doc_context = trim_prompt_piece(
-        graph_config.tooling.fast_llm.config, doc_context, ENTITY_TERM_PROMPT + question
+        graph_config.tooling.fast_llm.config,
+        doc_context,
+        ENTITY_TERM_EXTRACTION_PROMPT + question,
     )
     msg = [
         HumanMessage(
-            content=ENTITY_TERM_PROMPT.format(question=question, context=doc_context),
+            content=ENTITY_TERM_EXTRACTION_PROMPT.format(
+                question=question, context=doc_context
+            ),
         )
     ]
     fast_llm = graph_config.tooling.fast_llm

@@ -30,9 +30,11 @@ from onyx.agents.agent_search.shared_graph_utils.models import InitialAgentResul
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import INITIAL_RAG_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS,
+    INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS,
+)
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    INITIAL_ANSWER_PROMPT_WO_SUB_QUESTIONS,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
     SUB_QUESTION_ANSWER_TEMPLATE,
@@ -90,7 +92,12 @@ def generate_initial_answer(
         consolidated_context_docs, consolidated_context_docs
     )
 
-    decomp_questions = []
+    sub_questions: list[str] = []
+    streamed_documents = (
+        relevant_docs
+        if len(relevant_docs) > 0
+        else state.orig_question_retrieved_documents[:15]
+    )
 
     # Use the query info from the base document retrieval
     query_info = get_query_info(state.orig_question_sub_query_retrieval_results)
@@ -102,8 +109,8 @@ def generate_initial_answer(
     relevance_list = relevance_from_docs(relevant_docs)
     for tool_response in yield_search_responses(
         query=question,
-        reranked_sections=relevant_docs,
-        final_context_sections=relevant_docs,
+        reranked_sections=streamed_documents,
+        final_context_sections=streamed_documents,
         search_query_info=query_info,
         get_section_relevance=lambda: relevance_list,
         search_tool=graph_config.tooling.search_tool,
@@ -140,35 +147,44 @@ def generate_initial_answer(
         )
 
     else:
-        decomp_answer_results = state.sub_question_results
+        sub_question_answer_results = state.sub_question_results
 
-        good_qa_list: list[str] = []
+        answered_sub_questions: list[str] = []
+        all_sub_questions: list[str] = []  # Separate list for tracking all questions
 
-        sub_question_num = 1
+        for idx, sub_question_answer_result in enumerate(
+            sub_question_answer_results, start=1
+        ):
+            all_sub_questions.append(sub_question_answer_result.question)
 
-        for decomp_answer_result in decomp_answer_results:
-            decomp_questions.append(decomp_answer_result.question)
-            if (
-                decomp_answer_result.verified_high_quality
-                and len(decomp_answer_result.answer) > 0
-                and decomp_answer_result.answer != UNKNOWN_ANSWER
-            ):
-                good_qa_list.append(
+            is_valid_answer = (
+                sub_question_answer_result.verified_high_quality
+                and sub_question_answer_result.answer
+                and sub_question_answer_result.answer != UNKNOWN_ANSWER
+            )
+
+            if is_valid_answer:
+                answered_sub_questions.append(
                     SUB_QUESTION_ANSWER_TEMPLATE.format(
-                        sub_question=decomp_answer_result.question,
-                        sub_answer=decomp_answer_result.answer,
-                        sub_question_num=sub_question_num,
+                        sub_question=sub_question_answer_result.question,
+                        sub_answer=sub_question_answer_result.answer,
+                        sub_question_num=idx,
                     )
                 )
-            sub_question_num += 1
 
-        # Determine which base prompt to use given the sub-question information
-        if len(good_qa_list) > 0:
-            sub_question_answer_str = "\n\n------\n\n".join(good_qa_list)
-            base_prompt = INITIAL_RAG_PROMPT
-        else:
-            sub_question_answer_str = ""
-            base_prompt = INITIAL_RAG_PROMPT_NO_SUB_QUESTIONS
+        # Use list comprehension for joining answers and determine prompt type
+        sub_question_answer_str = (
+            "\n\n------\n\n".join(answered_sub_questions)
+            if answered_sub_questions
+            else ""
+        )
+        base_prompt = (
+            INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS
+            if answered_sub_questions
+            else INITIAL_ANSWER_PROMPT_WO_SUB_QUESTIONS
+        )
+
+        sub_questions = all_sub_questions  # Replace the original assignment
 
         model = graph_config.tooling.fast_llm
 
@@ -275,7 +291,7 @@ def generate_initial_answer(
     return InitialAnswerUpdate(
         initial_answer=answer,
         initial_agent_stats=initial_agent_stats,
-        generated_sub_questions=decomp_questions,
+        generated_sub_questions=sub_questions,
         agent_base_end_time=agent_base_end_time,
         agent_base_metrics=agent_base_metrics,
         log_messages=[

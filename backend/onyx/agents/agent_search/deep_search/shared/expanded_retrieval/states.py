@@ -60,6 +60,9 @@ class ExpandedRetrievalUpdate(LoggerUpdate, BaseModel):
 class ExpandedRetrievalOutput(LoggerUpdate, BaseModel):
     expanded_retrieval_result: QuestionRetrievalResult = QuestionRetrievalResult()
     base_expanded_retrieval_result: QuestionRetrievalResult = QuestionRetrievalResult()
+    retrieved_documents: Annotated[
+        list[InferenceSection], dedup_inference_sections
+    ] = []
 
 
 ## Graph State

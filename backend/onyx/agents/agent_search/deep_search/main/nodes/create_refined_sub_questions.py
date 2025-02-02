@@ -21,7 +21,7 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES,
+    REFINEMENT_QUESTION_DECOMPOSITION_PROMPT,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -78,7 +78,7 @@ def create_refined_sub_questions(
 
     msg = [
         HumanMessage(
-            content=DEEP_DECOMPOSE_PROMPT_WITH_ENTITIES.format(
+            content=REFINEMENT_QUESTION_DECOMPOSITION_PROMPT.format(
                 question=question,
                 history=history,
                 entity_term_extraction_str=entity_term_extraction_str,

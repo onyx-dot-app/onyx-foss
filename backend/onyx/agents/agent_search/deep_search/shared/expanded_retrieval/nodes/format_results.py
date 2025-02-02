@@ -82,6 +82,7 @@ def format_results(
     return ExpandedRetrievalUpdate(
         expanded_retrieval_result=QuestionRetrievalResult(
             expanded_query_results=state.query_retrieval_results,
+            retrieved_documents=state.retrieved_documents,
             verified_reranked_documents=reranked_documents,
             context_documents=state.reranked_documents,
             retrieval_stats=sub_question_retrieval_stats,

@@ -23,10 +23,10 @@ from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     build_history_prompt,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    INITIAL_DECOMPOSITION_PROMPT_QUESTIONS,
+    INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH,
 )
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH,
+    INITIAL_QUESTION_DECOMPOSITION_PROMPT,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -79,7 +79,7 @@ def decompose_orig_question(
         )
 
     else:
-        decomposition_prompt = INITIAL_DECOMPOSITION_PROMPT_QUESTIONS.format(
+        decomposition_prompt = INITIAL_QUESTION_DECOMPOSITION_PROMPT.format(
             question=question, history=history
         )
 

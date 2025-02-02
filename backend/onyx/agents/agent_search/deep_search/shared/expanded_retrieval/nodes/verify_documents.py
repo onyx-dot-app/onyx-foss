@@ -13,7 +13,9 @@ from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.agent_prompt_ops import (
     trim_prompt_piece,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import VERIFIER_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    DOCUMENT_VERIFICATION_PROMPT,
+)
 
 
 def verify_documents(
@@ -38,12 +40,12 @@ def verify_documents(
     fast_llm = graph_config.tooling.fast_llm
 
     document_content = trim_prompt_piece(
-        fast_llm.config, document_content, VERIFIER_PROMPT + question
+        fast_llm.config, document_content, DOCUMENT_VERIFICATION_PROMPT + question
     )
 
     msg = [
         HumanMessage(
-            content=VERIFIER_PROMPT.format(
+            content=DOCUMENT_VERIFICATION_PROMPT.format(
                 question=question, document_content=document_content
             )
         )

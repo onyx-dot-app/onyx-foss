@@ -7,8 +7,8 @@ from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.models import (
     AgentPromptEnrichmentComponents,
 )
-from onyx.agents.agent_search.shared_graph_utils.prompts import BASE_RAG_PROMPT_v2
-from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import HISTORY_FRAMING_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import SUB_QUESTION_RAG_PROMPT
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_persona_agent_prompt_expressions,
 )
@@ -45,10 +45,12 @@ def build_sub_question_answer_prompt(
     docs_str = "\n\n".join(docs_format_list)
 
     docs_str = trim_prompt_piece(
-        config, docs_str, BASE_RAG_PROMPT_v2 + question + original_question + date_str
+        config,
+        docs_str,
+        SUB_QUESTION_RAG_PROMPT + question + original_question + date_str,
     )
     human_message = HumanMessage(
-        content=BASE_RAG_PROMPT_v2.format(
+        content=SUB_QUESTION_RAG_PROMPT.format(
             question=question,
             original_question=original_question,
             context=docs_str,
@@ -118,7 +120,7 @@ def build_history_prompt(config: GraphConfig, question: str) -> str:
         if len(history.split()) > AGENT_MAX_STATIC_HISTORY_WORD_LENGTH:
             history = summarize_history(history, question, persona_base, model)
 
-    return HISTORY_PROMPT.format(history=history) if history else ""
+    return HISTORY_FRAMING_PROMPT.format(history=history) if history else ""
 
 
 def get_prompt_enrichment_components(

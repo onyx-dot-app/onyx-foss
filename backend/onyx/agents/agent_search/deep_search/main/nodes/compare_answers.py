@@ -10,7 +10,9 @@ from onyx.agents.agent_search.deep_search.main.states import (
 )
 from onyx.agents.agent_search.deep_search.main.states import MainState
 from onyx.agents.agent_search.models import GraphConfig
-from onyx.agents.agent_search.shared_graph_utils.prompts import ANSWER_COMPARISON_PROMPT
+from onyx.agents.agent_search.shared_graph_utils.prompts import (
+    INITIAL_REFINED_ANSWER_COMPARISON_PROMPT,
+)
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
@@ -28,7 +30,7 @@ def compare_answers(
     initial_answer = state.initial_answer
     refined_answer = state.refined_answer
 
-    compare_answers_prompt = ANSWER_COMPARISON_PROMPT.format(
+    compare_answers_prompt = INITIAL_REFINED_ANSWER_COMPARISON_PROMPT.format(
         question=question, initial_answer=initial_answer, refined_answer=refined_answer
     )
 

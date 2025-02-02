@@ -17,7 +17,7 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 )
 from onyx.agents.agent_search.models import GraphConfig
 from onyx.agents.agent_search.shared_graph_utils.prompts import (
-    REWRITE_PROMPT_MULTI_ORIGINAL,
+    QUERY_REWRITING_PROMPT,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import dispatch_separated
 from onyx.agents.agent_search.shared_graph_utils.utils import (
@@ -47,7 +47,7 @@ def expand_queries(
 
     msg = [
         HumanMessage(
-            content=REWRITE_PROMPT_MULTI_ORIGINAL.format(question=question),
+            content=QUERY_REWRITING_PROMPT.format(question=question),
         )
     ]
 
