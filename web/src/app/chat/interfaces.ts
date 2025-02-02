@@ -256,7 +256,7 @@ export const constructSubQuestions = (
       (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
     if (subQuestion) {
-      subQuestion.is_complete = true;
+      // subQuestion.is_complete = true;
     }
   } else if ("top_documents" in newDetail) {
     const { level, level_question_num, top_documents } = newDetail;
@@ -271,6 +271,7 @@ export const constructSubQuestions = (
         answer: "",
         sub_queries: [],
         context_docs: { top_documents },
+        is_complete: false,
       };
     } else {
       subQuestion.context_docs = { top_documents };
@@ -291,6 +292,7 @@ export const constructSubQuestions = (
         answer: "",
         sub_queries: [],
         context_docs: undefined,
+        is_complete: false,
       };
       updatedSubQuestions.push(subQuestion);
     }
@@ -314,6 +316,7 @@ export const constructSubQuestions = (
         answer: "",
         sub_queries: [],
         context_docs: undefined,
+        is_complete: false,
       };
       updatedSubQuestions.push(subQuestion);
     }

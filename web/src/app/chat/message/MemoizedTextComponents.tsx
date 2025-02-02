@@ -27,14 +27,22 @@ export const MemoizedAnchor = memo(
     children: React.ReactNode;
   }): JSX.Element => {
     const value = children?.toString();
-    // return <></>
     if (value?.startsWith("[") && value?.endsWith("]")) {
       const match = value.match(/\[(D|Q)?(\d+)\]/);
       if (match) {
-        const index = parseInt(match[2], 10) - 1;
-        const associatedDoc = docs?.[index];
-        if (!associatedDoc) {
-          return <a href={children as string}>{children}</a>;
+        const isSubQuestion = match[1] === "Q";
+        if (!isSubQuestion) {
+          const index = parseInt(match[2], 10) - 1;
+          const associatedDoc = docs?.[index];
+          if (!associatedDoc) {
+            return <a href={children as string}>{children}</a>;
+          }
+        } else {
+          const index = parseInt(match[2], 10) - 1;
+          const associatedSubQuestion = subQuestions?.[index];
+          if (!associatedSubQuestion) {
+            return <a href={children as string}>{children}</a>;
+          }
         }
       }
 
@@ -51,18 +59,7 @@ export const MemoizedAnchor = memo(
           : undefined;
 
         if (!associatedDoc && !associatedSubQuestion) {
-          return (
-            <>
-              l{children}
-              {/* No associated docs or subquestions.
-              <div className="text-sm text-gray-600">
-                <p>Number of questions: {subQuestions?.length}</p>
-                <p>Number of docs: {docs?.length}</p>
-                <p>{children}</p>
-                <p>index: {index}</p>
-              </div> */}
-            </>
-          );
+          return <>{children}</>;
         }
 
         let icon: React.ReactNode = null;
@@ -85,22 +82,6 @@ export const MemoizedAnchor = memo(
           : undefined;
 
         return (
-          // <div
-          //   className="debug-info"
-          //   style={{
-          //     backgroundColor: "#f0f0f0",
-          //     padding: "10px",
-          //     border: "1px solid #ccc",
-          //     margin: "5px 0",
-          //   }}
-          // >
-          //   <h4>Debug Info:</h4>
-          //   {children}
-          //   <p>document length: {docs?.length}</p>
-          //   <p>question length: {subQuestions?.length}</p>
-          //   <p>document_info: {JSON.stringify(associatedDoc)}</p>
-          //   <p>question_info: {JSON.stringify(associatedSubQuestion)}</p>
-          // </div>
           <MemoizedLink
             updatePresentingDocument={updatePresentingDocument}
             document={associatedDocInfo}

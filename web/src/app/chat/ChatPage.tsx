@@ -1429,10 +1429,10 @@ export function ChatPage({
               Object.hasOwn(packet, "stop_reason") &&
               Object.hasOwn(packet, "level_question_num")
             ) {
-              sub_questions = constructSubQuestions(
-                sub_questions,
-                packet as StreamStopInfo
-              );
+              // sub_questions = constructSubQuestions(
+              //   sub_questions,
+              //   packet as StreamStopInfo
+              // );
             } else if (Object.hasOwn(packet, "sub_question")) {
               is_generating = true;
               sub_questions = constructSubQuestions(

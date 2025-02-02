@@ -48,6 +48,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import SubQuestionsDisplay from "./SubQuestionsDisplay";
 import { StatusRefinement } from "../Refinement";
+import SubQuestionProgress from "./SubQuestionProgress";
 
 export const AgenticMessage = ({
   docSidebarToggled,
@@ -250,15 +251,10 @@ export const AgenticMessage = ({
               ? agenticDocs
               : docs
         }
-        subQuestions={
-          (isViewingInitialAnswer
-            ? subQuestions && subQuestions.length > 0
-              ? subQuestions
-              : secondLevelSubquestions
-            : secondLevelSubquestions && secondLevelSubquestions.length > 0
-              ? secondLevelSubquestions
-              : subQuestions) || undefined
-        }
+        subQuestions={[
+          ...(subQuestions || []),
+          ...(secondLevelSubquestions || []),
+        ]}
         openQuestion={openQuestion}
       >
         {props.children}
@@ -399,8 +395,18 @@ export const AgenticMessage = ({
                   {subQuestions && subQuestions.length > 0 && (
                     <SubQuestionsDisplay
                       docSidebarToggled={docSidebarToggled || false}
-                      finishedGenerating={finalContent.length > 8}
-                      overallAnswerGenerating={finalContent.length < 8}
+                      finishedGenerating={
+                        finalContent.length > 8 &&
+                        streamedContent.length == streamedContent.length
+                      }
+                      overallAnswerGenerating={false}
+                      // overallAnswerGenerating={
+                      //   !!(
+                      //     secondLevelSubquestions &&
+                      //     secondLevelSubquestions.length > 0 &&
+                      //     finalContent.length < 8
+                      //   )
+                      // }
                       showSecondLevel={!isViewingInitialAnswer}
                       currentlyOpenQuestion={currentlyOpenQuestion}
                       allowStreaming={() => setAllowStreaming(true)}
