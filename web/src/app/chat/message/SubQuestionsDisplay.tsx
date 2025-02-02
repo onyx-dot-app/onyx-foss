@@ -480,10 +480,10 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
   const { dynamicSubQuestions } = useStreamingMessages(subQuestions, () => {});
   const { dynamicSubQuestions: dynamicSecondLevelQuestions } =
     useStreamingMessages(secondLevelQuestions || [], () => {});
-  // const memoizedSubQuestions = useMemo(() => {
-  //   return overallAnswerGenerating ? dynamicSubQuestions : subQuestions;
-  // }, [overallAnswerGenerating, dynamicSubQuestions, subQuestions]);
-  const memoizedSubQuestions = dynamicSubQuestions;
+  const memoizedSubQuestions = useMemo(() => {
+    return finishedGenerating ? subQuestions : dynamicSubQuestions;
+  }, [finishedGenerating, dynamicSubQuestions, subQuestions]);
+  // const memoizedSubQuestions = dynamicSubQuestions;
   const memoizedSecondLevelQuestions = useMemo(() => {
     return overallAnswerGenerating
       ? dynamicSecondLevelQuestions
@@ -733,7 +733,7 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
             isFirst={false}
             setPresentingDocument={setPresentingDocument}
             unToggle={!canShowSummarizing || finishedGenerating!}
-            completed={!overallAnswerGenerating}
+            completed={shownDocuments && shownDocuments.length > 0}
             temporaryDisplay={{
               question: streamedText,
               tinyQuestion: "Combining results",

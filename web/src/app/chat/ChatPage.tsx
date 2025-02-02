@@ -91,7 +91,10 @@ import { ChatPopup } from "./ChatPopup";
 
 import FunctionalHeader from "@/components/chat_search/Header";
 import { useSidebarVisibility } from "@/components/chat_search/hooks";
-import { SIDEBAR_TOGGLED_COOKIE_NAME } from "@/components/resizable/constants";
+import {
+  PRO_SEARCH_TOGGLED_COOKIE_NAME,
+  SIDEBAR_TOGGLED_COOKIE_NAME,
+} from "@/components/resizable/constants";
 import FixedLogo from "./shared_chat_search/FixedLogo";
 
 import { DeleteEntityModal } from "../../components/modals/DeleteEntityModal";
@@ -149,6 +152,7 @@ export function ChatPage({
     folders,
     shouldShowWelcomeModal,
     refreshChatSessions,
+    proSearchToggled,
   } = useChatContext();
 
   const defaultAssistantIdRaw = searchParams.get(SEARCH_PARAM_NAMES.PERSONA_ID);
@@ -195,8 +199,15 @@ export function ChatPage({
   const enterpriseSettings = settings?.enterpriseSettings;
 
   const [documentSidebarToggled, setDocumentSidebarToggled] = useState(false);
-  const [proSearchEnabled, setProSearchEnabled] = useState(false);
+  const [proSearchEnabled, setProSearchEnabled] = useState(proSearchToggled);
   const [streamingAllowed, setStreamingAllowed] = useState(false);
+  const toggleProSearch = () => {
+    Cookies.set(
+      PRO_SEARCH_TOGGLED_COOKIE_NAME,
+      String(!proSearchEnabled).toLocaleLowerCase()
+    );
+    setProSearchEnabled(!proSearchEnabled);
+  };
 
   const [userSettingsToggled, setUserSettingsToggled] = useState(false);
 
@@ -3076,7 +3087,7 @@ export function ChatPage({
 
                             <ChatInputBar
                               proSearchEnabled={proSearchEnabled}
-                              setProSearchEnabled={setProSearchEnabled}
+                              setProSearchEnabled={() => toggleProSearch()}
                               toggleDocumentSidebar={toggleDocumentSidebar}
                               availableSources={sources}
                               availableDocumentSets={documentSets}

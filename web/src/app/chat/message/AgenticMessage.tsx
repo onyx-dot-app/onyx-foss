@@ -396,17 +396,17 @@ export const AgenticMessage = ({
                     <SubQuestionsDisplay
                       docSidebarToggled={docSidebarToggled || false}
                       finishedGenerating={
-                        finalContent.length > 8 &&
-                        streamedContent.length == streamedContent.length
+                        finalContent.length > 10 &&
+                        streamedContent.length == finalContent.length
                       }
-                      overallAnswerGenerating={false}
-                      // overallAnswerGenerating={
-                      //   !!(
-                      //     secondLevelSubquestions &&
-                      //     secondLevelSubquestions.length > 0 &&
-                      //     finalContent.length < 8
-                      //   )
-                      // }
+                      // overallAnswerGenerating={false}
+                      overallAnswerGenerating={
+                        !!(
+                          secondLevelSubquestions &&
+                          secondLevelSubquestions.length > 0 &&
+                          finalContent.length < 8
+                        )
+                      }
                       showSecondLevel={!isViewingInitialAnswer}
                       currentlyOpenQuestion={currentlyOpenQuestion}
                       allowStreaming={() => setAllowStreaming(true)}
