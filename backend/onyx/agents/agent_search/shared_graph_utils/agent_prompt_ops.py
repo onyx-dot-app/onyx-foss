@@ -60,17 +60,19 @@ def build_sub_question_answer_prompt(
 
 
 def trim_prompt_piece(config: LLMConfig, prompt_piece: str, reserved_str: str) -> str:
-    # TODO: this truncating might add latency. We could do a rougher + faster check
-    # first to determine whether truncation is needed
-
-    # TODO: maybe save the tokenizer and max input tokens if this is getting called multiple times?
-    llm_tokenizer = get_tokenizer(
-        provider_type=config.model_provider,
+    # TODO: save the max input tokens in LLMConfig
+    max_tokens = get_max_input_tokens(
+        model_provider=config.model_provider,
         model_name=config.model_name,
     )
 
-    max_tokens = get_max_input_tokens(
-        model_provider=config.model_provider,
+    # no need to trim if a conservative estimate of one token
+    # per character is already less than the max tokens
+    if len(prompt_piece) + len(reserved_str) < max_tokens:
+        return prompt_piece
+
+    llm_tokenizer = get_tokenizer(
+        provider_type=config.model_provider,
         model_name=config.model_name,
     )
 
