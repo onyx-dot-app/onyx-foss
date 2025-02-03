@@ -107,19 +107,19 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
     )
 
     for log_message in state.log_messages:
-        logger.info(log_message)
+        logger.debug(log_message)
 
     if state.agent_base_metrics:
-        logger.info(f"Initial loop: {state.agent_base_metrics.duration__s}")
+        logger.debug(f"Initial loop: {state.agent_base_metrics.duration__s}")
     if state.agent_refined_metrics:
-        logger.info(f"Refined loop: {state.agent_refined_metrics.duration__s}")
+        logger.debug(f"Refined loop: {state.agent_refined_metrics.duration__s}")
     if (
         state.agent_base_metrics
         and state.agent_refined_metrics
         and state.agent_base_metrics.duration__s
         and state.agent_refined_metrics.duration__s
     ):
-        logger.info(
+        logger.debug(
             f"Total time: {float(state.agent_base_metrics.duration__s) + float(state.agent_refined_metrics.duration__s)}"
         )
 
