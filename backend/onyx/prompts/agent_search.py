@@ -2,8 +2,8 @@
 SEPARATOR_LINE = "-------"
 UNKNOWN_ANSWER = "I do not have enough information to answer this question."
 NO_RECOVERED_DOCS = "No relevant information recovered"
-SUB_CHECK_YES = "yes"
-SUB_CHECK_NO = "no"
+YES = "yes"
+NO = "no"
 
 
 # Framing/Support/Template Prompts
@@ -51,13 +51,8 @@ Answer:
 """.strip()
 
 
-SUB_QUESTION_ANSWER_TEMPLATE_REFINED = """\n
-Sub-Question: Q{sub_question_num}\n  Type: {sub_question_type}\n Sub-Question:\n
-- \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
-    """
-
-
 # Step/Utility Prompts
+# Note this one should always be used with the ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE
 ENTITY_TERM_EXTRACTION_PROMPT = f"""
 Based on the original question and some context retrieved from a dataset, please generate a list of
 entities (e.g. companies, organizations, industries, products, locations, etc.), terms and concepts
@@ -74,7 +69,7 @@ And here is the context retrieved:
 {SEPARATOR_LINE}
 
 Please format your answer as a json object in the following format:
-""".strip()
+""".lstrip()
 
 ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE = """
 {
@@ -274,7 +269,7 @@ SUB_ANSWER_CHECK_PROMPT = (
     f"{SEPARATOR_LINE}\n"
     "{base_answer}\n"
     f"{SEPARATOR_LINE}\n\n"
-    f'Does the suggested answer address the question? Please answer with "{SUB_CHECK_YES}" or "{SUB_CHECK_NO}".'
+    f'Does the suggested answer address the question? Please answer with "{YES}" or "{NO}".'
 ).strip()
 
 
@@ -322,50 +317,35 @@ INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS = (
 ).strip()
 
 
-# used if sub_question_answer_str is empty
+# Used if sub_question_answer_str is empty
 INITIAL_ANSWER_PROMPT_WO_SUB_QUESTIONS = (
-    """\n
-{answered_sub_questions}
-{persona_specification}
+    "{answered_sub_questions}{persona_specification}\n\n"
+    "Use the information provided below - and only the provided information - to answer the provided question. "
+    "The information provided below consists of a number of documents that were deemed relevant for the question.\n"
+    "{history}\n\n"
+    "IMPORTANT RULES:\n"
+    " - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer. "
+    "You may give some additional facts you learned, but do not try to invent an answer.\n"
+    f' - If the information is irrelevant, just say "{UNKNOWN_ANSWER}".\n'
+    " - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.\n\n"
+    "Again, you should be sure that the answer is supported by the information provided!\n\n"
+    "It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc! "
+    "It is important that the citation is close to the information it supports. If you have multiple citations, "
+    "please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n"
+    "Here is the relevant context information:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{relevant_docs}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "And here is the question I want you to answer based on the context above:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Please keep your answer brief and concise, and focus on facts and data.\n\n"
+    "Answer:"
+).strip()
 
-Use the information provided below - and only the provided information - to answer the provided question.
-The information provided below consists of a number of documents that were deemed relevant for the question.
-{history}
-
-IMPORTANT RULES:
- - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
- You may give some  additional facts you learned, but do not try to invent an answer.
- - If the information is irrelevant, just say """
-    + f'"{UNKNOWN_ANSWER}"'
-    + """.
- - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
-
-Again, you should be sure that the answer is supported by the information provided!
-
-It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
-It is important that the citation is close to the information it supports. If you have multiple
-citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the
-user!
-
-Try to keep your answer concise.
-
-Here are is the relevant context information:
-\n-------\n
-{relevant_docs}
-\n-------\n
-
-And here is the question I want you to answer based on the context above
-\n-------\n
-{question}
-\n-------\n
-
-Please keep your answer brief and concise, and focus on facts and data.
-
-Answer:"""
-)
 
 # REFINEMENT PHASE
-
 REFINEMENT_QUESTION_DECOMPOSITION_PROMPT = """ \n
 An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
 good enough. Also, some sub-questions had been answered and this information has been used to provide

@@ -38,9 +38,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import relevance_from_docs
-from onyx.agents.agent_search.shared_graph_utils.utils import (
-    remove_document_citations,
-)
+from onyx.agents.agent_search.shared_graph_utils.utils import remove_document_citations
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
@@ -190,13 +188,15 @@ def generate_initial_answer(
 
         doc_context = format_docs(relevant_docs)
         doc_context = trim_prompt_piece(
-            model.config,
-            doc_context,
-            base_prompt
-            + sub_question_answer_str
-            + prompt_enrichment_components.persona_prompts.contextualized_prompt
-            + prompt_enrichment_components.history
-            + prompt_enrichment_components.date_str,
+            config=model.config,
+            prompt_piece=doc_context,
+            reserved_str=(
+                base_prompt
+                + sub_question_answer_str
+                + prompt_enrichment_components.persona_prompts.contextualized_prompt
+                + prompt_enrichment_components.history
+                + prompt_enrichment_components.date_str
+            ),
         )
 
         msg = [

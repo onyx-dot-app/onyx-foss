@@ -357,7 +357,9 @@ async def is_connected(request: Request) -> Callable[[], bool]:
             is_connected = not future.result(timeout=0.05)
             return is_connected
         except asyncio.TimeoutError:
-            logger.error("Asyncio timed out")
+            logger.warning(
+                "Asyncio timed out (potentially missed request to stop streaming)"
+            )
             return True
         except Exception as e:
             error_msg = str(e)
