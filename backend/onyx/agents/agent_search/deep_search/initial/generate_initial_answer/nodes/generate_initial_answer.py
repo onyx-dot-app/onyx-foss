@@ -249,7 +249,7 @@ def generate_initial_answer(
             )
             streamed_tokens.append(content)
 
-        logger.info(
+        logger.debug(
             f"Average dispatch time for initial answer: {sum(dispatch_timings) / len(dispatch_timings)}"
         )
 

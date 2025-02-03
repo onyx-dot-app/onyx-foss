@@ -106,7 +106,7 @@ def generate_sub_answer(
             response.append(content)
 
         answer_str = merge_message_runs(response, chunk_separator="")[0].content
-        logger.info(
+        logger.debug(
             f"Average dispatch time: {sum(dispatch_timings) / len(dispatch_timings)}"
         )
 
