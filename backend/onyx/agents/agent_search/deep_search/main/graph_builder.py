@@ -29,8 +29,8 @@ from onyx.agents.agent_search.deep_search.main.nodes.extract_entities_terms impo
 from onyx.agents.agent_search.deep_search.main.nodes.generate_refined_answer import (
     generate_refined_answer,
 )
-from onyx.agents.agent_search.deep_search.main.nodes.ingest_refined_answers import (
-    ingest_refined_answers,
+from onyx.agents.agent_search.deep_search.main.nodes.ingest_refined_sub_answers import (
+    ingest_refined_sub_answers,
 )
 from onyx.agents.agent_search.deep_search.main.nodes.persist_agent_results import (
     persist_agent_results,
@@ -60,72 +60,97 @@ test_mode = False
 
 
 def main_graph_builder(test_mode: bool = False) -> StateGraph:
+    """
+    LangGraph graph builder for the main agent search process.
+    """
     graph = StateGraph(
         state_schema=MainState,
         input=MainInput,
     )
 
+    # Prepare the tool input
     graph.add_node(
         node="prepare_tool_input",
         action=prepare_tool_input,
     )
+
+    # Choose the initial tool
     graph.add_node(
         node="initial_tool_choice",
         action=llm_tool_choice,
     )
+
+    # Call the tool, if required
     graph.add_node(
         node="tool_call",
         action=tool_call,
     )
 
+    # Use the tool response
     graph.add_node(
         node="basic_use_tool_response",
         action=basic_use_tool_response,
     )
+
+    # Start the agent search process
     graph.add_node(
         node="start_agent_search",
         action=start_agent_search,
     )
 
+    # The sub-graph for the initial answer generation
     generate_initial_answer_subgraph = generate_initial_answer_graph_builder().compile()
     graph.add_node(
         node="generate_initial_answer_subgraph",
         action=generate_initial_answer_subgraph,
     )
 
+    # Create the refined sub-questions
     graph.add_node(
         node="create_refined_sub_questions",
         action=create_refined_sub_questions,
     )
 
+    # Subgraph for the refined sub-answer generation
     answer_refined_question = answer_refined_query_graph_builder().compile()
     graph.add_node(
         node="answer_refined_question_subgraphs",
         action=answer_refined_question,
     )
 
+    # Ingest the refined sub-answers
     graph.add_node(
-        node="ingest_refined_answers",
-        action=ingest_refined_answers,
+        node="ingest_refined_sub_answers",
+        action=ingest_refined_sub_answers,
     )
 
+    # Node to generate the refined answer
     graph.add_node(
         node="generate_refined_answer",
         action=generate_refined_answer,
     )
 
+    # Early node to extract the entities and terms from the initial answer,
+    # This information is used to inform the creation the refined sub-questions
     graph.add_node(
         node="extract_entity_term",
         action=extract_entities_terms,
     )
+
+    # Decide if the answer needs to be refined (current;ly always true)
     graph.add_node(
         node="decide_refinement_need",
         action=decide_refinement_need,
     )
+
+    # Compare the initial and refined answers, and determine whether
+    # the refined answer is sufficiently better
     graph.add_node(
         node="compare_answers",
         action=compare_answers,
     )
+
+    # Log the results. This will log the stats as well as the answers
     graph.add_node(
         node="logging_node",
         action=persist_agent_results,
@@ -165,6 +190,8 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         end_key="extract_entity_term",
     )
 
+    # Wait for the initial answer generation and the entity/term extraction to be complete
+    # before deciding if a refinement is needed.
     graph.add_edge(
         start_key=["generate_initial_answer_subgraph", "extract_entity_term"],
         end_key="decide_refinement_need",
@@ -183,11 +210,11 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     )
     graph.add_edge(
         start_key="answer_refined_question_subgraphs",  # HERE
-        end_key="ingest_refined_answers",
+        end_key="ingest_refined_sub_answers",
     )
 
     graph.add_edge(
-        start_key="ingest_refined_answers",
+        start_key="ingest_refined_sub_answers",
         end_key="generate_refined_answer",
     )
 

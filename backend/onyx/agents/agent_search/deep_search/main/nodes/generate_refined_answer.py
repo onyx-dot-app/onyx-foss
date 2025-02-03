@@ -61,6 +61,10 @@ from onyx.tools.tool_implementations.search.search_tool import yield_search_resp
 def generate_refined_answer(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> RefinedAnswerUpdate:
+    """
+    LangGraph node to generate the refined answer.
+    """
+
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])

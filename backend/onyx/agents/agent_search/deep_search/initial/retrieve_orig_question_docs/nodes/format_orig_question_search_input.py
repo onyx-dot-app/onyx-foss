@@ -15,6 +15,9 @@ logger = setup_logger()
 def format_orig_question_search_input(
     state: CoreState, config: RunnableConfig
 ) -> ExpandedRetrievalInput:
+    """
+    LangGraph node to format the search input for the original question.
+    """
     logger.debug("generate_raw_search_data")
     graph_config = cast(GraphConfig, config["metadata"]["config"])
     return ExpandedRetrievalInput(

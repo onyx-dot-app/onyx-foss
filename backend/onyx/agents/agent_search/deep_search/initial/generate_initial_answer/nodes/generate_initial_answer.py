@@ -63,6 +63,10 @@ def generate_initial_answer(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> InitialAnswerUpdate:
+    """
+    LangGraph node to generate the initial answer, using the initial sub-questions/sub-answers and the
+    documents retrieved for the original question.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
@@ -147,6 +151,9 @@ def generate_initial_answer(
     else:
         sub_question_answer_results = state.sub_question_results
 
+        # Collect the sub-questions and sub-answers and construct an appropriate
+        # prompt string.
+        # Consider replacing by a function.
         answered_sub_questions: list[str] = []
         all_sub_questions: list[str] = []  # Separate list for tracking all questions
 
@@ -170,12 +177,13 @@ def generate_initial_answer(
                     )
                 )
 
-        # Use list comprehension for joining answers and determine prompt type
         sub_question_answer_str = (
             "\n\n------\n\n".join(answered_sub_questions)
             if answered_sub_questions
             else ""
         )
+
+        # Use the appropriate prompt based on whether there are sub-questions.
         base_prompt = (
             INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS
             if answered_sub_questions

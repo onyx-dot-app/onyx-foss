@@ -31,6 +31,9 @@ def expand_queries(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> QueryExpansionUpdate:
+    """
+    LangGraph node to expand a question into multiple search queries.
+    """
     # Sometimes we want to expand the original question, sometimes we want to expand a sub-question.
     # When we are running this node on the original question, no question is explictly passed in.
     # Instead, we use the original question from the search request.

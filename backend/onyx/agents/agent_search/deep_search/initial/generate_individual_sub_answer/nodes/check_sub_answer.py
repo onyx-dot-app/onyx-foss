@@ -23,6 +23,10 @@ from onyx.prompts.agent_search import UNKNOWN_ANSWER
 def check_sub_answer(
     state: AnswerQuestionState, config: RunnableConfig
 ) -> SubQuestionAnswerCheckUpdate:
+    """
+    LangGraph node to check the quality of the sub-answer. The answer
+    is represented as a boolean value.
+    """
     node_start_time = datetime.now()
 
     level, question_num = parse_question_id(state.question_id)

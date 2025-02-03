@@ -48,6 +48,9 @@ def decompose_orig_question(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> InitialQuestionDecompositionUpdate:
+    """
+    LangGraph node to decompose the original question into sub-questions.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])

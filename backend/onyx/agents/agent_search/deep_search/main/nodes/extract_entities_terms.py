@@ -29,6 +29,10 @@ from onyx.prompts.agent_search import ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE
 def extract_entities_terms(
     state: MainState, config: RunnableConfig
 ) -> EntityTermExtractionUpdate:
+    """
+    LangGraph node to extract entities, relationships, and terms from the initial search results.
+    This data is used to inform particularly the sub-questions that are created for the refined answer.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])

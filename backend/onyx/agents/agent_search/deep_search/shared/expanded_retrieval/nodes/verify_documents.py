@@ -22,7 +22,7 @@ def verify_documents(
     state: DocVerificationInput, config: RunnableConfig
 ) -> DocVerificationUpdate:
     """
-    Check whether the document is relevant for the original user question
+    LangGraph node to check whether the document is relevant for the original user question
 
     Args:
         state (DocVerificationInput): The current state

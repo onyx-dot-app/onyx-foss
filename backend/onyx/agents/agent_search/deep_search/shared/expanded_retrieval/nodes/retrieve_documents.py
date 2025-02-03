@@ -33,15 +33,7 @@ def retrieve_documents(
     state: RetrievalInput, config: RunnableConfig
 ) -> DocRetrievalUpdate:
     """
-    Retrieve documents
-
-    Args:
-        state (RetrievalInput): Primary state + the query to retrieve
-        config (RunnableConfig): Configuration containing ProSearchConfig
-
-    Updates:
-        expanded_retrieval_results: list[ExpandedRetrievalResult]
-        retrieved_documents: list[InferenceSection]
+    LangGraph node to retrieve documents from the search tool.
     """
     node_start_time = datetime.now()
     query_to_retrieve = state.query_to_retrieve

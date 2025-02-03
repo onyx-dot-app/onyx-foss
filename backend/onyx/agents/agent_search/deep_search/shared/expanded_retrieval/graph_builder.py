@@ -42,6 +42,9 @@ logger = setup_logger()
 
 
 def expanded_retrieval_graph_builder() -> StateGraph:
+    """
+    LangGraph graph builder for the expanded retrieval process.
+    """
     graph = StateGraph(
         state_schema=ExpandedRetrievalState,
         input=ExpandedRetrievalInput,
@@ -50,32 +53,43 @@ def expanded_retrieval_graph_builder() -> StateGraph:
 
     ### Add nodes ###
 
+    # Convert the question into multiple sub-queries
     graph.add_node(
         node="expand_queries",
         action=expand_queries,
     )
 
+    # Format the sub-queries into a list of strings
     graph.add_node(
-        node="dummy",
+        node="format_queries",
         action=format_queries,
     )
 
+    # Retrieve the documents for each sub-query
     graph.add_node(
         node="retrieve_documents",
         action=retrieve_documents,
     )
+
+    # Start verification process that the documents are relevant to the question (not the query)
     graph.add_node(
         node="kickoff_verification",
         action=kickoff_verification,
     )
+
+    # Verify that a given document is relevant to the question (not the query)
     graph.add_node(
         node="verify_documents",
         action=verify_documents,
     )
+
+    # Rerank the documents that have been verified
     graph.add_node(
         node="rerank_documents",
         action=rerank_documents,
     )
+
+    # Format the results into a list of strings
     graph.add_node(
         node="format_results",
         action=format_results,
@@ -88,11 +102,11 @@ def expanded_retrieval_graph_builder() -> StateGraph:
     )
     graph.add_edge(
         start_key="expand_queries",
-        end_key="dummy",
+        end_key="format_queries",
     )
 
     graph.add_conditional_edges(
-        source="dummy",
+        source="format_queries",
         path=parallel_retrieval_edge,
         path_map=["retrieve_documents"],
     )

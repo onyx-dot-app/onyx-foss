@@ -36,6 +36,9 @@ logger = setup_logger()
 
 
 def answer_query_graph_builder() -> StateGraph:
+    """
+    LangGraph sub-graph builder for the initial individual sub-answer generation.
+    """
     graph = StateGraph(
         state_schema=AnswerQuestionState,
         input=SubQuestionAnsweringInput,
@@ -44,26 +47,36 @@ def answer_query_graph_builder() -> StateGraph:
 
     ### Add nodes ###
 
+    # The sub-graph that executes the expanded retrieval process for a sub-question
     expanded_retrieval = expanded_retrieval_graph_builder().compile()
     graph.add_node(
         node="initial_sub_question_expanded_retrieval",
         action=expanded_retrieval,
     )
+
+    # The node that ingests the retrieved documents and puts them into the proper
+    # state keys.
     graph.add_node(
-        node="answer_check",
-        action=check_sub_answer,
+        node="ingest_retrieval",
+        action=ingest_retrieved_documents,
     )
+
+    # The node that generates the sub-answer
     graph.add_node(
         node="generate_sub_answer",
         action=generate_sub_answer,
     )
+
+    # The node that checks the sub-answer
+    graph.add_node(
+        node="answer_check",
+        action=check_sub_answer,
+    )
+
+    # The node that formats the sub-answer for the following initial answer generation
     graph.add_node(
         node="format_answer",
         action=format_sub_answer,
-    )
-    graph.add_node(
-        node="ingest_retrieval",
-        action=ingest_retrieved_documents,
     )
 
     ### Add edges ###

@@ -16,6 +16,10 @@ from onyx.agents.agent_search.models import GraphConfig
 def parallel_retrieval_edge(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> list[Send | Hashable]:
+    """
+    LangGraph edge to parallelize the retrieval process for each of the
+    generated sub-queries and the original question.
+    """
     graph_config = cast(GraphConfig, config["metadata"]["config"])
     question = (
         state.question if state.question else graph_config.inputs.search_request.query

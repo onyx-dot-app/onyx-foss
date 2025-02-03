@@ -16,6 +16,10 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 def decide_refinement_need(
     state: MainState, config: RunnableConfig
 ) -> RequireRefinemenEvalUpdate:
+    """
+    LangGraph node to decide if refinement is needed based on the initial answer and the question.
+    At present, we always refine.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])

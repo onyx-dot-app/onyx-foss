@@ -10,6 +10,9 @@ from onyx.agents.agent_search.shared_graph_utils.models import AgentChunkRetriev
 def ingest_retrieved_documents(
     state: ExpandedRetrievalOutput,
 ) -> SubQuestionRetrievalIngestionUpdate:
+    """
+    LangGraph node to ingest the retrieved documents to format it for the sub-answer.
+    """
     sub_question_retrieval_stats = state.expanded_retrieval_result.retrieval_stats
     if sub_question_retrieval_stats is None:
         sub_question_retrieval_stats = [AgentChunkRetrievalStats()]

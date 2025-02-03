@@ -11,6 +11,9 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
 def format_queries(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> QueryExpansionUpdate:
+    """
+    LangGraph node to format the expanded queries into a list of strings.
+    """
     return QueryExpansionUpdate(
         expanded_queries=state.expanded_queries,
     )

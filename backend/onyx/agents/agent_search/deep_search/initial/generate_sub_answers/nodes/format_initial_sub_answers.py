@@ -17,6 +17,10 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 def format_initial_sub_answers(
     state: AnswerQuestionOutput,
 ) -> SubQuestionResultsUpdate:
+    """
+    LangGraph node to format the answers to the initial sub-questions, including
+    deduping verified documents and context documents.
+    """
     node_start_time = datetime.now()
 
     documents = []

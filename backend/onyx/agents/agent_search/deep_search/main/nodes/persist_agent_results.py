@@ -20,6 +20,9 @@ from onyx.db.chat import log_agent_sub_question_results
 
 
 def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutput:
+    """
+    LangGraph node to persist the agent results, including agent logging data.
+    """
     node_start_time = datetime.now()
 
     agent_start_time = state.agent_start_time

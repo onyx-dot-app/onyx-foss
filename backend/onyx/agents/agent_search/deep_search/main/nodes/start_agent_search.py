@@ -22,6 +22,9 @@ from onyx.context.search.models import InferenceSection
 def start_agent_search(
     state: MainState, config: RunnableConfig
 ) -> ExploratorySearchUpdate:
+    """
+    LangGraph node to start the agentic search process.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])

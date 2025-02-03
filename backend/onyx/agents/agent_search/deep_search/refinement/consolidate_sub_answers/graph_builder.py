@@ -35,6 +35,9 @@ logger = setup_logger()
 
 
 def answer_refined_query_graph_builder() -> StateGraph:
+    """
+    LangGraph graph builder for the refined sub-answer generation process.
+    """
     graph = StateGraph(
         state_schema=AnswerQuestionState,
         input=SubQuestionAnsweringInput,
@@ -43,26 +46,35 @@ def answer_refined_query_graph_builder() -> StateGraph:
 
     ### Add nodes ###
 
+    # Subgraph for the expanded retrieval process
     expanded_retrieval = expanded_retrieval_graph_builder().compile()
     graph.add_node(
         node="refined_sub_question_expanded_retrieval",
         action=expanded_retrieval,
     )
+
+    # Ingest the retrieved documents
     graph.add_node(
-        node="refined_sub_answer_check",
-        action=check_sub_answer,
+        node="ingest_refined_retrieval",
+        action=ingest_retrieved_documents,
     )
+
+    # Generate the refined  sub-answer
     graph.add_node(
         node="generate_refined_sub_answer",
         action=generate_sub_answer,
     )
+
+    # Check if the refined sub-answer is correct
+    graph.add_node(
+        node="refined_sub_answer_check",
+        action=check_sub_answer,
+    )
+
+    # Format the refined sub-answer
     graph.add_node(
         node="format_refined_sub_answer",
         action=format_sub_answer,
-    )
-    graph.add_node(
-        node="ingest_refined_retrieval",
-        action=ingest_retrieved_documents,
     )
 
     ### Add edges ###

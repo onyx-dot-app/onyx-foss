@@ -23,6 +23,12 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.graph_builde
 
 
 def retrieve_orig_question_docs_graph_builder() -> StateGraph:
+    """
+    LangGraph graph builder for the retrieval of documents
+    that are relevant to the original question. This is
+    largely a wrapper around the expanded retrieval process to
+    ensure parallelism with the sub-question answer process.
+    """
     graph = StateGraph(
         state_schema=BaseRawSearchState,
         input=BaseRawSearchInput,
@@ -31,19 +37,23 @@ def retrieve_orig_question_docs_graph_builder() -> StateGraph:
 
     ### Add nodes ###
 
+    # Format the original question search output
     graph.add_node(
-        node="format_orig_question_search_input",
-        action=format_orig_question_search_input,
+        node="format_orig_question_search_output",
+        action=format_orig_question_search_output,
     )
 
+    # The sub-graph that executes the expanded retrieval process
     expanded_retrieval = expanded_retrieval_graph_builder().compile()
     graph.add_node(
         node="retrieve_orig_question_docs_subgraph",
         action=expanded_retrieval,
     )
+
+    # Format the original question search input
     graph.add_node(
-        node="format_orig_question_search_output",
-        action=format_orig_question_search_output,
+        node="format_orig_question_search_input",
+        action=format_orig_question_search_input,
     )
 
     ### Add edges ###

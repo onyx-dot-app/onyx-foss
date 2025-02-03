@@ -3,43 +3,40 @@ from datetime import datetime
 from onyx.agents.agent_search.deep_search.initial.generate_individual_sub_answer.states import (
     AnswerQuestionOutput,
 )
-from onyx.agents.agent_search.deep_search.main.operations import logger
 from onyx.agents.agent_search.deep_search.main.states import (
     SubQuestionResultsUpdate,
 )
 from onyx.agents.agent_search.shared_graph_utils.operators import (
     dedup_inference_sections,
 )
+from onyx.agents.agent_search.shared_graph_utils.utils import (
+    get_langgraph_node_log_string,
+)
 
 
-def format_initial_sub_answers(
+def ingest_refined_sub_answers(
     state: AnswerQuestionOutput,
 ) -> SubQuestionResultsUpdate:
-    now_start = datetime.now()
+    """
+    LangGraph node to ingest and format the refined sub-answers and retrieved documents.
+    """
+    node_start_time = datetime.now()
 
-    logger.debug(f"--------{now_start}--------INGEST ANSWERS---")
     documents = []
-    context_documents = []
-    cited_documents = []
     answer_results = state.answer_results
     for answer_result in answer_results:
         documents.extend(answer_result.verified_reranked_documents)
-        context_documents.extend(answer_result.context_documents)
-        cited_documents.extend(answer_result.cited_documents)
-    now_end = datetime.now()
-
-    logger.debug(
-        f"--------{now_end}--{now_end - now_start}--------INGEST ANSWERS END---"
-    )
 
     return SubQuestionResultsUpdate(
         # Deduping is done by the documents operator for the main graph
         # so we might not need to dedup here
         verified_reranked_documents=dedup_inference_sections(documents, []),
-        context_documents=dedup_inference_sections(context_documents, []),
-        cited_documents=dedup_inference_sections(cited_documents, []),
         sub_question_results=answer_results,
         log_messages=[
-            f"{now_start} -- Main - Ingest initial processed sub questions,  Time taken: {now_end - now_start}"
+            get_langgraph_node_log_string(
+                graph_component="main",
+                node_name="ingest refined answers",
+                node_start_time=node_start_time,
+            )
         ],
     )

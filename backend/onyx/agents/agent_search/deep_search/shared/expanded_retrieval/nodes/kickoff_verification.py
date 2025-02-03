@@ -16,6 +16,12 @@ def kickoff_verification(
     state: ExpandedRetrievalState,
     config: RunnableConfig,
 ) -> Command[Literal["verify_documents"]]:
+    """
+    LangGraph node (Command node!) that kicks off the verification process for the retrieved documents.
+    Note that this is a Command node and does the routing as well. (At present, no state updates
+    are done here, so this could be replaced with an edge. But we may choose to make state
+    updates later.)
+    """
     retrieved_documents = state.retrieved_documents
     verification_question = state.question
 

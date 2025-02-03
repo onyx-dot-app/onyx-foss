@@ -41,6 +41,9 @@ def generate_sub_answer(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> SubQuestionAnswerGenerationUpdate:
+    """
+    LangGraph node to generate a sub-answer.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])

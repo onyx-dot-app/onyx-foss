@@ -16,13 +16,7 @@ def validate_initial_answer(
     state: SubQuestionRetrievalState,
 ) -> InitialAnswerQualityUpdate:
     """
-    Check whether the final output satisfies the original user question
-
-    Args:
-        state (messages): The current state
-
-    Returns:
-        InitialAnswerQualityUpdate
+    Check whether the initial answer sufficiently addresses the original user question.
     """
 
     node_start_time = datetime.now()

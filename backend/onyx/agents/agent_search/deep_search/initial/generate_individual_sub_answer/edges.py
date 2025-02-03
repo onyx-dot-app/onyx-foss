@@ -15,6 +15,9 @@ logger = setup_logger()
 
 
 def send_to_expanded_retrieval(state: SubQuestionAnsweringInput) -> Send | Hashable:
+    """
+    LangGraph edge to send a sub-question to the expanded retrieval.
+    """
     edge_start_time = datetime.now()
 
     return Send(

@@ -18,6 +18,9 @@ from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 def parallelize_initial_sub_question_answering(
     state: SubQuestionRetrievalState,
 ) -> list[Send | Hashable]:
+    """
+    LangGraph edge to parallelize the initial sub-question answering.
+    """
     edge_start_time = datetime.now()
     if len(state.initial_sub_questions) > 0:
         # sub_question_record_ids = [subq_record.id for subq_record in state["sub_question_records"]]

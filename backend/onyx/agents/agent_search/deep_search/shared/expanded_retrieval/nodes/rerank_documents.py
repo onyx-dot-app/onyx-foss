@@ -30,6 +30,10 @@ from onyx.db.engine import get_session_context_manager
 def rerank_documents(
     state: ExpandedRetrievalState, config: RunnableConfig
 ) -> DocRerankingUpdate:
+    """
+    LangGraph node to rerank the retrieved and verified documents. A part of the
+    pre-existing pipeline is used here.
+    """
     node_start_time = datetime.now()
     verified_documents = state.verified_documents
 

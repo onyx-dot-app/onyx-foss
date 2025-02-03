@@ -18,6 +18,11 @@ from onyx.agents.agent_search.shared_graph_utils.utils import make_question_id
 def parallelize_initial_sub_question_answering(
     state: SubQuestionRetrievalState,
 ) -> list[Send | Hashable]:
+    """
+    LangGraph edge to parallelize the initial sub-question answering. If there are no sub-questions,
+    we send empty answers to the initial answer generation, and that answer would be generated
+    solely based on the documents retrieved for the original question.
+    """
     edge_start_time = datetime.now()
     if len(state.initial_sub_questions) > 0:
         # sub_question_record_ids = [subq_record.id for subq_record in state["sub_question_records"]]

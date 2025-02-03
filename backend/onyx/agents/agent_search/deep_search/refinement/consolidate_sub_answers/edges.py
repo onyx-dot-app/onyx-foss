@@ -17,6 +17,9 @@ logger = setup_logger()
 def send_to_expanded_refined_retrieval(
     state: SubQuestionAnsweringInput,
 ) -> Send | Hashable:
+    """
+    LangGraph edge to sends a refined sub-question extended retrieval.
+    """
     logger.debug("sending to expanded retrieval for follow up question via edge")
     datetime.now()
     return Send(

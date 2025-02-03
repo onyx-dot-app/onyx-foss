@@ -10,6 +10,9 @@ from onyx.agents.agent_search.shared_graph_utils.models import (
 
 
 def format_sub_answer(state: AnswerQuestionState) -> AnswerQuestionOutput:
+    """
+    LangGraph node to generate the sub-answer format.
+    """
     return AnswerQuestionOutput(
         answer_results=[
             SubQuestionAnswerResults(

@@ -38,7 +38,10 @@ from onyx.tools.models import ToolCallKickoff
 def create_refined_sub_questions(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> RefinedQuestionDecompositionUpdate:
-    """ """
+    """
+    LangGraph node to create refined sub-questions based on the initial answer, the history,
+    the entity term extraction results found earlier, and the sub-questions that were answered and failed.
+    """
     graph_config = cast(GraphConfig, config["metadata"]["config"])
     write_custom_event(
         "start_refined_answer_creation",

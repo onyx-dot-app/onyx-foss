@@ -11,12 +11,10 @@ logger = setup_logger()
 def format_orig_question_search_output(
     state: ExpandedRetrievalOutput,
 ) -> OrigQuestionRetrievalUpdate:
-    # return BaseRawSearchOutput(
-    #     base_expanded_retrieval_result=state.expanded_retrieval_result,
-    #     # base_retrieval_results=[state.expanded_retrieval_result],
-    #     # base_search_documents=[],
-    # )
-
+    """
+    LangGraph node to format the search result for the original question into the
+    proper format.
+    """
     sub_question_retrieval_stats = state.expanded_retrieval_result.retrieval_stats
     if sub_question_retrieval_stats is None:
         sub_question_retrieval_stats = AgentChunkRetrievalStats()

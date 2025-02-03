@@ -30,6 +30,9 @@ def format_results(
     config: RunnableConfig,
     writer: StreamWriter = lambda _: None,
 ) -> ExpandedRetrievalUpdate:
+    """
+    LangGraph node that constructs the proper expanded retrieval format.
+    """
     level, question_num = parse_question_id(state.sub_question_id or "0_0")
     query_info = get_query_info(state.query_retrieval_results)
 

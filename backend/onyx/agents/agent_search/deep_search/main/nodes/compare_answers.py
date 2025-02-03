@@ -23,6 +23,10 @@ from onyx.prompts.agent_search import (
 def compare_answers(
     state: MainState, config: RunnableConfig, writer: StreamWriter = lambda _: None
 ) -> InitialRefinedAnswerComparisonUpdate:
+    """
+    LangGraph node to compare the initial answer and the refined answer and determine if the
+    refined answer is sufficiently better than the initial answer.
+    """
     node_start_time = datetime.now()
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
