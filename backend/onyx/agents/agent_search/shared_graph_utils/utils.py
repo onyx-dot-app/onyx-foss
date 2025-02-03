@@ -74,7 +74,25 @@ def format_docs(docs: Sequence[InferenceSection]) -> str:
     formatted_doc_list = []
 
     for doc_num, doc in enumerate(docs):
-        formatted_doc_list.append(f"**Document D{doc_num + 1}:\n{doc.combined_content}")
+        title: str | None = doc.center_chunk.title if doc.center_chunk.title else None
+        metadata: dict[str, str | list[str]] | None = (
+            doc.center_chunk.metadata if doc.center_chunk.metadata else None
+        )
+
+        doc_str = f"**Document: D{doc_num + 1}**"
+        if title:
+            doc_str += f"\nTitle: {title}"
+        if metadata:
+            metadata_str = ""
+            for key, value in metadata.items():
+                if isinstance(value, str):
+                    metadata_str += f" - {key}: {value}"
+                elif isinstance(value, list):
+                    metadata_str += f" - {key}: {', '.join(value)}"
+            doc_str += f"\nMetadata: {metadata_str}"
+        doc_str += f"\nContent:\n{doc.combined_content}"
+
+        formatted_doc_list.append(doc_str)
 
     return FORMAT_DOCS_SEPARATOR.join(formatted_doc_list)
 
