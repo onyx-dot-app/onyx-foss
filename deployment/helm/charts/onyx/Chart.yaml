@@ -6,7 +6,7 @@ sources:
   - "https://github.com/onyx-dot-app/onyx"
 type: application
 version: 0.2.1
-appVersion: "latest"
+appVersion: latest
 annotations:
   category: Productivity
   licenses: MIT
