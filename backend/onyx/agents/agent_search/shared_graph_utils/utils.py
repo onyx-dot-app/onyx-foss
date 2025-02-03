@@ -74,7 +74,7 @@ def format_docs(docs: Sequence[InferenceSection]) -> str:
     formatted_doc_list = []
 
     for doc_num, doc in enumerate(docs):
-        title: str | None = doc.center_chunk.title if doc.center_chunk.title else None
+        title: str | None = doc.center_chunk.title
         metadata: dict[str, str | list[str]] | None = (
             doc.center_chunk.metadata if doc.center_chunk.metadata else None
         )
