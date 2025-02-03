@@ -38,12 +38,10 @@ Answer:
 SUB_QUESTION_ANSWER_TEMPLATE_REFINED = f"""
 Sub-Question: Q{{sub_question_num}}
 Type: {{sub_question_type}}
-
 Sub-Question:
 {SEPARATOR_LINE}
 {{sub_question}}
 {SEPARATOR_LINE}
-
 Answer:
 {SEPARATOR_LINE}
 {{sub_answer}}
@@ -346,87 +344,72 @@ INITIAL_ANSWER_PROMPT_WO_SUB_QUESTIONS = (
 
 
 # REFINEMENT PHASE
-REFINEMENT_QUESTION_DECOMPOSITION_PROMPT = """ \n
-An initial user question needs to be answered. An initial answer has been provided but it wasn't quite
-good enough. Also, some sub-questions had been answered and this information has been used to provide
-the initial answer. Some other subquestions may have been suggested based on little knowledge, but they
-were not directly answerable. Also, some entities, relationships and terms are given to you so that
-you have an idea of how the available data looks like.
-
-Your role is to generate 2-4 new sub-questions that would help to answer the initial question,
-considering:
-
-1) The initial question
-2) The initial answer that was found to be unsatisfactory
-3) The sub-questions that were answered
-4) The sub-questions that were suggested but not answered
-5) The entities, relationships and terms that were extracted from the context
-
-The individual questions should be answerable by a good RAG system.
-So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the
-question for different entities that may be involved in the original question, but in a way that does
-not duplicate questions that were already tried.
-
-Additional Guidelines:
-- The sub-questions should be specific to the question and provide richer context for the question,
-resolve ambiguities, or address shortcoming of the initial answer
-- Each sub-question - when answered - should be relevant for the answer to the original question
-- The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any
-other complications that may require extra context.
-- The sub-questions MUST have the full context of the original question so that it can be executed by
-a RAG system independently without the original question available
-    (Example:
-    - initial question: "What is the capital of France?"
-    - bad sub-question: "What is the name of the river there?"
-    - good sub-question: "What is the name of the river that flows through Paris?"
-- For each sub-question, please also provide a search term that can be used to retrieve relevant
-documents from a document store.
-- Consider specifically the sub-questions that were suggested but not answered. This is a sign that they are not
-answerable with the available context, and you should not ask similar questions.
-\n\n
-Here is the initial question:
-\n-------\n
-{question}
-\n-------\n
-{history}
-
-Here is the initial sub-optimal answer:
-\n-------\n
-{base_answer}
-\n-------\n
-
-Here are the sub-questions that were answered:
-\n-------\n
-{answered_sub_questions}
-\n-------\n
-
-Here are the sub-questions that were suggested but not answered:
-\n-------\n
-{failed_sub_questions}
-\n-------\n
-
-And here are the entities, relationships and terms extracted from the context:
-\n-------\n
-{entity_term_extraction_str}
-\n-------\n
-
-Please generate the list of good, fully contextualized sub-questions that would help to address the
-main question.
-
-Specifically pay attention also to the entities, relationships and terms extracted, as these indicate what type of
-objects/relationships/terms you can ask about! Do not ask about entities, terms or relationships that are not
-mentioned in the 'entities, relationships and terms' section.
-
-Again, please find questions that are NOT overlapping too much with the already answered
-sub-questions or those that already were suggested and failed.
-In other words - what can we try in addition to what has been tried so far?
-
-Generate the list of questions separated by one new line like this:
-<sub-question 1>
-<sub-question 2>
-<sub-question 3>
-...
-   """
+REFINEMENT_QUESTION_DECOMPOSITION_PROMPT = (
+    "An initial user question needs to be answered. An initial answer has been provided but it wasn't quite "
+    "good enough. Also, some sub-questions had been answered and this information has been used to provide "
+    "the initial answer. Some other subquestions may have been suggested based on little knowledge, but they "
+    "were not directly answerable. Also, some entities, relationships and terms are given to you so that "
+    "you have an idea of how the available data looks like.\n\n"
+    "Your role is to generate 2-4 new sub-questions that would help to answer the initial question, considering:\n\n"
+    "1) The initial question\n"
+    "2) The initial answer that was found to be unsatisfactory\n"
+    "3) The sub-questions that were answered\n"
+    "4) The sub-questions that were suggested but not answered\n"
+    "5) The entities, relationships and terms that were extracted from the context\n\n"
+    "The individual questions should be answerable by a good RAG system. "
+    "So a good idea would be to use the sub-questions to resolve ambiguities and/or to separate the "
+    "question for different entities that may be involved in the original question, but in a way that does "
+    "not duplicate questions that were already tried.\n\n"
+    "Additional Guidelines:\n"
+    "- The sub-questions should be specific to the question and provide richer context for the question, "
+    "resolve ambiguities, or address shortcoming of the initial answer\n"
+    "- Each sub-question - when answered - should be relevant for the answer to the original question\n"
+    "- The sub-questions should be free from comparisons, ambiguities,judgements, aggregations, or any "
+    "other complications that may require extra context.\n"
+    "- The sub-questions MUST have the full context of the original question so that it can be executed by "
+    "a RAG system independently without the original question available\n"
+    "    (Example:\n"
+    '    - initial question: "What is the capital of France?"\n'
+    '    - bad sub-question: "What is the name of the river there?"\n'
+    '    - good sub-question: "What is the name of the river that flows through Paris?")\n'
+    "- For each sub-question, please also provide a search term that can be used to retrieve relevant "
+    "documents from a document store.\n"
+    "- Consider specifically the sub-questions that were suggested but not answered. This is a sign that they are not "
+    "answerable with the available context, and you should not ask similar questions.\n\n"
+    "Here is the initial question:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n"
+    "{history}\n\n"
+    "Here is the initial sub-optimal answer:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{base_answer}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Here are the sub-questions that were answered:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{answered_sub_questions}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Here are the sub-questions that were suggested but not answered:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{failed_sub_questions}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "And here are the entities, relationships and terms extracted from the context:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{entity_term_extraction_str}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Please generate the list of good, fully contextualized sub-questions that would help to address the main question.\n"
+    "Specifically pay attention also to the entities, relationships and terms extracted, as these indicate what type of "
+    "objects/relationships/terms you can ask about! Do not ask about entities, terms or relationships that are not "
+    "mentioned in the 'entities, relationships and terms' section.\n\n"
+    "Again, please find questions that are NOT overlapping too much with the already answered "
+    "sub-questions or those that already were suggested and failed.\n"
+    "In other words - what can we try in addition to what has been tried so far?\n\n"
+    "Generate the list of questions separated by one new line like this:\n"
+    "<sub-question 1>\n"
+    "<sub-question 2>\n"
+    "<sub-question 3>\n"
+    "..."
+).strip()
 
 
 REFINED_ANSWER_PROMPT_W_SUB_QUESTIONS = (
