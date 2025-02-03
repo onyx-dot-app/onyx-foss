@@ -33,16 +33,14 @@ const SourceCard: React.FC<{
   return (
     <button
       onClick={() => openDocument(document, () => {})}
-      className="max-w-[260px] h-[80px] p-3 bg-[#f1eee8] text-left hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col justify-between"
+      className="w-full max-w-[260px] h-[80px] p-3 bg-[#f1eee8] text-left hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col justify-between overflow-hidden"
     >
-      <div className="text-black text-xs line-clamp-2 font-medium leading-tight">
-        {/* {truncatedtext} */}
-        {/* {truncatedtext.length === 80 ? "..." : ""} */}
-        {documentSummary}
+      <div className="text-black text-xs line-clamp-2 font-medium leading-tight overflow-hidden">
+        <span className="break-words">{documentSummary}</span>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 mt-1">
         <ResultIcon doc={document} size={14} />
-        <div className="text-[#4a4a4a] text-xs leading-tight truncate">
+        <div className="text-[#4a4a4a] text-xs leading-tight truncate flex-1 min-w-0">
           {truncatedIdentifier}
         </div>
       </div>

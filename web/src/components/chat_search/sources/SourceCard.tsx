@@ -105,7 +105,7 @@ export function SeeMoreBlock({
   return (
     <button
       onClick={toggleDocumentSelection}
-      className="max-w-[260px]  min-w-[200px] h-[80px] p-3 bg-[#f1eee8] border border-[#d8d0c0] hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col items-start justify-between transition-opacity duration-300"
+      className="w-full max-w-[260px] h-[80px] p-3 bg-[#f1eee8] text-left hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col justify-between overflow-hidden"
     >
       <div className="flex items-center gap-1">
         {iconsToRender.map((icon, index) =>
