@@ -37,7 +37,7 @@ export function Citation({
     : index;
 
   if (!document_info && !question_info) {
-    return children;
+    return <>{children}</>;
   }
   return (
     <TooltipProvider delayDuration={0}>
