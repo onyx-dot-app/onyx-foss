@@ -142,6 +142,11 @@ export const AgenticMessage = ({
       }
     }
 
+    processed = processed.replace(/\[([QD])(\d+)\]/g, (match, type, number) => {
+      const citationNumber = parseInt(number, 10);
+      return `[[${type}${citationNumber}]]()`;
+    });
+
     processed = processed.replace(/\{\{(\d+)\}\}/g, (match, p1) => {
       const citationNumber = parseInt(p1, 10);
       return `[[${citationNumber}]]()`;
@@ -158,7 +163,6 @@ export const AgenticMessage = ({
   const [isViewingInitialAnswer, setIsViewingInitialAnswer] = useState(true);
 
   const [canShowResponse, setCanShowResponse] = useState(isComplete);
-  const [isPulsing, setIsPulsing] = useState(false);
   const [isRegenerateHovered, setIsRegenerateHovered] = useState(false);
   const [isRegenerateDropdownVisible, setIsRegenerateDropdownVisible] =
     useState(false);

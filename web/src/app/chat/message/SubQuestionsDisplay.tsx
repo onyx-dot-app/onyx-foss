@@ -139,15 +139,16 @@ const SubQuestionDisplay: React.FC<{
         return preprocessLaTeX(content);
       }
     }
-    // Add newlines after ]] or ) if there's text immediately following
-    content = content.replace(/(\]\]|\))((?!\s|\n|\[|\(|$).)/g, "$1\n$2");
-    // Turn {{number}} into citation in content
+    content = content.replace(/\[([QD])(\d+)\]/g, (match, type, number) => {
+      const citationNumber = parseInt(number, 10);
+      return `[[${type}${citationNumber}]]()`;
+    });
+
     content = content.replace(/\{\{(\d+)\}\}/g, (match, p1) => {
       const citationNumber = parseInt(p1, 10);
       return `[[${citationNumber}]]()`;
     });
 
-    // Add () after ]] if not present
     content = content.replace(/\]\](?!\()/g, "]]()");
 
     return (
