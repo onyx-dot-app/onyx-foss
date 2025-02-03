@@ -346,7 +346,10 @@ def retrieve_search_docs(
 
 
 def get_answer_citation_ids(answer_str: str) -> list[int]:
-    citation_ids = re.findall(r"\[\[D(\d+)\]\]", answer_str)
+    """
+    Extract citation numbers of format [D<number>] from the answer string.
+    """
+    citation_ids = re.findall(r"\[D(\d+)\]", answer_str)
     return list(set([(int(id) - 1) for id in citation_ids]))
 
 
@@ -422,10 +425,9 @@ def remove_document_citations(text: str) -> str:
         Text with citations removed
     """
     # Pattern explanation:
-    # \[\[D\d+\]\]\(\)  matches:
-    #   \[\[ - literal [[ characters
-    #   D    - literal D character
+    # \[(?:D|Q)?\d+\]  matches:
+    #   \[   - literal [ character
+    #   (?:D|Q)?  - optional D or Q character
     #   \d+  - one or more digits
-    #   \]\] - literal ]] characters
-    #   \(\) - literal () characters
-    return re.sub(r"\[\[(?:D|Q)?\d+\]\](?:\([^)]*\))?", "", text)
+    #   \]   - literal ] character
+    return re.sub(r"\[(?:D|Q)?\d+\]", "", text)
