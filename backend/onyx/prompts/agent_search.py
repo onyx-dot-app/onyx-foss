@@ -239,7 +239,7 @@ SUB_QUESTION_RAG_PROMPT = (
     "use your internal knowledge, just the provided information!\n\n"
     "Make sure that you keep all relevant information, specifically as it concerns to the ultimate goal. "
     "(But keep other details as well.)\n\n"
-    "It is critical that you provide inline citations in the format [[D1]](), [[D2]](), [[D3]](), etc! "
+    "It is critical that you provide inline citations in the format [D1], [D2], [D3], etc! "
     "It is important that the citation is close to the information it supports. "
     "Proper citations are very important to the user!\n\n"
     "For your general information, here is the ultimate motivation:\n"
@@ -283,12 +283,12 @@ INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS = (
     "  1) a number of answered sub-questions - these are very important to help you organize your thoughts and your answer\n"
     "  2) a number of documents that deemed relevant for the question.\n\n"
     "{history}\n\n"
-    "It is critical that you provide prover inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc.!\n"
+    "It is critical that you provide prover inline citations to documents in the format [D1], [D2], [D3], etc.!\n"
     "It is important that the citation is close to the information it supports. If you have multiple citations that support\n"
-    "a fact, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.\n"
+    "a fact, please cite for example as [D1][D3], or [D2][D4], etc.\n"
     "Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the "
-    "sub-question citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or "
-    "[[D2]]()[[D7]]()[[Q4]](), etc.\n"
+    "sub-question citation. If you want to cite both a document and a sub-question, please use [D1][Q3], or "
+    "[D2][D7][Q4], etc.\n"
     "Again, please NEVER cite sub-questions without a document citation! "
     "Proper citations are very important for the user!\n\n"
     "IMPORTANT RULES:\n"
@@ -331,9 +331,9 @@ INITIAL_ANSWER_PROMPT_WO_SUB_QUESTIONS = (
     f' - If the information is irrelevant, just say "{UNKNOWN_ANSWER}".\n'
     " - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.\n\n"
     "Again, you should be sure that the answer is supported by the information provided!\n\n"
-    "It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc! "
+    "It is critical that you provide proper inline citations to documents in the format [D1], [D2], [D3], etc! "
     "It is important that the citation is close to the information it supports. If you have multiple citations, "
-    "please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n"
+    "please cite for example as [D1][D3], or [D2][D4], etc. Citations are very important for the user!\n\n"
     "Here is the relevant context information:\n"
     f"{SEPARATOR_LINE}\n"
     "{relevant_docs}\n"
@@ -436,11 +436,11 @@ more details/new facts!
 citations (see below). So consider the answers to the sub-questions as guidelines to construct your new answer, but
 make sure you cite the relevant document for a fact!
 
-It is critical that you provide proper inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+It is critical that you provide proper inline citations to documents in the format [D1], [D2], [D3], etc!
 It is important that the citation is close to the information it supports. If you have multiple
-citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
+citations, please cite for example as [D1][D3], or [D2][D4], etc.
 Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
-citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
+citation. If you want to cite both a document and a sub-question, please use [D1][Q3], or [D2][D7][Q4], etc.
 Again, please NEVER cite sub-questions without a document citation!
 Proper citations are very important for the user!\n\n
 
@@ -454,7 +454,7 @@ IMPORTANT RULES:
     + """.
  - If the information is relevant but not fully conclusive, provide an answer to the extent you can but also
  specify that the information is not conclusive and why.
-- Ignore any existing citations within the answered sub-questions, like [[D1]]()... and [[Q2]]()!
+- Ignore any existing citations within the answered sub-questions, like [D1]... and [Q2]!
 The citations you will need to use will need to refer to the documents (and sub-questions) that you are explicitly
 presented with below!
 
@@ -504,9 +504,9 @@ The information provided below consists of:
     1) an initial answer that was given but found to be lacking in some way.
     2) a number of documents that were also deemed relevant for the question.
 
-It is critical that you provide proper] inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc!
+It is critical that you provide proper] inline citations to documents in the format [D1], [D2], [D3], etc!
  It is important that the citation is close to the information it supports. If you have multiple
-citations, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc. Citations are very important for the user!\n\n
+citations, please cite for example as [D1][D3], or [D2][D4], etc. Citations are very important for the user!\n\n
 \n-------\n
 {history}
 \n-------\n
@@ -556,7 +556,7 @@ the refined answer is substantially better than the initial answer, not just a b
  - more structured information
  - morde details
  - new bullet points
- - substantially more document citations ([[D1]](), [[D2]](), [[D3]](), etc.)
+ - substantially more document citations ([D1], [D2], [D3], etc.)
 
  Put yourself in the shoes of the user and think about whether the refined answer is really substantially
  better and delivers really new insights than the initial answer.
