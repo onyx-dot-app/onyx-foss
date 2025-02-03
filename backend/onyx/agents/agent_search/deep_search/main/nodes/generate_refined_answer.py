@@ -320,7 +320,7 @@ def generate_refined_answer(
     agent_refined_metrics = AgentRefinedMetrics(
         refined_doc_boost_factor=refined_agent_stats.revision_doc_efficiency,
         refined_question_boost_factor=refined_agent_stats.revision_question_efficiency,
-        duration__s=agent_refined_duration,
+        duration_s=agent_refined_duration,
     )
 
     return RefinedAnswerUpdate(

@@ -265,9 +265,9 @@ def generate_initial_answer(
     agent_base_end_time = datetime.now()
 
     if agent_base_end_time and state.agent_start_time:
-        duration__s = (agent_base_end_time - state.agent_start_time).total_seconds()
+        duration_s = (agent_base_end_time - state.agent_start_time).total_seconds()
     else:
-        duration__s = None
+        duration_s = None
 
     agent_base_metrics = AgentBaseMetrics(
         num_verified_documents_total=len(relevant_docs),
@@ -285,7 +285,7 @@ def generate_initial_answer(
         support_boost_factor=initial_agent_stats.agent_effectiveness.get(
             "support_ratio"
         ),
-        duration__s=duration__s,
+        duration_s=duration_s,
     )
 
     return InitialAnswerUpdate(

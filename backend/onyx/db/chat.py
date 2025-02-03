@@ -966,8 +966,8 @@ def log_agent_metrics(
         persona_id=persona_id,
         agent_type=agent_type,
         start_time=start_time,
-        base_duration__s=agent_timings.base_duration__s,
-        full_duration__s=agent_timings.full_duration__s,
+        base_duration_s=agent_timings.base_duration_s,
+        full_duration_s=agent_timings.full_duration_s,
         base_metrics=vars(agent_base_metrics) if agent_base_metrics else None,
         refined_metrics=vars(agent_refined_metrics) if agent_refined_metrics else None,
         all_metrics=vars(agent_additional_metrics)

@@ -137,7 +137,7 @@ def decompose_orig_question(
         agent_refined_metrics=AgentRefinedMetrics(
             refined_doc_boost_factor=None,
             refined_question_boost_factor=None,
-            duration__s=None,
+            duration_s=None,
         ),
         log_messages=[
             get_langgraph_node_log_string(

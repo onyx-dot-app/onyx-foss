@@ -49,9 +49,9 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
 
     combined_agent_metrics = CombinedAgentMetrics(
         timings=AgentTimings(
-            base_duration__s=agent_base_duration,
-            refined_duration__s=agent_refined_duration,
-            full_duration__s=agent_full_duration,
+            base_duration_s=agent_base_duration,
+            refined_duration_s=agent_refined_duration,
+            full_duration_s=agent_full_duration,
         ),
         base_metrics=agent_base_metrics,
         refined_metrics=agent_refined_metrics,
@@ -110,17 +110,17 @@ def persist_agent_results(state: MainState, config: RunnableConfig) -> MainOutpu
         logger.debug(log_message)
 
     if state.agent_base_metrics:
-        logger.debug(f"Initial loop: {state.agent_base_metrics.duration__s}")
+        logger.debug(f"Initial loop: {state.agent_base_metrics.duration_s}")
     if state.agent_refined_metrics:
-        logger.debug(f"Refined loop: {state.agent_refined_metrics.duration__s}")
+        logger.debug(f"Refined loop: {state.agent_refined_metrics.duration_s}")
     if (
         state.agent_base_metrics
         and state.agent_refined_metrics
-        and state.agent_base_metrics.duration__s
-        and state.agent_refined_metrics.duration__s
+        and state.agent_base_metrics.duration_s
+        and state.agent_refined_metrics.duration_s
     ):
         logger.debug(
-            f"Total time: {float(state.agent_base_metrics.duration__s) + float(state.agent_refined_metrics.duration__s)}"
+            f"Total time: {float(state.agent_base_metrics.duration_s) + float(state.agent_refined_metrics.duration_s)}"
         )
 
     return main_output
