@@ -32,8 +32,6 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
     PREFIX = "connectorsync"
     TASKSET_PREFIX = PREFIX + "_taskset"
 
-    # SYNCING_PREFIX = PREFIX + ":vespa_syncing"
-
     def __init__(self, tenant_id: str | None, id: int) -> None:
         super().__init__(tenant_id, str(id))
 
@@ -55,11 +53,6 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
         # documents that should be skipped. Note that this class updates
         # the list on the fly
         self.skip_docs = skip_docs
-
-    # @staticmethod
-    # def make_redis_syncing_key(doc_id: str) -> str:
-    #     """used to create a key in redis to block a doc from syncing"""
-    #     return f"{RedisConnectorCredentialPair.SYNCING_PREFIX}:{doc_id}"
 
     def generate_tasks(
         self,
@@ -107,15 +100,6 @@ class RedisConnectorCredentialPair(RedisObjectHelper):
             # check if we should skip the document (typically because it's already syncing)
             if doc.id in self.skip_docs:
                 continue
-
-            # an arbitrary number in seconds to prevent the same doc from syncing repeatedly
-            # SYNC_EXPIRATION = 24 * 60 * 60
-
-            # a quick hack that can be uncommented to prevent a doc from resyncing over and over
-            # redis_syncing_key = self.make_redis_syncing_key(doc.id)
-            # if redis_client.exists(redis_syncing_key):
-            #     continue
-            # redis_client.set(redis_syncing_key, custom_task_id, ex=SYNC_EXPIRATION)
 
             # celery's default task id format is "dd32ded3-00aa-4884-8b21-42f8332e7fac"
             # the key for the result is "celery-task-meta-dd32ded3-00aa-4884-8b21-42f8332e7fac"

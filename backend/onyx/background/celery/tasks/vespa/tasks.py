@@ -1025,15 +1025,6 @@ def vespa_metadata_sync_task(
             # the sync might repeat again later
             mark_document_as_synced(document_id, db_session)
 
-            # this code checks for and removes a per document sync key that is
-            # used to block out the same doc from continualy resyncing
-            # a quick hack that is only needed for production issues
-            # redis_syncing_key = RedisConnectorCredentialPair.make_redis_syncing_key(
-            #     document_id
-            # )
-            # r = get_redis_client(tenant_id=tenant_id)
-            # r.delete(redis_syncing_key)
-
             elapsed = time.monotonic() - start
             task_logger.info(
                 f"doc={document_id} "

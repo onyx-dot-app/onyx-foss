@@ -59,6 +59,7 @@ from onyx.redis.redis_connector import RedisConnector
 from onyx.redis.redis_connector_doc_perm_sync import RedisConnectorPermissionSync
 from onyx.redis.redis_connector_doc_perm_sync import RedisConnectorPermissionSyncPayload
 from onyx.redis.redis_pool import get_redis_client
+from onyx.redis.redis_pool import get_redis_replica_client
 from onyx.redis.redis_pool import redis_lock_dump
 from onyx.server.utils import make_short_id
 from onyx.utils.logger import doc_permission_sync_ctx
@@ -124,6 +125,7 @@ def check_for_doc_permissions_sync(self: Task, *, tenant_id: str | None) -> bool
     # we need to use celery's redis client to access its redis data
     # (which lives on a different db number)
     r = get_redis_client(tenant_id=tenant_id)
+    r_replica = get_redis_replica_client(tenant_id=tenant_id)
     r_celery: Redis = self.app.broker_connection().channel().client  # type: ignore
 
     lock_beat: RedisLock = r.lock(
@@ -164,7 +166,9 @@ def check_for_doc_permissions_sync(self: Task, *, tenant_id: str | None) -> bool
             # tasks can be in the queue in redis, in reserved tasks (prefetched by the worker),
             # or be currently executing
             try:
-                validate_permission_sync_fences(tenant_id, r, r_celery, lock_beat)
+                validate_permission_sync_fences(
+                    tenant_id, r, r_replica, r_celery, lock_beat
+                )
             except Exception:
                 task_logger.exception(
                     "Exception while validating permission sync fences"
@@ -487,6 +491,7 @@ def update_external_document_permissions_task(
 def validate_permission_sync_fences(
     tenant_id: str | None,
     r: Redis,
+    r_replica: Redis,
     r_celery: Redis,
     lock_beat: RedisLock,
 ) -> None:
@@ -509,7 +514,7 @@ def validate_permission_sync_fences(
 
     # validate all existing permission sync jobs
     lock_beat.reacquire()
-    keys = cast(set[Any], r.smembers(OnyxRedisConstants.ACTIVE_FENCES))
+    keys = cast(set[Any], r_replica.smembers(OnyxRedisConstants.ACTIVE_FENCES))
     for key in keys:
         key_bytes = cast(bytes, key)
         key_str = key_bytes.decode("utf-8")
