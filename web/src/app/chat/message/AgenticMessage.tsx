@@ -117,6 +117,7 @@ export const AgenticMessage = ({
   const [lastKnownContentLength, setLastKnownContentLength] = useState(0);
 
   const [allowStreaming, setAllowStreaming] = useState(isComplete);
+  const [allowDocuments, setAllowDocuments] = useState(isComplete);
 
   const alternativeContent = secondLevelAssistantMessage || "";
 
@@ -231,7 +232,6 @@ export const AgenticMessage = ({
         level_question_num: question.level_question_num,
       });
       setTimeout(() => {
-        console.log("closing question");
         setCurrentlyOpenQuestion(null);
       }, 1000);
     },
@@ -394,6 +394,7 @@ export const AgenticMessage = ({
                 <div className="w-full desktop:ml-4">
                   {subQuestions && subQuestions.length > 0 && (
                     <SubQuestionsDisplay
+                      allowDocuments={() => setAllowDocuments(true)}
                       docSidebarToggled={docSidebarToggled || false}
                       finishedGenerating={
                         finalContent.length > 10 &&
@@ -412,7 +413,13 @@ export const AgenticMessage = ({
                       allowStreaming={() => setAllowStreaming(true)}
                       subQuestions={subQuestions}
                       secondLevelQuestions={secondLevelSubquestions || []}
-                      documents={isViewingInitialAnswer ? docs! : agenticDocs!}
+                      documents={
+                        !allowDocuments
+                          ? []
+                          : isViewingInitialAnswer
+                            ? docs!
+                            : agenticDocs!
+                      }
                       toggleDocumentSelection={() => {
                         toggleDocumentSelection!(!isViewingInitialAnswer);
                       }}

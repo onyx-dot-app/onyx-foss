@@ -77,6 +77,7 @@ interface SubQuestionsDisplayProps {
   secondLevelQuestions?: SubQuestionDetail[];
   showSecondLevel?: boolean;
   overallAnswerGenerating?: boolean;
+  allowDocuments: () => void;
 }
 
 export enum ToggleState {
@@ -97,6 +98,7 @@ const SubQuestionDisplay: React.FC<{
   temporaryDisplay?: TemporaryDisplay;
   completed?: boolean;
   initialStatus: ToggleState;
+  forcedStatus?: ToggleState;
 }> = ({
   currentlyOpen,
   currentlyClosed,
@@ -109,6 +111,7 @@ const SubQuestionDisplay: React.FC<{
   setPresentingDocument,
   completed,
   initialStatus,
+  forcedStatus,
 }) => {
   const [analysisToggled, setAnalysisToggled] = useState(false);
   const [status, setStatus] = useState(initialStatus);
@@ -146,12 +149,6 @@ const SubQuestionDisplay: React.FC<{
 
     // Add () after ]] if not present
     content = content.replace(/\]\](?!\()/g, "]]()");
-
-    // // Turn [Qn] into citation in content
-    // content = content.replace(/\[Q(\d+)\]/g, (match, p1) => {
-    //   const questionNumber = parseInt(p1, 10);
-    //   return `[[Q${questionNumber}]]()`;
-    // });
 
     return (
       preprocessLaTeX(content) + (!subQuestion?.is_complete ? " [*]() " : "")
@@ -222,16 +219,12 @@ const SubQuestionDisplay: React.FC<{
   useEffect(() => {
     if (subQuestion?.is_complete) {
       setTimeout(() => setStatus(ToggleState.Done), PHASE_MIN_MS);
-    } else {
-      // setStatus(ToggleState.Todo);
     }
   }, [subQuestion?.is_complete]);
 
   useEffect(() => {
     if (completed) {
       setTimeout(() => setStatus(ToggleState.Done), PHASE_MIN_MS);
-      // setToggled(true);
-      console.log("COMPLETED SO IS TOGGLED");
       setIsVisible(true);
     }
   }, [completed]);
@@ -240,26 +233,23 @@ const SubQuestionDisplay: React.FC<{
     if (unToggle) {
       if (subQuestion?.answer) {
         setTimeout(() => setStatus(ToggleState.Done), PHASE_MIN_MS);
-      } else {
-        // setStatus(ToggleState.Todo);
       }
     } else {
       setStatus(ToggleState.InProgress);
-
-      // if (subQuestion?.is_complete) {
-      //   setStatus(ToggleState.Done);
-      // }
     }
     setTimeout(
       () => {
-        // if (!unToggle) {
-        //   console.log("NOT TOGGLED SO UPDATED");
-        // }
         setToggled(!unToggle);
       },
       unToggle ? PHASE_MIN_MS * 0.75 : 0
     );
   }, [unToggle]);
+
+  useEffect(() => {
+    if (forcedStatus === ToggleState.Done) {
+      setToggled(false);
+    }
+  }, [forcedStatus]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -274,7 +264,6 @@ const SubQuestionDisplay: React.FC<{
 
   useEffect(() => {
     if (currentlyOpen) {
-      console.log("CURRENLTY OPENED SO TOGGLED TO TRUE");
       setToggled(true);
       setAnalysisToggled(true);
       if (questionRef.current) {
@@ -334,10 +323,10 @@ const SubQuestionDisplay: React.FC<{
       <div
         style={{ scrollMarginTop: "20px" }}
         ref={questionRef}
-        className={`flex  items-start ${!isLast ? "pb-2" : ""}`}
+        className={`flex items-start ${!isLast ? "pb-2" : ""}`}
       >
         <div className="absolute left-0 w-3 h-3 rounded-full mt-[12px] z-10">
-          <StatusIndicator status={status} />
+          <StatusIndicator status={forcedStatus || status} />
         </div>
         <div className="ml-8 w-full">
           <div
@@ -476,6 +465,7 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
   docSidebarToggled,
   showSecondLevel,
   overallAnswerGenerating,
+  allowDocuments,
 }) => {
   const { dynamicSubQuestions } = useStreamingMessages(subQuestions, () => {});
   const { dynamicSubQuestions: dynamicSecondLevelQuestions } =
@@ -518,12 +508,9 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
 
   useEffect(() => {
     if (documents && documents.length > 0) {
-      setTimeout(
-        () => {
-          setShownDocuments(documents);
-        },
-        overallAnswerGenerating ? 1500 : 0
-      );
+      setTimeout(() => {
+        setShownDocuments(documents);
+      }, 800);
     }
   }, [documents]);
 
@@ -534,7 +521,12 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
         (subQuestion) => subQuestion?.answer.length > 2
       ).length == memoizedSubQuestions.length
     ) {
-      setTimeout(() => setCanShowSummarizing(true), PHASE_MIN_MS);
+      setTimeout(() => {
+        setCanShowSummarizing(true);
+      }, PHASE_MIN_MS);
+      setTimeout(() => {
+        allowDocuments();
+      }, PHASE_MIN_MS * 2);
     }
   }, [memoizedSubQuestions]);
 
@@ -561,6 +553,9 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
         if (index <= fullText.length) {
           setStreamedText(fullText.slice(0, index));
           index++;
+          if (index === fullText.length) {
+            allowDocuments();
+          }
         } else {
           clearInterval(streamInterval);
         }
@@ -726,6 +721,11 @@ const SubQuestionsDisplay: React.FC<SubQuestionsDisplayProps> = ({
             currentlyOpen={false}
             currentlyClosed={
               shownDocuments != null && shownDocuments.length > 0
+            }
+            forcedStatus={
+              shownDocuments && shownDocuments.length > 0
+                ? ToggleState.Done
+                : undefined
             }
             subQuestion={null}
             documents={shownDocuments}

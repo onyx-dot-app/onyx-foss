@@ -37,22 +37,7 @@ export function Citation({
     : index;
 
   if (!document_info && !question_info) {
-    return (
-      <div
-        className="debug-info"
-        style={{
-          backgroundColor: "#f0f0f0",
-          padding: "10px",
-          border: "1px solid #ccc",
-          margin: "5px 0",
-        }}
-      >
-        <h4>Debug Info:</h4>
-        <p>document_info: {JSON.stringify(document_info)}</p>
-        <p>question_info: {JSON.stringify(question_info)}</p>
-        <p>No document or question info available.</p>
-      </div>
-    );
+    return children;
   }
   return (
     <TooltipProvider delayDuration={0}>

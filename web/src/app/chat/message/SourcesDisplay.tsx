@@ -61,25 +61,6 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
 }) => {
   const displayedDocuments = documents.slice(0, 5);
   const hasMoreDocuments = documents.length > 3;
-  // const [visibleCards, setVisibleCards] = useState<number>(0);
-
-  // useEffect(() => {
-  //   if (animateEntrance) {
-  //     const timer = setInterval(() => {
-  //       setVisibleCards((prev) => {
-  //         if (prev < displayedDocuments.length) {
-  //           return prev + 1;
-  //         }
-  //         clearInterval(timer);
-  //         return prev;
-  //       });
-  //     }, 140);
-
-  //     return () => clearInterval(timer);
-  //   } else {
-  //     setVisibleCards(displayedDocuments.length);
-  //   }
-  // }, [animateEntrance, displayedDocuments.length]);
 
   return (
     <div
@@ -98,7 +79,6 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
         {displayedDocuments.map((doc, index) => (
           <div
             key={index}
-            onClick={() => openDocument(doc, setPresentingDocument)}
             className={`transition-opacity duration-300 ${
               animateEntrance ? "opacity-100" : "opacity-100"
             }`}
