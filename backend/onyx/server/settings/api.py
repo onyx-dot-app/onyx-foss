@@ -36,6 +36,8 @@ basic_router = APIRouter(prefix="/settings")
 def put_settings(
     settings: Settings, _: User | None = Depends(current_admin_user)
 ) -> None:
+    print("PUTTING SETTINGS")
+    print(settings)
     store_settings(settings)
 
 
@@ -47,7 +49,10 @@ def fetch_settings(
 ) -> UserSettings:
     """Settings and notifications are stuffed into this single endpoint to reduce number of
     Postgres calls"""
+    print("FETCHING SETTINGS")
     general_settings = load_settings()
+    print("LOADED SETTINGS")
+    print(general_settings)
     settings_notifications = get_settings_notifications(user, db_session)
 
     try:

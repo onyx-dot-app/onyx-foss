@@ -11,6 +11,14 @@ logger = setup_logger()
 
 
 def load_settings() -> Settings:
+    kv_store = get_kv_store()
+    try:
+        stored_settings = kv_store.load(KV_SETTINGS_KEY)
+        settings = Settings(**stored_settings)
+    except Exception as e:
+        logger.error(f"Error loading settings from KV store: {str(e)}")
+        settings = Settings()
+
     tenant_id = CURRENT_TENANT_ID_CONTEXTVAR.get() if MULTI_TENANT else None
     redis_client = get_redis_client(tenant_id=tenant_id)
 
@@ -26,10 +34,10 @@ def load_settings() -> Settings:
             redis_client.set(OnyxRedisLocks.ANONYMOUS_USER_ENABLED, "0")
     except Exception as e:
         # Log the error and reset to default
-        logger.error(f"Error loading settings from Redis: {str(e)}")
+        logger.error(f"Error loading anonymous user setting from Redis: {str(e)}")
         anonymous_user_enabled = False
 
-    settings = Settings(anonymous_user_enabled=anonymous_user_enabled)
+    settings.anonymous_user_enabled = anonymous_user_enabled
     return settings
 
 

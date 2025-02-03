@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { FiPlusCircle, FiPlus, FiInfo, FiX, FiFilter } from "react-icons/fi";
 import { ChatInputOption } from "./ChatInputOption";
 import { Persona } from "@/app/admin/assistants/interfaces";
@@ -35,6 +35,7 @@ import { truncateString } from "@/lib/utils";
 import { buildImgUrl } from "../files/images/utils";
 import { useUser } from "@/components/user/UserProvider";
 import { AgenticToggle } from "./AgenticToggle";
+import { SettingsContext } from "@/components/settings/SettingsProvider";
 
 const MAX_INPUT_HEIGHT = 200;
 export const SourceChip2 = ({
@@ -225,6 +226,7 @@ export function ChatInputBar({
   setProSearchEnabled,
 }: ChatInputBarProps) {
   const { user } = useUser();
+  const settings = useContext(SettingsContext);
   useEffect(() => {
     const textarea = textAreaRef.current;
     if (textarea) {
@@ -789,12 +791,13 @@ export function ChatInputBar({
                 )}
               </div>
               <div className="flex items-center my-auto">
-                {retrievalEnabled && (
-                  <AgenticToggle
-                    proSearchEnabled={proSearchEnabled}
-                    setProSearchEnabled={setProSearchEnabled}
-                  />
-                )}
+                {retrievalEnabled &&
+                  !settings?.settings.pro_search_disabled && (
+                    <AgenticToggle
+                      proSearchEnabled={proSearchEnabled}
+                      setProSearchEnabled={setProSearchEnabled}
+                    />
+                  )}
                 <button
                   id="onyx-chat-input-send-button"
                   className={`cursor-pointer ${

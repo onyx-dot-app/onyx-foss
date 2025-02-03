@@ -1327,7 +1327,8 @@ export function ChatPage({
         systemPromptOverride:
           searchParams.get(SEARCH_PARAM_NAMES.SYSTEM_PROMPT) || undefined,
         useExistingUserMessage: isSeededChat,
-        useLanggraph: proSearchEnabled,
+        useLanggraph:
+          !settings?.settings.pro_search_disabled && proSearchEnabled,
       });
 
       const delay = (ms: number) => {
