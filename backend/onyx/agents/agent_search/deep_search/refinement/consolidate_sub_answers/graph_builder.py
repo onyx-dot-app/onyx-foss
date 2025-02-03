@@ -59,7 +59,7 @@ def answer_refined_query_graph_builder() -> StateGraph:
         action=ingest_retrieved_documents,
     )
 
-    # Generate the refined  sub-answer
+    # Generate the refined sub-answer
     graph.add_node(
         node="generate_refined_sub_answer",
         action=generate_sub_answer,

@@ -137,7 +137,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=extract_entities_terms,
     )
 
-    # Decide if the answer needs to be refined (current;ly always true)
+    # Decide if the answer needs to be refined (currently always true)
     graph.add_node(
         node="decide_refinement_need",
         action=decide_refinement_need,
@@ -150,7 +150,7 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
         action=compare_answers,
     )
 
-    # Log the results. This will log the stats as well as the answers
+    # Log the results. This will log the stats as well as the answers, sub-questions, and sub-answers
     graph.add_node(
         node="logging_node",
         action=persist_agent_results,

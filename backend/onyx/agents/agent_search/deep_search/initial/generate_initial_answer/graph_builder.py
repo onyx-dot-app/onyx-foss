@@ -42,7 +42,7 @@ def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph
     )
 
     # The sub-graph that retrieves the original question documents. This is run
-    # in parallel with the sub-answer generation process.
+    # in parallel with the sub-answer generation process
     retrieve_orig_question_docs = retrieve_orig_question_docs_graph_builder().compile()
     graph.add_node(
         node="retrieve_orig_question_docs_subgraph_wrapper",
@@ -50,7 +50,7 @@ def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph
     )
 
     # Node that generates the initial answer using the results of the previous
-    # two sub-.
+    # two sub-graphs
     graph.add_node(
         node="generate_initial_answer",
         action=generate_initial_answer,
