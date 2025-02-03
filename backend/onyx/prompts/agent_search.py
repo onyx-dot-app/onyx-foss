@@ -139,6 +139,7 @@ INITIAL_QUESTION_DECOMPOSITION_PROMPT = (
     "{question}\n"
     f"{SEPARATOR_LINE}\n\n"
     "{history}\n\n"
+    "Do NOT include any text in your answer outside of the list of sub-questions!"
     "Please formulate your answer as a newline-separated list of questions like so:\n"
     " <sub-question>\n"
     " <sub-question>\n"
@@ -148,6 +149,7 @@ INITIAL_QUESTION_DECOMPOSITION_PROMPT = (
 ).strip()
 
 
+# TODO: combine shared pieces with INITIAL_QUESTION_DECOMPOSITION_PROMPT
 INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH = (
     "Decompose the initial user question into no more than 3 appropriate sub-questions that help to answer the"
     " original question. The purpose for this decomposition may be to:\n"
@@ -175,6 +177,7 @@ INITIAL_DECOMPOSITION_PROMPT_QUESTIONS_AFTER_SEARCH = (
     "{question}\n"
     f"{SEPARATOR_LINE}\n\n"
     "{history}\n\n"
+    "Do NOT include any text in your answer outside of the list of sub-questions!"
     "Please formulate your answer as a newline-separated list of questions like so:\n"
     " <sub-question>\n"
     " <sub-question>\n"
@@ -194,6 +197,7 @@ QUERY_REWRITING_PROMPT = (
     f"{SEPARATOR_LINE}\n"
     "{question}\n"
     f"{SEPARATOR_LINE}\n\n"
+    "Do NOT include any text in your answer outside of the list of queries!"
     "Formulate the queries separated by newlines (Do not say 'Query 1: ...', just write the querytext) as follows:\n"
     "<query 1>\n"
     "<query 2>\n"
@@ -221,7 +225,7 @@ DOCUMENT_VERIFICATION_PROMPT = (
     f"{SEPARATOR_LINE}\n"
     "{question}\n"
     f"{SEPARATOR_LINE}\n\n"
-    "Please answer with exactly and only a 'yes' or 'no':\n\n"
+    "Please answer with exactly and only a 'yes' or 'no'. Do NOT include any other text in your response:\n\n"
     "Answer:"
 ).strip()
 

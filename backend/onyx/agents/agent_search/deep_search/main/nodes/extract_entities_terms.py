@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from typing import cast
 
@@ -80,7 +79,12 @@ def extract_entities_terms(
         prompt=msg,
     )
 
-    cleaned_response = re.sub(r"```json\n|\n```", "", str(llm_response.content))
+    cleaned_response = (
+        str(llm_response.content).replace("```json\n", "").replace("\n```", "")
+    )
+    first_bracket = cleaned_response.find("{")
+    last_bracket = cleaned_response.rfind("}")
+    cleaned_response = cleaned_response[first_bracket : last_bracket + 1]
 
     try:
         entity_extraction_result = EntityExtractionResult.model_validate_json(
