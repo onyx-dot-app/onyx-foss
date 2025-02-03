@@ -56,6 +56,7 @@ from onyx.prompts.agent_search import (
 from onyx.prompts.agent_search import (
     HISTORY_CONTEXT_SUMMARY_PROMPT,
 )
+from onyx.prompts.prompt_utils import handle_onyx_date_awareness
 from onyx.tools.force import ForceUseTool
 from onyx.tools.tool_constructor import SearchToolConfig
 from onyx.tools.tool_implementations.search.search_tool import (
@@ -227,16 +228,26 @@ def get_test_config(
 def get_persona_agent_prompt_expressions(
     persona: Persona | None,
 ) -> PersonaPromptExpressions:
-    if persona is None:
-        persona_base = ""
-        persona_prompt = ASSISTANT_SYSTEM_PROMPT_DEFAULT
-    else:
-        persona_base = "\n".join([x.system_prompt for x in persona.prompts])
-        persona_prompt = ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
-            persona_prompt=persona_base
+    if persona is None or len(persona.prompts) == 0:
+        # TODO base_prompt should be None, but no time to properly fix
+        return PersonaPromptExpressions(
+            contextualized_prompt=ASSISTANT_SYSTEM_PROMPT_DEFAULT, base_prompt=""
         )
+
+    # Only a 1:1 mapping between personas and prompts currently
+    prompt = persona.prompts[0]
+    prompt_config = PromptConfig.from_model(prompt)
+    datetime_aware_system_prompt = handle_onyx_date_awareness(
+        prompt_str=prompt_config.system_prompt,
+        prompt_config=prompt_config,
+        add_additional_info_if_no_tag=prompt.datetime_aware,
+    )
+
     return PersonaPromptExpressions(
-        contextualized_prompt=persona_prompt, base_prompt=persona_base
+        contextualized_prompt=ASSISTANT_SYSTEM_PROMPT_PERSONA.format(
+            persona_prompt=datetime_aware_system_prompt
+        ),
+        base_prompt=datetime_aware_system_prompt,
     )
 
 
@@ -322,7 +333,7 @@ def get_answer_citation_ids(answer_str: str) -> list[int]:
 
 
 def summarize_history(
-    history: str, question: str, persona_specification: str, model: LLM
+    history: str, question: str, persona_specification: str | None, llm: LLM
 ) -> str:
     history_context_prompt = remove_document_citations(
         HISTORY_CONTEXT_SUMMARY_PROMPT.format(
@@ -332,7 +343,7 @@ def summarize_history(
         )
     )
 
-    history_response = model.invoke(history_context_prompt)
+    history_response = llm.invoke(history_context_prompt)
     assert isinstance(history_response.content, str)
     return history_response.content
 

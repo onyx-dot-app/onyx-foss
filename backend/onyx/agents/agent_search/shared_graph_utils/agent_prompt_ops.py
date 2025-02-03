@@ -13,6 +13,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
 from onyx.agents.agent_search.shared_graph_utils.utils import remove_document_citations
 from onyx.agents.agent_search.shared_graph_utils.utils import summarize_history
 from onyx.configs.agent_configs import AGENT_MAX_STATIC_HISTORY_WORD_LENGTH
+from onyx.configs.constants import MessageType
 from onyx.context.search.models import InferenceSection
 from onyx.llm.interfaces import LLMConfig
 from onyx.llm.utils import get_max_input_tokens
@@ -21,6 +22,9 @@ from onyx.natural_language_processing.utils import tokenizer_trim_content
 from onyx.prompts.agent_search import HISTORY_FRAMING_PROMPT
 from onyx.prompts.agent_search import SUB_QUESTION_RAG_PROMPT
 from onyx.prompts.prompt_utils import build_date_time_string
+from onyx.utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 def build_sub_question_answer_prompt(
@@ -36,9 +40,9 @@ def build_sub_question_answer_prompt(
 
     date_str = build_date_time_string()
 
+    # TODO: This should include document metadata and title
     docs_format_list = [
-        f"""Document Number: [D{doc_num + 1}]\n
-                             Content: {doc.combined_content}\n\n"""
+        f"Document Number: [D{doc_num + 1}]\nContent: {doc.combined_content}\n\n"
         for doc_num, doc in enumerate(docs)
     ]
 
@@ -88,7 +92,6 @@ def trim_prompt_piece(config: LLMConfig, prompt_piece: str, reserved_str: str) -
 
 def build_history_prompt(config: GraphConfig, question: str) -> str:
     prompt_builder = config.inputs.prompt_builder
-    model = config.tooling.fast_llm
     persona_base = get_persona_agent_prompt_expressions(
         config.inputs.search_request.persona
     ).base_prompt
@@ -102,23 +105,31 @@ def build_history_prompt(config: GraphConfig, question: str) -> str:
         history_components = []
         previous_message_type = None
         for message in prompt_builder.raw_message_history:
-            if "user" in message.message_type:
+            if message.message_type == MessageType.USER:
                 history_components.append(f"User: {message.message}\n")
-                previous_message_type = "user"
-            elif "assistant" in message.message_type:
-                # only use the last agent answer for the history
-                if previous_message_type != "assistant":
-                    history_components.append(f"You/Agent: {message.message}\n")
-                else:
-                    history_components = history_components[:-1]
-                    history_components.append(f"You/Agent: {message.message}\n")
-                previous_message_type = "assistant"
+                previous_message_type = MessageType.USER
+            elif message.message_type == MessageType.ASSISTANT:
+                # Previously there could be multiple assistant messages in a row
+                # Now this is handled at the message history construction
+                assert previous_message_type is not MessageType.ASSISTANT
+                history_components.append(f"You/Agent: {message.message}\n")
+                previous_message_type = MessageType.ASSISTANT
             else:
+                # Other message types are not included here, currently there should be no other message types
+                logger.error(
+                    f"Unhandled message type: {message.message_type} with message: {message.message}"
+                )
                 continue
+
         history = "\n".join(history_components)
         history = remove_document_citations(history)
         if len(history.split()) > AGENT_MAX_STATIC_HISTORY_WORD_LENGTH:
-            history = summarize_history(history, question, persona_base, model)
+            history = summarize_history(
+                history=history,
+                question=question,
+                persona_specification=persona_base,
+                llm=config.tooling.fast_llm,
+            )
 
     return HISTORY_FRAMING_PROMPT.format(history=history) if history else ""
 

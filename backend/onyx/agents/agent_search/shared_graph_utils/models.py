@@ -119,7 +119,7 @@ class CombinedAgentMetrics(BaseModel):
 
 class PersonaPromptExpressions(BaseModel):
     contextualized_prompt: str
-    base_prompt: str
+    base_prompt: str | None
 
 
 class AgentPromptEnrichmentComponents(BaseModel):

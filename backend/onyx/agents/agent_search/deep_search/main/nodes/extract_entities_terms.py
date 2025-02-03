@@ -23,9 +23,8 @@ from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
 from onyx.configs.constants import NUM_EXPLORATORY_DOCS
-from onyx.prompts.agent_search import (
-    ENTITY_TERM_EXTRACTION_PROMPT,
-)
+from onyx.prompts.agent_search import ENTITY_TERM_EXTRACTION_PROMPT
+from onyx.prompts.agent_search import ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE
 
 
 def extract_entities_terms(
@@ -58,16 +57,21 @@ def extract_entities_terms(
     # start with the entity/term/extraction
     doc_context = format_docs(initial_search_docs)
 
+    # Calculation here is only approximate
     doc_context = trim_prompt_piece(
         graph_config.tooling.fast_llm.config,
         doc_context,
-        ENTITY_TERM_EXTRACTION_PROMPT + question,
+        ENTITY_TERM_EXTRACTION_PROMPT
+        + question
+        + ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE,
     )
+
     msg = [
         HumanMessage(
             content=ENTITY_TERM_EXTRACTION_PROMPT.format(
                 question=question, context=doc_context
-            ),
+            )
+            + ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE,
         )
     ]
     fast_llm = graph_config.tooling.fast_llm

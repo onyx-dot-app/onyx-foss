@@ -2,7 +2,6 @@
 SEPARATOR_LINE = "-------"
 UNKNOWN_ANSWER = "I do not have enough information to answer this question."
 NO_RECOVERED_DOCS = "No relevant information recovered"
-DATE_PROMPT = "Today is {date}.\n\n"
 SUB_CHECK_YES = "yes"
 SUB_CHECK_NO = "no"
 
@@ -16,9 +15,7 @@ For more context, here is the history of the conversation so far that preceded t
 """.strip()
 
 
-ASSISTANT_SYSTEM_PROMPT_DEFAULT = (
-    """You are an assistant for question-answering tasks."""
-)
+ASSISTANT_SYSTEM_PROMPT_DEFAULT = "You are an assistant for question-answering tasks."
 
 ASSISTANT_SYSTEM_PROMPT_PERSONA = f"""
 You are an assistant for question-answering tasks. Here is more information about you:
@@ -28,21 +25,25 @@ You are an assistant for question-answering tasks. Here is more information abou
 """.strip()
 
 
-SUB_QUESTION_ANSWER_TEMPLATE = """\n
-Sub-Question: Q{sub_question_num}\n  Sub-Question:\n  - \n{sub_question}\n  --\nAnswer:\n  -\n {sub_answer}\n\n
-"""
+SUB_QUESTION_ANSWER_TEMPLATE = f"""
+Sub-Question: Q{{sub_question_num}}
+Question:
+{{sub_question}}
+{SEPARATOR_LINE}
+Answer:
+{{sub_answer}}
+""".strip()
 
 
 SUB_QUESTION_ANSWER_TEMPLATE_REFINED = f"""
-Sub-Question: Q{{sub_question_num}}\n
-Type:
-{SEPARATOR_LINE}
-{{sub_question_type}}
-{SEPARATOR_LINE}
+Sub-Question: Q{{sub_question_num}}
+Type: {{sub_question_type}}
+
 Sub-Question:
 {SEPARATOR_LINE}
 {{sub_question}}
 {SEPARATOR_LINE}
+
 Answer:
 {SEPARATOR_LINE}
 {{sub_answer}}
@@ -73,30 +74,33 @@ And here is the context retrieved:
 {SEPARATOR_LINE}
 
 Please format your answer as a json object in the following format:
-{{
-    "retrieved_entities_relationships": {{
+""".strip()
+
+ENTITY_TERM_EXTRACTION_PROMPT_JSON_EXAMPLE = """
+{
+    "retrieved_entities_relationships": {
         "entities": [
-            {{
+            {
                 "entity_name": "<assign a name for the entity>",
                 "entity_type": "<specify a short type name for the entity, such as 'company', 'location',...>"
-            }}
+            }
         ],
         "relationships": [
-            {{
+            {
                 "relationship_name": "<assign a name for the relationship>",
                 "relationship_type": "<specify a short type name for the relationship, such as 'sales_to', 'is_location_of',...>",
                 "relationship_entities": ["<related entity name 1>", "<related entity name 2>", "..."]
-            }}
+            }
         ],
         "terms": [
-            {{
+            {
                 "term_name": "<assign a name for the term>",
                 "term_type": "<specify a short type name for the term, such as 'revenue', 'market_share',...>",
                 "term_similar_to": ["<list terms that are similar to this term>"]
-            }}
+            }
         ]
-    }}
-}}
+    }
+}
 """.strip()
 
 
@@ -259,79 +263,63 @@ SUB_QUESTION_RAG_PROMPT = (
 
 
 SUB_ANSWER_CHECK_PROMPT = (
-    """\n
-Your task is to see whether a given answer addresses a given question.
-Please do not use any internal knowledge you may have - just focus on whether the answer
-as given seems to largely address the question as given, or at least addresses part of the question.
-Here is the question:
-\n-------\n
-{question}
-\n-------\n
-Here is the suggested answer:
-\n-------\n
-{base_answer}
-\n-------\n
-Does the suggested answer address the question? Please answer with """
-    + f'"{SUB_CHECK_YES}" or "{SUB_CHECK_NO}".'
-)
+    "Determine whether the given answer addresses the given question. "
+    "Please do not use any internal knowledge you may have - just focus on whether the answer "
+    "as given seems to largely address the question as given, or at least addresses part of the question.\n\n"
+    "Here is the question:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Here is the suggested answer:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{base_answer}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    f'Does the suggested answer address the question? Please answer with "{SUB_CHECK_YES}" or "{SUB_CHECK_NO}".'
+).strip()
 
 
 # Initial Answer Generation
 INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS = (
-    """ \n
-{persona_specification}
- {date_prompt}
-Use the information provided below - and only the provided information - to answer the provided main question.
-
-The information provided below consists of:
-    1) a number of answered sub-questions - these are very important to help you organize your thoughts and your answer
-    2) a number of documents that deemed relevant for the question.
-
-{history}
-
-It is critical that you provide prover inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc.!
-It is important that the citation is close to the information it supports. If you have multiple citations that support
-a fact, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.
-Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
-citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or [[D2]]()[[D7]]()[[Q4]](), etc.
-Again, please NEVER cite sub-questions without a document citation!
-Proper citations are very important for the user!
-
-IMPORTANT RULES:
- - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
- You may give some additional facts you learned, but do not try to invent an answer.
- - If the information is empty or irrelevant, just say """
-    + f'"{UNKNOWN_ANSWER}"'
-    + """.
- - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.
-
-Again, you should be sure that the answer is supported by the information provided!
-
-Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,
-or assumptions you made.
-
-Here is the contextual information:
----------------
-
-*Answered Sub-questions (these should really matter!):
-\n-------\n
-{answered_sub_questions}
-\n-------\n
-
-And here are relevant document information that support the sub-question answers, or that are relevant for the actual question:\n
-\n-------\n
-{relevant_docs}
-\n-------\n
-
-And here is the question I want you to answer based on the information above:
-\n-------\n
-{question}
-\n-------\n\n
-
-Please keep your answer brief and concise, and focus on facts and data.
-
-Answer:"""
-)
+    "{persona_specification}\n\n"
+    "Use the information provided below - and only the provided information - to answer the provided main question.\n\n"
+    "The information provided below consists of:\n"
+    "  1) a number of answered sub-questions - these are very important to help you organize your thoughts and your answer\n"
+    "  2) a number of documents that deemed relevant for the question.\n\n"
+    "{history}\n\n"
+    "It is critical that you provide prover inline citations to documents in the format [[D1]](), [[D2]](), [[D3]](), etc.!\n"
+    "It is important that the citation is close to the information it supports. If you have multiple citations that support\n"
+    "a fact, please cite for example as [[D1]]()[[D3]](), or [[D2]]()[[D4]](), etc.\n"
+    "Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the "
+    "sub-question citation. If you want to cite both a document and a sub-question, please use [[D1]]()[[Q3]](), or "
+    "[[D2]]()[[D7]]()[[Q4]](), etc.\n"
+    "Again, please NEVER cite sub-questions without a document citation! "
+    "Proper citations are very important for the user!\n\n"
+    "IMPORTANT RULES:\n"
+    " - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.\n"
+    " You may give some additional facts you learned, but do not try to invent an answer.\n"
+    f' - If the information is empty or irrelevant, just say "{UNKNOWN_ANSWER}".\n'
+    " - If the information is relevant but not fully conclusive, specify that the information is not conclusive and say why.\n\n"
+    "Again, you should be sure that the answer is supported by the information provided!\n\n"
+    "Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,\n"
+    "or assumptions you made.\n\n"
+    "Here is the contextual information:\n"
+    "---------------\n\n"
+    "*Answered Sub-questions (these should really matter!):\n"
+    f"{SEPARATOR_LINE}\n"
+    "{answered_sub_questions}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "And here are relevant document information that support the sub-question answers, "
+    "or that are relevant for the actual question:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{relevant_docs}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "And here is the question I want you to answer based on the information above:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Please keep your answer brief and concise, and focus on facts and data.\n\n"
+    "Answer:"
+).strip()
 
 
 # used if sub_question_answer_str is empty
@@ -339,7 +327,6 @@ INITIAL_ANSWER_PROMPT_WO_SUB_QUESTIONS = (
     """\n
 {answered_sub_questions}
 {persona_specification}
-{date_prompt}
 
 Use the information provided below - and only the provided information - to answer the provided question.
 The information provided below consists of a number of documents that were deemed relevant for the question.
@@ -465,7 +452,7 @@ Generate the list of questions separated by one new line like this:
 REFINED_ANSWER_PROMPT_W_SUB_QUESTIONS = (
     """\n
 {persona_specification}
-{date_prompt}
+
 Your task is to improve on a given answer to a question, as the initial answer was found to be lacking in some way.
 
 Use the information provided below - and only the provided information - to write your new and improved answer.
@@ -542,7 +529,7 @@ REFINED_ANSWER_PROMPT_WO_SUB_QUESTIONS = (
     """\n
 {answered_sub_questions}\n
 {persona_specification}
-{date_prompt}
+
 Use the information provided below - and only the
 provided information - to answer the provided question.
 
