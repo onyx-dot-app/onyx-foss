@@ -113,6 +113,8 @@ class TenantRedis(redis.Redis):
             "reacquire",
             "create_lock",
             "startswith",
+            "smembers",
+            "sismember",
             "sadd",
             "srem",
             "scard",

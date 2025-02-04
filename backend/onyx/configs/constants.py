@@ -306,9 +306,18 @@ class OnyxRedisLocks:
 
 
 class OnyxRedisSignals:
-    VALIDATE_INDEXING_FENCES = "signal:validate_indexing_fences"
-    VALIDATE_EXTERNAL_GROUP_SYNC_FENCES = "signal:validate_external_group_sync_fences"
-    VALIDATE_PERMISSION_SYNC_FENCES = "signal:validate_permission_sync_fences"
+    BLOCK_VALIDATE_INDEXING_FENCES = "signal:block_validate_indexing_fences"
+    BLOCK_VALIDATE_EXTERNAL_GROUP_SYNC_FENCES = (
+        "signal:block_validate_external_group_sync_fences"
+    )
+    BLOCK_VALIDATE_PERMISSION_SYNC_FENCES = (
+        "signal:block_validate_permission_sync_fences"
+    )
+    BLOCK_BUILD_FENCE_LOOKUP_TABLE = "signal:block_build_fence_lookup_table"
+
+
+class OnyxRedisConstants:
+    ACTIVE_FENCES = "active_fences"
 
 
 class OnyxCeleryPriority(int, Enum):

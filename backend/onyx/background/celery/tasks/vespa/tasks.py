@@ -36,7 +36,9 @@ from onyx.configs.app_configs import VESPA_SYNC_MAX_TASKS
 from onyx.configs.constants import CELERY_VESPA_SYNC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import OnyxCeleryQueues
 from onyx.configs.constants import OnyxCeleryTask
+from onyx.configs.constants import OnyxRedisConstants
 from onyx.configs.constants import OnyxRedisLocks
+from onyx.configs.constants import OnyxRedisSignals
 from onyx.db.connector import fetch_connector_by_id
 from onyx.db.connector_credential_pair import add_deletion_failure_message
 from onyx.db.connector_credential_pair import (
@@ -72,6 +74,9 @@ from onyx.document_index.interfaces import VespaDocumentFields
 from onyx.httpx.httpx_pool import HttpxPool
 from onyx.redis.redis_connector import RedisConnector
 from onyx.redis.redis_connector_credential_pair import RedisConnectorCredentialPair
+from onyx.redis.redis_connector_credential_pair import (
+    RedisGlobalConnectorCredentialPair,
+)
 from onyx.redis.redis_connector_delete import RedisConnectorDelete
 from onyx.redis.redis_connector_doc_perm_sync import RedisConnectorPermissionSync
 from onyx.redis.redis_connector_index import RedisConnectorIndex
@@ -204,10 +209,12 @@ def try_generate_stale_document_sync_tasks(
     tenant_id: str | None,
 ) -> int | None:
     # the fence is up, do nothing
-    if r.exists(RedisConnectorCredentialPair.get_fence_key()):
+
+    redis_global_ccpair = RedisGlobalConnectorCredentialPair(r)
+    if redis_global_ccpair.fenced:
         return None
 
-    r.delete(RedisConnectorCredentialPair.get_taskset_key())  # delete the taskset
+    redis_global_ccpair.delete_taskset()
 
     # add tasks to celery and build up the task set to monitor in redis
     stale_doc_count = count_documents_by_needs_sync(db_session)
@@ -265,7 +272,7 @@ def try_generate_stale_document_sync_tasks(
             f"RedisConnector.generate_tasks finished for all cc_pairs. total_tasks_generated={total_tasks_generated}"
         )
 
-    r.set(RedisConnectorCredentialPair.get_fence_key(), total_tasks_generated)
+    redis_global_ccpair.set_fence(total_tasks_generated)
     return total_tasks_generated
 
 
@@ -416,23 +423,17 @@ def try_generate_user_group_sync_tasks(
 
 
 def monitor_connector_taskset(r: Redis) -> None:
-    fence_value = r.get(RedisConnectorCredentialPair.get_fence_key())
-    if fence_value is None:
+    redis_global_ccpair = RedisGlobalConnectorCredentialPair(r)
+    initial_count = redis_global_ccpair.payload
+    if initial_count is None:
         return
 
-    try:
-        initial_count = int(cast(int, fence_value))
-    except ValueError:
-        task_logger.error("The value is not an integer.")
-        return
-
-    count = r.scard(RedisConnectorCredentialPair.get_taskset_key())
+    remaining = redis_global_ccpair.get_remaining()
     task_logger.info(
-        f"Stale document sync progress: remaining={count} initial={initial_count}"
+        f"Stale document sync progress: remaining={remaining} initial={initial_count}"
     )
-    if count == 0:
-        r.delete(RedisConnectorCredentialPair.get_taskset_key())
-        r.delete(RedisConnectorCredentialPair.get_fence_key())
+    if remaining == 0:
+        redis_global_ccpair.reset()
         task_logger.info(f"Successfully synced stale documents. count={initial_count}")
 
 
@@ -820,9 +821,6 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
 
     time_start = time.monotonic()
 
-    timings: dict[str, Any] = {}
-    timings["start"] = time_start
-
     r = get_redis_client(tenant_id=tenant_id)
 
     # Replica usage notes
@@ -847,7 +845,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
 
     try:
         # print current queue lengths
-        phase_start = time.monotonic()
+        time.monotonic()
         # we don't need every tenant polling redis for this info.
         if not MULTI_TENANT or random.randint(1, 10) == 10:
             r_celery = self.app.broker_connection().channel().client  # type: ignore
@@ -889,50 +887,38 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
                 f"external_group_sync={n_external_group_sync} "
                 f"permissions_upsert={n_permissions_upsert} "
             )
-        timings["queues"] = time.monotonic() - phase_start
-        timings["queues_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
 
-        # scan and monitor activity to completion
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        if r_replica.exists(RedisConnectorCredentialPair.get_fence_key()):
-            if r.exists(RedisConnectorCredentialPair.get_fence_key()):
+        # we want to run this less frequently than the overall task
+        if not r.exists(OnyxRedisSignals.BLOCK_BUILD_FENCE_LOOKUP_TABLE):
+            # build a lookup table of existing fences
+            # this is just a migration concern and should be unnecessary once
+            # lookup tables are rolled out
+            for key_bytes in r_replica.scan_iter(count=SCAN_ITER_COUNT_DEFAULT):
+                if is_fence(key_bytes) and not r.sismember(
+                    OnyxRedisConstants.ACTIVE_FENCES, key_bytes
+                ):
+                    logger.warning(f"Adding {key_bytes} to the lookup table.")
+                    r.sadd(OnyxRedisConstants.ACTIVE_FENCES, key_bytes)
+
+            r.set(OnyxRedisSignals.BLOCK_BUILD_FENCE_LOOKUP_TABLE, 1, ex=300)
+
+        # use a lookup table to find active fences. We still have to verify the fence
+        # exists since it is an optimization and not the source of truth.
+        keys = cast(set[Any], r.smembers(OnyxRedisConstants.ACTIVE_FENCES))
+        for key in keys:
+            key_bytes = cast(bytes, key)
+
+            if not r.exists(key_bytes):
+                r.srem(OnyxRedisConstants.ACTIVE_FENCES, key_bytes)
+                continue
+
+            key_str = key_bytes.decode("utf-8")
+            if key_str == RedisGlobalConnectorCredentialPair.FENCE_KEY:
                 monitor_connector_taskset(r)
-        timings["connector"] = time.monotonic() - phase_start
-        timings["connector_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
-
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        for key_bytes in r_replica.scan_iter(
-            RedisConnectorDelete.FENCE_PREFIX + "*", count=SCAN_ITER_COUNT_DEFAULT
-        ):
-            if r.exists(key_bytes):
-                monitor_connector_deletion_taskset(tenant_id, key_bytes, r)
-            lock_beat.reacquire()
-
-        timings["connector_deletion"] = time.monotonic() - phase_start
-        timings["connector_deletion_ttl"] = r.ttl(
-            OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK
-        )
-
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        for key_bytes in r_replica.scan_iter(
-            RedisDocumentSet.FENCE_PREFIX + "*", count=SCAN_ITER_COUNT_DEFAULT
-        ):
-            if r.exists(key_bytes):
+            elif key_str.startswith(RedisDocumentSet.FENCE_PREFIX):
                 with get_session_with_tenant(tenant_id) as db_session:
                     monitor_document_set_taskset(tenant_id, key_bytes, r, db_session)
-            lock_beat.reacquire()
-        timings["documentset"] = time.monotonic() - phase_start
-        timings["documentset_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
-
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        for key_bytes in r_replica.scan_iter(
-            RedisUserGroup.FENCE_PREFIX + "*", count=SCAN_ITER_COUNT_DEFAULT
-        ):
-            if r.exists(key_bytes):
+            elif key_str.startswith(RedisUserGroup.FENCE_PREFIX):
                 monitor_usergroup_taskset = (
                     fetch_versioned_implementation_with_fallback(
                         "onyx.background.celery.tasks.vespa.tasks",
@@ -942,49 +928,21 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
                 )
                 with get_session_with_tenant(tenant_id) as db_session:
                     monitor_usergroup_taskset(tenant_id, key_bytes, r, db_session)
-            lock_beat.reacquire()
-        timings["usergroup"] = time.monotonic() - phase_start
-        timings["usergroup_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
-
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        for key_bytes in r_replica.scan_iter(
-            RedisConnectorPrune.FENCE_PREFIX + "*", count=SCAN_ITER_COUNT_DEFAULT
-        ):
-            if r.exists(key_bytes):
+            elif key_str.startswith(RedisConnectorDelete.FENCE_PREFIX):
+                monitor_connector_deletion_taskset(tenant_id, key_bytes, r)
+            elif key_str.startswith(RedisConnectorPrune.FENCE_PREFIX):
                 with get_session_with_tenant(tenant_id) as db_session:
                     monitor_ccpair_pruning_taskset(tenant_id, key_bytes, r, db_session)
-            lock_beat.reacquire()
-        timings["pruning"] = time.monotonic() - phase_start
-        timings["pruning_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
-
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        for key_bytes in r_replica.scan_iter(
-            RedisConnectorIndex.FENCE_PREFIX + "*", count=SCAN_ITER_COUNT_DEFAULT
-        ):
-            if r.exists(key_bytes):
+            elif key_str.startswith(RedisConnectorIndex.FENCE_PREFIX):
                 with get_session_with_tenant(tenant_id) as db_session:
                     monitor_ccpair_indexing_taskset(tenant_id, key_bytes, r, db_session)
-            lock_beat.reacquire()
-        timings["indexing"] = time.monotonic() - phase_start
-        timings["indexing_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
-
-        phase_start = time.monotonic()
-        lock_beat.reacquire()
-        for key_bytes in r_replica.scan_iter(
-            RedisConnectorPermissionSync.FENCE_PREFIX + "*",
-            count=SCAN_ITER_COUNT_DEFAULT,
-        ):
-            if r.exists(key_bytes):
+            elif key_str.startswith(RedisConnectorPermissionSync.FENCE_PREFIX):
                 with get_session_with_tenant(tenant_id) as db_session:
                     monitor_ccpair_permissions_taskset(
                         tenant_id, key_bytes, r, db_session
                     )
-            lock_beat.reacquire()
-
-        timings["permissions"] = time.monotonic() - phase_start
-        timings["permissions_ttl"] = r.ttl(OnyxRedisLocks.MONITOR_VESPA_SYNC_BEAT_LOCK)
+            else:
+                pass
     except SoftTimeLimitExceeded:
         task_logger.info(
             "Soft time limit exceeded, task is being terminated gracefully."
@@ -999,8 +957,8 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
         else:
             task_logger.error(
                 "monitor_vespa_sync - Lock not owned on completion: "
-                f"tenant={tenant_id} "
-                f"timings={timings}"
+                f"tenant={tenant_id}"
+                # f"timings={timings}"
             )
             redis_lock_dump(lock_beat, r)
 
@@ -1064,15 +1022,6 @@ def vespa_metadata_sync_task(
             # the sync might repeat again later
             mark_document_as_synced(document_id, db_session)
 
-            # this code checks for and removes a per document sync key that is
-            # used to block out the same doc from continualy resyncing
-            # a quick hack that is only needed for production issues
-            # redis_syncing_key = RedisConnectorCredentialPair.make_redis_syncing_key(
-            #     document_id
-            # )
-            # r = get_redis_client(tenant_id=tenant_id)
-            # r.delete(redis_syncing_key)
-
             elapsed = time.monotonic() - start
             task_logger.info(
                 f"doc={document_id} "
@@ -1114,3 +1063,23 @@ def vespa_metadata_sync_task(
         self.retry(exc=e, countdown=countdown)
 
     return True
+
+
+def is_fence(key_bytes: bytes) -> bool:
+    key_str = key_bytes.decode("utf-8")
+    if key_str == RedisGlobalConnectorCredentialPair.FENCE_KEY:
+        return True
+    if key_str.startswith(RedisDocumentSet.FENCE_PREFIX):
+        return True
+    if key_str.startswith(RedisUserGroup.FENCE_PREFIX):
+        return True
+    if key_str.startswith(RedisConnectorDelete.FENCE_PREFIX):
+        return True
+    if key_str.startswith(RedisConnectorPrune.FENCE_PREFIX):
+        return True
+    if key_str.startswith(RedisConnectorIndex.FENCE_PREFIX):
+        return True
+    if key_str.startswith(RedisConnectorPermissionSync.FENCE_PREFIX):
+        return True
+
+    return False
