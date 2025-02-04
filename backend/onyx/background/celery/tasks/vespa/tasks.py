@@ -821,9 +821,6 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
 
     time_start = time.monotonic()
 
-    # timings: dict[str, Any] = {}
-    # timings["start"] = time_start
-
     r = get_redis_client(tenant_id=tenant_id)
 
     # Replica usage notes
