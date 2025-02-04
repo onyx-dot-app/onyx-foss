@@ -70,11 +70,6 @@ class InitialRefinedAnswerComparisonUpdate(LoggerUpdate):
     refined_answer_improvement_eval: bool = False
 
 
-# Not used in current graph
-class InitialAnswerBASEUpdate(BaseModel):
-    initial_base_answer: str | None = None
-
-
 class InitialAnswerUpdate(LoggerUpdate):
     """
     Initial answer information
@@ -157,7 +152,6 @@ class MainState(
     ToolChoiceUpdate,
     InitialQuestionDecompositionUpdate,
     InitialAnswerUpdate,
-    InitialAnswerBASEUpdate,
     SubQuestionResultsUpdate,
     OrigQuestionRetrievalUpdate,
     EntityTermExtractionUpdate,

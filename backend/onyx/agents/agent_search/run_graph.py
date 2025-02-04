@@ -162,7 +162,6 @@ if __name__ == "__main__":
             # query="What is the difference between astronomy and astrology?",
             query="Do a search to tell me what is the difference between astronomy and astrology?",
         )
-        # Joachim custom persona
 
         with get_session_context_manager() as db_session:
             config = get_test_config(db_session, primary_llm, fast_llm, search_request)
@@ -177,11 +176,8 @@ if __name__ == "__main__":
                 base_question=config.inputs.search_request.query, log_messages=[]
             )
 
-            # with open("output.txt", "w") as f:
             tool_responses: list = []
             for output in run_graph(compiled_graph, config, input):
-                # pass
-
                 if isinstance(output, ToolCallKickoff):
                     pass
                 elif isinstance(output, ExtendedToolResponse):

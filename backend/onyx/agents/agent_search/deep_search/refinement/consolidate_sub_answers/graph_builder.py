@@ -127,9 +127,6 @@ if __name__ == "__main__":
         )
         for thing in compiled_graph.stream(
             input=inputs,
-            # debug=True,
-            # subgraphs=True,
+            stream_mode="custom",
         ):
             logger.debug(thing)
-        # output = compiled_graph.invoke(inputs)
-        #  logger.debug(output)

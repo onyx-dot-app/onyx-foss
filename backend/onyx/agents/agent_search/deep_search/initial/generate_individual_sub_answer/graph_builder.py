@@ -133,7 +133,5 @@ if __name__ == "__main__":
         for thing in compiled_graph.stream(
             input=inputs,
             config={"configurable": {"config": graph_config}},
-            # debug=True,
-            # subgraphs=True,
         ):
             logger.debug(thing)

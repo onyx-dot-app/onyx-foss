@@ -261,10 +261,6 @@ def generate_refined_answer(
     response = merge_content(*streamed_tokens)
     answer = cast(str, response)
 
-    # refined_agent_stats = _calculate_refined_agent_stats(
-    #     state.decomp_answer_results, state.original_question_retrieval_stats
-    # )
-
     refined_agent_stats = RefinedAgentStats(
         revision_doc_efficiency=refined_doc_effectiveness,
         revision_question_efficiency=revision_question_efficiency,

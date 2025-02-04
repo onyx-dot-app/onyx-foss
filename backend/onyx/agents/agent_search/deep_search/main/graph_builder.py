@@ -204,12 +204,12 @@ def main_graph_builder(test_mode: bool = False) -> StateGraph:
     )
 
     graph.add_conditional_edges(
-        source="create_refined_sub_questions",  # DONE
+        source="create_refined_sub_questions",
         path=parallelize_refined_sub_question_answering,
         path_map=["answer_refined_question_subgraphs"],
     )
     graph.add_edge(
-        start_key="answer_refined_question_subgraphs",  # HERE
+        start_key="answer_refined_question_subgraphs",
         end_key="ingest_refined_sub_answers",
     )
 
@@ -259,8 +259,7 @@ if __name__ == "__main__":
         for thing in compiled_graph.stream(
             input=inputs,
             config={"configurable": {"config": graph_config}},
-            # stream_mode="debug",
-            # debug=True,
+            stream_mode="custom",
             subgraphs=True,
         ):
             logger.debug(thing)
