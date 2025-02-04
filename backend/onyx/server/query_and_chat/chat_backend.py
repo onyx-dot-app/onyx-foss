@@ -213,6 +213,8 @@ def get_chat_session(
         # we need the tool call objs anyways, so just fetch them in a single call
         prefetch_tool_calls=True,
     )
+    for message in session_messages:
+        translate_db_message_to_chat_message_detail(message)
 
     return ChatSessionDetailResponse(
         chat_session_id=session_id,
@@ -352,10 +354,12 @@ async def is_connected(request: Request) -> Callable[[], bool]:
     def is_connected_sync() -> bool:
         future = asyncio.run_coroutine_threadsafe(request.is_disconnected(), main_loop)
         try:
-            is_connected = not future.result(timeout=0.01)
+            is_connected = not future.result(timeout=0.05)
             return is_connected
         except asyncio.TimeoutError:
-            logger.error("Asyncio timed out")
+            logger.warning(
+                "Asyncio timed out (potentially missed request to stop streaming)"
+            )
             return True
         except Exception as e:
             error_msg = str(e)

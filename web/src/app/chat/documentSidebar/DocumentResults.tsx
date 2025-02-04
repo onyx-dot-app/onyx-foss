@@ -1,6 +1,5 @@
 import { OnyxDocument } from "@/lib/search/interfaces";
 import { ChatDocumentDisplay } from "./ChatDocumentDisplay";
-import { usePopup } from "@/components/admin/connectors/Popup";
 import { removeDuplicateDocs } from "@/lib/documentUtils";
 import { Message } from "../interfaces";
 import {
@@ -11,9 +10,10 @@ import {
   useEffect,
   useState,
 } from "react";
-import { SourcesIcon, XIcon } from "@/components/icons/icons";
+import { XIcon } from "@/components/icons/icons";
 
 interface DocumentResultsProps {
+  agenticMessage: boolean;
   closeSidebar: () => void;
   selectedMessage: Message | null;
   selectedDocuments: OnyxDocument[] | null;
@@ -32,6 +32,7 @@ interface DocumentResultsProps {
 export const DocumentResults = forwardRef<HTMLDivElement, DocumentResultsProps>(
   (
     {
+      agenticMessage,
       closeSidebar,
       modal,
       selectedMessage,
@@ -51,12 +52,6 @@ export const DocumentResults = forwardRef<HTMLDivElement, DocumentResultsProps>(
     const [delayedSelectedDocumentCount, setDelayedSelectedDocumentCount] =
       useState(0);
 
-    const handleOutsideClick = (event: MouseEvent) => {
-      const sidebar = document.getElementById("onyx-chat-sidebar");
-      if (sidebar && !sidebar.contains(event.target as Node)) {
-        closeSidebar();
-      }
-    };
     useEffect(() => {
       const timer = setTimeout(
         () => {
@@ -123,6 +118,7 @@ export const DocumentResults = forwardRef<HTMLDivElement, DocumentResultsProps>(
                       className={`desktop:px-2 w-full`}
                     >
                       <ChatDocumentDisplay
+                        agenticMessage={agenticMessage}
                         setPresentingDocument={setPresentingDocument}
                         closeSidebar={closeSidebar}
                         modal={modal}
