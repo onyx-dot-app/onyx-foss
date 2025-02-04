@@ -1,5 +1,6 @@
 # Standards
 SEPARATOR_LINE = "-------"
+SEPARATOR_LINE_LONG = "---------------"
 UNKNOWN_ANSWER = "I do not have enough information to answer this question."
 NO_RECOVERED_DOCS = "No relevant information recovered"
 YES = "yes"
@@ -300,7 +301,7 @@ INITIAL_ANSWER_PROMPT_W_SUB_QUESTIONS = (
     "Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,\n"
     "or assumptions you made.\n\n"
     "Here is the contextual information:\n"
-    "---------------\n\n"
+    f"{SEPARATOR_LINE_LONG}\n\n"
     "*Answered Sub-questions (these should really matter!):\n"
     f"{SEPARATOR_LINE}\n"
     "{answered_sub_questions}\n"
@@ -417,166 +418,125 @@ REFINEMENT_QUESTION_DECOMPOSITION_PROMPT = (
 
 
 REFINED_ANSWER_PROMPT_W_SUB_QUESTIONS = (
-    """\n
-{persona_specification}
-
-Your task is to improve on a given answer to a question, as the initial answer was found to be lacking in some way.
-
-Use the information provided below - and only the provided information - to write your new and improved answer.
-
-The information provided below consists of:
-    1) an initial answer that was given but found to be lacking in some way.
-    2) a number of answered sub-questions - these are very important(!) and definitely should help you to answer
-the main question. Note that the sub-questions have a type, 'initial' and 'refined'. The 'initial'
-ones were available for the creation of the initial answer, but the 'refined' were not, they are new. So please use
-the 'refined' sub-questions in particular to update/extend/correct/enrich the initial answer and to add
-more details/new facts!
-
-    3) a number of documents that were deemed relevant for the question. This the is the context that you use largely for
-citations (see below). So consider the answers to the sub-questions as guidelines to construct your new answer, but
-make sure you cite the relevant document for a fact!
-
-It is critical that you provide proper inline citations to documents in the format [D1], [D2], [D3], etc!
-It is important that the citation is close to the information it supports. If you have multiple
-citations, please cite for example as [D1][D3], or [D2][D4], etc.
-Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the sub-question
-citation. If you want to cite both a document and a sub-question, please use [D1][Q3], or [D2][D7][Q4], etc.
-Again, please NEVER cite sub-questions without a document citation!
-Proper citations are very important for the user!\n\n
-
-{history}
-
-IMPORTANT RULES:
- - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
- You may give some additional facts you learned, but do not try to invent an answer.
- - If the information is empty or irrelevant, just say """
-    + f'"{UNKNOWN_ANSWER}"'
-    + """.
- - If the information is relevant but not fully conclusive, provide an answer to the extent you can but also
- specify that the information is not conclusive and why.
-- Ignore any existing citations within the answered sub-questions, like [D1]... and [Q2]!
-The citations you will need to use will need to refer to the documents (and sub-questions) that you are explicitly
-presented with below!
-
-Again, you should be sure that the answer is supported by the information provided!
-
-Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,
-or assumptions you made.
-
-Here is the contextual information:
----------------
-
-*Initial Answer that was found to be lacking:
-\n-------\n
-{initial_answer}
-\n-------\n
-
-*Answered Sub-questions (these should really help you to research your answer! They also contain questions/answers
-that were not available when the original answer was constructed):
-{answered_sub_questions}
-
-And here are the relevant documents that support the sub-question answers, and that are relevant for the actual question:\n
-\n-------\n
-{relevant_docs}
-\n-------\n
-
-\n
-Lastly, here is the main question I want you to answer based on the information above:
-\n-------\n
-{question}
-\n-------\n
-
-Please keep your answer brief and concise, and focus on facts and data.
-
-Answer:"""
-)
+    "{persona_specification}\n\n"
+    "Your task is to improve on a given answer to a question, as the initial answer was found to be lacking in some way.\n\n"
+    "Use the information provided below - and only the provided information - to write your new and improved answer.\n\n"
+    "The information provided below consists of:\n"
+    "  1) an initial answer that was given but found to be lacking in some way.\n"
+    "  2) a number of answered sub-questions - these are very important(!) and definitely should help you to answer "
+    "the main question. Note that the sub-questions have a type, 'initial' and 'refined'. The 'initial' "
+    "ones were available for the creation of the initial answer, but the 'refined' were not, they are new. So please use "
+    "the 'refined' sub-questions in particular to update/extend/correct/enrich the initial answer and to add "
+    "more details/new facts!\n"
+    "  3) a number of documents that were deemed relevant for the question. This is the context that you use largely for "
+    "citations (see below). So consider the answers to the sub-questions as guidelines to construct your new answer, but "
+    "make sure you cite the relevant document for a fact!\n\n"
+    "It is critical that you provide proper inline citations to documents in the format [D1], [D2], [D3], etc! "
+    "It is important that the citation is close to the information it supports. "
+    "DO NOT just list all of the citations at the very end. "
+    "Feel free to also cite sub-questions in addition to documents, but make sure that you have documents cited with the "
+    "sub-question citation. If you want to cite both a document and a sub-question, please use [D1][Q3], or [D2][D7][Q4], etc. "
+    "and always place the document citation before the sub-question citation. "
+    "Again, please NEVER cite sub-questions without a document citation!\n"
+    "Proper citations are very important for the user!\n\n"
+    "{history}\n\n"
+    "IMPORTANT RULES:\n"
+    " - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer. "
+    "You may give some additional facts you learned, but do not try to invent an answer.\n"
+    f' - If the information is empty or irrelevant, just say "{UNKNOWN_ANSWER}".\n'
+    " - If the information is relevant but not fully conclusive, provide an answer to the extent you can but also "
+    "specify that the information is not conclusive and why.\n"
+    " - Ignore any existing citations within the answered sub-questions, like [D1]... and [Q2]! "
+    "The citations you will need to use will need to refer to the documents (and sub-questions) that you are explicitly "
+    "presented with below!\n\n"
+    "Again, you should be sure that the answer is supported by the information provided!\n\n"
+    "Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones, "
+    "or assumptions you made.\n\n"
+    "Here is the contextual information:\n"
+    f"{SEPARATOR_LINE_LONG}\n\n"
+    "*Initial Answer that was found to be lacking:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{initial_answer}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "*Answered Sub-questions (these should really help you to research your answer! They also contain questions/answers "
+    "that were not available when the original answer was constructed):\n"
+    "{answered_sub_questions}\n\n"
+    "And here are the relevant documents that support the sub-question answers, and that are relevant for the actual question:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{relevant_docs}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Lastly, here is the main question I want you to answer based on the information above:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Please keep your answer brief and concise, and focus on facts and data.\n\n"
+    "Answer:"
+).strip()
 
 # sub_question_answer_str is empty
 REFINED_ANSWER_PROMPT_WO_SUB_QUESTIONS = (
-    """\n
-{answered_sub_questions}\n
-{persona_specification}
-
-Use the information provided below - and only the
-provided information - to answer the provided question.
-
-The information provided below consists of:
-    1) an initial answer that was given but found to be lacking in some way.
-    2) a number of documents that were also deemed relevant for the question.
-
-It is critical that you provide proper] inline citations to documents in the format [D1], [D2], [D3], etc!
- It is important that the citation is close to the information it supports. If you have multiple
-citations, please cite for example as [D1][D3], or [D2][D4], etc. Citations are very important for the user!\n\n
-\n-------\n
-{history}
-\n-------\n
-IMPORTANT RULES:
- - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer.
- You may give some additional facts you learned, but do not try to invent an answer.
- - If the information is empty or irrelevant, just say """
-    + f'"{UNKNOWN_ANSWER}"'
-    + """.
- - If the information is relevant but not fully conclusive, provide and answer to the extent you can but also
- specify that the information is not conclusive and why.
-
-Again, you should be sure that the answer is supported by the information provided!
-
-Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones,
-or assumptions you made.
-
-Here is the contextual information:
----------------
-
-*Initial Answer that was found to be lacking:
-\n-------\n
-{initial_answer}
-\n-------\n
-
-And here are relevant document information that support the sub-question answers, or that are relevant for the actual question:\n
-\n-------\n
-{relevant_docs}
-\n-------\n
-\n
-Lastly, here is the question I want you to answer based on the information above:
-\n-------\n
-{question}
-\n-------\n\n
-Please keep your answer brief and concise, and focus on facts and data.
-
-Answer:"""
-)
+    "{answered_sub_questions}{persona_specification}\n\n"
+    "Use the information provided below - and only the provided information - to answer the provided question.\n\n"
+    "The information provided below consists of:\n"
+    "  1) an initial answer that was given but found to be lacking in some way.\n"
+    "  2) a number of documents that were also deemed relevant for the question.\n\n"
+    "It is critical that you provide proper inline citations to documents in the format [D1], [D2], [D3], etc! "
+    "It is important that the citation is close to the information it supports. "
+    "DO NOT just list all of the citations at the very end of your response. Citations are very important for the user!\n\n"
+    "{history}\n\n"
+    "IMPORTANT RULES:\n"
+    " - If you cannot reliably answer the question solely using the provided information, say that you cannot reliably answer. "
+    "You may give some additional facts you learned, but do not try to invent an answer.\n"
+    f' - If the information is empty or irrelevant, just say "{UNKNOWN_ANSWER}".\n'
+    " - If the information is relevant but not fully conclusive, provide an answer to the extent you can but also "
+    "specify that the information is not conclusive and why.\n\n"
+    "Again, you should be sure that the answer is supported by the information provided!\n\n"
+    "Try to keep your answer concise. But also highlight uncertainties you may have should there be substantial ones, "
+    "or assumptions you made.\n\n"
+    "Here is the contextual information:\n"
+    f"{SEPARATOR_LINE_LONG}\n\n"
+    "*Initial Answer that was found to be lacking:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{initial_answer}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "And here are relevant document information that support the sub-question answers, "
+    "or that are relevant for the actual question:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{relevant_docs}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Lastly, here is the question I want you to answer based on the information above:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Please keep your answer brief and concise, and focus on facts and data.\n\n"
+    "Answer:"
+).strip()
 
 
-INITIAL_REFINED_ANSWER_COMPARISON_PROMPT = """
-For the given question, please compare the initial answer and the refined answer and determine if
-the refined answer is substantially better than the initial answer, not just a bit better. Better could mean:
- - additional information
- - more comprehensive information
- - more concise information
- - more structured information
- - morde details
- - new bullet points
- - substantially more document citations ([D1], [D2], [D3], etc.)
-
- Put yourself in the shoes of the user and think about whether the refined answer is really substantially
- better and delivers really new insights than the initial answer.
-
-Here is the question:
-\n-------\n
-{question}
-\n-------\n
-
-Here is the initial answer:
-\n-------\n
-{initial_answer}
-\n-------\n
-
-Here is the refined answer:
-\n-------\n
-{refined_answer}
-\n-------\n
-
-With these criteria in mind, is the refined answer substantially better than the initial answer?
-
-Please answer with a simple 'yes' or 'no'.
-"""
+INITIAL_REFINED_ANSWER_COMPARISON_PROMPT = (
+    "For the given question, please compare the initial answer and the refined answer and determine if "
+    "the refined answer is substantially better than the initial answer, not just a bit better. Better could mean:\n"
+    " - additional information\n"
+    " - more comprehensive information\n"
+    " - more concise information\n"
+    " - more structured information\n"
+    " - more details\n"
+    " - new bullet points\n"
+    " - substantially more document citations ([D1], [D2], [D3], etc.)\n\n"
+    "Put yourself in the shoes of the user and think about whether the refined answer is really substantially "
+    "better and delivers really new insights than the initial answer.\n\n"
+    "Here is the question:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{question}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Here is the initial answer:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{initial_answer}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "Here is the refined answer:\n"
+    f"{SEPARATOR_LINE}\n"
+    "{refined_answer}\n"
+    f"{SEPARATOR_LINE}\n\n"
+    "With these criteria in mind, is the refined answer substantially better than the initial answer?\n\n"
+    f'Please answer with a simple "{YES}" or "{NO}".'
+).strip()
