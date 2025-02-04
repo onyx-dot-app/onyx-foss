@@ -70,18 +70,25 @@ class AirtableConnector(LoadConnector):
         self.base_id = base_id
         self.table_name_or_id = table_name_or_id
         self.batch_size = batch_size
-        self.airtable_client: AirtableApi | None = None
+        self._airtable_client: AirtableApi | None = None
         self.treat_all_non_attachment_fields_as_metadata = (
             treat_all_non_attachment_fields_as_metadata
         )
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
-        self.airtable_client = AirtableApi(credentials["airtable_access_token"])
+        self._airtable_client = AirtableApi(credentials["airtable_access_token"])
         return None
 
-    @staticmethod
+    @property
+    def airtable_client(self) -> AirtableApi:
+        if not self._airtable_client:
+            raise AirtableClientNotSetUpError()
+        return self._airtable_client
+
     def _extract_field_values(
+        self,
         field_id: str,
+        field_name: str,
         field_info: Any,
         field_type: str,
         base_id: str,
@@ -120,13 +127,33 @@ class AirtableConnector(LoadConnector):
                     backoff=2,
                     max_delay=10,
                 )
-                def get_attachment_with_retry(url: str) -> bytes | None:
-                    attachment_response = requests.get(url)
-                    if attachment_response.status_code == 200:
+                def get_attachment_with_retry(url: str, record_id: str) -> bytes | None:
+                    try:
+                        attachment_response = requests.get(url)
+                        attachment_response.raise_for_status()
                         return attachment_response.content
-                    return None
+                    except requests.exceptions.HTTPError as e:
+                        if e.response.status_code == 410:
+                            logger.info(f"Refreshing attachment for {filename}")
+                            # Re-fetch the record to get a fresh URL
+                            refreshed_record = self.airtable_client.table(
+                                base_id, table_id
+                            ).get(record_id)
+                            for refreshed_attachment in refreshed_record["fields"][
+                                field_name
+                            ]:
+                                if refreshed_attachment.get("filename") == filename:
+                                    new_url = refreshed_attachment.get("url")
+                                    if new_url:
+                                        attachment_response = requests.get(new_url)
+                                        attachment_response.raise_for_status()
+                                        return attachment_response.content
 
-                attachment_content = get_attachment_with_retry(url)
+                            logger.error(f"Failed to refresh attachment for {filename}")
+
+                        raise
+
+                attachment_content = get_attachment_with_retry(url, record_id)
                 if attachment_content:
                     try:
                         file_ext = get_file_ext(filename)
@@ -210,6 +237,7 @@ class AirtableConnector(LoadConnector):
         # Get the value(s) for the field
         field_value_and_links = self._extract_field_values(
             field_id=field_id,
+            field_name=field_name,
             field_info=field_info,
             field_type=field_type,
             base_id=self.base_id,
@@ -339,7 +367,7 @@ class AirtableConnector(LoadConnector):
         logger.info(f"Starting to process Airtable records for {table.name}.")
 
         # Process records in parallel batches using ThreadPoolExecutor
-        PARALLEL_BATCH_SIZE = 16
+        PARALLEL_BATCH_SIZE = 8
         max_workers = min(PARALLEL_BATCH_SIZE, len(records))
 
         # Process records in batches

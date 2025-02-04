@@ -35,3 +35,40 @@ export async function loginAs(page: Page, userType: "admin" | "user") {
     }
   }
 }
+// Function to generate a random email and password
+const generateRandomCredentials = () => {
+  const randomString = Math.random().toString(36).substring(2, 10);
+  const specialChars = "!@#$%^&*()_+{}[]|:;<>,.?~";
+  const randomSpecialChar =
+    specialChars[Math.floor(Math.random() * specialChars.length)];
+  const randomUpperCase = String.fromCharCode(
+    65 + Math.floor(Math.random() * 26)
+  );
+  const randomNumber = Math.floor(Math.random() * 10);
+
+  return {
+    email: `test_${randomString}@example.com`,
+    password: `P@ssw0rd_${randomUpperCase}${randomSpecialChar}${randomNumber}${randomString}`,
+  };
+};
+
+// Function to sign up a new random user
+export async function loginAsRandomUser(page: Page) {
+  const { email, password } = generateRandomCredentials();
+
+  await page.goto("http://localhost:3000/auth/signup");
+
+  await page.fill("#email", email);
+  await page.fill("#password", password);
+
+  // Click the signup button
+  await page.click('button[type="submit"]');
+  try {
+    await page.waitForURL("http://localhost:3000/chat");
+  } catch (error) {
+    console.log(`Timeout occurred. Current URL: ${page.url()}`);
+    throw new Error("Failed to sign up and redirect to chat page");
+  }
+
+  return { email, password };
+}

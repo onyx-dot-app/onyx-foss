@@ -175,7 +175,6 @@ class EmbeddingModel:
                 if self.callback.should_stop():
                     raise RuntimeError("_batch_encode_texts detected stop signal")
 
-            logger.debug(f"Encoding batch {batch_idx} of {len(text_batches)}")
             embed_request = EmbedRequest(
                 model_name=self.model_name,
                 texts=text_batch,
@@ -191,7 +190,15 @@ class EmbeddingModel:
                 api_url=self.api_url,
             )
 
+            start_time = time.time()
             response = self._make_model_server_request(embed_request)
+            end_time = time.time()
+
+            processing_time = end_time - start_time
+            logger.info(
+                f"Batch {batch_idx} processing time: {processing_time:.2f} seconds"
+            )
+
             return batch_idx, response.embeddings
 
         # only multi thread if:

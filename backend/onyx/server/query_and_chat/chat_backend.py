@@ -77,6 +77,7 @@ from onyx.server.query_and_chat.models import LLMOverride
 from onyx.server.query_and_chat.models import PromptOverride
 from onyx.server.query_and_chat.models import RenameChatSessionResponse
 from onyx.server.query_and_chat.models import SearchFeedbackRequest
+from onyx.server.query_and_chat.models import UpdateChatSessionTemperatureRequest
 from onyx.server.query_and_chat.models import UpdateChatSessionThreadRequest
 from onyx.server.query_and_chat.token_limit import check_token_rate_limits
 from onyx.utils.headers import get_custom_tool_additional_request_headers
@@ -114,10 +115,50 @@ def get_user_chat_sessions(
                 shared_status=chat.shared_status,
                 folder_id=chat.folder_id,
                 current_alternate_model=chat.current_alternate_model,
+                current_temperature_override=chat.temperature_override,
             )
             for chat in chat_sessions
         ]
     )
+
+
+@router.put("/update-chat-session-temperature")
+def update_chat_session_temperature(
+    update_thread_req: UpdateChatSessionTemperatureRequest,
+    user: User | None = Depends(current_user),
+    db_session: Session = Depends(get_session),
+) -> None:
+    chat_session = get_chat_session_by_id(
+        chat_session_id=update_thread_req.chat_session_id,
+        user_id=user.id if user is not None else None,
+        db_session=db_session,
+    )
+
+    # Validate temperature_override
+    if update_thread_req.temperature_override is not None:
+        if (
+            update_thread_req.temperature_override < 0
+            or update_thread_req.temperature_override > 2
+        ):
+            raise HTTPException(
+                status_code=400, detail="Temperature must be between 0 and 2"
+            )
+
+        # Additional check for Anthropic models
+        if (
+            chat_session.current_alternate_model
+            and "anthropic" in chat_session.current_alternate_model.lower()
+        ):
+            if update_thread_req.temperature_override > 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Temperature for Anthropic models must be between 0 and 1",
+                )
+
+    chat_session.temperature_override = update_thread_req.temperature_override
+
+    db_session.add(chat_session)
+    db_session.commit()
 
 
 @router.put("/update-chat-session-model")
@@ -172,6 +213,8 @@ def get_chat_session(
         # we need the tool call objs anyways, so just fetch them in a single call
         prefetch_tool_calls=True,
     )
+    for message in session_messages:
+        translate_db_message_to_chat_message_detail(message)
 
     return ChatSessionDetailResponse(
         chat_session_id=session_id,
@@ -190,6 +233,7 @@ def get_chat_session(
         ],
         time_created=chat_session.time_created,
         shared_status=chat_session.shared_status,
+        current_temperature_override=chat_session.temperature_override,
     )
 
 
@@ -310,10 +354,12 @@ async def is_connected(request: Request) -> Callable[[], bool]:
     def is_connected_sync() -> bool:
         future = asyncio.run_coroutine_threadsafe(request.is_disconnected(), main_loop)
         try:
-            is_connected = not future.result(timeout=0.01)
+            is_connected = not future.result(timeout=0.05)
             return is_connected
         except asyncio.TimeoutError:
-            logger.error("Asyncio timed out")
+            logger.warning(
+                "Asyncio timed out (potentially missed request to stop streaming)"
+            )
             return True
         except Exception as e:
             error_msg = str(e)
