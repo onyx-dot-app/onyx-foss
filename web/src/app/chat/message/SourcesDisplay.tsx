@@ -21,7 +21,8 @@ interface SourcesDisplayProps {
 const SourceCard: React.FC<{
   document: OnyxDocument;
   hideDocumentDisplay?: boolean;
-}> = ({ document, hideDocumentDisplay = false }) => {
+  setPresentingDocument: (document: OnyxDocument) => void;
+}> = ({ document, hideDocumentDisplay = false, setPresentingDocument }) => {
   const truncatedtext = document.match_highlights[0]
     ? document.match_highlights[0].slice(0, 80)
     : document.blurb?.slice(0, 80) || "";
@@ -32,12 +33,28 @@ const SourceCard: React.FC<{
 
   return (
     <button
-      onClick={() => openDocument(document, () => {})}
-      className="w-full max-w-[260px] h-[80px] p-3 bg-[#f1eee8] text-left hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col justify-between overflow-hidden"
+      onClick={() =>
+        openDocument(document, () => setPresentingDocument(document))
+      }
+      className="w-full max-w-[260px] h-[80px] p-3 bg-[#f1eee8]
+             text-left hover:bg-[#ebe7de]
+             cursor-pointer rounded-lg
+             flex flex-col justify-between
+             overflow-hidden"
     >
-      <div className="text-black text-xs line-clamp-2 font-medium leading-tight overflow-hidden">
-        <span className="break-words">{documentSummary}</span>
+      <div
+        className="
+        text-black text-xs
+        font-medium leading-tight
+        whitespace-normal
+        break-all
+        line-clamp-2
+        overflow-hidden
+    "
+      >
+        {documentSummary}
       </div>
+
       <div className="flex items-center gap-1 mt-1">
         <ResultIcon doc={document} size={14} />
         <div className="text-[#4a4a4a] text-xs leading-tight truncate flex-1 min-w-0">
@@ -82,6 +99,7 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
             }`}
           >
             <SourceCard
+              setPresentingDocument={setPresentingDocument}
               hideDocumentDisplay={hideDocumentDisplay}
               document={doc}
             />

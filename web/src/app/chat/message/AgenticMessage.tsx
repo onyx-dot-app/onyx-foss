@@ -112,7 +112,6 @@ export const AgenticMessage = ({
   toggleDocDisplay?: (agentic: boolean) => void;
 }) => {
   const [noShowingMessage, setNoShowingMessage] = useState(isComplete);
-  const [streamedContent, setStreamedContent] = useState(content as string);
 
   const [lastKnownContentLength, setLastKnownContentLength] = useState(0);
 
@@ -157,6 +156,9 @@ export const AgenticMessage = ({
     return preprocessLaTeX(processed);
   };
 
+  const [streamedContent, setStreamedContent] = useState(
+    processContent(content) as string
+  );
   const finalContent = processContent(content) as string;
   const finalAlternativeContent = processContent(alternativeContent) as string;
 
@@ -401,10 +403,9 @@ export const AgenticMessage = ({
                       allowDocuments={() => setAllowDocuments(true)}
                       docSidebarToggled={docSidebarToggled || false}
                       finishedGenerating={
-                        finalContent.length > 10 &&
+                        finalContent.length > 2 &&
                         streamedContent.length == finalContent.length
                       }
-                      // overallAnswerGenerating={false}
                       overallAnswerGenerating={
                         !!(
                           secondLevelSubquestions &&
