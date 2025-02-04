@@ -37,8 +37,8 @@ def format_results(
     query_info = get_query_info(state.query_retrieval_results)
 
     graph_config = cast(GraphConfig, config["metadata"]["config"])
-    # main question docs will be sent later after aggregation and deduping with sub-question docs
 
+    # Main question docs will be sent later after aggregation and deduping with sub-question docs
     reranked_documents = state.reranked_documents
 
     if not (level == 0 and question_num == 0):
@@ -79,8 +79,6 @@ def format_results(
 
     if sub_question_retrieval_stats is None:
         sub_question_retrieval_stats = AgentChunkRetrievalStats()
-    # else:
-    #    sub_question_retrieval_stats = [sub_question_retrieval_stats]
 
     return ExpandedRetrievalUpdate(
         expanded_retrieval_result=QuestionRetrievalResult(

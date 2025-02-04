@@ -5,19 +5,13 @@ from onyx.agents.agent_search.deep_search.shared.expanded_retrieval.states impor
     ExpandedRetrievalInput,
 )
 
-## Update States
-
 
 ## Graph Input State
-
-
 class BaseRawSearchInput(ExpandedRetrievalInput):
     pass
 
 
 ## Graph Output State
-
-
 class BaseRawSearchOutput(OrigQuestionRetrievalUpdate):
     """
     This is a list of results even though each call of this subgraph only returns one result.
@@ -29,8 +23,6 @@ class BaseRawSearchOutput(OrigQuestionRetrievalUpdate):
 
 
 ## Graph State
-
-
 class BaseRawSearchState(
     BaseRawSearchInput, BaseRawSearchOutput, OrigQuestionRetrievalUpdate
 ):

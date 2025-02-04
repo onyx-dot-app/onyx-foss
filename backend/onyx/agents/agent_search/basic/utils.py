@@ -26,7 +26,6 @@ def process_llm_stream(
     displayed_search_results: list[LlmDoc] | None = None,
 ) -> AIMessageChunk:
     tool_call_chunk = AIMessageChunk(content="")
-    # for response in response_handler_manager.handle_llm_response(stream):
 
     if final_search_results and displayed_search_results:
         answer_handler: AnswerResponseHandler = CitationResponseHandler(

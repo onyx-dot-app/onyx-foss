@@ -12,9 +12,8 @@ from onyx.agents.agent_search.orchestration.states import ToolChoiceUpdate
 # If you are using a value from the config and realize it needs to change,
 # you should add it to the state and use/update the version in the state.
 
+
 ## Graph Input State
-
-
 class BasicInput(BaseModel):
     # Langgraph needs a nonempty input, but we pass in all static
     # data through a RunnableConfig.
@@ -22,18 +21,11 @@ class BasicInput(BaseModel):
 
 
 ## Graph Output State
-
-
 class BasicOutput(TypedDict):
     tool_call_chunk: AIMessageChunk
 
 
-## Update States
-
-
 ## Graph State
-
-
 class BasicState(
     BasicInput,
     ToolChoiceInput,

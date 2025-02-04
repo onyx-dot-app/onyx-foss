@@ -48,16 +48,6 @@ def parallelize_initial_sub_question_answering(
 ) -> list[Send | Hashable]:
     edge_start_time = datetime.now()
     if len(state.initial_sub_questions) > 0:
-        # sub_question_record_ids = [subq_record.id for subq_record in state["sub_question_records"]]
-        # if len(state["sub_question_records"]) == 0:
-        #     if state["config"].use_persistence:
-        #         raise ValueError("No sub-questions found for initial decompozed questions")
-        #     else:
-        #         # in this case, we are doing retrieval on the original question.
-        #         # to make all the logic consistent, we create a new sub-question
-        #         # with the same content as the original question
-        #         sub_question_record_ids = [1] * len(state["initial_decomp_questions"])
-
         return [
             Send(
                 "answer_query_subgraph",

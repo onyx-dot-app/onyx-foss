@@ -68,7 +68,7 @@ def llm_tool_choice(
         if chosen_tool_and_args:
             tool, tool_args = chosen_tool_and_args
 
-    # If we have a tool and tool args, we are redy to request a tool call.
+    # If we have a tool and tool args, we are ready to request a tool call.
     # This only happens if the tool call was forced or we are using a non-tool calling LLM.
     if tool and tool_args:
         return ToolChoiceUpdate(

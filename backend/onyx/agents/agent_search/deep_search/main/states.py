@@ -34,11 +34,8 @@ from onyx.agents.agent_search.shared_graph_utils.operators import (
 )
 from onyx.context.search.models import InferenceSection
 
+
 ### States ###
-
-## Update States
-
-
 class LoggerUpdate(BaseModel):
     log_messages: Annotated[list[str], add] = []
 
@@ -147,15 +144,11 @@ class RefinedQuestionDecompositionUpdate(RefinedAgentStartStats, LoggerUpdate):
 
 
 ## Graph Input State
-
-
 class MainInput(CoreState):
     pass
 
 
 ## Graph State
-
-
 class MainState(
     # This includes the core state
     MainInput,
@@ -181,7 +174,5 @@ class MainState(
 
 
 ## Graph Output State - presently not used
-
-
 class MainOutput(TypedDict):
     log_messages: list[str]

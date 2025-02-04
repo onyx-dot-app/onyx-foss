@@ -17,11 +17,6 @@ class GraphInputs(BaseModel):
     """Input data required for the graph execution"""
 
     search_request: SearchRequest
-    # contains message history for the current chat session
-    # has the following (at most one is non-None)
-    # TODO: unify this into a single message history
-    # message_history: list[PreviousMessage] | None = None
-    # single_message_history: str | None = None
     prompt_builder: AnswerPromptBuilder
     files: list[InMemoryChatFile] | None = None
     structured_response_format: dict | None = None

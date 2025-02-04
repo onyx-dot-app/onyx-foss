@@ -83,11 +83,6 @@ def generate_initial_answer_graph_builder(test_mode: bool = False) -> StateGraph
         end_key="generate_initial_answer",
     )
 
-    # graph.add_edge(
-    #     start_key="retrieval_consolidation",
-    #     end_key="generate_initial_answer",
-    # )
-
     graph.add_edge(
         start_key="generate_initial_answer",
         end_key="validate_initial_answer",

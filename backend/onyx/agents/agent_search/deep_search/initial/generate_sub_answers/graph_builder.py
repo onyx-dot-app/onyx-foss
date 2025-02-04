@@ -58,29 +58,10 @@ def generate_sub_answers_graph_builder() -> StateGraph:
         action=format_initial_sub_answers,
     )
 
-    ### Add edges ###
-
-    # raph.add_edge(start_key=START, end_key="base_raw_search_subgraph")
-
-    # graph.add_edge(
-    #     start_key="start_agent_search",
-    #     end_key="extract_entity_term",
-    # )
-
     graph.add_edge(
         start_key=START,
         end_key="decompose_orig_question",
     )
-
-    # graph.add_edge(
-    #     start_key="LLM",
-    #     end_key=END,
-    # )
-
-    # graph.add_edge(
-    #     start_key=START,
-    #     end_key="initial_sub_question_creation",
-    # )
 
     graph.add_conditional_edges(
         source="decompose_orig_question",
@@ -96,15 +77,5 @@ def generate_sub_answers_graph_builder() -> StateGraph:
         start_key="format_initial_sub_question_answers",
         end_key=END,
     )
-
-    # graph.add_edge(
-    #     start_key="generate_refined_answer",
-    #     end_key="check_refined_answer",
-    # )
-
-    # graph.add_edge(
-    #     start_key="check_refined_answer",
-    #     end_key=END,
-    # )
 
     return graph
