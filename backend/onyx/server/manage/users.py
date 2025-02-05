@@ -271,6 +271,8 @@ def bulk_invite_users(
 
     tenant_id = CURRENT_TENANT_ID_CONTEXTVAR.get()
     new_invited_emails = []
+    email: str
+
     try:
         for email in emails:
             email_info = validate_email(email)

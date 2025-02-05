@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from typing import cast
 from uuid import uuid4
 
@@ -91,7 +92,7 @@ class RedisConnectorIndex:
     @property
     def payload(self) -> RedisConnectorIndexPayload | None:
         # read related data and evaluate/print task progress
-        fence_bytes = cast(bytes, self.redis.get(self.fence_key))
+        fence_bytes = cast(Any, self.redis.get(self.fence_key))
         if fence_bytes is None:
             return None
 

@@ -239,6 +239,7 @@ def _run_indexing(
         callback=callback,
     )
 
+    tracer: OnyxTracer
     if INDEXING_TRACER_INTERVAL > 0:
         logger.debug(f"Memory tracer starting: interval={INDEXING_TRACER_INTERVAL}")
         tracer = OnyxTracer()
@@ -255,6 +256,8 @@ def _run_indexing(
     document_count = 0
     chunk_count = 0
     run_end_dt = None
+    tracer_counter: int
+
     for ind, (window_start, window_end) in enumerate(
         get_time_windows_for_index_attempt(
             last_successful_run=datetime.fromtimestamp(
@@ -265,6 +268,7 @@ def _run_indexing(
     ):
         cc_pair_loop: ConnectorCredentialPair | None = None
         index_attempt_loop: IndexAttempt | None = None
+        tracer_counter = 0
 
         try:
             window_start = max(
@@ -289,7 +293,6 @@ def _run_indexing(
                     tenant_id=tenant_id,
                 )
 
-            tracer_counter = 0
             if INDEXING_TRACER_INTERVAL > 0:
                 tracer.snap()
             for doc_batch in connector_runner.run():

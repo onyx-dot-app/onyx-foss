@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable
+from contextvars import Token
 from threading import Event
 from types import FrameType
 from typing import Any
@@ -249,6 +250,8 @@ class SlackbotHandler:
         - If a tenant in self.tenant_ids no longer has Slack bots, remove it (and release the lock in this scope).
         """
         all_tenants = get_all_tenant_ids()
+
+        token: Token[str]
 
         # 1) Try to acquire locks for new tenants
         for tenant_id in all_tenants:
@@ -771,6 +774,7 @@ def process_message(
         client=client.web_client, channel_id=channel
     )
 
+    token: Token[str] | None = None
     # Set the current tenant ID at the beginning for all DB calls within this thread
     if client.tenant_id:
         logger.info(f"Setting tenant ID to {client.tenant_id}")
@@ -825,7 +829,7 @@ def process_message(
                 if notify_no_answer:
                     apologize_for_fail(details, client)
     finally:
-        if client.tenant_id:
+        if token:
             CURRENT_TENANT_ID_CONTEXTVAR.reset(token)
 
 

@@ -747,6 +747,7 @@ def cloud_check_alembic() -> bool | None:
     revision_counts: dict[str, int] = {}
     out_of_date_tenants: dict[str, str | None] = {}
     top_revision: str = ""
+    tenant_ids: list[str] | list[None] = []
 
     try:
         # map each tenant_id to its revision
