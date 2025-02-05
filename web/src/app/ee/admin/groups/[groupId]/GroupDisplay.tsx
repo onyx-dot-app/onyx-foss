@@ -296,21 +296,29 @@ export const GroupDisplay = ({
         )}
       </div>
 
-      <div className="mt-3 w-fit">
-        <Button
-          tooltip={
-            !userGroup.is_up_to_date
-              ? "Cannot update group while sync is occurring"
-              : undefined
-          }
-          size="sm"
-          variant="submit"
-          onClick={() => setAddMemberFormVisible(true)}
-          disabled={!userGroup.is_up_to_date}
-        >
-          Add Users
-        </Button>
-      </div>
+      <TooltipProvider>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              className={userGroup.is_up_to_date ? "" : "opacity-50"}
+              variant="submit"
+              onClick={() => {
+                if (userGroup.is_up_to_date) {
+                  setAddMemberFormVisible(true);
+                }
+              }}
+            >
+              Add Users
+            </Button>
+          </TooltipTrigger>
+          {!userGroup.is_up_to_date && (
+            <TooltipContent>
+              <p>Cannot update group while sync is occurring</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       {addMemberFormVisible && (
         <AddMemberForm
           users={users}
@@ -400,21 +408,29 @@ export const GroupDisplay = ({
         )}
       </div>
 
-      <div className="mt-3 w-fit">
-        <Button
-          tooltip={
-            !userGroup.is_up_to_date
-              ? "Cannot update group while sync is occurring"
-              : undefined
-          }
-          onClick={() => setAddConnectorFormVisible(true)}
-          size="sm"
-          variant="submit"
-          disabled={!userGroup.is_up_to_date}
-        >
-          Add Connectors
-        </Button>
-      </div>
+      <TooltipProvider>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              className={userGroup.is_up_to_date ? "" : "opacity-50"}
+              variant="submit"
+              onClick={() => {
+                if (userGroup.is_up_to_date) {
+                  setAddConnectorFormVisible(true);
+                }
+              }}
+            >
+              Add Connectors
+            </Button>
+          </TooltipTrigger>
+          {!userGroup.is_up_to_date && (
+            <TooltipContent>
+              <p>Cannot update group while sync is occurring</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
 
       {addConnectorFormVisible && (
         <AddConnectorForm
