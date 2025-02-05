@@ -409,7 +409,11 @@ class DefaultMultiLLM(LLM):
                 # For now, we don't support parallel tool calls
                 # NOTE: we can't pass this in if tools are not specified
                 # or else OpenAI throws an error
-                **({"parallel_tool_calls": False} if tools else {}),
+                **(
+                    {"parallel_tool_calls": False}
+                    if tools and self.config.model_name != "o3-mini"
+                    else {}
+                ),  # TODO: remove once LITELLM has patched
                 **(
                     {"response_format": structured_response_format}
                     if structured_response_format
@@ -469,9 +473,7 @@ class DefaultMultiLLM(LLM):
         if LOG_DANSWER_MODEL_INTERACTIONS:
             self.log_model_configs()
 
-        if (
-            DISABLE_LITELLM_STREAMING or self.config.model_name == "o1-2024-12-17"
-        ):  # TODO: remove once litellm supports streaming
+        if DISABLE_LITELLM_STREAMING:
             yield self.invoke(prompt, tools, tool_choice, structured_response_format)
             return
 
