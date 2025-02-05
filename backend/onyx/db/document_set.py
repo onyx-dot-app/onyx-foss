@@ -198,7 +198,7 @@ def _check_if_cc_pairs_are_owned_by_groups(
             ids=missing_cc_pair_ids,
         )
         for cc_pair in cc_pairs:
-            if cc_pair.access_type != AccessType.PUBLIC:
+            if cc_pair.access_type == AccessType.PRIVATE:
                 raise ValueError(
                     f"Connector Credential Pair with ID: '{cc_pair.id}'"
                     " is not owned by the specified groups"

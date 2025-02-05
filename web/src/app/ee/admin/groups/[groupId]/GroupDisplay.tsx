@@ -32,6 +32,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/DeleteButton";
 import { Bubble } from "@/components/Bubble";
@@ -290,16 +296,21 @@ export const GroupDisplay = ({
         )}
       </div>
 
-      <Button
-        className="mt-3"
-        size="sm"
-        variant="submit"
-        onClick={() => setAddMemberFormVisible(true)}
-        disabled={!userGroup.is_up_to_date}
-      >
-        Add Users
-      </Button>
-
+      <div className="mt-3 w-fit">
+        <Button
+          tooltip={
+            !userGroup.is_up_to_date
+              ? "Cannot update group while sync is occurring"
+              : undefined
+          }
+          size="sm"
+          variant="submit"
+          onClick={() => setAddMemberFormVisible(true)}
+          disabled={!userGroup.is_up_to_date}
+        >
+          Add Users
+        </Button>
+      </div>
       {addMemberFormVisible && (
         <AddMemberForm
           users={users}
@@ -389,15 +400,21 @@ export const GroupDisplay = ({
         )}
       </div>
 
-      <Button
-        className="mt-3"
-        onClick={() => setAddConnectorFormVisible(true)}
-        size="sm"
-        variant="submit"
-        disabled={!userGroup.is_up_to_date}
-      >
-        Add Connectors
-      </Button>
+      <div className="mt-3 w-fit">
+        <Button
+          tooltip={
+            !userGroup.is_up_to_date
+              ? "Cannot update group while sync is occurring"
+              : undefined
+          }
+          onClick={() => setAddConnectorFormVisible(true)}
+          size="sm"
+          variant="submit"
+          disabled={!userGroup.is_up_to_date}
+        >
+          Add Connectors
+        </Button>
+      </div>
 
       {addConnectorFormVisible && (
         <AddConnectorForm
