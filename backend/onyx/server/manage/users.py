@@ -38,6 +38,7 @@ from onyx.configs.app_configs import ENABLE_EMAIL_INVITES
 from onyx.configs.app_configs import SESSION_EXPIRE_TIME_SECONDS
 from onyx.configs.app_configs import VALID_EMAIL_DOMAINS
 from onyx.configs.constants import AuthType
+from onyx.configs.constants import FASTAPI_USERS_AUTH_COOKIE_NAME
 from onyx.db.api_key import is_api_key_email_address
 from onyx.db.auth import get_total_users_count
 from onyx.db.engine import CURRENT_TENANT_ID_CONTEXTVAR
@@ -479,7 +480,7 @@ def get_current_token_expiration_jwt(
 
     try:
         # Get the JWT from the cookie
-        jwt_token = request.cookies.get("fastapiusersauth")
+        jwt_token = request.cookies.get(FASTAPI_USERS_AUTH_COOKIE_NAME)
         if not jwt_token:
             logger.error("No JWT token found in cookies")
             return None

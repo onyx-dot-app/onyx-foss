@@ -18,6 +18,8 @@ export const NEXT_PUBLIC_DO_NOT_USE_TOGGLE_OFF_DANSWER_POWERED =
   process.env.NEXT_PUBLIC_DO_NOT_USE_TOGGLE_OFF_DANSWER_POWERED?.toLowerCase() ===
   "true";
 
+export const TENANT_ID_COOKIE_NAME = "onyx_tid";
+
 export const GMAIL_AUTH_IS_ADMIN_COOKIE_NAME = "gmail_auth_is_admin";
 
 export const GOOGLE_DRIVE_AUTH_IS_ADMIN_COOKIE_NAME =

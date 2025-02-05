@@ -15,6 +15,12 @@ ID_SEPARATOR = ":;:"
 DEFAULT_BOOST = 0
 SESSION_KEY = "session"
 
+# Cookies
+FASTAPI_USERS_AUTH_COOKIE_NAME = (
+    "fastapiusersauth"  # Currently a constant, but logic allows for configuration
+)
+TENANT_ID_COOKIE_NAME = "onyx_tid"  # tenant id - for workaround cases
+
 NO_AUTH_USER_ID = "__no_auth_user__"
 NO_AUTH_USER_EMAIL = "anonymous@onyx.app"
 
