@@ -249,14 +249,12 @@ export const constructSubQuestions = (
   // );
 
   if ("stop_reason" in newDetail) {
-    console.log("STOP REASON");
-    console.log(newDetail);
     const { level, level_question_num } = newDetail;
     let subQuestion = updatedSubQuestions.find(
       (sq) => sq.level === level && sq.level_question_num === level_question_num
     );
     if (subQuestion) {
-      // subQuestion.is_complete = true;
+      subQuestion.is_complete = true;
     }
   } else if ("top_documents" in newDetail) {
     const { level, level_question_num, top_documents } = newDetail;
