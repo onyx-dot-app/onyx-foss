@@ -4,7 +4,6 @@ import { loginAsRandomUser } from "../utils/auth";
 
 test("Assistant Drag and Drop", async ({ page }) => {
   test.fail();
-
   await page.context().clearCookies();
   await loginAsRandomUser(page);
 
