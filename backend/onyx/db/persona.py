@@ -20,6 +20,7 @@ from onyx.configs.app_configs import DISABLE_AUTH
 from onyx.configs.chat_configs import BING_API_KEY
 from onyx.configs.chat_configs import CONTEXT_CHUNKS_ABOVE
 from onyx.configs.chat_configs import CONTEXT_CHUNKS_BELOW
+from onyx.configs.constants import NotificationType
 from onyx.context.search.enums import RecencyBiasSetting
 from onyx.db.constants import SLACK_BOT_PERSONA_PREFIX
 from onyx.db.models import DocumentSet
@@ -33,6 +34,8 @@ from onyx.db.models import Tool
 from onyx.db.models import User
 from onyx.db.models import User__UserGroup
 from onyx.db.models import UserGroup
+from onyx.db.notification import create_notification
+from onyx.server.features.persona.models import PersonaSharedNotificationData
 from onyx.server.features.persona.models import PersonaSnapshot
 from onyx.server.features.persona.models import PersonaUpsertRequest
 from onyx.utils.logger import setup_logger
@@ -169,6 +172,15 @@ def make_persona_private(
 
         for user_uuid in user_ids:
             db_session.add(Persona__User(persona_id=persona_id, user_id=user_uuid))
+
+            create_notification(
+                user_id=user_uuid,
+                notif_type=NotificationType.PERSONA_SHARED,
+                db_session=db_session,
+                additional_data=PersonaSharedNotificationData(
+                    persona_id=persona_id,
+                ).model_dump(),
+            )
 
         db_session.commit()
 
