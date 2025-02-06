@@ -110,6 +110,7 @@ def decompose_orig_question(
         ),
         writer,
     )
+
     # dispatches custom events for subquestion tokens, adding in subquestion ids.
     streamed_tokens = dispatch_separated(
         model.stream(msg),

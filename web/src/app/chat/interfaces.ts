@@ -218,6 +218,7 @@ export interface SubQuestionDetail extends BaseQuestionIdentifier {
   sub_queries?: SubQueryDetail[] | null;
   context_docs?: { top_documents: OnyxDocument[] } | null;
   is_complete?: boolean;
+  is_stopped?: boolean;
 }
 
 export interface SubQueryDetail {
@@ -255,6 +256,7 @@ export const constructSubQuestions = (
     );
     if (subQuestion) {
       subQuestion.is_complete = true;
+      subQuestion.is_stopped = true;
     }
   } else if ("top_documents" in newDetail) {
     const { level, level_question_num, top_documents } = newDetail;

@@ -305,8 +305,10 @@ def dispatch_separated(
         if sep in content:
             sub_question_parts = content.split(sep)
             _dispatch_nonempty(sub_question_parts[0], dispatch_event, num)
+
             if sep_callback:
                 sep_callback(num)
+
             num += 1
             _dispatch_nonempty(
                 "".join(sub_question_parts[1:]).strip(), dispatch_event, num
@@ -314,6 +316,9 @@ def dispatch_separated(
         else:
             _dispatch_nonempty(content, dispatch_event, num)
         streamed_tokens.append(content)
+
+    if sep_callback:
+        sep_callback(num)
 
     return streamed_tokens
 

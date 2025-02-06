@@ -134,7 +134,7 @@ export const useStreamingMessages = (
             if (nextIndex <= sq.question.length) {
               dynSQ.question = sq.question.slice(0, nextIndex);
               p.questionCharIndex = nextIndex;
-              if (nextIndex >= sq.question.length) {
+              if (nextIndex >= sq.question.length && sq.is_stopped) {
                 p.questionDone = true;
               }
               didStreamQuestion = true;
