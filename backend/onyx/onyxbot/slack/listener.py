@@ -787,18 +787,6 @@ def process_message(
                 channel_name=channel_name,
             )
 
-            # Be careful about this default, don't want to accidentally spam every channel
-            # Users should be able to DM slack bot in their private channels though
-            if (
-                not respond_every_channel
-                # Can't have configs for DMs so don't toss them out
-                and not is_dm
-                # If /OnyxBot (is_bot_msg) or @OnyxBot (bypass_filters)
-                # always respond with the default configs
-                and not (details.is_bot_msg or details.bypass_filters)
-            ):
-                return
-
             follow_up = bool(
                 slack_channel_config.channel_config
                 and slack_channel_config.channel_config.get("follow_up_tags")

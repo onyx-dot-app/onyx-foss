@@ -11,6 +11,7 @@ from sqlalchemy import Select
 from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
@@ -708,3 +709,15 @@ def update_persona_label(
 def delete_persona_label(label_id: int, db_session: Session) -> None:
     db_session.query(PersonaLabel).filter(PersonaLabel.id == label_id).delete()
     db_session.commit()
+
+
+def persona_has_search_tool(persona_id: int, db_session: Session) -> bool:
+    persona = (
+        db_session.query(Persona)
+        .options(joinedload(Persona.tools))
+        .filter(Persona.id == persona_id)
+        .one_or_none()
+    )
+    if persona is None:
+        raise ValueError(f"Persona with ID {persona_id} does not exist")
+    return any(tool.in_code_tool_id == "run_search" for tool in persona.tools)
