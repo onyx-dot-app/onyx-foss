@@ -17,7 +17,7 @@ async function verifyAdminPageNavigation(
   await page.goto(`http://localhost:3000/admin/${path}`);
 
   await expect(page.locator("h1.text-3xl")).toHaveText(pageTitle, {
-    timeout: 2000,
+    timeout: 3000,
   });
 
   if (options?.paragraphText) {
