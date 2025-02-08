@@ -27,6 +27,7 @@ from onyx.connectors.models import ConnectorMissingCredentialError
 from onyx.connectors.models import Document
 from onyx.connectors.models import Section
 from onyx.connectors.models import SlimDocument
+from onyx.indexing.indexing_heartbeat import IndexingHeartbeatInterface
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
@@ -319,6 +320,7 @@ class ConfluenceConnector(LoadConnector, PollConnector, SlimConnector):
         self,
         start: SecondsSinceUnixEpoch | None = None,
         end: SecondsSinceUnixEpoch | None = None,
+        callback: IndexingHeartbeatInterface | None = None,
     ) -> GenerateSlimDocumentOutput:
         doc_metadata_list: list[SlimDocument] = []
 
@@ -385,5 +387,13 @@ class ConfluenceConnector(LoadConnector, PollConnector, SlimConnector):
             if len(doc_metadata_list) > _SLIM_DOC_BATCH_SIZE:
                 yield doc_metadata_list[:_SLIM_DOC_BATCH_SIZE]
                 doc_metadata_list = doc_metadata_list[_SLIM_DOC_BATCH_SIZE:]
+
+                if callback:
+                    if callback.should_stop():
+                        raise RuntimeError(
+                            "retrieve_all_slim_documents: Stop signal detected"
+                        )
+
+                    callback.progress("retrieve_all_slim_documents", 1)
 
         yield doc_metadata_list
