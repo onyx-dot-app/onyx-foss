@@ -60,7 +60,7 @@ def _move_files_recursively(source: Path, dest: Path, overwrite: bool = False) -
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     gpu_type = get_gpu_type()
-    logger.notice(f"gpu_type={gpu_type}")
+    logger.notice(f"Torch GPU Detection: gpu_type={gpu_type}")
 
     app.state.gpu_type = gpu_type
 

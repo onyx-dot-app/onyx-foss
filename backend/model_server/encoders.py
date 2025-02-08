@@ -412,7 +412,7 @@ async def embed_text(
             f"event=embedding_model "
             f"texts={len(texts)} "
             f"chars={total_chars} "
-            f"model={provider_type} "
+            f"model={model_name} "
             f"gpu={gpu_type} "
             f"elapsed={elapsed:.2f}"
         )
