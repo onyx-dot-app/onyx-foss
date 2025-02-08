@@ -152,7 +152,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     # if not specified, all assistants are shown
     temperature_override_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     auto_scroll: Mapped[bool] = mapped_column(Boolean, default=True)
-    shortcut_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    shortcut_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     chosen_assistants: Mapped[list[int] | None] = mapped_column(
         postgresql.JSONB(), nullable=True, default=None
     )

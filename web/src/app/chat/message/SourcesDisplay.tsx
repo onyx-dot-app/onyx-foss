@@ -102,7 +102,6 @@ export const SourcesDisplay: React.FC<SourcesDisplayProps> = ({
             />
           </div>
         ))}
-
         {hasMoreDocuments && (
           <SeeMoreBlock
             fullWidth

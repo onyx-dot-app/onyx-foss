@@ -483,7 +483,11 @@ export const AIMessage = ({
                       )}
 
                     {docs && docs.length > 0 && (
-                      <div className="mobile:hidden mt-2 -mx-8 w-full mb-4 flex relative">
+                      <div
+                        className={`mobile:hidden ${
+                          query && "mt-2"
+                        }  -mx-8 w-full mb-4 flex relative`}
+                      >
                         <div className="w-full">
                           <div className="px-8 flex gap-x-2">
                             {!settings?.isMobile &&

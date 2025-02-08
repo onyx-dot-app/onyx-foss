@@ -148,7 +148,7 @@ export function SeeMoreBlock({
   toggled,
   fullWidth = false,
 }: SeeMoreBlockProps) {
-  const iconsToRender = getUniqueIcons(docs);
+  const iconsToRender = docs.length > 2 ? getUniqueIcons(docs) : [];
 
   return (
     <button
@@ -157,7 +157,7 @@ export function SeeMoreBlock({
         h-[80px] p-3 border border-[1.5px] border-[#D9D1c0] bg-[#f1eee8] text-left hover:bg-[#ebe7de] cursor-pointer rounded-lg flex flex-col justify-between overflow-hidden`}
     >
       <div className="flex items-center gap-1">
-        {iconsToRender.map((icon, index) => icon)}
+        {docs.length > 2 && iconsToRender.map((icon, index) => icon)}
       </div>
       <div className="text-text-darker text-xs font-semibold">
         {toggled ? "Hide Results" : "Show All"}

@@ -1612,7 +1612,7 @@ export function ChatPage({
                 second_level_message: second_level_answer,
                 type: error ? "error" : "assistant",
                 retrievalType,
-                query: finalMessage?.rephrased_query || query,
+                query: finalMessage?.rephrased_query,
                 documents: documents,
                 citations: finalMessage?.citations || {},
                 files: finalMessage?.files || aiMessageImages || [],
