@@ -140,6 +140,7 @@ def build_citations_user_message(
     context_docs: list[LlmDoc] | list[InferenceChunk],
     all_doc_useful: bool,
     history_message: str = "",
+    context_type: str = "context documents",
 ) -> HumanMessage:
     multilingual_expansion = get_multilingual_expansion()
     task_prompt_with_reminder = build_task_prompt_reminders(
@@ -156,6 +157,7 @@ def build_citations_user_message(
         optional_ignore = "" if all_doc_useful else DEFAULT_IGNORE_STATEMENT
 
         user_prompt = CITATIONS_PROMPT.format(
+            context_type=context_type,
             optional_ignore_statement=optional_ignore,
             context_docs_str=context_docs_str,
             task_prompt=task_prompt_with_reminder,
@@ -165,6 +167,7 @@ def build_citations_user_message(
     else:
         # if no context docs provided, assume we're in the tool calling flow
         user_prompt = CITATIONS_PROMPT_FOR_TOOL_CALLING.format(
+            context_type=context_type,
             task_prompt=task_prompt_with_reminder,
             user_query=query,
             history_block=history_block,

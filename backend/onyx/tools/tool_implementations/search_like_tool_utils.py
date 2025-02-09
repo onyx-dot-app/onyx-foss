@@ -25,6 +25,7 @@ def build_next_prompt_for_search_like_tool(
     using_tool_calling_llm: bool,
     answer_style_config: AnswerStyleConfig,
     prompt_config: PromptConfig,
+    context_type: str = "context documents",
 ) -> AnswerPromptBuilder:
     if not using_tool_calling_llm:
         final_context_docs_response = next(
@@ -58,6 +59,7 @@ def build_next_prompt_for_search_like_tool(
                 else False
             ),
             history_message=prompt_builder.single_message_history or "",
+            context_type=context_type,
         )
     )
 
