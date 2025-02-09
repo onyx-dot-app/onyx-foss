@@ -187,7 +187,9 @@ export function PersonasTable() {
                   }
                 }}
                 className={`px-1 py-0.5 rounded flex ${
-                  isEditable ? "hover:bg-hover cursor-pointer" : ""
+                  isEditable
+                    ? "hover:bg-accent-background-hovered cursor-pointer"
+                    : ""
                 } select-none w-fit`}
               >
                 <div className="my-auto w-12">
@@ -205,7 +207,7 @@ export function PersonasTable() {
                 <div className="mr-auto my-auto">
                   {!persona.builtin_persona && isEditable ? (
                     <div
-                      className="hover:bg-hover rounded p-1 cursor-pointer"
+                      className="hover:bg-accent-background-hovered rounded p-1 cursor-pointer"
                       onClick={() => openDeleteModal(persona)}
                     >
                       <TrashIcon />

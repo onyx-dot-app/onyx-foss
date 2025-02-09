@@ -48,9 +48,9 @@ export const AssistantBadge = ({
 }) => {
   return (
     <div
-      className={`h-4 px-1.5 py-1 text-[10px] flex-none bg-[#e6e3dd]/50 rounded-lg justify-center items-center gap-1 inline-flex ${className}`}
+      className={`h-4 px-1.5 py-1 text-[10px] flex-none bg-neutral-200/50 dark:bg-neutral-700 rounded-lg justify-center items-center gap-1 inline-flex ${className}`}
     >
-      <div className="text-[#4a4a4a] font-normal leading-[8px]">
+      <div className="text-text-800 font-normal leading-[8px]">
         {maxLength ? truncateString(text, maxLength) : text}
       </div>
     </div>
@@ -101,7 +101,7 @@ const AssistantCard: React.FC<{
   }, [persona.name]);
 
   return (
-    <div className="w-full p-2 overflow-visible pb-4 pt-3 bg-[#fefcf9] rounded shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] flex flex-col">
+    <div className="w-full text-text-800 p-2 overflow-visible pb-4 pt-3 bg-transparent dark:bg-neutral-800/80 rounded shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] flex flex-col">
       <div className="w-full flex">
         <div className="ml-2 flex-none mr-2 mt-1 w-10 h-10">
           <AssistantIcon assistant={persona} size="large" />
@@ -114,7 +114,7 @@ const AssistantCard: React.FC<{
                   <TooltipTrigger asChild>
                     <h3
                       ref={nameRef}
-                      className={` text-black line-clamp-1 break-all	 text-ellipsis leading-none font-semibold text-base lg-normal w-full overflow-hidden`}
+                      className={`text-neutral-900 dark:text-neutral-100 line-clamp-1 break-all	 text-ellipsis leading-none font-semibold text-base lg-normal w-full overflow-hidden`}
                     >
                       {persona.name}
                     </h3>
@@ -159,13 +159,13 @@ const AssistantCard: React.FC<{
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="hover:bg-neutral-100 p-1 -my-1 rounded-full"
+                      className="hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1 -my-1 rounded-full"
                     >
                       <FiMoreHorizontal size={16} />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className={`z-[10000] ${
+                    className={`z-[1000000] ${
                       activePopover === null ? "w-32" : "w-80"
                     } p-2`}
                   >
@@ -175,7 +175,7 @@ const AssistantCard: React.FC<{
                           onClick={isOwnedByUser ? handleEdit : undefined}
                           className={`w-full flex items-center text-left px-2 py-1 rounded ${
                             isOwnedByUser
-                              ? "hover:bg-neutral-100"
+                              ? "hover:bg-neutral-200 dark:hover:bg-neutral-700"
                               : "opacity-50 cursor-not-allowed"
                           }`}
                           disabled={!isOwnedByUser}
@@ -183,7 +183,7 @@ const AssistantCard: React.FC<{
                           <FiEdit size={12} className="inline mr-2" />
                           Edit
                         </button>
-                        {isPaidEnterpriseFeaturesEnabled && (
+                        {isPaidEnterpriseFeaturesEnabled && isOwnedByUser && (
                           <button
                             onClick={
                               isOwnedByUser
@@ -197,7 +197,7 @@ const AssistantCard: React.FC<{
                             }
                             className={`w-full text-left items-center px-2 py-1 rounded ${
                               isOwnedByUser
-                                ? "hover:bg-neutral-100"
+                                ? "hover:bg-neutral-200 dark:hover:bg-neutral-800"
                                 : "opacity-50 cursor-not-allowed"
                             }`}
                             disabled={!isOwnedByUser}
@@ -208,10 +208,10 @@ const AssistantCard: React.FC<{
                         )}
                         <button
                           onClick={isOwnedByUser ? handleDelete : undefined}
-                          className={`w-full text-left items-center px-2 py-1 rounded ${
+                          className={`w-full text-left  items-center  px-2 py-1 rounded ${
                             isOwnedByUser
-                              ? "hover:bg-neutral-100 text-red-600"
-                              : "opacity-50 cursor-not-allowed text-red-300"
+                              ? "hover:bg-neutral-200 dark:hover:bg-neutral- text-red-600 dark:text-red-400"
+                              : "opacity-50 cursor-not-allowed text-red-300 dark:text-red-500"
                           }`}
                           disabled={!isOwnedByUser}
                         >
@@ -251,13 +251,13 @@ const AssistantCard: React.FC<{
             )}
           </div>
 
-          <p className="text-black font-[350] mt-0 text-sm line-clamp-2 h-[2.7em]">
+          <p className="text-neutral-800 dark:text-neutral-200 font-[350] mt-0 text-sm line-clamp-2 h-[2.7em]">
             {persona.description || "\u00A0"}
           </p>
 
           <div className="flex flex-col ">
             <div className="my-1.5">
-              <p className="flex items-center text-black text-xs opacity-50">
+              <p className="flex items-center text-neutral-800 dark:text-neutral-200 text-xs opacity-50">
                 {persona.owner?.email || persona.builtin_persona ? (
                   <>
                     <span className="truncate">
@@ -302,7 +302,7 @@ const AssistantCard: React.FC<{
                       router.push(`/chat?assistantId=${persona.id}`);
                       closeModal();
                     }}
-                    className="hover:bg-neutral-100 hover:text-text px-2 py-1 gap-x-1 rounded border border-black flex items-center"
+                    className="hover:bg-neutral-100 dark:hover:bg-neutral-700 dark:bg-[#2E2E2D] hover:text-neutral-900 dark:hover:text-neutral-100 px-2 py-1 gap-x-1 rounded border border-neutral-400 dark:border-neutral-600 flex items-center"
                   >
                     <PencilIcon size={12} className="flex-none" />
                     <span className="text-xs">Start Chat</span>
@@ -324,15 +324,17 @@ const AssistantCard: React.FC<{
                         !pinned
                       );
                     }}
-                    className="hover:bg-neutral-100 px-2 group cursor-pointer py-1 gap-x-1 relative rounded border border-black flex items-center w-[65px]"
+                    className="hover:bg-neutral-100  dark:hover:bg-neutral-700 dark:bg-[#2E2E2D] px-2 group cursor-pointer py-1 gap-x-1 relative rounded border border-neutral-400 dark:border-neutral-600 flex items-center w-[65px]"
                   >
                     <PinnedIcon size={12} />
                     {!pinned ? (
-                      <p className="absolute w-full left-0 group-hover:text-black w-full text-center transform text-xs">
+                      <p className="absolute w-full left-0 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 w-full text-center transform text-xs">
                         Pin
                       </p>
                     ) : (
-                      <p className="text-xs group-hover:text-black">Unpin</p>
+                      <p className="text-xs group-hover:text-neutral-900 dark:group-hover:text-neutral-100">
+                        Unpin
+                      </p>
                     )}
                   </div>
                 </TooltipTrigger>
@@ -348,5 +350,4 @@ const AssistantCard: React.FC<{
     </div>
   );
 };
-
 export default AssistantCard;

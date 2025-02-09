@@ -138,7 +138,7 @@ const SignedUpUserTable = ({
           <SelectTrigger className="w-[260px] h-[34px] bg-neutral">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-neutral-50">
+          <SelectContent className="bg-background-50">
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="true">Active</SelectItem>
             <SelectItem value="false">Inactive</SelectItem>
@@ -152,13 +152,13 @@ const SignedUpUserTable = ({
                 : "All Roles"}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="bg-neutral-50">
+          <SelectContent className="bg-background-50">
             {Object.entries(USER_ROLE_LABELS)
               .filter(([role]) => role !== UserRole.EXT_PERM_USER)
               .map(([role, label]) => (
                 <div
                   key={role}
-                  className="flex items-center space-x-2 px-2 py-1.5 cursor-pointer hover:bg-gray-200"
+                  className="flex items-center space-x-2 px-2 py-1.5 cursor-pointer hover:bg-background-200"
                   onClick={() => toggleRole(role as UserRole)}
                 >
                   <input
@@ -176,7 +176,7 @@ const SignedUpUserTable = ({
         {selectedRoles.map((role) => (
           <button
             key={role}
-            className="border border-neutral-300 bg-neutral p-1 rounded text-sm hover:bg-neutral-200"
+            className="border border-background-300 bg-neutral p-1 rounded text-sm hover:bg-background-200"
             onClick={() => removeRole(role)}
             style={{ padding: "2px 8px" }}
           >

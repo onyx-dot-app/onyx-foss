@@ -83,7 +83,7 @@ export const SourceChip2 = ({
             className={`
             h-6
             px-2
-            bg-[#f1eee8]
+            bg-background-dark
             rounded-2xl
             justify-center
             items-center
@@ -95,13 +95,13 @@ export const SourceChip2 = ({
             <div className="w-[17px] h-4 p-[3px] flex-col justify-center items-center gap-2.5 inline-flex">
               <div className="h-2.5 relative">{icon}</div>
             </div>
-            <div className="text-[#4a4a4a] text-xs font-medium leading-normal">
+            <div className="text-text-800 text-xs font-medium leading-normal">
               {truncateTitle ? truncateString(title, 50) : title}
             </div>
             {onRemove && (
               <XIcon
                 size={12}
-                className="text-[#4a4a4a] ml-2 cursor-pointer"
+                className="text-text-800 ml-2 cursor-pointer"
                 onClick={(e: React.MouseEvent<SVGSVGElement>) => {
                   e.stopPropagation();
                   onRemove();
@@ -143,7 +143,7 @@ export const SourceChip = ({
         flex
         items-center
         px-1
-        bg-gray-background
+        bg-background-background
         text-xs
         text-text-darker
         border
@@ -432,7 +432,7 @@ export function ChatInputBar({
               ref={suggestionsRef}
               className="text-sm absolute w-[calc(100%-2rem)] top-0 transform -translate-y-full"
             >
-              <div className="rounded-lg py-1 sm-1.5 bg-background border border-border shadow-lg px-1.5 mt-2 z-10">
+              <div className="rounded-lg py-1 sm-1.5 bg-input-background border border-border dark:border-none shadow-lg px-1.5 mt-2 z-10">
                 {assistantTagOptions.map((currentAssistant, index) => (
                   <button
                     key={index}
@@ -476,7 +476,7 @@ export function ChatInputBar({
               ref={suggestionsRef}
               className="text-sm absolute inset-x-0 top-0 w-full transform -translate-y-full"
             >
-              <div className="rounded-lg py-1.5 bg-background border border-border shadow-lg mx-2 px-1.5 mt-2 rounded z-10">
+              <div className="rounded-lg py-1.5 bg-input-background dark:border-none border border-border shadow-lg mx-2 px-1.5 mt-2 rounded z-10">
                 {filteredPrompts.map(
                   (currentPrompt: InputPrompt, index: number) => (
                     <button
@@ -523,8 +523,11 @@ export function ChatInputBar({
               flex-col
               border
               shadow
-              border-[#DCDAD4]/60
+              bg-input-background
+              border-input-border
+              dark:border-none
               rounded-lg
+              overflow-hidden
               text-text-chatbar
               [&:has(textarea:focus)]::ring-1
               [&:has(textarea:focus)]::ring-black
@@ -578,8 +581,11 @@ export function ChatInputBar({
                 resize-none
                 rounded-lg
                 border-0
-                bg-background
-                placeholder:text-text-muted
+                bg-input-background
+                font-normal
+                text-base
+                leading-6
+                placeholder:text-input-text
                 ${
                   textAreaRef.current &&
                   textAreaRef.current.scrollHeight > MAX_INPUT_HEIGHT
@@ -590,10 +596,10 @@ export function ChatInputBar({
                 break-word
                 overscroll-contain
                 outline-none
-                placeholder-subtle
                 resize-none
                 px-5
                 py-4
+                dark:text-[#D4D4D4]
               `}
               autoFocus
               style={{ scrollbarWidth: "thin" }}
@@ -627,7 +633,7 @@ export function ChatInputBar({
               filterManager.selectedDocumentSets.length > 0 ||
               filterManager.selectedTags.length > 0 ||
               filterManager.selectedSources.length > 0) && (
-              <div className="flex bg-background gap-x-.5 px-2">
+              <div className="flex bg-input-background gap-x-.5 px-2">
                 <div className="flex gap-x-1 px-2 overflow-visible overflow-x-scroll items-end miniscroll">
                   {filterManager.selectedTags &&
                     filterManager.selectedTags.map((tag, index) => (
@@ -750,7 +756,7 @@ export function ChatInputBar({
               </div>
             )}
 
-            <div className="flex pr-4 pb-2 justify-between items-center w-full ">
+            <div className="flex pr-4 pb-2 justify-between bg-input-background items-center w-full ">
               <div className="space-x-1 flex  px-4 ">
                 <ChatInputOption
                   flexPriority="stiff"
@@ -813,8 +819,8 @@ export function ChatInputBar({
                     chatState == "toolBuilding" ||
                     chatState == "loading"
                       ? chatState != "streaming"
-                        ? "bg-background-400"
-                        : "bg-background-800"
+                        ? "bg-neutral-900 dark:bg-neutral-400 "
+                        : "bg-neutral-500 dark:bg-neutral-50"
                       : ""
                   } h-[22px] w-[22px] rounded-full`}
                   onClick={() => {
@@ -840,15 +846,15 @@ export function ChatInputBar({
                   chatState == "loading" ? (
                     <StopGeneratingIcon
                       size={8}
-                      className="text-emphasis m-auto text-white flex-none"
+                      className="text-neutral-50 dark:text-neutral-900 m-auto text-white flex-none"
                     />
                   ) : (
                     <SendIcon
                       size={22}
-                      className={`text-emphasis text-white p-1 my-auto rounded-full ${
+                      className={`text-neutral-50 dark:text-neutral-900 p-1 my-auto rounded-full ${
                         chatState == "input" && message
-                          ? "bg-submit-background"
-                          : "bg-disabled-submit-background"
+                          ? "bg-neutral-900 dark:bg-neutral-50"
+                          : "bg-neutral-500 dark:bg-neutral-400"
                       }`}
                     />
                   )}

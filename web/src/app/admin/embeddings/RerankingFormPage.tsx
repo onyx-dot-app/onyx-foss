@@ -177,8 +177,8 @@ const RerankingDetailsForm = forwardRef<
                         key={`${card.rerank_provider_type}-${card.modelName}`}
                         className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
                           isSelected
-                            ? "border-blue-500 bg-blue-50 shadow-md"
-                            : "border-gray-200 hover:border-blue-300 hover:shadow-sm"
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900 dark:border-blue-700 shadow-md"
+                            : "border-background-200 hover:border-blue-300 hover:shadow-sm dark:border-neutral-700 dark:hover:border-blue-300"
                         }`}
                         onClick={() => {
                           if (
@@ -240,10 +240,10 @@ const RerankingDetailsForm = forwardRef<
                             </a>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-text-600 mb-2">
                           {card.description}
                         </p>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-text-500">
                           {card.cloud ? "Cloud-based" : "Self-hosted"}
                         </div>
                       </div>

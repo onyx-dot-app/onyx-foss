@@ -1,4 +1,3 @@
-"use client";
 import { PersonasTable } from "./PersonaTable";
 import Text from "@/components/ui/text";
 import Title from "@/components/ui/title";

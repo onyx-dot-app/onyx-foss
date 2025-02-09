@@ -147,13 +147,13 @@ export function PersonaMessagesChart({
     );
   } else if (selectedPersonaId === undefined) {
     content = (
-      <div className="h-80 text-gray-500 flex flex-col">
+      <div className="h-80 text-text-500 flex flex-col">
         <p className="m-auto">Select an assistant to view analytics</p>
       </div>
     );
   } else if (!personaMessagesData?.length) {
     content = (
-      <div className="h-80 text-gray-500 flex flex-col">
+      <div className="h-80 text-text-500 flex flex-col">
         <p className="m-auto">
           No data found for selected assistant in the specified time range
         </p>

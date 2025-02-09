@@ -30,7 +30,7 @@ export const LogoComponent = memo(function LogoComponent({
       onClick={isAdmin ? () => router.push("/chat") : () => {}}
       className={`max-w-[200px]
         ${!show && "mobile:hidden"}
-       flex items-center gap-x-1`}
+       flex text-text-900 items-center gap-x-1`}
     >
       {enterpriseSettings && enterpriseSettings.application_name ? (
         <>

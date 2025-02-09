@@ -317,7 +317,7 @@ const SubQuestionDisplay: React.FC<{
       <div
         className={`absolute left-[5px] ${
           isFirst ? "top-[15px]" : "top-0"
-        } bottom-0 w-[2px] bg-neutral-200
+        } bottom-0 w-[2px] bg-background-200
 
         ${isLast && !toggled ? "h-4" : "h-full"}`}
       />
@@ -331,7 +331,7 @@ const SubQuestionDisplay: React.FC<{
         </div>
         <div className="ml-8 w-full">
           <div
-            className="flex -mx-2 rounded-md px-2 hover:bg-[#F5F3ED] items-start py-1.5 my-.5 cursor-pointer"
+            className="flex -mx-2 rounded-md px-2 hover:bg-background-100 dark:hover:bg-neutral-800 items-start py-1.5 my-.5 cursor-pointer"
             onClick={() => setToggled(!toggled)}
           >
             <div className="text-black text-base font-medium leading-normal flex-grow pr-2">
@@ -359,7 +359,7 @@ const SubQuestionDisplay: React.FC<{
                 >
                   <div className="pl-0 pb-2">
                     <div className="mb-4 flex flex-col gap-2">
-                      <div className="text-[#4a4a4a] text-xs font-medium leading-normal">
+                      <div className="text-text-800 text-xs font-medium leading-normal">
                         Searching
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -376,7 +376,7 @@ const SubQuestionDisplay: React.FC<{
 
                     {(subQuestion?.is_complete || memoizedDocs?.length > 0) && (
                       <div className="mb-4 flex flex-col gap-2">
-                        <div className="text-[#4a4a4a] text-xs font-medium leading-normal">
+                        <div className="text-text-800 text-xs font-medium leading-normal">
                           Reading
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -413,7 +413,7 @@ const SubQuestionDisplay: React.FC<{
                       subQuestion?.answer?.length > 0) && (
                       <div className="flex flex-col gap-2">
                         <div
-                          className="text-[#4a4a4a] cursor-pointer items-center text-xs flex gap-x-1 font-medium leading-normal"
+                          className="text-text-800 cursor-pointer items-center text-xs flex gap-x-1 font-medium leading-normal"
                           onClick={() => setAnalysisToggled(!analysisToggled)}
                         >
                           Analyzing
@@ -447,7 +447,7 @@ const SubQuestionDisplay: React.FC<{
               >
                 <div className="pl-0">
                   <div className="flex flex-col gap-2">
-                    <div className="leading-none text-[#4a4a4a] text-xs font-medium">
+                    <div className="leading-none text-text-800 text-xs font-medium">
                       {temporaryDisplay?.tinyQuestion}
                     </div>
                   </div>

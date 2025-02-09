@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { getDisplayNameForModel, LlmOverride } from "@/lib/hooks";
 import { LLMProviderDescriptor } from "@/app/admin/configuration/llm/interfaces";
@@ -15,6 +15,16 @@ import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { useChatContext } from "@/components/context/ChatContext";
 import { InputPromptsSection } from "./InputPromptsSection";
 import { LLMSelector } from "@/components/llm/LLMSelector";
+import { ModeToggle } from "./ThemeToggle";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export function UserSettingsModal({
   setPopup,
@@ -39,6 +49,8 @@ export function UserSettingsModal({
   } = useUser();
   const containerRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useTheme();
+  const [selectedTheme, setSelectedTheme] = useState(theme);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -155,16 +167,21 @@ export function UserSettingsModal({
       : user?.preferences?.auto_scroll;
 
   return (
-    <Modal onOutsideClick={onClose} width="rounded-lg w-full bg-white max-w-xl">
-      <>
-        <div className="flex mb-4">
-          <h2 className="text-2xl text-emphasis font-bold flex my-auto">
-            User settings
-          </h2>
+    <Modal onOutsideClick={onClose} width="rounded-lg w-full max-w-xl">
+      <div className="p-2">
+        <div>
+          <h2 className="text-2xl font-bold">User settings</h2>
         </div>
 
-        <div className="flex flex-col gap-y-2">
-          <div className="flex items-center gap-x-2">
+        <div className="space-y-6 py-4">
+          {/* Auto-scroll Section */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-base font-medium">Auto-scroll</h4>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Automatically scroll to new content
+              </p>
+            </div>
             <Switch
               size="sm"
               checked={checked}
@@ -172,9 +189,16 @@ export function UserSettingsModal({
                 updateUserAutoScroll(checked);
               }}
             />
-            <Label className="text-sm">Enable auto-scroll</Label>
           </div>
-          <div className="flex items-center gap-x-2">
+
+          {/* Prompt Shortcuts Section */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-base font-medium">Prompt Shortcuts</h4>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Enable keyboard shortcuts for prompts
+              </p>
+            </div>
             <Switch
               size="sm"
               checked={user?.preferences?.shortcut_enabled}
@@ -182,9 +206,16 @@ export function UserSettingsModal({
                 updateUserShortcuts(checked);
               }}
             />
-            <Label className="text-sm">Enable Prompt Shortcuts</Label>
           </div>
-          <div className="flex items-center gap-x-2">
+
+          {/* Temperature Override Section */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-base font-medium">Temperature Override</h4>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Override default temperature settings
+              </p>
+            </div>
             <Switch
               size="sm"
               checked={user?.preferences?.temperature_override_enabled}
@@ -192,53 +223,69 @@ export function UserSettingsModal({
                 updateUserTemperatureOverrideEnabled(checked);
               }}
             />
-            <Label className="text-sm">Enable Temperature Override</Label>
           </div>
-        </div>
 
-        <Separator />
+          <Separator className="my-4" />
 
-        <h3 className="text-lg text-emphasis font-bold mb-2 ">Default Model</h3>
-        <div
-          className="w-full max-h-96 overflow-y-auto flex text-sm flex-col border rounded-md"
-          ref={containerRef}
-        >
-          <div
-            ref={messageRef}
-            className="sticky top-0 bg-background-100 p-2 text-xs text-emphasis font-medium"
-            style={{ display: "none" }}
-          >
-            Scroll to see all options
+          {/* Theme Section */}
+          <div className="space-y-3">
+            <h4 className="text-base font-medium">Theme</h4>
+            <Select
+              value={selectedTheme}
+              onValueChange={(value) => {
+                setSelectedTheme(value);
+                setTheme(value);
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4" />
+                  <SelectValue placeholder="Select theme" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <LLMSelector
-            userSettings
-            llmProviders={llmProviders}
-            currentLlm={
-              defaultModelDestructured
-                ? structureValue(
-                    defaultModelDestructured.provider,
-                    "",
-                    defaultModelDestructured.modelName
-                  )
-                : null
-            }
-            requiresImageGeneration={false}
-            onSelect={(selected) => {
-              if (selected === null) {
-                handleChangedefaultModel(null);
-              } else {
-                const { modelName, provider, name } =
-                  destructureValue(selected);
-                if (modelName && name) {
-                  handleChangedefaultModel(
-                    structureValue(provider, "", modelName)
-                  );
-                }
+
+          <Separator className="my-4" />
+
+          {/* Default Model Section */}
+          <div className="space-y-3">
+            <h4 className="text-base font-medium">Default Model</h4>
+            <LLMSelector
+              userSettings
+              llmProviders={llmProviders}
+              currentLlm={
+                defaultModel
+                  ? structureValue(
+                      destructureValue(defaultModel).provider,
+                      "",
+                      destructureValue(defaultModel).modelName
+                    )
+                  : null
               }
-            }}
-          />
+              requiresImageGeneration={false}
+              onSelect={(selected) => {
+                if (selected === null) {
+                  handleChangedefaultModel(null);
+                } else {
+                  const { modelName, provider, name } =
+                    destructureValue(selected);
+                  if (modelName && name) {
+                    handleChangedefaultModel(
+                      structureValue(provider, "", modelName)
+                    );
+                  }
+                }
+              }}
+            />
+          </div>
         </div>
-      </>
+      </div>
     </Modal>
   );
 }

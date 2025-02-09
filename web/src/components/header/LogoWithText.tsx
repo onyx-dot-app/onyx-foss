@@ -73,7 +73,7 @@ export default function LogoWithText({
         <div
           className={`${
             showArrow ? "desktop:hidden" : "invisible"
-          } break-words inline-block w-fit text-text-700 text-xl`}
+          } break-words inline-block w-fit text-text-700 dark:text-neutral-300 text-xl`}
         >
           <LogoComponent
             enterpriseSettings={enterpriseSettings!}

@@ -10,6 +10,7 @@ import { ChatBanner } from "@/app/chat/ChatBanner";
 import LogoWithText from "../header/LogoWithText";
 import { NewChatIcon } from "../icons/icons";
 import { SettingsContext } from "../settings/SettingsProvider";
+import { ModeToggle } from "@/app/chat/modal/ThemeToggle";
 
 export default function FunctionalHeader({
   page,
@@ -139,7 +140,7 @@ export default function FunctionalHeader({
             {setSharingModalVisible && !hideUserDropdown && (
               <div
                 onClick={() => setSharingModalVisible(true)}
-                className="mobile:hidden mr-2 my-auto rounded-full p-1 cursor-pointer hover:bg-hover-light"
+                className="mobile:hidden mr-2 my-auto rounded-full p-1 cursor-pointer hover:bg-accent-background"
               >
                 <FiShare2 size="18" />
               </div>

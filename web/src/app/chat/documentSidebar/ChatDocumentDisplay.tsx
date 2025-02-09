@@ -50,7 +50,7 @@ export function DocumentMetadataBlock({
                 />
               ))}
             {metadataEntries.length > MAX_METADATA_ITEMS && (
-              <span className="ml-1 text-xs text-gray-500">...</span>
+              <span className="ml-1 text-xs text-text-500">...</span>
             )}
           </div>
         </>
@@ -82,8 +82,10 @@ export function ChatDocumentDisplay({
   return (
     <div className="desktop:max-w-[400px] opacity-100 w-full">
       <div
-        className={`flex relative flex-col px-3 py-2.5 gap-0.5 rounded-xl my-1 ${
-          isSelected ? "bg-[#ebe7de]" : "bg- hover:bg-[#ebe7de]/80"
+        className={`flex relative  flex-col px-3 py-2.5 gap-0.5  rounded-xl my-1 ${
+          isSelected
+            ? "bg-accent-background-hovered"
+            : " hover:bg-accent-background"
         }`}
       >
         <button
@@ -96,7 +98,7 @@ export function ChatDocumentDisplay({
             ) : (
               <SourceIcon sourceType={document.source_type} iconSize={18} />
             )}
-            <div className="line-clamp-1 text-text-900 text-sm font-semibold">
+            <div className="line-clamp-1 text-neutral-900 dark:text-neutral-300 text-sm font-semibold">
               {(document.semantic_identifier || document.document_id).length >
               (modal ? 30 : 40)
                 ? `${(document.semantic_identifier || document.document_id)
@@ -109,7 +111,7 @@ export function ChatDocumentDisplay({
             <DocumentMetadataBlock modal={modal} document={document} />
           )}
           <div
-            className={`line-clamp-3 text-sm font-normal leading-snug text-gray-600 ${
+            className={`line-clamp-3 text-sm font-normal leading-snug text-neutral-900 dark:text-neutral-300 ${
               hasMetadata ? "mt-2" : ""
             }`}
           >

@@ -56,7 +56,7 @@ function NewApiKeyModal({
           <div className="flex mt-2">
             <b className="my-auto break-all">{apiKey}</b>
             <div
-              className="ml-2 my-auto p-2 hover:bg-hover rounded cursor-pointer"
+              className="ml-2 my-auto p-2 hover:bg-accent-background-hovered rounded cursor-pointer"
               onClick={() => {
                 setCopyClicked(true);
                 navigator.clipboard.writeText(apiKey);
@@ -179,7 +179,7 @@ function Main() {
                   flex 
                   mb-1 
                   w-fit 
-                  hover:bg-hover cursor-pointer
+                  hover:bg-accent-background-hovered cursor-pointer
                   p-2 
                   rounded-lg
                   border-border
@@ -203,7 +203,7 @@ function Main() {
                   flex 
                   mb-1 
                   w-fit 
-                  hover:bg-hover cursor-pointer
+                  hover:bg-accent-background-hovered cursor-pointer
                   p-2 
                   rounded-lg
                   border-border

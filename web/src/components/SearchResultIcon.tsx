@@ -54,7 +54,7 @@ export function SearchResultIcon({ url }: { url: string }) {
   }
 
   return (
-    <div className="rounded-full w-[18px] h-[18px] overflow-hidden bg-gray-200">
+    <div className="rounded-full w-[18px] h-[18px] overflow-hidden bg-background-200">
       <img
         height={18}
         width={18}

@@ -44,7 +44,11 @@ export function DocumentSetSelectable({
               ${disabled ? "bg-background" : ""}
               flex 
               cursor-pointer 
-              ${isSelected ? "bg-hover" : "bg-background hover:bg-hover-light"}
+              ${
+                isSelected
+                  ? "bg-accent-background-hovered"
+                  : "bg-background hover:bg-accent-background"
+              }
             `}
             onClick={disabled ? undefined : onSelect}
           >

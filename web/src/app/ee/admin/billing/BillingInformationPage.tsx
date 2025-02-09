@@ -81,11 +81,11 @@ export default function BillingInformationPage() {
 
   return (
     <div className="space-y-8">
-      <div className="bg-gray-50 rounded-lg p-8 border border-gray-200">
+      <div className="bg-background-50 rounded-lg p-8 border border-background-200">
         {popup}
 
-        <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
-          {/* <CreditCard className="mr-4 text-gray-600" size={24} /> */}
+        <h2 className="text-2xl font-bold mb-6 text-text-800 flex items-center">
+          {/* <CreditCard className="mr-4 text-text-600" size={24} /> */}
           Subscription Details
         </h2>
 
@@ -93,12 +93,12 @@ export default function BillingInformationPage() {
           <div className="bg-white p-5 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-lg font-medium text-gray-700">Seats</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-lg font-medium text-text-700">Seats</p>
+                <p className="text-sm text-text-500">
                   Number of licensed users
                 </p>
               </div>
-              <p className="text-xl font-semibold text-gray-900">
+              <p className="text-xl font-semibold text-text-900">
                 {billingInformation.seats}
               </p>
             </div>
@@ -107,14 +107,14 @@ export default function BillingInformationPage() {
           <div className="bg-white p-5 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-lg font-medium text-gray-700">
+                <p className="text-lg font-medium text-text-700">
                   Subscription Status
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-text-500">
                   Current state of your subscription
                 </p>
               </div>
-              <p className="text-xl font-semibold text-gray-900">
+              <p className="text-xl font-semibold text-text-900">
                 {statusToDisplay(billingInformation.subscription_status)}
               </p>
             </div>
@@ -123,14 +123,14 @@ export default function BillingInformationPage() {
           <div className="bg-white p-5 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-lg font-medium text-gray-700">
+                <p className="text-lg font-medium text-text-700">
                   Billing Start
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-text-500">
                   Start date of current billing cycle
                 </p>
               </div>
-              <p className="text-xl font-semibold text-gray-900">
+              <p className="text-xl font-semibold text-text-900">
                 {new Date(
                   billingInformation.billing_start
                 ).toLocaleDateString()}
@@ -141,12 +141,12 @@ export default function BillingInformationPage() {
           <div className="bg-white p-5 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-lg font-medium text-gray-700">Billing End</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-lg font-medium text-text-700">Billing End</p>
+                <p className="text-sm text-text-500">
                   End date of current billing cycle
                 </p>
               </div>
-              <p className="text-xl font-semibold text-gray-900">
+              <p className="text-xl font-semibold text-text-900">
                 {new Date(billingInformation.billing_end).toLocaleDateString()}
               </p>
             </div>
@@ -165,21 +165,21 @@ export default function BillingInformationPage() {
 
         {billingInformation.subscription_status === "trialing" ? (
           <div className="bg-white p-5 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md mt-8">
-            <p className="text-lg font-medium text-gray-700">
+            <p className="text-lg font-medium text-text-700">
               No cap on users during trial
             </p>
           </div>
         ) : (
           <div className="flex items-center space-x-4 mt-8">
             <div className="flex items-center space-x-4">
-              <p className="text-lg font-medium text-gray-700">
+              <p className="text-lg font-medium text-text-700">
                 Current Seats:
               </p>
-              <p className="text-xl font-semibold text-gray-900">
+              <p className="text-xl font-semibold text-text-900">
                 {billingInformation.seats}
               </p>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-text-500">
               Seats automatically update based on adding, removing, or inviting
               users.
             </p>
@@ -190,18 +190,18 @@ export default function BillingInformationPage() {
       <div className="bg-white p-5 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <p className="text-lg font-medium text-gray-700">
+            <p className="text-lg font-medium text-text-700">
               Manage Subscription
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-text-500">
               View your plan, update payment, or change subscription
             </p>
           </div>
-          <SettingsIcon className="text-gray-600" size={20} />
+          <SettingsIcon className="text-text-600" size={20} />
         </div>
         <button
           onClick={handleManageSubscription}
-          className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 font-medium shadow-sm text-sm flex items-center justify-center"
+          className="bg-background-600 text-white px-4 py-2 rounded-md hover:bg-background-700 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-text-500 focus:ring-opacity-50 font-medium shadow-sm text-sm flex items-center justify-center"
         >
           <ArrowFatUp className="mr-2" size={16} />
           Manage Subscription

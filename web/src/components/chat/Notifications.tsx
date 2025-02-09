@@ -133,7 +133,7 @@ export const Notifications = ({
     <div className="w-full">
       <button
         onClick={navigateToDropdown}
-        className="absolute right-2 text-background-600 hover:text-background-900 transition-colors duration-150 ease-in-out rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="absolute right-2 text-text-600 hover:text-text-900 transition-colors duration-150 ease-in-out rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label="Back"
       >
         <XIcon className="w-5 h-5" />
@@ -154,7 +154,7 @@ export const Notifications = ({
               return (
                 <div
                   key={notification.id}
-                  className="w-72 px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition duration-150 ease-in-out"
+                  className="w-72 px-4 py-3 border-b last:border-b-0 hover:bg-background-50 transition duration-150 ease-in-out"
                 >
                   <div className="flex items-start">
                     {persona && (
@@ -163,18 +163,18 @@ export const Notifications = ({
                       </div>
                     )}
                     <div className="flex-grow">
-                      <p className="font-semibold text-sm text-gray-800">
+                      <p className="font-semibold text-sm text-text-800">
                         New Assistant Shared: {persona?.name}
                       </p>
                       {persona?.description && (
-                        <p className="text-xs text-gray-600 mt-1">
+                        <p className="text-xs text-text-600 mt-1">
                           {persona.description}
                         </p>
                       )}
                       {persona && (
                         <div className="mt-2">
                           {persona.tools.length > 0 && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-text-500">
                               Tools:{" "}
                               {persona.tools
                                 .map((tool) => tool.name)
@@ -182,7 +182,7 @@ export const Notifications = ({
                             </p>
                           )}
                           {persona.document_sets.length > 0 && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-text-500">
                               Document Sets:{" "}
                               {persona.document_sets
                                 .map((set) => set.name)
@@ -190,7 +190,7 @@ export const Notifications = ({
                             </p>
                           )}
                           {persona.llm_model_version_override && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-text-500">
                               Model: {persona.llm_model_version_override}
                             </p>
                           )}
@@ -209,7 +209,7 @@ export const Notifications = ({
                     </button>
                     <button
                       onClick={() => dismissNotification(notification.id)}
-                      className="px-3 py-1 text-sm font-medium text-gray-600 hover:text-gray-800 transition duration-150 ease-in-out"
+                      className="px-3 py-1 text-sm font-medium text-text-600 hover:text-text-800 transition duration-150 ease-in-out"
                     >
                       Dismiss
                     </button>
@@ -223,7 +223,7 @@ export const Notifications = ({
           </div>
         )
       ) : (
-        <div className="px-4 py-3 text-center text-gray-600">
+        <div className="px-4 py-3 text-center text-text-600">
           No new notifications
         </div>
       )}

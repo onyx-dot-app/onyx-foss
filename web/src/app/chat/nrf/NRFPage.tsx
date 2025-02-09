@@ -225,7 +225,7 @@ export default function NRFPage({
           onClick={toggleSettings}
           className="bg-white bg-opacity-70 rounded-full p-2.5 cursor-pointer hover:bg-opacity-80 transition-colors duration-200"
         >
-          <Menu size={12} className="text-neutral-900" />
+          <Menu size={12} className="text-text-900" />
         </button>
       </div>
 
@@ -238,7 +238,7 @@ export default function NRFPage({
             <div className="pointer-events-auto absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-[90%] lg:max-w-3xl">
               <h1
                 className={`pl-2 text-xl text-left w-full mb-4 ${
-                  theme === "light" ? "text-neutral-800" : "text-white"
+                  theme === "light" ? "text-text-800" : "text-white"
                 }`}
               >
                 {isNight
@@ -364,7 +364,7 @@ export default function NRFPage({
                 Welcome to Onyx
               </h2>
               <Button
-                className="bg-accent w-full hover:bg-accent-hover text-white"
+                className="bg-agent w-full hover:bg-accent-hover text-white"
                 onClick={() => {
                   if (window.top) {
                     window.top.location.href = "/auth/login";

@@ -23,8 +23,8 @@ export const AssistantBadgeSelector = ({
       className={`
         select-none ${
           selected
-            ? "bg-neutral-900 text-white"
-            : "bg-transparent text-neutral-900"
+            ? "bg-background-900 text-white"
+            : "bg-transparent text-text-900"
         } w-12 h-5 text-center px-1 py-0.5 rounded-lg cursor-pointer text-[12px] font-normal leading-[10px] border border-black justify-center items-center gap-1 inline-flex`}
       onClick={toggleFilter}
     >
@@ -118,7 +118,7 @@ export function AssistantModal({
   return (
     <Dialog open={true} onOpenChange={(open) => !open && hideModal()}>
       <DialogContent
-        className="p-0 overflow-hidden max-h-[80vh] max-w-none w-[95%] bg-background rounded-sm shadow-2xl transform transition-all duration-300 ease-in-out relative w-11/12 max-w-4xl pt-10 pb-10  px-10  overflow-hidden flex flex-col   max-w-4xl"
+        className="p-0  max-h-[80vh] max-w-none w-[95%] bg-background rounded-sm shadow-2xl transform transition-all duration-300 ease-in-out relative w-11/12 max-w-4xl pt-10 pb-10  px-10  overflow-hidden flex flex-col   max-w-4xl"
         style={{
           position: "fixed",
           top: "10vh",
@@ -127,15 +127,15 @@ export function AssistantModal({
           margin: 0,
         }}
       >
-        <div className="flex overflow-hidden flex-col h-full">
+        <div className="flex den flex-col h-full">
           <div className="flex flex-col sticky top-0 z-10">
             <div className="flex px-2 justify-between items-center gap-x-2 mb-0">
               <div className="h-12 w-full rounded-lg flex-col justify-center items-start gap-2.5 inline-flex">
-                <div className="h-12 rounded-md w-full shadow-[0px_0px_2px_0px_rgba(0,0,0,0.25)] border border-[#dcdad4] flex items-center px-3">
+                <div className="h-12 rounded-md w-full shadow-[0px_0px_2px_0px_rgba(0,0,0,0.25)] border border-background-300 flex items-center px-3">
                   {!isSearchFocused && (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-gray-400"
+                      className="h-5 w-5 text-text-400"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -160,15 +160,15 @@ export function AssistantModal({
               </div>
               <button
                 onClick={() => router.push("/assistants/new")}
-                className="h-10 cursor-pointer px-6 py-3 bg-black rounded-md border border-black justify-center items-center gap-2.5 inline-flex"
+                className="h-10 cursor-pointer px-6 py-3 bg-background-800 hover:bg-black rounded-md border border-black justify-center items-center gap-2.5 inline-flex"
               >
-                <div className="text-[#fffcf4] text-lg font-normal leading-normal">
+                <div className="text-text-50 text-lg font-normal leading-normal">
                   Create
                 </div>
               </button>
             </div>
             <div className="px-2 flex py-4 items-center gap-x-2 flex-wrap">
-              <FilterIcon size={16} />
+              <FilterIcon className="text-text-800" size={16} />
               <AssistantBadgeSelector
                 text="Pinned"
                 selected={assistantFilters[AssistantFilter.Pinned]}
@@ -197,11 +197,11 @@ export function AssistantModal({
                 }
               />
             </div>
-            <div className="w-full border-t border-neutral-200" />
+            <div className="w-full border-t border-background-200" />
           </div>
 
           <div className="flex-grow overflow-y-auto">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2 px-4 py-2">
+            <h2 className="text-2xl font-semibold text-text-800 mb-2 px-4 py-2">
               Featured Assistants
             </h2>
 
@@ -219,7 +219,7 @@ export function AssistantModal({
                   </div>
                 ))
               ) : (
-                <div className="col-span-2 text-center text-gray-500">
+                <div className="col-span-2 text-center text-text-500">
                   No featured assistants match filters
                 </div>
               )}
@@ -227,7 +227,7 @@ export function AssistantModal({
 
             {allAssistants && allAssistants.length > 0 && (
               <>
-                <h2 className="text-2xl font-semibold text-gray-800 mt-4 mb-2 px-4 py-2">
+                <h2 className="text-2xl font-semibold text-text-800 mt-4 mb-2 px-4 py-2">
                   All Assistants
                 </h2>
 

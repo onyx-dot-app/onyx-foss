@@ -12,9 +12,9 @@ const DocumentsDisplay: React.FC<DocumentsDisplayProps> = ({ documents }) => {
   const toggleExpand = () => setIsExpanded(!isExpanded);
 
   return (
-    <div className="w-full border border-gray-200 rounded-lg overflow-hidden">
+    <div className="w-full border border-background-200 rounded-lg overflow-hidden">
       <div
-        className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer"
+        className="flex justify-between items-center p-4 bg-background-50 cursor-pointer"
         onClick={toggleExpand}
       >
         <h3 className="text-lg font-semibold">Sources</h3>
@@ -25,15 +25,15 @@ const DocumentsDisplay: React.FC<DocumentsDisplayProps> = ({ documents }) => {
           {documents.map((doc, index) => (
             <div
               key={index}
-              className="bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+              className="bg-white p-4 rounded-lg shadow-sm border border-background-100"
             >
               <div className="flex items-start space-x-3">
-                <FiFile className="text-gray-400 mt-1" />
+                <FiFile className="text-text-400 mt-1" />
                 <div>
                   <h4 className="font-medium text-sm mb-1 line-clamp-1">
                     {doc.semantic_identifier || "Unknown Source"}
                   </h4>
-                  <p className="text-xs text-gray-600 line-clamp-3">
+                  <p className="text-xs text-text-600 line-clamp-3">
                     {doc.blurb}
                   </p>
                 </div>

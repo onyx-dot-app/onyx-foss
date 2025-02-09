@@ -62,16 +62,16 @@ export function AgenticToggle({
               className={`
                 ${
                   proSearchEnabled
-                    ? "border-[#D9D9D0] group-hover:border-black"
-                    : "border-[#D9D9D0] group-hover:border-black"
+                    ? "border-background-200 group-hover:border-[#000] dark:group-hover:border-neutral-300"
+                    : "border-background-200 group-hover:border-[#000] dark:group-hover:border-neutral-300"
                 }
-                 relative inline-flex h-[16px] w-8 items-center rounded-full transition-colors focus:outline-none border animate transition-all duration-200 border-[#D9D9D0] group-hover:border-[1px]  `}
+                 relative inline-flex h-[16px] w-8 items-center rounded-full transition-colors focus:outline-none border animate transition-all duration-200 border-background-200 group-hover:border-[1px]  `}
             >
               <span
                 className={`${
                   proSearchEnabled
                     ? "bg-agent translate-x-4 scale-75"
-                    : "bg-[#64645E] group-hover:bg-text translate-x-0.5 scale-75"
+                    : "bg-background-600 group-hover:bg-background-950 translate-x-0.5 scale-75"
                 }  inline-block h-[12px] w-[12px]  group-hover:scale-90 transform rounded-full transition-transform duration-200 ease-in-out`}
               />
             </div>
@@ -86,19 +86,19 @@ export function AgenticToggle({
         </TooltipTrigger>
         <TooltipContent
           side="top"
-          className="w-72 p-4 bg-white rounded-lg shadow-lg border border-gray-200"
+          className="w-72 p-4 bg-white rounded-lg shadow-lg border border-background-200 dark:border-neutral-900"
         >
           <div className="flex items-center space-x-2 mb-3">
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-text-900">
               Agent Search (BETA)
             </h3>
           </div>
-          <p className="text-xs text-gray-600 mb-2">
+          <p className="text-xs text-text-600 mb-2">
             Use AI agents to break down questions and run deep iterative
             research through promising pathways. Gives more thorough and
             accurate responses but takes slightly longer.
           </p>
-          <ul className="text-xs text-gray-600 list-disc list-inside">
+          <ul className="text-xs text-text-600 list-disc list-inside">
             <li>Improved accuracy of search results</li>
             <li>Less hallucinations</li>
             <li>More comprehensive answers</li>

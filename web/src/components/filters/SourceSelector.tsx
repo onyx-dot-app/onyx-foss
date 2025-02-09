@@ -106,7 +106,7 @@ export function SourceSelector({
         showDocSidebar ? "4xl:block" : "!block"
       } duration-1000 flex ease-out transition-all transform origin-top-right`}
     >
-      <button onClick={() => toggleFilters()} className="flex text-emphasis">
+      <button onClick={() => toggleFilters()} className="flex text-text-darker">
         <h2 className="font-bold my-auto">Filters</h2>
         <FiFilter className="my-auto ml-2" size="16" />
       </button>
@@ -124,7 +124,7 @@ export function SourceSelector({
                         e.stopPropagation();
                         setTimeRange(null);
                       }}
-                      className="text-sm text-gray-500 hover:text-gray-700"
+                      className="text-sm text-text-500 hover:text-text-700"
                     >
                       Clear
                     </button>
@@ -203,8 +203,8 @@ export function SourceSelector({
                         (selectedSources
                           .map((source) => source.internalName)
                           .includes(source.internalName)
-                          ? "bg-hover"
-                          : "hover:bg-hover-light")
+                          ? "bg-accent-background-hovered"
+                          : "hover:bg-accent-background")
                       }
                       onClick={() => handleSelect(source)}
                     >
@@ -235,8 +235,8 @@ export function SourceSelector({
                         "flex cursor-pointer w-full items-center " +
                         "py-1.5 rounded-lg px-2 " +
                         (selectedDocumentSets.includes(documentSet.name)
-                          ? "bg-hover"
-                          : "hover:bg-hover-light")
+                          ? "bg-accent-background-hovered"
+                          : "hover:bg-accent-background")
                       }
                       onClick={() => handleDocumentSetSelect(documentSet.name)}
                     >
@@ -280,7 +280,7 @@ export function SelectedBubble({
     <div
       className={
         "flex cursor-pointer items-center border border-border " +
-        "py-1 my-1.5 rounded-lg px-2 w-fit hover:bg-hover"
+        "py-1 my-1.5 rounded-lg px-2 w-fit hover:bg-accent-background-hovered"
       }
       onClick={onClick}
     >
@@ -506,7 +506,7 @@ export function HorizontalSourceSelector({
               cursor-pointer
               w-fit
               gap-x-1
-              hover:bg-hover
+              hover:bg-accent-background-hovered
               flex
               items-center
               bg-background-search-filter

@@ -437,7 +437,7 @@ export function CompactDocumentCard({
       onClick={() => {
         openDocument(document, updatePresentingDocument);
       }}
-      className="max-w-[250px]  gap-y-0 cursor-pointer pb-0 pt-0 mt-0 flex gap-y-0  flex-col  content-start items-start gap-0 "
+      className="max-w-[200px]  gap-y-0 cursor-pointer pb-0 pt-0 mt-0 flex gap-y-0  flex-col  content-start items-start gap-0 "
     >
       <div className="text-sm  !pb-0 !mb-0 font-semibold flex  items-center gap-x-1 text-text-900 pt-0 mt-0 truncate w-full">
         {icon}
@@ -446,14 +446,14 @@ export function CompactDocumentCard({
           "..."}
       </div>
       {document.blurb && (
-        <div className="text-xs mb-0 text-gray-600 line-clamp-2">
+        <div className="text-xs mb-0 text-neutral-600 dark:text-neutral-300 line-clamp-2">
           {document.blurb}
         </div>
       )}
       {document.updated_at && (
         <div className=" flex mt-0 pt-0 items-center justify-between w-full ">
           {!isNaN(new Date(document.updated_at).getTime()) && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-text-500">
               Updated {new Date(document.updated_at).toLocaleDateString()}
             </span>
           )}
@@ -478,15 +478,15 @@ export function CompactQuestionCard({
       <div className="text-sm !pb-0 !mb-0 font-semibold flex items-center gap-x-1 text-text-900 pt-0 mt-0 truncate w-full">
         Question
       </div>
-      <div className="text-xs mb-0 text-gray-600 line-clamp-2">
+      <div className="text-xs mb-0 text-text-600 line-clamp-2">
         {question.question}
       </div>
       <div className="flex mt-0 pt-0 items-center justify-between w-full">
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-text-500">
           {question.context_docs?.top_documents.length || 0} context docs
         </span>
         {question.sub_queries && (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-text-500">
             {question.sub_queries.length} subqueries
           </span>
         )}

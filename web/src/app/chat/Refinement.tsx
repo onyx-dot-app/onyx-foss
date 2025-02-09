@@ -256,7 +256,7 @@ export const NoNewAnswerMessage = () => {
 
   return (
     <div
-      className="text-gray-600 text-sm transition-opacity duration-2000 ease-out"
+      className="text-text-600 text-sm transition-opacity duration-2000 ease-out"
       style={{ opacity: opacity }}
     >
       No new answer found...
@@ -338,7 +338,7 @@ export function StatusRefinement({
                 onMouseLeave={() => setToolTipHovered(false)}
                 side="bottom"
                 align="start"
-                className="w-fit p-4 bg-white border-2 border-border shadow-lg rounded-md"
+                className="w-fit p-4 bg-[#fff] border-2 border-border dark:border-neutral-800 shadow-lg rounded-md"
               >
                 {/* If not done, show the "Refining" box + a chevron */}
 
@@ -353,8 +353,9 @@ export function StatusRefinement({
                       <div className="w-3 h-3">
                         <StatusIndicator status={ToggleState.Done} />
                       </div>
-                      <span className="text-sm font-medium">
+                      <span className="text-neutral-800 text-sm font-medium">
                         {StreamingPhaseText[phase]}
+                        LLL
                       </span>
                     </div>
                   ))}

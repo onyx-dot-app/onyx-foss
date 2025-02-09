@@ -65,7 +65,7 @@ export default function StarterMessagesList({
             onClick={() => {
               arrayHelpers.remove(index);
             }}
-            className={`text-gray-400 hover:text-red-500 ${
+            className={`text-text-400 hover:text-red-500 ${
               index === values.length - 1 && !starterMessage.message
                 ? "opacity-50 cursor-not-allowed"
                 : ""
@@ -105,7 +105,7 @@ export default function StarterMessagesList({
                       4 ||
                     isRefreshing ||
                     !autoStarterMessageEnabled
-                      ? "bg-neutral-800 text-neutral-300 cursor-not-allowed"
+                      ? "bg-background-800 text-text-300 cursor-not-allowed"
                       : ""
                   }
                 `}

@@ -1,3 +1,4 @@
+"use client";
 import {
   ArrayHelpers,
   ErrorMessage,
@@ -76,7 +77,11 @@ export function LabelWithTooltip({
 }
 
 export function SubLabel({ children }: { children: string | JSX.Element }) {
-  return <div className="text-sm text-text-dark/80 mb-2">{children}</div>;
+  return (
+    <div className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
+      {children}
+    </div>
+  );
 }
 
 export function ManualErrorMessage({ children }: { children: string }) {
@@ -254,21 +259,44 @@ export function TextFormField({
           id={name}
           className={`
             ${small && sizeClass.input}
-            border 
-            border-border 
-            rounded-md
+            flex
+            h-10
             w-full 
-            py-2 
+            rounded-md
+            border 
+            border-neutral-200
+            bg-white
             px-3 
+            py-2 
             mt-1
+            text-base
+
+            file:border-0
+            file:bg-transparent
+            file:text-sm
+            file:font-medium
+            file:text-neutral-950
+            placeholder:text-neutral-500
             placeholder:font-description 
             placeholder:${sizeClass.placeholder}
             caret-accent
-            placeholder:text-text-muted
+            focus-visible:outline-none
+            focus-visible:ring-1
+            focus-visible:ring-lighter-agent
+            focus-visible:ring-offset-1
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+            md:text-sm
+            dark:border-neutral-700
+            dark:bg-transparent
+            dark:ring-offset-neutral-950
+            dark:file:text-neutral-50
+            dark:placeholder:text-neutral-400
+
             ${heightString}
             ${sizeClass.input}
-            ${disabled ? " bg-background-strong" : " bg-white/80"}
-            ${isCode ? " font-mono" : ""}
+            ${disabled ? "bg-neutral-100 dark:bg-neutral-800" : ""}
+            ${isCode ? "font-mono" : ""}
             ${className}
           `}
           disabled={disabled}
@@ -386,24 +414,24 @@ export const MarkdownFormField = ({
   return (
     <div className="flex flex-col space-y-4 mb-4">
       <Label>{label}</Label>
-      <div className="border border-gray-300 rounded-md">
-        <div className="flex items-center justify-between px-4 py-2 bg-gray-100 rounded-t-md">
+      <div className="border border-background-300 rounded-md">
+        <div className="flex items-center justify-between px-4 py-2 bg-background-100 rounded-t-md">
           <div className="flex items-center space-x-2">
-            <FaMarkdown className="text-gray-500" />
-            <span className="text-sm font-semibold text-gray-600">
+            <FaMarkdown className="text-text-500" />
+            <span className="text-sm font-semibold text-text-600">
               Markdown
             </span>
           </div>
           <button
             type="button"
             onClick={togglePreview}
-            className="text-sm font-semibold text-gray-600 hover:text-gray-800 focus:outline-none"
+            className="text-sm font-semibold text-text-600 hover:text-text-800 focus:outline-none"
           >
             {isPreviewOpen ? "Write" : "Preview"}
           </button>
         </div>
         {isPreviewOpen ? (
-          <div className="p-4 border-t border-gray-300">
+          <div className="p-4 border-t border-background-300">
             <ReactMarkdown className="prose" remarkPlugins={[remarkGfm]}>
               {field.value}
             </ReactMarkdown>
@@ -414,7 +442,7 @@ export const MarkdownFormField = ({
               {...field}
               rows={2}
               placeholder={placeholder}
-              className={`w-full p-2 border border-border rounded-md border-gray-300`}
+              className={`w-full p-2 border border-border rounded-md border-background-300`}
             />
           </div>
         )}
@@ -505,6 +533,7 @@ export const BooleanFormField = ({
               }`}</Label>
               {tooltip && <ToolTipDetails>{tooltip}</ToolTipDetails>}
             </div>
+
             {subtext && <SubLabel>{subtext}</SubLabel>}
           </div>
         )}
@@ -578,7 +607,7 @@ export function TextArrayField<T extends Yup.AnyObject>({
                     <div className="my-auto">
                       {index >= minFields ? (
                         <FiX
-                          className="my-auto w-10 h-10 cursor-pointer hover:bg-hover rounded p-2"
+                          className="my-auto w-10 h-10 cursor-pointer hover:bg-accent-background-hovered rounded p-2"
                           onClick={() => arrayHelpers.remove(index)}
                         />
                       ) : (

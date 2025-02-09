@@ -825,10 +825,7 @@ export function AssistantEditor({
                               </TooltipProvider>
                             </div>
                           </div>
-                          <p
-                            className="text-sm text-subtle"
-                            style={{ color: "rgb(113, 114, 121)" }}
-                          >
+                          <p className="text-sm text-neutral-700 dark:text-neutral-400">
                             Attach additional unique knowledge to this assistant
                           </p>
                         </div>
@@ -1217,7 +1214,7 @@ export function AssistantEditor({
                           setFieldValue("label_ids", newLabelIds);
                         }}
                         itemComponent={({ option }) => (
-                          <div className="flex items-center justify-between px-4 py-3 text-sm hover:bg-hover cursor-pointer border-b border-border last:border-b-0">
+                          <div className="flex items-center justify-between px-4 py-3 text-sm hover:bg-accent-background-hovered cursor-pointer border-b border-border last:border-b-0">
                             <div
                               className="flex-grow"
                               onClick={() => {
@@ -1356,7 +1353,7 @@ export function AssistantEditor({
                 </>
               )}
 
-              <div className="mt-12 gap-x-2 w-full  justify-end flex">
+              <div className="mt-12 gap-x-2 w-full justify-end flex">
                 <Button
                   type="submit"
                   disabled={isSubmitting || isRequestSuccessful}

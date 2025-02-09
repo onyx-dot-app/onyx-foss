@@ -24,6 +24,7 @@ import Script from "next/script";
 import { LogoType } from "@/components/logo/Logo";
 import { Hanken_Grotesk } from "next/font/google";
 import { WebVitals } from "./web-vitals";
+import { ThemeProvider } from "next-themes";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -74,7 +75,11 @@ export default async function RootLayout({
     combinedSettings?.settings.product_gating ?? GatingType.NONE;
 
   const getPageContent = async (content: React.ReactNode) => (
-    <html lang="en" className={`${inter.variable} ${hankenGrotesk.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${hankenGrotesk.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <meta
           name="viewport"
@@ -106,14 +111,18 @@ export default async function RootLayout({
           />
         )}
       </head>
+
       <body className={`relative ${inter.variable} font-hanken`}>
-        <div
-          className={`text-default min-h-screen bg-background ${
-            process.env.THEME_IS_DARK?.toLowerCase() === "true" ? "dark" : ""
-          }`}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <PHProvider>{content}</PHProvider>
-        </div>
+          <div className="text-text min-h-screen bg-background">
+            <PHProvider>{content}</PHProvider>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ import {
   OpenSourceIcon,
   AnthropicSVG,
   IconProps,
+  OpenAIISVG,
 } from "@/components/icons/icons";
 import { FaRobot } from "react-icons/fa";
 
@@ -104,7 +105,7 @@ export const getProviderIcon = (providerName: string, modelName?: string) => {
   switch (providerName) {
     case "openai":
       // Special cases for openai based on modelName
-      return modelNameToIcon(modelName || "", OpenAIIcon);
+      return modelNameToIcon(modelName || "", OpenAIISVG);
     case "anthropic":
       return AnthropicSVG;
     case "bedrock":

@@ -613,7 +613,7 @@ export function SlackChannelConfigFormFields({
                         <Link
                           key={ccpairinfo.id}
                           href={`/admin/connector/${ccpairinfo.id}`}
-                          className="flex items-center p-2 rounded-md hover:bg-gray-100 transition-colors"
+                          className="flex items-center p-2 rounded-md hover:bg-background-100 transition-colors"
                         >
                           <div className="mr-2">
                             <SourceIcon

@@ -63,8 +63,8 @@ export function Modal({
     <div
       onMouseDown={handleMouseDown}
       className={cn(
-        `fixed inset-0 bg-black border boder-border bg-opacity-10 backdrop-blur-sm h-full
-        flex items-center justify-center z-[9999] transition-opacity duration-300 ease-in-out`
+        `fixed inset-0 bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 bg-opacity-30 backdrop-blur-sm h-full
+        flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out`
       )}
     >
       <div
@@ -75,8 +75,8 @@ export function Modal({
           }
         }}
         className={`
-          bg-background 
-          text-emphasis 
+          bg-neutral-50 dark:bg-neutral-800
+          text-neutral-950 dark:text-neutral-50
           rounded 
           shadow-2xl 
           transform 
@@ -96,7 +96,7 @@ export function Modal({
           <div className="absolute top-2 right-2">
             <button
               onClick={onOutsideClick}
-              className="cursor-pointer text-text-500 hover:text-text-700 transition-colors duration-200 p-2"
+              className="cursor-pointer text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 transition-colors duration-200 p-2"
               aria-label="Close modal"
             >
               <XIcon className="w-5 h-5" />

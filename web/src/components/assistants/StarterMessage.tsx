@@ -44,11 +44,15 @@ export function StarterMessages({
                     className={`
                       relative flex ${!isMobile ? "w-40" : "w-full max-w-52"}
                       shadow
-                      border-[#DCDAD4]/60
+                      border-background-300/60
                       flex-col gap-2 rounded-md
-                      text-text-dark hover:text-text
+                      text-input-text hover:text-text
                       border
-                      bg-background-starter-message
+
+                      dark:bg-transparent
+                      dark:border-neutral-700
+                      dark:hover:bg-background-150
+                      font-normal
                       px-3 py-2
                       text-start align-to text-wrap
                       text-[15px] shadow-xs transition

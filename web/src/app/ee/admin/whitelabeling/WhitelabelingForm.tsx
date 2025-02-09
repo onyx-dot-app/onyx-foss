@@ -207,7 +207,7 @@ export function WhitelabelingForm() {
                   >
                     the docs
                   </Link>{" "}
-                  to see whitelabelling examples in action.
+                  to see whitelabeling examples in action.
                 </Text>
 
                 <TextFormField

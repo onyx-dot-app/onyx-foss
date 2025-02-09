@@ -53,7 +53,7 @@ export function generateIdenticon(str: string, dimension: number) {
             y={yPos - 0.5}
             width={cellSize + 1}
             height={cellSize + 1}
-            fill="black"
+            fill="currentColor"
           />
         );
 
@@ -67,7 +67,7 @@ export function generateIdenticon(str: string, dimension: number) {
               y={yPos - 0.5}
               width={cellSize + 1}
               height={cellSize + 1}
-              fill="black"
+              fill="currentColor"
             />
           );
         }
@@ -120,14 +120,16 @@ export function AssistantIcon({
           }
         })();
 
-  const wrapperClass = border ? "ring ring-[1px] ring-border-strong" : "";
+  const wrapperClass = border
+    ? "ring text-[#000] dark:text-[#fff] ring-[1px] ring-border-strong"
+    : "";
   const style = { width: dimension, height: dimension };
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={className}>
+          <div className={className + " text-[#000] dark:text-[#fff]"}>
             {assistant.id == -3 ? (
               <ArtAsistantIcon size={dimension} />
             ) : assistant.id == 0 ? (

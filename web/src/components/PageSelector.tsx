@@ -62,7 +62,7 @@ const PageLink = ({
     leading-5 
     -ml-px 
     border-border
-    ${!unclickable ? "hover:bg-hover" : ""}
+    ${!unclickable ? "hover:bg-accent-background-hovered" : ""}
     ${!unclickable ? "cursor-pointer" : ""}
     first:ml-0 
     first:rounded-l-md 

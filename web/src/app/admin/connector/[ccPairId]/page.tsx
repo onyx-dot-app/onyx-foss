@@ -293,7 +293,7 @@ function Main({ ccPairId }: { ccPairId: number }) {
         <b className="text-emphasis">{ccPair.num_docs_indexed}</b>
       </div>
       {!ccPair.is_editable_for_current_user && (
-        <div className="text-sm mt-2 text-neutral-500 italic">
+        <div className="text-sm mt-2 text-text-500 italic">
           {ccPair.access_type === "public"
             ? "Public connectors are not editable by curators."
             : ccPair.access_type === "sync"

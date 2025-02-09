@@ -78,7 +78,7 @@ const CategoryBubble = ({
       text-xs
       font-semibold
       text-emphasis
-      bg-hover
+      bg-accent-background-hovered
       rounded-full
       items-center
       w-fit

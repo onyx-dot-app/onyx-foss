@@ -15,7 +15,7 @@ interface SourcesDisplayProps {
   setPresentingDocument: (document: OnyxDocument) => void;
 }
 
-const SourceCard: React.FC<{
+export const SourceCard: React.FC<{
   document: OnyxDocument;
   hideDocumentDisplay?: boolean;
   setPresentingDocument: (document: OnyxDocument) => void;
@@ -33,15 +33,15 @@ const SourceCard: React.FC<{
       onClick={() =>
         openDocument(document, () => setPresentingDocument(document))
       }
-      className="w-full max-w-[260px] h-[80px] p-3 bg-[#f1eee8]
-             text-left hover:bg-[#ebe7de]
+      className="w-full max-w-[260px] h-[80px] p-3
+             text-left bg-accent-background hover:bg-accent-background-hovered dark:bg-accent-background-hovered dark:hover:bg-neutral-700/80
              cursor-pointer rounded-lg
              flex flex-col justify-between
              overflow-hidden"
     >
       <div
         className="
-        text-black text-xs
+        text-text-900 text-xs
         font-medium leading-tight
         whitespace-normal
         break-all
@@ -54,7 +54,7 @@ const SourceCard: React.FC<{
 
       <div className="flex items-center gap-1 mt-1">
         <ResultIcon doc={document} size={18} />
-        <div className="text-[#4a4a4a] text-xs leading-tight truncate flex-1 min-w-0">
+        <div className="text-text-700 text-xs leading-tight truncate flex-1 min-w-0">
           {truncatedIdentifier}
         </div>
       </div>
