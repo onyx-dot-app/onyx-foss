@@ -172,10 +172,15 @@ def generate_cloud_tasks(
     the cloud_beat_task_generator
     beat_multiplier: a multiplier that can be applied on top of the task schedule
     to speed up or slow down the task generation rate. useful in production.
+
+    Returns a list of cloud tasks, which consists of incoming tasks + tasks generated
+    from incoming templates.
     """
+
+    # start with the incoming beat tasks
     cloud_tasks: list[dict] = copy.deepcopy(beat_tasks)
 
-    # generate our cloud and self-hosted beat tasks from the templates
+    # generate our cloud tasks from the templates
     for beat_template in beat_templates:
         cloud_task = make_cloud_generator_task(beat_template)
         cloud_tasks.append(cloud_task)
