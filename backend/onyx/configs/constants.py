@@ -346,6 +346,9 @@ ONYX_CLOUD_CELERY_TASK_PREFIX = "cloud"
 # the tenant id we use for system level redis operations
 ONYX_CLOUD_TENANT_ID = "cloud"
 
+# the redis namespace for runtime variables
+ONYX_CLOUD_REDIS_RUNTIME = "runtime"
+
 
 class OnyxCeleryTask:
     DEFAULT = "celery"
