@@ -62,12 +62,18 @@ const CredentialSelectionTable = ({
     <div className="w-full max-h-[50vh] overflow-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="sticky top-0 w-full">
-          <tr className="bg-background-100">
-            <th className="p-2 text-left font-medium text-text-600"></th>
-            <th className="p-2 text-left font-medium text-text-600">ID</th>
-            <th className="p-2 text-left font-medium text-text-600">Name</th>
-            <th className="p-2 text-left font-medium text-text-600">Created</th>
-            <th className="p-2 text-left font-medium text-text-600">
+          <tr className="bg-neutral-100 dark:bg-neutral-900">
+            <th className="p-2 text-left font-medium text-neutral-600 dark:text-neutral-400"></th>
+            <th className="p-2 text-left font-medium text-neutral-600 dark:text-neutral-400">
+              ID
+            </th>
+            <th className="p-2 text-left font-medium text-neutral-600 dark:text-neutral-400">
+              Name
+            </th>
+            <th className="p-2 text-left font-medium text-neutral-600 dark:text-neutral-400">
+              Created
+            </th>
+            <th className="p-2 text-left font-medium text-neutral-600 dark:text-neutral-400">
               Last Updated
             </th>
             <th />

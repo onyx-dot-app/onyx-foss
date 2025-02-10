@@ -62,6 +62,7 @@ import {
 } from "@/lib/connectors/oauth";
 import { CreateStdOAuthCredential } from "@/components/credentials/actions/CreateStdOAuthCredential";
 import { Spinner } from "@/components/Spinner";
+import { Button } from "@/components/ui/button";
 export interface AdvancedConfig {
   refreshFreq: number;
   pruneFreq: number;
@@ -464,8 +465,9 @@ export default function AddConnector({
                     {!createCredentialFormToggle && (
                       <div className="mt-6 flex space-x-4">
                         {/* Button to pop up a form to manually enter credentials */}
-                        <button
-                          className="mt-6 text-sm bg-background-900 px-2 py-1.5 flex text-text-200 flex-none rounded mr-4"
+                        <Button
+                          variant="secondary"
+                          className="mt-6 text-sm mr-4"
                           onClick={async () => {
                             if (oauthDetails && oauthDetails.oauth_enabled) {
                               if (oauthDetails.additional_kwargs.length > 0) {
@@ -495,7 +497,7 @@ export default function AddConnector({
                           }}
                         >
                           Create New
-                        </button>
+                        </Button>
                         {/* Button to sign in via OAuth */}
                         {oauthSupportedSources.includes(connector) &&
                           (NEXT_PUBLIC_CLOUD_ENABLED ||

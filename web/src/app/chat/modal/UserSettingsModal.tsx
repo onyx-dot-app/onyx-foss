@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Monitor } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export function UserSettingsModal({
@@ -239,14 +239,29 @@ export function UserSettingsModal({
             >
               <SelectTrigger className="w-full">
                 <div className="flex items-center gap-2">
-                  <Monitor className="h-4 w-4" />
+                  {theme === "system" ? (
+                    <Monitor className="h-4 w-4" />
+                  ) : theme === "light" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
                   <SelectValue placeholder="Select theme" />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="system">System</SelectItem>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem
+                  icon={<Monitor className="h-4 w-4" />}
+                  value="system"
+                >
+                  System
+                </SelectItem>
+                <SelectItem icon={<Sun className="h-4 w-4" />} value="light">
+                  Light
+                </SelectItem>
+                <SelectItem icon={<Moon className="h-4 w-4" />} value="dark">
+                  Dark
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

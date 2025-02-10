@@ -40,15 +40,12 @@ const CreateButton = ({
 }) => (
   <div className="flex justify-end w-full">
     <Button
-      className="enabled:cursor-pointer disabled:cursor-not-allowed disabled:bg-blue-200 bg-blue-400 flex gap-x-1 items-center text-white py-2.5 px-3.5 text-sm font-regular rounded-sm"
       onClick={onClick}
       type="button"
       disabled={isSubmitting || (!isAdmin && groups.length === 0)}
     >
-      <div className="flex items-center gap-x-1">
-        <PlusCircleIcon size={16} className="text-indigo-100" />
-        Create
-      </div>
+      <PlusCircleIcon className="h-4 w-4" />
+      Create
     </Button>
   </div>
 );
