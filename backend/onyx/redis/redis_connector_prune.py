@@ -1,9 +1,11 @@
 import time
+from datetime import datetime
 from typing import cast
 from uuid import uuid4
 
 import redis
 from celery import Celery
+from pydantic import BaseModel
 from redis.lock import Lock as RedisLock
 from sqlalchemy.orm import Session
 
@@ -14,6 +16,13 @@ from onyx.configs.constants import OnyxCeleryTask
 from onyx.configs.constants import OnyxRedisConstants
 from onyx.db.connector_credential_pair import get_connector_credential_pair_from_id
 from onyx.redis.redis_pool import SCAN_ITER_COUNT_DEFAULT
+
+
+class RedisConnectorPrunePayload(BaseModel):
+    id: str
+    submitted: datetime
+    started: datetime | None
+    celery_task_id: str | None
 
 
 class RedisConnectorPrune:
@@ -36,6 +45,12 @@ class RedisConnectorPrune:
     TASKSET_PREFIX = f"{PREFIX}_taskset"  # connectorpruning_taskset
     SUBTASK_PREFIX = f"{PREFIX}+sub"  # connectorpruning+sub
 
+    # used to signal the overall workflow is still active
+    # it's impossible to get the exact state of the system at a single point in time
+    # so we need a signal with a TTL to bridge gaps in our checks
+    ACTIVE_PREFIX = PREFIX + "_active"
+    ACTIVE_TTL = 3600
+
     def __init__(self, tenant_id: str | None, id: int, redis: redis.Redis) -> None:
         self.tenant_id: str | None = tenant_id
         self.id = id
@@ -49,6 +64,7 @@ class RedisConnectorPrune:
         self.taskset_key = f"{self.TASKSET_PREFIX}_{id}"
 
         self.subtask_prefix: str = f"{self.SUBTASK_PREFIX}_{id}"
+        self.active_key = f"{self.ACTIVE_PREFIX}_{id}"
 
     def taskset_clear(self) -> None:
         self.redis.delete(self.taskset_key)
@@ -65,8 +81,10 @@ class RedisConnectorPrune:
     def get_active_task_count(self) -> int:
         """Count of active pruning tasks"""
         count = 0
-        for key in self.redis.scan_iter(
-            RedisConnectorPrune.FENCE_PREFIX + "*", count=SCAN_ITER_COUNT_DEFAULT
+        for _ in self.redis.sscan_iter(
+            OnyxRedisConstants.ACTIVE_FENCES,
+            RedisConnectorPrune.FENCE_PREFIX + "*",
+            count=SCAN_ITER_COUNT_DEFAULT,
         ):
             count += 1
         return count
@@ -78,14 +96,43 @@ class RedisConnectorPrune:
 
         return False
 
-    def set_fence(self, value: bool) -> None:
-        if not value:
+    @property
+    def payload(self) -> RedisConnectorPrunePayload | None:
+        # read related data and evaluate/print task progress
+        fence_bytes = cast(bytes, self.redis.get(self.fence_key))
+        if fence_bytes is None:
+            return None
+
+        fence_str = fence_bytes.decode("utf-8")
+        payload = RedisConnectorPrunePayload.model_validate_json(cast(str, fence_str))
+
+        return payload
+
+    def set_fence(
+        self,
+        payload: RedisConnectorPrunePayload | None,
+    ) -> None:
+        if not payload:
             self.redis.srem(OnyxRedisConstants.ACTIVE_FENCES, self.fence_key)
             self.redis.delete(self.fence_key)
             return
 
-        self.redis.set(self.fence_key, 0)
+        self.redis.set(self.fence_key, payload.model_dump_json())
         self.redis.sadd(OnyxRedisConstants.ACTIVE_FENCES, self.fence_key)
+
+    def set_active(self) -> None:
+        """This sets a signal to keep the permissioning flow from getting cleaned up within
+        the expiration time.
+
+        The slack in timing is needed to avoid race conditions where simply checking
+        the celery queue and task status could result in race conditions."""
+        self.redis.set(self.active_key, 0, ex=self.ACTIVE_TTL)
+
+    def active(self) -> bool:
+        if self.redis.exists(self.active_key):
+            return True
+
+        return False
 
     @property
     def generator_complete(self) -> int | None:
@@ -162,6 +209,7 @@ class RedisConnectorPrune:
 
     def reset(self) -> None:
         self.redis.srem(OnyxRedisConstants.ACTIVE_FENCES, self.fence_key)
+        self.redis.delete(self.active_key)
         self.redis.delete(self.generator_progress_key)
         self.redis.delete(self.generator_complete_key)
         self.redis.delete(self.taskset_key)
@@ -176,6 +224,9 @@ class RedisConnectorPrune:
     @staticmethod
     def reset_all(r: redis.Redis) -> None:
         """Deletes all redis values for all connectors"""
+        for key in r.scan_iter(RedisConnectorPrune.ACTIVE_PREFIX + "*"):
+            r.delete(key)
+
         for key in r.scan_iter(RedisConnectorPrune.TASKSET_PREFIX + "*"):
             r.delete(key)
 

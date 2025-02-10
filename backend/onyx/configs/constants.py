@@ -324,6 +324,7 @@ class OnyxRedisSignals:
     BLOCK_VALIDATE_PERMISSION_SYNC_FENCES = (
         "signal:block_validate_permission_sync_fences"
     )
+    BLOCK_VALIDATE_PRUNING_FENCES = "signal:block_validate_pruning_fences"
     BLOCK_BUILD_FENCE_LOOKUP_TABLE = "signal:block_build_fence_lookup_table"
 
 

@@ -1,28 +1,39 @@
+import time
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from typing import Any
+from typing import cast
 from uuid import uuid4
 
 from celery import Celery
 from celery import shared_task
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
+from pydantic import ValidationError
 from redis import Redis
 from redis.lock import Lock as RedisLock
 from sqlalchemy.orm import Session
 
 from onyx.background.celery.apps.app_base import task_logger
+from onyx.background.celery.celery_redis import celery_find_task
+from onyx.background.celery.celery_redis import celery_get_queue_length
+from onyx.background.celery.celery_redis import celery_get_queued_task_ids
+from onyx.background.celery.celery_redis import celery_get_unacked_task_ids
 from onyx.background.celery.celery_utils import extract_ids_from_runnable_connector
 from onyx.background.celery.tasks.indexing.utils import IndexingCallback
 from onyx.configs.app_configs import ALLOW_SIMULTANEOUS_PRUNING
 from onyx.configs.app_configs import JOB_TIMEOUT
 from onyx.configs.constants import CELERY_GENERIC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import CELERY_PRUNING_LOCK_TIMEOUT
+from onyx.configs.constants import CELERY_TASK_WAIT_FOR_FENCE_TIMEOUT
 from onyx.configs.constants import DANSWER_REDIS_FUNCTION_LOCK_PREFIX
 from onyx.configs.constants import OnyxCeleryPriority
 from onyx.configs.constants import OnyxCeleryQueues
 from onyx.configs.constants import OnyxCeleryTask
+from onyx.configs.constants import OnyxRedisConstants
 from onyx.configs.constants import OnyxRedisLocks
+from onyx.configs.constants import OnyxRedisSignals
 from onyx.connectors.factory import instantiate_connector
 from onyx.connectors.models import InputType
 from onyx.db.connector import mark_ccpair_as_pruned
@@ -35,10 +46,15 @@ from onyx.db.enums import ConnectorCredentialPairStatus
 from onyx.db.enums import SyncStatus
 from onyx.db.enums import SyncType
 from onyx.db.models import ConnectorCredentialPair
+from onyx.db.search_settings import get_current_search_settings
 from onyx.db.sync_record import insert_sync_record
 from onyx.db.sync_record import update_sync_record_status
 from onyx.redis.redis_connector import RedisConnector
+from onyx.redis.redis_connector_prune import RedisConnectorPrune
+from onyx.redis.redis_connector_prune import RedisConnectorPrunePayload
 from onyx.redis.redis_pool import get_redis_client
+from onyx.redis.redis_pool import get_redis_replica_client
+from onyx.server.utils import make_short_id
 from onyx.utils.logger import LoggerContextVars
 from onyx.utils.logger import pruning_ctx
 from onyx.utils.logger import setup_logger
@@ -93,6 +109,8 @@ def _is_pruning_due(cc_pair: ConnectorCredentialPair) -> bool:
 )
 def check_for_pruning(self: Task, *, tenant_id: str | None) -> bool | None:
     r = get_redis_client(tenant_id=tenant_id)
+    r_replica = get_redis_replica_client(tenant_id=tenant_id)
+    r_celery: Redis = self.app.broker_connection().channel().client  # type: ignore
 
     lock_beat: RedisLock = r.lock(
         OnyxRedisLocks.CHECK_PRUNE_BEAT_LOCK,
@@ -123,13 +141,28 @@ def check_for_pruning(self: Task, *, tenant_id: str | None) -> bool | None:
                 if not _is_pruning_due(cc_pair):
                     continue
 
-                tasks_created = try_creating_prune_generator_task(
+                payload_id = try_creating_prune_generator_task(
                     self.app, cc_pair, db_session, r, tenant_id
                 )
-                if not tasks_created:
+                if not payload_id:
                     continue
 
-                task_logger.info(f"Pruning queued: cc_pair={cc_pair.id}")
+                task_logger.info(
+                    f"Pruning queued: cc_pair={cc_pair.id} id={payload_id}"
+                )
+
+        # we want to run this less frequently than the overall task
+        lock_beat.reacquire()
+        if not r.exists(OnyxRedisSignals.BLOCK_VALIDATE_PRUNING_FENCES):
+            # clear any permission fences that don't have associated celery tasks in progress
+            # tasks can be in the queue in redis, in reserved tasks (prefetched by the worker),
+            # or be currently executing
+            try:
+                validate_pruning_fences(tenant_id, r, r_replica, r_celery, lock_beat)
+            except Exception:
+                task_logger.exception("Exception while validating pruning fences")
+
+            r.set(OnyxRedisSignals.BLOCK_VALIDATE_PRUNING_FENCES, 1, ex=300)
     except SoftTimeLimitExceeded:
         task_logger.info(
             "Soft time limit exceeded, task is being terminated gracefully."
@@ -149,7 +182,7 @@ def try_creating_prune_generator_task(
     db_session: Session,
     r: Redis,
     tenant_id: str | None,
-) -> int | None:
+) -> str | None:
     """Checks for any conditions that should block the pruning generator task from being
     created, then creates the task.
 
@@ -168,7 +201,7 @@ def try_creating_prune_generator_task(
 
     # we need to serialize starting pruning since it can be triggered either via
     # celery beat or manually (API call)
-    lock = r.lock(
+    lock: RedisLock = r.lock(
         DANSWER_REDIS_FUNCTION_LOCK_PREFIX + "try_creating_prune_generator_task",
         timeout=LOCK_TIMEOUT,
     )
@@ -200,7 +233,30 @@ def try_creating_prune_generator_task(
 
         custom_task_id = f"{redis_connector.prune.generator_task_key}_{uuid4()}"
 
-        celery_app.send_task(
+        # create before setting fence to avoid race condition where the monitoring
+        # task updates the sync record before it is created
+        try:
+            insert_sync_record(
+                db_session=db_session,
+                entity_id=cc_pair.id,
+                sync_type=SyncType.PRUNING,
+            )
+        except Exception:
+            task_logger.exception("insert_sync_record exceptioned.")
+
+        # signal active before the fence is set
+        redis_connector.prune.set_active()
+
+        # set a basic fence to start
+        payload = RedisConnectorPrunePayload(
+            id=make_short_id(),
+            submitted=datetime.now(timezone.utc),
+            started=None,
+            celery_task_id=None,
+        )
+        redis_connector.prune.set_fence(payload)
+
+        result = celery_app.send_task(
             OnyxCeleryTask.CONNECTOR_PRUNING_GENERATOR_TASK,
             kwargs=dict(
                 cc_pair_id=cc_pair.id,
@@ -213,16 +269,11 @@ def try_creating_prune_generator_task(
             priority=OnyxCeleryPriority.LOW,
         )
 
-        # create before setting fence to avoid race condition where the monitoring
-        # task updates the sync record before it is created
-        insert_sync_record(
-            db_session=db_session,
-            entity_id=cc_pair.id,
-            sync_type=SyncType.PRUNING,
-        )
+        # fill in the celery task id
+        payload.celery_task_id = result.id
+        redis_connector.prune.set_fence(payload)
 
-        # set this only after all tasks have been added
-        redis_connector.prune.set_fence(True)
+        payload_id = payload.id
     except Exception:
         task_logger.exception(f"Unexpected exception: cc_pair={cc_pair.id}")
         return None
@@ -230,7 +281,7 @@ def try_creating_prune_generator_task(
         if lock.owned():
             lock.release()
 
-    return 1
+    return payload_id
 
 
 @shared_task(
@@ -252,6 +303,8 @@ def connector_pruning_generator_task(
     and compares those IDs to locally stored documents and deletes all locally stored IDs missing
     from the most recently pulled document ID list"""
 
+    payload_id: str | None = None
+
     LoggerContextVars.reset()
 
     pruning_ctx_dict = pruning_ctx.get()
@@ -264,6 +317,46 @@ def connector_pruning_generator_task(
     redis_connector = RedisConnector(tenant_id, cc_pair_id)
 
     r = get_redis_client(tenant_id=tenant_id)
+
+    # this wait is needed to avoid a race condition where
+    # the primary worker sends the task and it is immediately executed
+    # before the primary worker can finalize the fence
+    start = time.monotonic()
+    while True:
+        if time.monotonic() - start > CELERY_TASK_WAIT_FOR_FENCE_TIMEOUT:
+            raise ValueError(
+                f"connector_prune_generator_task - timed out waiting for fence to be ready: "
+                f"fence={redis_connector.prune.fence_key}"
+            )
+
+        if not redis_connector.prune.fenced:  # The fence must exist
+            raise ValueError(
+                f"connector_prune_generator_task - fence not found: "
+                f"fence={redis_connector.prune.fence_key}"
+            )
+
+        payload = redis_connector.prune.payload  # The payload must exist
+        if not payload:
+            raise ValueError(
+                "connector_prune_generator_task: payload invalid or not found"
+            )
+
+        if payload.celery_task_id is None:
+            logger.info(
+                f"connector_prune_generator_task - Waiting for fence: "
+                f"fence={redis_connector.prune.fence_key}"
+            )
+            time.sleep(1)
+            continue
+
+        payload_id = payload.id
+
+        logger.info(
+            f"connector_prune_generator_task - Fence found, continuing...: "
+            f"fence={redis_connector.prune.fence_key} "
+            f"payload_id={payload.id}"
+        )
+        break
 
     # set thread_local=False since we don't control what thread the indexing/pruning
     # might run our callback with
@@ -294,6 +387,18 @@ def connector_pruning_generator_task(
                 )
                 return
 
+            payload = redis_connector.prune.payload
+            if not payload:
+                raise ValueError(f"No fence payload found: cc_pair={cc_pair_id}")
+
+            new_payload = RedisConnectorPrunePayload(
+                id=payload.id,
+                submitted=payload.submitted,
+                started=datetime.now(timezone.utc),
+                celery_task_id=payload.celery_task_id,
+            )
+            redis_connector.prune.set_fence(new_payload)
+
             task_logger.info(
                 f"Pruning generator running connector: "
                 f"cc_pair={cc_pair_id} "
@@ -307,10 +412,13 @@ def connector_pruning_generator_task(
                 cc_pair.credential,
             )
 
+            search_settings = get_current_search_settings(db_session)
+            redis_connector_index = redis_connector.new_index(search_settings.id)
+
             callback = IndexingCallback(
                 0,
-                redis_connector.stop.fence_key,
-                redis_connector.prune.generator_progress_key,
+                redis_connector,
+                redis_connector_index,
                 lock,
                 r,
             )
@@ -357,7 +465,9 @@ def connector_pruning_generator_task(
             redis_connector.prune.generator_complete = tasks_generated
     except Exception as e:
         task_logger.exception(
-            f"Failed to run pruning: cc_pair={cc_pair_id} connector={connector_id}"
+            f"Pruning exceptioned: cc_pair={cc_pair_id} "
+            f"connector={connector_id} "
+            f"payload_id={payload_id}"
         )
 
         redis_connector.prune.reset()
@@ -366,7 +476,9 @@ def connector_pruning_generator_task(
         if lock.owned():
             lock.release()
 
-        task_logger.info(f"Pruning generator finished: cc_pair={cc_pair_id}")
+    task_logger.info(
+        f"Pruning generator finished: cc_pair={cc_pair_id} payload_id={payload_id}"
+    )
 
 
 """Monitoring pruning utils, called in monitor_vespa_sync"""
@@ -415,4 +527,184 @@ def monitor_ccpair_pruning_taskset(
 
     redis_connector.prune.taskset_clear()
     redis_connector.prune.generator_clear()
-    redis_connector.prune.set_fence(False)
+    redis_connector.prune.set_fence(None)
+
+
+def validate_pruning_fences(
+    tenant_id: str | None,
+    r: Redis,
+    r_replica: Redis,
+    r_celery: Redis,
+    lock_beat: RedisLock,
+) -> None:
+    # building lookup table can be expensive, so we won't bother
+    # validating until the queue is small
+    PERMISSION_SYNC_VALIDATION_MAX_QUEUE_LEN = 1024
+
+    queue_len = celery_get_queue_length(OnyxCeleryQueues.CONNECTOR_DELETION, r_celery)
+    if queue_len > PERMISSION_SYNC_VALIDATION_MAX_QUEUE_LEN:
+        return
+
+    # the queue for a single pruning generator task
+    reserved_generator_tasks = celery_get_unacked_task_ids(
+        OnyxCeleryQueues.CONNECTOR_PRUNING, r_celery
+    )
+
+    # the queue for a reasonably large set of lightweight deletion tasks
+    queued_upsert_tasks = celery_get_queued_task_ids(
+        OnyxCeleryQueues.CONNECTOR_DELETION, r_celery
+    )
+
+    # Use replica for this because the worst thing that happens
+    # is that we don't run the validation on this pass
+    keys = cast(set[Any], r_replica.smembers(OnyxRedisConstants.ACTIVE_FENCES))
+    for key in keys:
+        key_bytes = cast(bytes, key)
+        key_str = key_bytes.decode("utf-8")
+        if not key_str.startswith(RedisConnectorPrune.FENCE_PREFIX):
+            continue
+
+        validate_pruning_fence(
+            tenant_id,
+            key_bytes,
+            reserved_generator_tasks,
+            queued_upsert_tasks,
+            r,
+            r_celery,
+        )
+
+        lock_beat.reacquire()
+
+    return
+
+
+def validate_pruning_fence(
+    tenant_id: str | None,
+    key_bytes: bytes,
+    reserved_tasks: set[str],
+    queued_tasks: set[str],
+    r: Redis,
+    r_celery: Redis,
+) -> None:
+    """See validate_indexing_fence for an overall idea of validation flows.
+
+    queued_tasks: the celery queue of lightweight permission sync tasks
+    reserved_tasks: prefetched tasks for sync task generator
+    """
+    # if the fence doesn't exist, there's nothing to do
+    fence_key = key_bytes.decode("utf-8")
+    cc_pair_id_str = RedisConnector.get_id_from_fence_key(fence_key)
+    if cc_pair_id_str is None:
+        task_logger.warning(
+            f"validate_pruning_fence - could not parse id from {fence_key}"
+        )
+        return
+
+    cc_pair_id = int(cc_pair_id_str)
+    # parse out metadata and initialize the helper class with it
+    redis_connector = RedisConnector(tenant_id, int(cc_pair_id))
+
+    # check to see if the fence/payload exists
+    if not redis_connector.prune.fenced:
+        return
+
+    # in the cloud, the payload format may have changed ...
+    # it's a little sloppy, but just reset the fence for now if that happens
+    # TODO: add intentional cleanup/abort logic
+    try:
+        payload = redis_connector.prune.payload
+    except ValidationError:
+        task_logger.exception(
+            "validate_pruning_fence - "
+            "Resetting fence because fence schema is out of date: "
+            f"cc_pair={cc_pair_id} "
+            f"fence={fence_key}"
+        )
+
+        redis_connector.prune.reset()
+        return
+
+    if not payload:
+        return
+
+    if not payload.celery_task_id:
+        return
+
+    # OK, there's actually something for us to validate
+
+    # either the generator task must be in flight or its subtasks must be
+    found = celery_find_task(
+        payload.celery_task_id,
+        OnyxCeleryQueues.CONNECTOR_PRUNING,
+        r_celery,
+    )
+    if found:
+        # the celery task exists in the redis queue
+        redis_connector.prune.set_active()
+        return
+
+    if payload.celery_task_id in reserved_tasks:
+        # the celery task was prefetched and is reserved within a worker
+        redis_connector.prune.set_active()
+        return
+
+    # look up every task in the current taskset in the celery queue
+    # every entry in the taskset should have an associated entry in the celery task queue
+    # because we get the celery tasks first, the entries in our own pruning taskset
+    # should be roughly a subset of the tasks in celery
+
+    # this check isn't very exact, but should be sufficient over a period of time
+    # A single successful check over some number of attempts is sufficient.
+
+    # TODO: if the number of tasks in celery is much lower than than the taskset length
+    # we might be able to shortcut the lookup since by definition some of the tasks
+    # must not exist in celery.
+
+    tasks_scanned = 0
+    tasks_not_in_celery = 0  # a non-zero number after completing our check is bad
+
+    for member in r.sscan_iter(redis_connector.prune.taskset_key):
+        tasks_scanned += 1
+
+        member_bytes = cast(bytes, member)
+        member_str = member_bytes.decode("utf-8")
+        if member_str in queued_tasks:
+            continue
+
+        if member_str in reserved_tasks:
+            continue
+
+        tasks_not_in_celery += 1
+
+    task_logger.info(
+        "validate_pruning_fence task check: "
+        f"tasks_scanned={tasks_scanned} tasks_not_in_celery={tasks_not_in_celery}"
+    )
+
+    # we're active if there are still tasks to run and those tasks all exist in celery
+    if tasks_scanned > 0 and tasks_not_in_celery == 0:
+        redis_connector.prune.set_active()
+        return
+
+    # we may want to enable this check if using the active task list somehow isn't good enough
+    # if redis_connector_index.generator_locked():
+    #     logger.info(f"{payload.celery_task_id} is currently executing.")
+
+    # if we get here, we didn't find any direct indication that the associated celery tasks exist,
+    # but they still might be there due to gaps in our ability to check states during transitions
+    # Checking the active signal safeguards us against these transition periods
+    # (which has a duration that allows us to bridge those gaps)
+    if redis_connector.prune.active():
+        return
+
+    # celery tasks don't exist and the active signal has expired, possibly due to a crash. Clean it up.
+    task_logger.warning(
+        "validate_pruning_fence - "
+        "Resetting fence because no associated celery tasks were found: "
+        f"cc_pair={cc_pair_id} "
+        f"fence={fence_key} "
+        f"payload_id={payload.id}"
+    )
+
+    redis_connector.prune.reset()
+    return

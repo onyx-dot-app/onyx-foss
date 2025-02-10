@@ -339,11 +339,15 @@ def try_generate_document_set_sync_tasks(
 
     # create before setting fence to avoid race condition where the monitoring
     # task updates the sync record before it is created
-    insert_sync_record(
-        db_session=db_session,
-        entity_id=document_set_id,
-        sync_type=SyncType.DOCUMENT_SET,
-    )
+    try:
+        insert_sync_record(
+            db_session=db_session,
+            entity_id=document_set_id,
+            sync_type=SyncType.DOCUMENT_SET,
+        )
+    except Exception:
+        task_logger.exception("insert_sync_record exceptioned.")
+
     # set this only after all tasks have been added
     rds.set_fence(tasks_generated)
     return tasks_generated
@@ -411,11 +415,15 @@ def try_generate_user_group_sync_tasks(
 
     # create before setting fence to avoid race condition where the monitoring
     # task updates the sync record before it is created
-    insert_sync_record(
-        db_session=db_session,
-        entity_id=usergroup_id,
-        sync_type=SyncType.USER_GROUP,
-    )
+    try:
+        insert_sync_record(
+            db_session=db_session,
+            entity_id=usergroup_id,
+            sync_type=SyncType.USER_GROUP,
+        )
+    except Exception:
+        task_logger.exception("insert_sync_record exceptioned.")
+
     # set this only after all tasks have been added
     rug.set_fence(tasks_generated)
 
@@ -904,7 +912,7 @@ def monitor_vespa_sync(self: Task, tenant_id: str | None) -> bool | None:
 
         # use a lookup table to find active fences. We still have to verify the fence
         # exists since it is an optimization and not the source of truth.
-        keys = cast(set[Any], r.smembers(OnyxRedisConstants.ACTIVE_FENCES))
+        keys = cast(set[Any], r_replica.smembers(OnyxRedisConstants.ACTIVE_FENCES))
         for key in keys:
             key_bytes = cast(bytes, key)
 

@@ -99,16 +99,16 @@ class IndexingCallback(IndexingHeartbeatInterface):
     def __init__(
         self,
         parent_pid: int,
-        stop_key: str,
-        generator_progress_key: str,
+        redis_connector: RedisConnector,
+        redis_connector_index: RedisConnectorIndex,
         redis_lock: RedisLock,
         redis_client: Redis,
     ):
         super().__init__()
         self.parent_pid = parent_pid
+        self.redis_connector: RedisConnector = redis_connector
+        self.redis_connector_index: RedisConnectorIndex = redis_connector_index
         self.redis_lock: RedisLock = redis_lock
-        self.stop_key: str = stop_key
-        self.generator_progress_key: str = generator_progress_key
         self.redis_client = redis_client
         self.started: datetime = datetime.now(timezone.utc)
         self.redis_lock.reacquire()
@@ -120,7 +120,7 @@ class IndexingCallback(IndexingHeartbeatInterface):
         self.last_parent_check = time.monotonic()
 
     def should_stop(self) -> bool:
-        if self.redis_client.exists(self.stop_key):
+        if self.redis_connector.stop.fenced:
             return True
 
         return False
@@ -143,6 +143,8 @@ class IndexingCallback(IndexingHeartbeatInterface):
         #         self.last_parent_check = now
 
         try:
+            self.redis_connector.prune.set_active()
+
             current_time = time.monotonic()
             if current_time - self.last_lock_monotonic >= (
                 CELERY_GENERIC_BEAT_LOCK_TIMEOUT / 4
@@ -165,7 +167,9 @@ class IndexingCallback(IndexingHeartbeatInterface):
             redis_lock_dump(self.redis_lock, self.redis_client)
             raise
 
-        self.redis_client.incrby(self.generator_progress_key, amount)
+        self.redis_client.incrby(
+            self.redis_connector_index.generator_progress_key, amount
+        )
 
 
 def validate_indexing_fence(

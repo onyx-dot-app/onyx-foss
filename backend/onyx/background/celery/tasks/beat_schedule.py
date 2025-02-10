@@ -18,7 +18,7 @@ BEAT_EXPIRES_DEFAULT = 15 * 60  # 15 minutes (in seconds)
 
 # hack to slow down task dispatch in the cloud until
 # we have a better implementation (backpressure, etc)
-CLOUD_BEAT_SCHEDULE_MULTIPLIER = 4
+CLOUD_BEAT_SCHEDULE_MULTIPLIER = 8
 
 # tasks that run in either self-hosted on cloud
 beat_task_templates: list[dict] = []

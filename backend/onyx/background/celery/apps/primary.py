@@ -84,8 +84,10 @@ def on_celeryd_init(sender: str, conf: Any = None, **kwargs: Any) -> None:
 def on_worker_init(sender: Worker, **kwargs: Any) -> None:
     logger.info("worker_init signal received.")
 
+    EXTRA_CONCURRENCY = 4  # small extra fudge factor for connection limits
+
     SqlEngine.set_app_name(POSTGRES_CELERY_WORKER_PRIMARY_APP_NAME)
-    SqlEngine.init_engine(pool_size=8, max_overflow=0)
+    SqlEngine.init_engine(pool_size=sender.concurrency, max_overflow=EXTRA_CONCURRENCY)  # type: ignore
 
     app_base.wait_for_redis(sender, **kwargs)
     app_base.wait_for_db(sender, **kwargs)

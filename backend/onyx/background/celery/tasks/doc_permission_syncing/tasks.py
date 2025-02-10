@@ -228,12 +228,15 @@ def try_creating_permissions_sync_task(
 
         # create before setting fence to avoid race condition where the monitoring
         # task updates the sync record before it is created
-        with get_session_with_tenant(tenant_id) as db_session:
-            insert_sync_record(
-                db_session=db_session,
-                entity_id=cc_pair_id,
-                sync_type=SyncType.EXTERNAL_PERMISSIONS,
-            )
+        try:
+            with get_session_with_tenant(tenant_id) as db_session:
+                insert_sync_record(
+                    db_session=db_session,
+                    entity_id=cc_pair_id,
+                    sync_type=SyncType.EXTERNAL_PERMISSIONS,
+                )
+        except Exception:
+            task_logger.exception("insert_sync_record exceptioned.")
 
         # set a basic fence to start
         redis_connector.permissions.set_active()
@@ -257,11 +260,10 @@ def try_creating_permissions_sync_task(
         )
 
         # fill in the celery task id
-        redis_connector.permissions.set_active()
         payload.celery_task_id = result.id
         redis_connector.permissions.set_fence(payload)
 
-        payload_id = payload.celery_task_id
+        payload_id = payload.id
     except Exception:
         task_logger.exception(f"Unexpected exception: cc_pair={cc_pair_id}")
         return None
@@ -289,6 +291,8 @@ def connector_permission_sync_generator_task(
     Permission sync task that handles document permission syncing for a given connector credential pair
     This task assumes that the task has already been properly fenced
     """
+
+    payload_id: str | None = None
 
     LoggerContextVars.reset()
 
@@ -332,9 +336,12 @@ def connector_permission_sync_generator_task(
             sleep(1)
             continue
 
+        payload_id = payload.id
+
         logger.info(
             f"connector_permission_sync_generator_task - Fence found, continuing...: "
-            f"fence={redis_connector.permissions.fence_key}"
+            f"fence={redis_connector.permissions.fence_key} "
+            f"payload_id={payload.id}"
         )
         break
 
@@ -413,7 +420,9 @@ def connector_permission_sync_generator_task(
             redis_connector.permissions.generator_complete = tasks_generated
 
     except Exception as e:
-        task_logger.exception(f"Failed to run permission sync: cc_pair={cc_pair_id}")
+        task_logger.exception(
+            f"Permission sync exceptioned: cc_pair={cc_pair_id} payload_id={payload_id}"
+        )
 
         redis_connector.permissions.generator_clear()
         redis_connector.permissions.taskset_clear()
@@ -422,6 +431,10 @@ def connector_permission_sync_generator_task(
     finally:
         if lock.owned():
             lock.release()
+
+    task_logger.info(
+        f"Permission sync finished: cc_pair={cc_pair_id} payload_id={payload.id}"
+    )
 
 
 @shared_task(
@@ -659,7 +672,7 @@ def validate_permission_sync_fence(
         f"tasks_scanned={tasks_scanned} tasks_not_in_celery={tasks_not_in_celery}"
     )
 
-    # we're only active if tasks_scanned > 0 and tasks_not_in_celery == 0
+    # we're active if there are still tasks to run and those tasks all exist in celery
     if tasks_scanned > 0 and tasks_not_in_celery == 0:
         redis_connector.permissions.set_active()
         return
@@ -680,7 +693,8 @@ def validate_permission_sync_fence(
         "validate_permission_sync_fence - "
         "Resetting fence because no associated celery tasks were found: "
         f"cc_pair={cc_pair_id} "
-        f"fence={fence_key}"
+        f"fence={fence_key} "
+        f"payload_id={payload.id}"
     )
 
     redis_connector.permissions.reset()

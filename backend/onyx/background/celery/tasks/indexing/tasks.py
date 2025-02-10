@@ -423,8 +423,8 @@ def connector_indexing_task(
         # define a callback class
         callback = IndexingCallback(
             os.getppid(),
-            redis_connector.stop.fence_key,
-            redis_connector_index.generator_progress_key,
+            redis_connector,
+            redis_connector_index,
             lock,
             r,
         )

@@ -186,7 +186,7 @@ def try_generate_document_cc_pair_cleanup_tasks(
                 sync_type=SyncType.CONNECTOR_DELETION,
             )
         except Exception:
-            pass
+            task_logger.exception("insert_sync_record exceptioned.")
 
     except TaskDependencyError:
         redis_connector.delete.set_fence(None)
