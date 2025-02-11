@@ -1,3 +1,4 @@
+import copy
 from datetime import timedelta
 from typing import Any
 
@@ -18,7 +19,7 @@ BEAT_EXPIRES_DEFAULT = 15 * 60  # 15 minutes (in seconds)
 
 # hack to slow down task dispatch in the cloud until
 # we have a better implementation (backpressure, etc)
-CLOUD_BEAT_SCHEDULE_MULTIPLIER = 8
+CLOUD_BEAT_MULTIPLIER_DEFAULT = 8.0
 
 # tasks that run in either self-hosted on cloud
 beat_task_templates: list[dict] = []
@@ -121,7 +122,7 @@ def make_cloud_generator_task(task: dict[str, Any]) -> dict[str, Any]:
 
     # constant options for cloud beat task generators
     task_schedule: timedelta = task["schedule"]
-    cloud_task["schedule"] = task_schedule * CLOUD_BEAT_SCHEDULE_MULTIPLIER
+    cloud_task["schedule"] = task_schedule
     cloud_task["options"] = {}
     cloud_task["options"]["priority"] = OnyxCeleryPriority.HIGHEST
     cloud_task["options"]["expires"] = BEAT_EXPIRES_DEFAULT
@@ -141,9 +142,9 @@ def make_cloud_generator_task(task: dict[str, Any]) -> dict[str, Any]:
 
 
 # tasks that only run in the cloud
-# the name attribute must start with ONYX_CLOUD_CELERY_TASK_PREFIX = "cloud" to be filtered
-# by the DynamicTenantScheduler
-cloud_tasks_to_schedule: list[dict] = [
+# the name attribute must start with ONYX_CLOUD_CELERY_TASK_PREFIX = "cloud" to be seen
+# by the DynamicTenantScheduler as system wide task and not a per tenant task
+beat_system_tasks: list[dict] = [
     # cloud specific tasks
     {
         "name": f"{ONYX_CLOUD_CELERY_TASK_PREFIX}_check-alembic",
@@ -157,18 +158,45 @@ cloud_tasks_to_schedule: list[dict] = [
     },
 ]
 
-# generate our cloud and self-hosted beat tasks from the templates
-for beat_task_template in beat_task_templates:
-    cloud_task = make_cloud_generator_task(beat_task_template)
-    cloud_tasks_to_schedule.append(cloud_task)
-
 tasks_to_schedule: list[dict] = []
 if not MULTI_TENANT:
     tasks_to_schedule = beat_task_templates
 
 
-def get_cloud_tasks_to_schedule() -> list[dict[str, Any]]:
-    return cloud_tasks_to_schedule
+def generate_cloud_tasks(
+    beat_tasks: list[dict], beat_templates: list[dict], beat_multiplier: float
+) -> list[dict[str, Any]]:
+    """
+    beat_tasks: system wide tasks that can be sent as is
+    beat_templates: task templates that will be transformed into per tenant tasks via
+    the cloud_beat_task_generator
+    beat_multiplier: a multiplier that can be applied on top of the task schedule
+    to speed up or slow down the task generation rate. useful in production.
+
+    Returns a list of cloud tasks, which consists of incoming tasks + tasks generated
+    from incoming templates.
+    """
+
+    if beat_multiplier <= 0:
+        raise ValueError("beat_multiplier must be positive!")
+
+    # start with the incoming beat tasks
+    cloud_tasks: list[dict] = copy.deepcopy(beat_tasks)
+
+    # generate our cloud tasks from the templates
+    for beat_template in beat_templates:
+        cloud_task = make_cloud_generator_task(beat_template)
+        cloud_tasks.append(cloud_task)
+
+    # factor in the cloud multiplier
+    for cloud_task in cloud_tasks:
+        cloud_task["schedule"] = cloud_task["schedule"] * beat_multiplier
+
+    return cloud_tasks
+
+
+def get_cloud_tasks_to_schedule(beat_multiplier: float) -> list[dict[str, Any]]:
+    return generate_cloud_tasks(beat_system_tasks, beat_task_templates, beat_multiplier)
 
 
 def get_tasks_to_schedule() -> list[dict[str, Any]]:
