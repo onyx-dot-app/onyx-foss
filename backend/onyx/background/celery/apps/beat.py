@@ -30,10 +30,9 @@ class DynamicTenantScheduler(PersistentScheduler):
     """This scheduler is useful because we can dynamically adjust task generation rates
     through it."""
 
-    RELOAD_INTERVAL = 120
+    RELOAD_INTERVAL = 60
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        task_logger.info("Initializing DynamicTenantScheduler")
         super().__init__(*args, **kwargs)
 
         self.last_beat_multiplier = CLOUD_BEAT_MULTIPLIER_DEFAULT
@@ -46,7 +45,9 @@ class DynamicTenantScheduler(PersistentScheduler):
         # Let the parent class handle store initialization
         self.setup_schedule()
         self._try_updating_schedule()
-        task_logger.info(f"Setting reload interval to {self._reload_interval}")
+        task_logger.info(
+            f"DynamicTenantScheduler initialized: reload_interval={self._reload_interval}"
+        )
 
     def setup_schedule(self) -> None:
         super().setup_schedule()
