@@ -66,7 +66,7 @@ class PersonaManager:
 
         response = requests.post(
             f"{API_SERVER_URL}/persona",
-            json=persona_creation_request.model_dump(),
+            json=persona_creation_request.model_dump(mode="json"),
             headers=user_performing_action.headers
             if user_performing_action
             else GENERAL_HEADERS,
@@ -119,6 +119,7 @@ class PersonaManager:
     ) -> DATestPersona:
         system_prompt = system_prompt or f"System prompt for {persona.name}"
         task_prompt = task_prompt or f"Task prompt for {persona.name}"
+
         persona_update_request = PersonaUpsertRequest(
             name=name or persona.name,
             description=description or persona.description,
@@ -146,7 +147,7 @@ class PersonaManager:
 
         response = requests.patch(
             f"{API_SERVER_URL}/persona/{persona.id}",
-            json=persona_update_request.model_dump(),
+            json=persona_update_request.model_dump(mode="json"),
             headers=user_performing_action.headers
             if user_performing_action
             else GENERAL_HEADERS,
