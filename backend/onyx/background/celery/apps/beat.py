@@ -78,7 +78,8 @@ class DynamicTenantScheduler(PersistentScheduler):
         new_schedule: dict[str, dict[str, Any]] = {}
 
         if MULTI_TENANT:
-            # cloud tasks only need the single task beat across all tenants
+            # cloud tasks are system wide and thus only need to be on the beat schedule
+            # once for all tenants
             get_cloud_tasks_to_schedule = fetch_versioned_implementation(
                 "onyx.background.celery.tasks.beat_schedule",
                 "get_cloud_tasks_to_schedule",
@@ -100,6 +101,9 @@ class DynamicTenantScheduler(PersistentScheduler):
                 new_schedule[task_name] = cloud_task
 
         # regular task beats are multiplied across all tenants
+        # note that currently this just schedules for a single tenant in self hosted
+        # and doesn't do anything in the cloud because it's much more scalable
+        # to schedule a single cloud beat task to dispatch per tenant tasks.
         get_tasks_to_schedule = fetch_versioned_implementation(
             "onyx.background.celery.tasks.beat_schedule", "get_tasks_to_schedule"
         )
