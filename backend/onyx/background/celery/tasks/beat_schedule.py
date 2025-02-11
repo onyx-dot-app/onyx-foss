@@ -19,7 +19,7 @@ BEAT_EXPIRES_DEFAULT = 15 * 60  # 15 minutes (in seconds)
 
 # hack to slow down task dispatch in the cloud until
 # we have a better implementation (backpressure, etc)
-CLOUD_BEAT_MULTIPLIER_DEFAULT = 8
+CLOUD_BEAT_MULTIPLIER_DEFAULT = 8.0
 
 # tasks that run in either self-hosted on cloud
 beat_task_templates: list[dict] = []
@@ -177,6 +177,9 @@ def generate_cloud_tasks(
     from incoming templates.
     """
 
+    if beat_multiplier <= 0:
+        raise ValueError("beat_multiplier must be positive!")
+
     # start with the incoming beat tasks
     cloud_tasks: list[dict] = copy.deepcopy(beat_tasks)
 
@@ -192,7 +195,7 @@ def generate_cloud_tasks(
     return cloud_tasks
 
 
-def get_cloud_tasks_to_schedule(beat_multiplier: int) -> list[dict[str, Any]]:
+def get_cloud_tasks_to_schedule(beat_multiplier: float) -> list[dict[str, Any]]:
     return generate_cloud_tasks(beat_system_tasks, beat_task_templates, beat_multiplier)
 
 

@@ -58,7 +58,7 @@ class DynamicTenantScheduler(PersistentScheduler):
             self._last_reload is None
             or (now - self._last_reload) > self._reload_interval
         ):
-            task_logger.info("Reload interval reached, initiating task update")
+            task_logger.debug("Reload interval reached, initiating task update")
             try:
                 self._try_updating_schedule()
             except (AttributeError, KeyError):
@@ -71,7 +71,7 @@ class DynamicTenantScheduler(PersistentScheduler):
         return retval
 
     def _generate_schedule(
-        self, tenant_ids: list[str] | list[None], beat_multiplier: int
+        self, tenant_ids: list[str] | list[None], beat_multiplier: float
     ) -> dict[str, dict[str, Any]]:
         """Given a list of tenant id's, generates a new beat schedule for celery."""
         new_schedule: dict[str, dict[str, Any]] = {}
@@ -149,7 +149,13 @@ class DynamicTenantScheduler(PersistentScheduler):
         beat_multiplier = CLOUD_BEAT_MULTIPLIER_DEFAULT
         beat_multiplier_raw = r.get(f"{ONYX_CLOUD_REDIS_RUNTIME}:beat_multiplier")
         if beat_multiplier_raw is not None:
-            beat_multiplier = cast(int, beat_multiplier_raw)
+            try:
+                beat_multiplier_bytes = cast(bytes, beat_multiplier_raw)
+                beat_multiplier = float(beat_multiplier_bytes.decode())
+            except ValueError:
+                task_logger.error(
+                    f"Invalid beat_multiplier value: {beat_multiplier_raw}"
+                )
 
         new_schedule = self._generate_schedule(tenant_ids, beat_multiplier)
 
@@ -169,10 +175,15 @@ class DynamicTenantScheduler(PersistentScheduler):
 
         if not do_update:
             # exit early if nothing changed
+            task_logger.info(
+                f"_try_updating_schedule - Schedule unchanged: "
+                f"tasks={len(new_schedule)} "
+                f"beat_multiplier={beat_multiplier}"
+            )
             return
 
         # schedule needs updating
-        task_logger.info(
+        task_logger.debug(
             "Schedule update required",
             extra={
                 "new_tasks": len(new_schedule),
@@ -199,13 +210,15 @@ class DynamicTenantScheduler(PersistentScheduler):
         # Ensure changes are persisted
         self.sync()
 
-        self.last_beat_multiplier = beat_multiplier
-
         task_logger.info(
             f"_try_updating_schedule - Schedule updated: "
+            f"prev_num_tasks={len(current_schedule)} "
+            f"prev_beat_multiplier={self.last_beat_multiplier} "
             f"tasks={len(new_schedule)} "
             f"beat_multiplier={beat_multiplier}"
         )
+
+        self.last_beat_multiplier = beat_multiplier
 
     @staticmethod
     def _compare_schedules(schedule1: dict, schedule2: dict) -> bool:
