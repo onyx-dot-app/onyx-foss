@@ -138,12 +138,12 @@ const SYSTEM_MESSAGE_ID = -3;
 export function ChatPage({
   toggle,
   documentSidebarInitialWidth,
-  toggledSidebar,
+  sidebarVisible,
   firstMessage,
 }: {
   toggle: (toggled?: boolean) => void;
   documentSidebarInitialWidth?: number;
-  toggledSidebar: boolean;
+  sidebarVisible: boolean;
   firstMessage?: string;
 }) {
   const router = useRouter();
@@ -204,7 +204,7 @@ export function ChatPage({
   const settings = useContext(SettingsContext);
   const enterpriseSettings = settings?.enterpriseSettings;
 
-  const [documentSidebarToggled, setDocumentSidebarToggled] = useState(false);
+  const [documentSidebarVisible, setDocumentSidebarVisible] = useState(false);
   const [proSearchEnabled, setProSearchEnabled] = useState(proSearchToggled);
   const [streamingAllowed, setStreamingAllowed] = useState(false);
   const toggleProSearch = () => {
@@ -243,7 +243,7 @@ export function ChatPage({
     if (user?.is_anonymous_user) {
       Cookies.set(
         SIDEBAR_TOGGLED_COOKIE_NAME,
-        String(!toggledSidebar).toLocaleLowerCase()
+        String(!sidebarVisible).toLocaleLowerCase()
       );
       toggle(false);
     }
@@ -1024,10 +1024,10 @@ export function ChatPage({
     if (
       (!personaIncludesRetrieval &&
         (!selectedDocuments || selectedDocuments.length === 0) &&
-        documentSidebarToggled) ||
+        documentSidebarVisible) ||
       chatSessionIdRef.current == undefined
     ) {
-      setDocumentSidebarToggled(false);
+      setDocumentSidebarVisible(false);
     }
     clientScrollToBottom();
   }, [chatSessionIdRef.current]);
@@ -1805,7 +1805,7 @@ export function ChatPage({
     }
     Cookies.set(
       SIDEBAR_TOGGLED_COOKIE_NAME,
-      String(!toggledSidebar).toLocaleLowerCase()
+      String(!sidebarVisible).toLocaleLowerCase()
     ),
       {
         path: "/",
@@ -1822,7 +1822,7 @@ export function ChatPage({
   const sidebarElementRef = useRef<HTMLDivElement>(null);
 
   useSidebarVisibility({
-    toggledSidebar,
+    sidebarVisible,
     sidebarElementRef,
     showDocSidebar: showHistorySidebar,
     setShowDocSidebar: setShowHistorySidebar,
@@ -2003,7 +2003,7 @@ export function ChatPage({
 
   useEffect(() => {
     if (!retrievalEnabled) {
-      setDocumentSidebarToggled(false);
+      setDocumentSidebarVisible(false);
     }
   }, [retrievalEnabled]);
 
@@ -2068,10 +2068,10 @@ export function ChatPage({
   const [showAssistantsModal, setShowAssistantsModal] = useState(false);
 
   const toggleDocumentSidebar = () => {
-    if (!documentSidebarToggled) {
-      setDocumentSidebarToggled(true);
+    if (!documentSidebarVisible) {
+      setDocumentSidebarVisible(true);
     } else {
-      setDocumentSidebarToggled(false);
+      setDocumentSidebarVisible(false);
     }
   };
 
@@ -2178,11 +2178,11 @@ export function ChatPage({
         />
       )}
 
-      {retrievalEnabled && documentSidebarToggled && settings?.isMobile && (
+      {retrievalEnabled && documentSidebarVisible && settings?.isMobile && (
         <div className="md:hidden">
           <Modal
             hideDividerForTitle
-            onOutsideClick={() => setDocumentSidebarToggled(false)}
+            onOutsideClick={() => setDocumentSidebarVisible(false)}
             title="Sources"
           >
             <DocumentResults
@@ -2198,7 +2198,7 @@ export function ChatPage({
               modal={true}
               ref={innerSidebarElementRef}
               closeSidebar={() => {
-                setDocumentSidebarToggled(false);
+                setDocumentSidebarVisible(false);
               }}
               selectedMessage={aiMessage}
               selectedDocuments={selectedDocuments}
@@ -2277,8 +2277,10 @@ export function ChatPage({
                 bg-opacity-80
                 duration-300
                 ease-in-out
+
+                
                 ${
-                  !untoggled && (showHistorySidebar || toggledSidebar)
+                  !untoggled && (showHistorySidebar || sidebarVisible)
                     ? "opacity-100 w-[250px] translate-x-0"
                     : "opacity-0 w-[250px] pointer-events-none -translate-x-10"
                 }`}
@@ -2291,7 +2293,7 @@ export function ChatPage({
                   page="chat"
                   ref={innerSidebarElementRef}
                   toggleSidebar={toggleSidebar}
-                  toggled={toggledSidebar}
+                  toggled={sidebarVisible}
                   currentAssistantId={liveAssistant?.id}
                   existingChats={chatSessions}
                   currentChatSession={selectedChatSession}
@@ -2314,7 +2316,7 @@ export function ChatPage({
                 duration-300
                 ease-in-out
                 ${
-                  documentSidebarToggled &&
+                  documentSidebarVisible &&
                   !settings?.isMobile &&
                   "opacity-100 w-[350px]"
                 }`}
@@ -2339,7 +2341,7 @@ export function ChatPage({
                 ease-in-out
                 h-full
                 ${
-                  documentSidebarToggled && !settings?.isMobile
+                  documentSidebarVisible && !settings?.isMobile
                     ? "w-[400px]"
                     : "w-[0px]"
                 }
@@ -2358,7 +2360,7 @@ export function ChatPage({
               modal={false}
               ref={innerSidebarElementRef}
               closeSidebar={() =>
-                setTimeout(() => setDocumentSidebarToggled(false), 300)
+                setTimeout(() => setDocumentSidebarVisible(false), 300)
               }
               selectedMessage={aiMessage}
               selectedDocuments={selectedDocuments}
@@ -2367,12 +2369,12 @@ export function ChatPage({
               selectedDocumentTokens={selectedDocumentTokens}
               maxTokens={maxTokens}
               initialWidth={400}
-              isOpen={documentSidebarToggled && !settings?.isMobile}
+              isOpen={documentSidebarVisible && !settings?.isMobile}
             />
           </div>
 
           <BlurBackground
-            visible={!untoggled && (showHistorySidebar || toggledSidebar)}
+            visible={!untoggled && (showHistorySidebar || sidebarVisible)}
             onClick={() => toggleSidebar()}
           />
 
@@ -2387,7 +2389,7 @@ export function ChatPage({
               {liveAssistant && (
                 <FunctionalHeader
                   toggleUserSettings={() => setUserSettingsToggled(true)}
-                  sidebarToggled={toggledSidebar}
+                  sidebarToggled={sidebarVisible}
                   reset={() => setMessage("")}
                   page="chat"
                   setSharingModalVisible={
@@ -2395,8 +2397,8 @@ export function ChatPage({
                       ? setSharingModalVisible
                       : undefined
                   }
-                  documentSidebarToggled={
-                    documentSidebarToggled && !settings?.isMobile
+                  documentSidebarVisible={
+                    documentSidebarVisible && !settings?.isMobile
                   }
                   toggleSidebar={toggleSidebar}
                   currentChatSession={selectedChatSession}
@@ -2424,7 +2426,7 @@ export function ChatPage({
                           duration-300 
                           ease-in-out
                           h-full
-                          ${toggledSidebar ? "w-[200px]" : "w-[0px]"}
+                          ${sidebarVisible ? "w-[200px]" : "w-[0px]"}
                       `}
                         ></div>
                       )}
@@ -2450,7 +2452,7 @@ export function ChatPage({
                                   duration-300 
                                   ease-in-out
                                   h-full
-                                  ${toggledSidebar ? "w-[200px]" : "w-[0px]"}
+                                  ${sidebarVisible ? "w-[200px]" : "w-[0px]"}
                               `}
                                 ></div>
                               )}
@@ -2636,7 +2638,7 @@ export function ChatPage({
                                     message.sub_questions.length > 0 ? (
                                       <AgenticMessage
                                         docSidebarToggled={
-                                          documentSidebarToggled &&
+                                          documentSidebarVisible &&
                                           (selectedMessageForDocDisplay ==
                                             message.messageId ||
                                             selectedMessageForDocDisplay ==
@@ -2740,8 +2742,8 @@ export function ChatPage({
                                         ) => {
                                           if (
                                             (!second &&
-                                              !documentSidebarToggled) ||
-                                            (documentSidebarToggled &&
+                                              !documentSidebarVisible) ||
+                                            (documentSidebarVisible &&
                                               selectedMessageForDocDisplay ===
                                                 message.messageId)
                                           ) {
@@ -2749,8 +2751,8 @@ export function ChatPage({
                                           }
                                           if (
                                             (second &&
-                                              !documentSidebarToggled) ||
-                                            (documentSidebarToggled &&
+                                              !documentSidebarVisible) ||
+                                            (documentSidebarVisible &&
                                               selectedMessageForDocDisplay ===
                                                 secondLevelMessage?.messageId)
                                           ) {
@@ -2851,8 +2853,8 @@ export function ChatPage({
                                         selectedDocuments={selectedDocuments}
                                         toggleDocumentSelection={() => {
                                           if (
-                                            !documentSidebarToggled ||
-                                            (documentSidebarToggled &&
+                                            !documentSidebarVisible ||
+                                            (documentSidebarVisible &&
                                               selectedMessageForDocDisplay ===
                                                 message.messageId)
                                           ) {
@@ -3147,7 +3149,7 @@ export function ChatPage({
                           ease-in-out
                           h-full
                           ${
-                            documentSidebarToggled && !settings?.isMobile
+                            documentSidebarVisible && !settings?.isMobile
                               ? "w-[350px]"
                               : "w-[0px]"
                           }
@@ -3162,7 +3164,7 @@ export function ChatPage({
                     style={{ transition: "width 0.30s ease-out" }}
                     className={`flex-none bg-transparent transition-all bg-opacity-80 duration-300 ease-in-out h-full
                         ${
-                          toggledSidebar && !settings?.isMobile
+                          sidebarVisible && !settings?.isMobile
                             ? "w-[250px] "
                             : "w-[0px]"
                         }`}
@@ -3174,7 +3176,7 @@ export function ChatPage({
               )}
             </div>
           </div>
-          <FixedLogo backgroundToggled={toggledSidebar || showHistorySidebar} />
+          <FixedLogo backgroundToggled={sidebarVisible || showHistorySidebar} />
         </div>
         {/* Right Sidebar - DocumentSidebar */}
       </div>
