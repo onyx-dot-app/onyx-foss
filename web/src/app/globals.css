@@ -121,6 +121,7 @@
 
     /* agent references */
     --agent-sidebar: #be5d0e;
+    --agent-hovered: #d16b10;
     --agent: #e47011;
     --lighter-agent: #f59e0b;
 
@@ -341,6 +342,7 @@
 
     /* Agent references */
     --agent-sidebar: #be5d0e; /* You can keep or lighten/darken if desired */
+    --agent-hovered: #f07c13;
     --agent: #e47011;
     --lighter-agent: #f59e0b;
   }
@@ -658,6 +660,11 @@ ul > li > p {
   color: white;
 }
 
-.dark li {
+.dark li,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5 {
   color: #e5e5e5;
 }

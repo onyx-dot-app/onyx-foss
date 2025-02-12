@@ -957,7 +957,7 @@ export const HumanMessage = ({
                           min-h-[38px]
                           py-2
                           px-3
-                          hover:bg-accent-hover
+                          hover:bg-agent-hovered
                         `}
                           onClick={handleEditSubmit}
                         >
