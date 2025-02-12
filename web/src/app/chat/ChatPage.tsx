@@ -97,7 +97,6 @@ import {
 } from "@/components/resizable/constants";
 import FixedLogo from "../../components/logo/FixedLogo";
 
-import { DeleteEntityModal } from "../../components/modals/DeleteEntityModal";
 import { MinimalMarkdown } from "@/components/chat/MinimalMarkdown";
 import ExceptionTraceModal from "@/components/modals/ExceptionTraceModal";
 
@@ -130,6 +129,7 @@ import {
   useSidebarShortcut,
 } from "@/lib/browserUtilities";
 import { Button } from "@/components/ui/button";
+import { ConfirmEntityModal } from "@/components/modals/ConfirmEntityModal";
 
 const TEMP_USER_MESSAGE_ID = -1;
 const TEMP_ASSISTANT_MESSAGE_ID = -2;
@@ -2122,7 +2122,7 @@ export function ChatPage({
       <ChatPopup />
 
       {showDeleteAllModal && (
-        <DeleteEntityModal
+        <ConfirmEntityModal
           entityType="All Chats"
           entityName="all your chat sessions"
           onClose={() => setShowDeleteAllModal(false)}
@@ -2287,6 +2287,7 @@ export function ChatPage({
             >
               <div className="w-full relative">
                 <HistorySidebar
+                  liveAssistant={liveAssistant}
                   setShowAssistantsModal={setShowAssistantsModal}
                   explicitlyUntoggle={explicitlyUntoggle}
                   reset={() => setMessage("")}
@@ -2294,7 +2295,6 @@ export function ChatPage({
                   ref={innerSidebarElementRef}
                   toggleSidebar={toggleSidebar}
                   toggled={sidebarVisible}
-                  currentAssistantId={liveAssistant?.id}
                   existingChats={chatSessions}
                   currentChatSession={selectedChatSession}
                   folders={folders}

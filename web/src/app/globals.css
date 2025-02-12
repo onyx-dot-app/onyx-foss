@@ -70,6 +70,7 @@
     --accent-foreground: 0 0% 9%;
     --accent-background: #f0eee8;
     --accent-background-hovered: #e5e3dd;
+    --accent-background-selected: #eae8e2;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --ring: 0 0% 3.9%;
@@ -247,6 +248,7 @@
     --accent-background: #333333;
 
     --accent-background-hovered: #2f2f2f;
+    --accent-background-selected: #222222;
 
     --text-darker: #f0f0f0;
 

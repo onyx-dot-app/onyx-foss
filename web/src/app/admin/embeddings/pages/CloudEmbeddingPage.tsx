@@ -19,7 +19,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { CustomEmbeddingModelForm } from "@/components/embedding/CustomEmbeddingModelForm";
 import { deleteSearchSettings } from "./utils";
 import { usePopup } from "@/components/admin/connectors/Popup";
-import { DeleteEntityModal } from "@/components/modals/DeleteEntityModal";
+import { ConfirmEntityModal } from "@/components/modals/ConfirmEntityModal";
 import { AdvancedSearchConfiguration } from "../interfaces";
 import CardSection from "@/components/admin/CardSection";
 
@@ -456,7 +456,7 @@ export function CloudModelCard({
     >
       {popup}
       {showDeleteModel && (
-        <DeleteEntityModal
+        <ConfirmEntityModal
           entityName={model.model_name}
           entityType="embedding model configuration"
           onSubmit={() => deleteModel()}
