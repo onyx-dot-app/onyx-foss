@@ -51,6 +51,7 @@ class SearchPipeline:
         user: User | None,
         llm: LLM,
         fast_llm: LLM,
+        skip_query_analysis: bool,
         db_session: Session,
         bypass_acl: bool = False,  # NOTE: VERY DANGEROUS, USE WITH CAUTION
         retrieval_metrics_callback: (
@@ -67,6 +68,7 @@ class SearchPipeline:
         self.user = user
         self.llm = llm
         self.fast_llm = fast_llm
+        self.skip_query_analysis = skip_query_analysis
         self.db_session = db_session
         self.bypass_acl = bypass_acl
         self.retrieval_metrics_callback = retrieval_metrics_callback
@@ -108,6 +110,7 @@ class SearchPipeline:
             search_request=self.search_request,
             user=self.user,
             llm=self.llm,
+            skip_query_analysis=self.skip_query_analysis,
             db_session=self.db_session,
             bypass_acl=self.bypass_acl,
         )
@@ -162,6 +165,12 @@ class SearchPipeline:
         that have a corresponding chunk.
 
         This step should be fast for any document index implementation.
+
+        Current implementation timing is approximately broken down in timing as:
+        - 200 ms to get the embedding of the query
+        - 15 ms to get chunks from the document index
+        - possibly more to get additional surrounding chunks
+        - possibly more for query expansion (multilingual)
         """
         if self._retrieved_sections is not None:
             return self._retrieved_sections
