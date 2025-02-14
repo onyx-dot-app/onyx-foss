@@ -142,7 +142,7 @@ def run_basic_graph(
 ) -> AnswerStream:
     graph = basic_graph_builder()
     compiled_graph = graph.compile()
-    input = BasicInput()
+    input = BasicInput(unused=True)
     return run_graph(compiled_graph, config, input)
 
 
