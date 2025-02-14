@@ -772,6 +772,7 @@ def main() -> None:
             "update",
             "delete",
             "get_acls",
+            "delete-all-documents",
         ],
         required=True,
         help="Action to perform",
@@ -786,12 +787,19 @@ def main() -> None:
     parser.add_argument(
         "--fields", help="Fields to update, in JSON format (for update)"
     )
+    parser.add_argument(
+        "--count",
+        type=int,
+        help="Maximum number of documents to delete (for delete-all-documents)",
+    )
 
     args = parser.parse_args()
     vespa_debug = VespaDebugging(args.tenant_id)
 
     if args.action == "delete-all-documents":
-        vespa_debug.delete_documents_for_tenant(args.count)
+        if not args.tenant_id:
+            parser.error("--tenant-id is required for delete-all-documents action")
+        vespa_debug.delete_documents_for_tenant(count=args.count)
     elif args.action == "config":
         vespa_debug.print_config()
     elif args.action == "connect":
