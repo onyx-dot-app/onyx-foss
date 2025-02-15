@@ -97,6 +97,9 @@ services:
       - LINEAR_CLIENT_ID=${LINEAR_CLIENT_ID:-}
       - LINEAR_CLIENT_SECRET=${LINEAR_CLIENT_SECRET:-}
 
+      # Demo purposes
+      - MOCK_CONNECTOR_FILE_PATH=${MOCK_CONNECTOR_FILE_PATH:-}
+
       # Analytics Configs
       - SENTRY_DSN=${SENTRY_DSN:-}
 
