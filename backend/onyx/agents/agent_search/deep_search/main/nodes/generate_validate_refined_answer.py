@@ -66,6 +66,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
 from onyx.chat.models import StreamingError
+from onyx.configs.agent_configs import AGENT_ANSWER_GENERATION_BY_FAST_LLM
 from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
 from onyx.configs.agent_configs import AGENT_MAX_STREAMED_DOCS_FOR_REFINED_ANSWER
 from onyx.configs.agent_configs import AGENT_MIN_ORIG_QUESTION_DOCS
@@ -253,7 +254,12 @@ def generate_validate_refined_answer(
         else REFINED_ANSWER_PROMPT_WO_SUB_QUESTIONS
     )
 
-    model = graph_config.tooling.fast_llm
+    model = (
+        graph_config.tooling.fast_llm
+        if AGENT_ANSWER_GENERATION_BY_FAST_LLM
+        else graph_config.tooling.primary_llm
+    )
+
     relevant_docs_str = format_docs(answer_generation_documents.context_documents)
     relevant_docs_str = trim_prompt_piece(
         model.config,
@@ -383,8 +389,9 @@ def generate_validate_refined_answer(
         )
     ]
 
+    validation_model = graph_config.tooling.fast_llm
     try:
-        validation_response = model.invoke(
+        validation_response = validation_model.invoke(
             msg, timeout_override=AGENT_TIMEOUT_OVERRIDE_LLM_REFINED_ANSWER_VALIDATION
         )
         refined_answer_quality = binary_string_test_after_answer_separator(

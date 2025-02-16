@@ -60,6 +60,7 @@ from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
 from onyx.chat.models import AgentAnswerPiece
 from onyx.chat.models import ExtendedToolResponse
 from onyx.chat.models import StreamingError
+from onyx.configs.agent_configs import AGENT_ANSWER_GENERATION_BY_FAST_LLM
 from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
 from onyx.configs.agent_configs import AGENT_MAX_STREAMED_DOCS_FOR_INITIAL_ANSWER
 from onyx.configs.agent_configs import AGENT_MIN_ORIG_QUESTION_DOCS
@@ -230,7 +231,11 @@ def generate_initial_answer(
 
         sub_questions = all_sub_questions  # Replace the original assignment
 
-        model = graph_config.tooling.fast_llm
+        model = (
+            graph_config.tooling.fast_llm
+            if AGENT_ANSWER_GENERATION_BY_FAST_LLM
+            else graph_config.tooling.primary_llm
+        )
 
         doc_context = format_docs(answer_generation_documents.context_documents)
         doc_context = trim_prompt_piece(
