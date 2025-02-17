@@ -7,7 +7,7 @@ from typing import cast
 
 from sqlalchemy.orm import Session
 
-from onyx.agents.agent_search.orchestration.nodes.tool_call import ToolCallException
+from onyx.agents.agent_search.orchestration.nodes.call_tool import ToolCallException
 from onyx.chat.answer import Answer
 from onyx.chat.chat_utils import create_chat_chain
 from onyx.chat.chat_utils import create_temporary_persona
