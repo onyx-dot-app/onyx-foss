@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 from typing import cast
 
 from langchain_core.messages import HumanMessage
@@ -71,10 +70,16 @@ from onyx.configs.agent_configs import AGENT_MAX_ANSWER_CONTEXT_DOCS
 from onyx.configs.agent_configs import AGENT_MAX_STREAMED_DOCS_FOR_REFINED_ANSWER
 from onyx.configs.agent_configs import AGENT_MIN_ORIG_QUESTION_DOCS
 from onyx.configs.agent_configs import (
-    AGENT_TIMEOUT_OVERRIDE_LLM_REFINED_ANSWER_GENERATION,
+    AGENT_TIMEOUT_CONNECT_LLM_REFINED_ANSWER_GENERATION,
 )
 from onyx.configs.agent_configs import (
-    AGENT_TIMEOUT_OVERRIDE_LLM_REFINED_ANSWER_VALIDATION,
+    AGENT_TIMEOUT_CONNECT_LLM_REFINED_ANSWER_VALIDATION,
+)
+from onyx.configs.agent_configs import (
+    AGENT_TIMEOUT_LLM_REFINED_ANSWER_GENERATION,
+)
+from onyx.configs.agent_configs import (
+    AGENT_TIMEOUT_LLM_REFINED_ANSWER_VALIDATION,
 )
 from onyx.llm.chat_llm import LLMRateLimitError
 from onyx.llm.chat_llm import LLMTimeoutError
@@ -93,6 +98,7 @@ from onyx.prompts.agent_search import (
 from onyx.prompts.agent_search import UNKNOWN_ANSWER
 from onyx.tools.tool_implementations.search.search_tool import yield_search_responses
 from onyx.utils.logger import setup_logger
+from onyx.utils.threadpool_concurrency import run_with_timeout
 from onyx.utils.timing import log_function_time
 
 logger = setup_logger()
@@ -290,13 +296,13 @@ def generate_validate_refined_answer(
         )
     ]
 
-    streamed_tokens: list[str | list[str | dict[str, Any]]] = [""]
+    streamed_tokens: list[str] = [""]
     dispatch_timings: list[float] = []
     agent_error: AgentErrorLog | None = None
 
-    try:
+    def stream_refined_answer() -> list[str]:
         for message in model.stream(
-            msg, timeout_override=AGENT_TIMEOUT_OVERRIDE_LLM_REFINED_ANSWER_GENERATION
+            msg, timeout_override=AGENT_TIMEOUT_CONNECT_LLM_REFINED_ANSWER_GENERATION
         ):
             # TODO: in principle, the answer here COULD contain images, but we don't support that yet
             content = message.content
@@ -321,8 +327,15 @@ def generate_validate_refined_answer(
                 (end_stream_token - start_stream_token).microseconds
             )
             streamed_tokens.append(content)
+        return streamed_tokens
 
-    except LLMTimeoutError:
+    try:
+        streamed_tokens = run_with_timeout(
+            AGENT_TIMEOUT_LLM_REFINED_ANSWER_GENERATION,
+            stream_refined_answer,
+        )
+
+    except (LLMTimeoutError, TimeoutError):
         agent_error = AgentErrorLog(
             error_type=AgentLLMErrorType.TIMEOUT,
             error_message=AGENT_LLM_TIMEOUT_MESSAGE,
@@ -391,15 +404,18 @@ def generate_validate_refined_answer(
 
     validation_model = graph_config.tooling.fast_llm
     try:
-        validation_response = validation_model.invoke(
-            msg, timeout_override=AGENT_TIMEOUT_OVERRIDE_LLM_REFINED_ANSWER_VALIDATION
+        validation_response = run_with_timeout(
+            AGENT_TIMEOUT_LLM_REFINED_ANSWER_VALIDATION,
+            validation_model.invoke,
+            prompt=msg,
+            timeout_override=AGENT_TIMEOUT_CONNECT_LLM_REFINED_ANSWER_VALIDATION,
         )
         refined_answer_quality = binary_string_test_after_answer_separator(
             text=cast(str, validation_response.content),
             positive_value=AGENT_POSITIVE_VALUE_STR,
             separator=AGENT_ANSWER_SEPARATOR,
         )
-    except LLMTimeoutError:
+    except (LLMTimeoutError, TimeoutError):
         refined_answer_quality = True
         logger.error("LLM Timeout Error - validate refined answer")
 
