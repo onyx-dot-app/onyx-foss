@@ -41,6 +41,7 @@ from onyx.configs.app_configs import VESPA_CLOUD_CERT_PATH
 from onyx.configs.app_configs import VESPA_CLOUD_KEY_PATH
 from onyx.configs.constants import CELERY_GENERIC_BEAT_LOCK_TIMEOUT
 from onyx.configs.constants import CELERY_INDEXING_LOCK_TIMEOUT
+from onyx.configs.constants import CELERY_INDEXING_WATCHDOG_CONNECTOR_TIMEOUT
 from onyx.configs.constants import CELERY_TASK_WAIT_FOR_FENCE_TIMEOUT
 from onyx.configs.constants import OnyxCeleryQueues
 from onyx.configs.constants import OnyxCeleryTask
@@ -90,6 +91,9 @@ class IndexingWatchdogTerminalStatus(str, Enum):
     SUCCEEDED = "succeeded"
 
     SPAWN_FAILED = "spawn_failed"  # connector spawn failed
+    SPAWN_NOT_ALIVE = (
+        "spawn_not_alive"  # spawn succeeded but process did not come alive
+    )
 
     BLOCKED_BY_DELETION = "blocked_by_deletion"
     BLOCKED_BY_STOP_SIGNAL = "blocked_by_stop_signal"
@@ -112,6 +116,8 @@ class IndexingWatchdogTerminalStatus(str, Enum):
     # the watchdog terminated the task due to no activity
     TERMINATED_BY_ACTIVITY_TIMEOUT = "terminated_by_activity_timeout"
 
+    # NOTE: this may actually be the same as SIGKILL, but parsed differently by python
+    # consolidate once we know more
     OUT_OF_MEMORY = "out_of_memory"
 
     PROCESS_SIGNAL_SIGKILL = "process_signal_sigkill"
@@ -137,6 +143,7 @@ class IndexingWatchdogTerminalStatus(str, Enum):
     def from_code(cls, code: int) -> "IndexingWatchdogTerminalStatus":
         _CODE_TO_ENUM: dict[int, IndexingWatchdogTerminalStatus] = {
             -9: IndexingWatchdogTerminalStatus.PROCESS_SIGNAL_SIGKILL,
+            137: IndexingWatchdogTerminalStatus.OUT_OF_MEMORY,
             248: IndexingWatchdogTerminalStatus.BLOCKED_BY_DELETION,
             249: IndexingWatchdogTerminalStatus.BLOCKED_BY_STOP_SIGNAL,
             250: IndexingWatchdogTerminalStatus.FENCE_NOT_FOUND,
@@ -765,9 +772,9 @@ def connector_indexing_task(
         callback = IndexingCallback(
             os.getppid(),
             redis_connector,
-            redis_connector_index,
             lock,
             r,
+            redis_connector_index,
         )
 
         logger.info(
@@ -912,7 +919,7 @@ def connector_indexing_proxy_task(
         tenant_id,
     )
 
-    if not job:
+    if not job or not job.process:
         result.status = IndexingWatchdogTerminalStatus.SPAWN_FAILED
         task_logger.info(
             log_builder.build(
@@ -923,7 +930,33 @@ def connector_indexing_proxy_task(
         )
         return
 
-    task_logger.info(log_builder.build("Indexing watchdog - spawn succeeded"))
+    # Ensure the process has moved out of the starting state
+    num_waits = 0
+    while True:
+        if num_waits > 15:
+            result.status = IndexingWatchdogTerminalStatus.SPAWN_NOT_ALIVE
+            task_logger.info(
+                log_builder.build(
+                    "Indexing watchdog - finished",
+                    status=str(result.status.value),
+                    exit_code=str(result.exit_code),
+                )
+            )
+            job.release()
+            return
+
+        if job.process.is_alive() or job.process.exitcode is not None:
+            break
+
+        sleep(1)
+        num_waits += 1
+
+    task_logger.info(
+        log_builder.build(
+            "Indexing watchdog - spawn succeeded",
+            pid=str(job.process.pid),
+        )
+    )
 
     redis_connector = RedisConnector(tenant_id, cc_pair_id)
     redis_connector_index = redis_connector.new_index(search_settings_id)
@@ -939,6 +972,9 @@ def connector_indexing_proxy_task(
             result.connector_source = (
                 index_attempt.connector_credential_pair.connector.source.value
             )
+
+        redis_connector_index.set_active()  # renew active signal
+        redis_connector_index.set_connector_active()  # prime the connective active signal
 
         while True:
             sleep(5)
@@ -972,6 +1008,38 @@ def connector_indexing_proxy_task(
                 )
 
                 result.status = IndexingWatchdogTerminalStatus.TERMINATED_BY_SIGNAL
+                break
+
+            if not redis_connector_index.connector_active():
+                task_logger.warning(
+                    log_builder.build(
+                        "Indexing watchdog - activity timeout exceeded",
+                        timeout=f"{CELERY_INDEXING_WATCHDOG_CONNECTOR_TIMEOUT}s",
+                    )
+                )
+
+                try:
+                    with get_session_with_current_tenant() as db_session:
+                        mark_attempt_failed(
+                            index_attempt_id,
+                            db_session,
+                            "Indexing watchdog - activity timeout exceeded: "
+                            f"attempt={index_attempt_id} "
+                            f"timeout={CELERY_INDEXING_WATCHDOG_CONNECTOR_TIMEOUT}s",
+                        )
+                except Exception:
+                    # if the DB exceptions, we'll just get an unfriendly failure message
+                    # in the UI instead of the cancellation message
+                    logger.exception(
+                        log_builder.build(
+                            "Indexing watchdog - transient exception marking index attempt as failed"
+                        )
+                    )
+
+                job.cancel()
+                result.status = (
+                    IndexingWatchdogTerminalStatus.TERMINATED_BY_ACTIVITY_TIMEOUT
+                )
                 break
 
             # if the spawned task is still running, restart the check once again
