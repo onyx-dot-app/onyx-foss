@@ -24,6 +24,7 @@ from onyx.connectors.interfaces import InsufficientPermissionsError
 from onyx.connectors.interfaces import LoadConnector
 from onyx.connectors.interfaces import PollConnector
 from onyx.connectors.interfaces import SecondsSinceUnixEpoch
+from onyx.connectors.interfaces import UnexpectedError
 from onyx.connectors.models import ConnectorMissingCredentialError
 from onyx.connectors.models import Document
 from onyx.connectors.models import Section
@@ -245,7 +246,7 @@ class GithubConnector(LoadConnector, PollConnector):
             test_repo.get_contents("")
 
         except RateLimitExceededException:
-            raise ConnectorValidationError(
+            raise UnexpectedError(
                 "Validation failed due to GitHub rate-limits being exceeded. Please try again later."
             )
 

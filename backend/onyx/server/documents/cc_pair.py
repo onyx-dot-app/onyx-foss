@@ -665,7 +665,8 @@ def associate_credential_to_connector(
         logger.error(f"IntegrityError: {e}")
         raise HTTPException(status_code=400, detail="Name must be unique")
 
-    except Exception:
+    except Exception as e:
+        logger.exception(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Unexpected error")
 
 
