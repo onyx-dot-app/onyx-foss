@@ -59,6 +59,12 @@ export interface User {
   is_cloud_superuser?: boolean;
   organization_name: string | null;
   is_anonymous_user?: boolean;
+  // If user does not have a configured password
+  // (i.e.) they are using an oauth flow
+  // or are in a no-auth situation
+  // we don't want to show them things like the reset password
+  // functionality
+  password_configured?: boolean;
 }
 
 export interface AllUsersResponse {

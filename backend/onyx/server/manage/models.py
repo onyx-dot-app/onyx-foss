@@ -67,6 +67,7 @@ class UserInfo(BaseModel):
     is_cloud_superuser: bool = False
     organization_name: str | None = None
     is_anonymous_user: bool | None = None
+    password_configured: bool | None = None
 
     @classmethod
     def from_model(
@@ -85,6 +86,7 @@ class UserInfo(BaseModel):
             is_superuser=user.is_superuser,
             is_verified=user.is_verified,
             role=user.role,
+            password_configured=user.password_configured,
             preferences=(
                 UserPreferences(
                     shortcut_enabled=user.shortcut_enabled,

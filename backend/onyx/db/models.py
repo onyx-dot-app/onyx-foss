@@ -205,6 +205,13 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         primaryjoin="User.id == foreign(ConnectorCredentialPair.creator_id)",
     )
 
+    @property
+    def password_configured(self) -> bool:
+        """
+        Returns True if the user has at least one OAuth (or OIDC) account.
+        """
+        return not bool(self.oauth_accounts)
+
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
     pass

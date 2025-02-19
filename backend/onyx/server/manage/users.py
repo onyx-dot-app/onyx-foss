@@ -206,6 +206,7 @@ def list_all_users(
                     email=user.email,
                     role=user.role,
                     is_active=user.is_active,
+                    password_configured=user.password_configured,
                 )
                 for user in accepted_users
             ],
@@ -215,6 +216,7 @@ def list_all_users(
                     email=user.email,
                     role=user.role,
                     is_active=user.is_active,
+                    password_configured=user.password_configured,
                 )
                 for user in slack_users
             ],
@@ -232,6 +234,7 @@ def list_all_users(
                 email=user.email,
                 role=user.role,
                 is_active=user.is_active,
+                password_configured=user.password_configured,
             )
             for user in accepted_users
         ][accepted_page * USERS_PAGE_SIZE : (accepted_page + 1) * USERS_PAGE_SIZE],
@@ -241,6 +244,7 @@ def list_all_users(
                 email=user.email,
                 role=user.role,
                 is_active=user.is_active,
+                password_configured=user.password_configured,
             )
             for user in slack_users
         ][

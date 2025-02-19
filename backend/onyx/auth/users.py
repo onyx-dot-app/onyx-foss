@@ -1,5 +1,7 @@
 import json
+import random
 import secrets
+import string
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -141,6 +143,30 @@ def get_display_email(email: str | None, space_less: bool = False) -> str:
         return name.replace("API_KEY__", "API Key: ")
 
     return email or ""
+
+
+def generate_password() -> str:
+    lowercase_letters = string.ascii_lowercase
+    uppercase_letters = string.ascii_uppercase
+    digits = string.digits
+    special_characters = string.punctuation
+
+    # Ensure at least one of each required character type
+    password = [
+        secrets.choice(uppercase_letters),
+        secrets.choice(digits),
+        secrets.choice(special_characters),
+    ]
+
+    # Fill the rest with a mix of characters
+    remaining_length = 12 - len(password)
+    all_characters = lowercase_letters + uppercase_letters + digits + special_characters
+    password.extend(secrets.choice(all_characters) for _ in range(remaining_length))
+
+    # Shuffle the password to randomize the position of the required characters
+    random.shuffle(password)
+
+    return "".join(password)
 
 
 def user_needs_to_be_verified() -> bool:
@@ -594,6 +620,39 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
                 )
 
             return user
+
+    async def reset_password_as_admin(self, user_id: uuid.UUID) -> str:
+        """Admin-only. Generate a random password for a user and return it."""
+        user = await self.get(user_id)
+        new_password = generate_password()
+        await self._update(user, {"password": new_password})
+        return new_password
+
+    async def change_password_if_old_matches(
+        self, user: User, old_password: str, new_password: str
+    ) -> None:
+        """
+        For normal users to change password if they know the old one.
+        Raises 400 if old password doesn't match.
+        """
+        verified, updated_password_hash = self.password_helper.verify_and_update(
+            old_password, user.hashed_password
+        )
+        if not verified:
+            # Raise some HTTPException (or your custom exception) if old password is invalid:
+            from fastapi import HTTPException, status
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid current password",
+            )
+
+        # If the hash was upgraded behind the scenes, we can keep it before setting the new password:
+        if updated_password_hash:
+            user.hashed_password = updated_password_hash
+
+        # Now apply and validate the new password
+        await self._update(user, {"password": new_password})
 
 
 async def get_user_manager(
