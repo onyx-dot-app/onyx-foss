@@ -1568,7 +1568,10 @@ export function ChatPage({
                   };
                 }
               );
-            } else if (Object.hasOwn(packet, "error")) {
+            } else if (
+              Object.hasOwn(packet, "error") &&
+              (packet as any).error != null
+            ) {
               if (
                 sub_questions.length > 0 &&
                 sub_questions
@@ -1580,8 +1583,8 @@ export function ChatPage({
                 setAgenticGenerating(false);
                 setAlternativeGeneratingAssistant(null);
                 setSubmittedMessage("");
-                return;
-                // throw new Error((packet as StreamingError).error);
+
+                throw new Error((packet as StreamingError).error);
               } else {
                 error = (packet as StreamingError).error;
                 stackTrace = (packet as StreamingError).stack_trace;
@@ -2692,6 +2695,11 @@ export function ChatPage({
                                     ? messageHistory[i + 1]?.documents
                                     : undefined;
 
+                                const nextMessage =
+                                  messageHistory[i + 1]?.type === "assistant"
+                                    ? messageHistory[i + 1]
+                                    : undefined;
+
                                 return (
                                   <div
                                     className="text-text"
@@ -2720,7 +2728,10 @@ export function ChatPage({
                                             selectedMessageForDocDisplay ==
                                               secondLevelMessage?.messageId)
                                         }
-                                        isImprovement={message.isImprovement}
+                                        isImprovement={
+                                          message.isImprovement ||
+                                          nextMessage?.isImprovement
+                                        }
                                         secondLevelGenerating={
                                           (message.second_level_generating &&
                                             currentSessionChatState !==

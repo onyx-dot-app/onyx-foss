@@ -240,7 +240,7 @@ export function SettingsForm() {
       />
 
       <Checkbox
-        label="Pro Search Disabled"
+        label="Agent Search Disabled"
         sublabel="If set, users will not be able to use Pro Search."
         checked={settings.pro_search_disabled ?? false}
         onChange={(e) =>
