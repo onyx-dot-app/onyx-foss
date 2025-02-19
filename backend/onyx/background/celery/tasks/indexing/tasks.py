@@ -48,6 +48,7 @@ from onyx.configs.constants import OnyxCeleryTask
 from onyx.configs.constants import OnyxRedisConstants
 from onyx.configs.constants import OnyxRedisLocks
 from onyx.configs.constants import OnyxRedisSignals
+from onyx.connectors.interfaces import ConnectorValidationError
 from onyx.db.connector import mark_ccpair_with_indexing_trigger
 from onyx.db.connector_credential_pair import fetch_connector_credential_pairs
 from onyx.db.connector_credential_pair import get_connector_credential_pair_from_id
@@ -107,6 +108,9 @@ class IndexingWatchdogTerminalStatus(str, Enum):
         "index_attempt_mismatch"  # expected index attempt metadata not found in db
     )
 
+    CONNECTOR_VALIDATION_ERROR = (
+        "connector_validation_error"  # the connector validation failed
+    )
     CONNECTOR_EXCEPTIONED = "connector_exceptioned"  # the connector itself exceptioned
     WATCHDOG_EXCEPTIONED = "watchdog_exceptioned"  # the watchdog exceptioned
 
@@ -127,6 +131,7 @@ class IndexingWatchdogTerminalStatus(str, Enum):
         _ENUM_TO_CODE: dict[IndexingWatchdogTerminalStatus, int] = {
             IndexingWatchdogTerminalStatus.PROCESS_SIGNAL_SIGKILL: -9,
             IndexingWatchdogTerminalStatus.OUT_OF_MEMORY: 137,
+            IndexingWatchdogTerminalStatus.CONNECTOR_VALIDATION_ERROR: 247,
             IndexingWatchdogTerminalStatus.BLOCKED_BY_DELETION: 248,
             IndexingWatchdogTerminalStatus.BLOCKED_BY_STOP_SIGNAL: 249,
             IndexingWatchdogTerminalStatus.FENCE_NOT_FOUND: 250,
@@ -144,6 +149,7 @@ class IndexingWatchdogTerminalStatus(str, Enum):
         _CODE_TO_ENUM: dict[int, IndexingWatchdogTerminalStatus] = {
             -9: IndexingWatchdogTerminalStatus.PROCESS_SIGNAL_SIGKILL,
             137: IndexingWatchdogTerminalStatus.OUT_OF_MEMORY,
+            247: IndexingWatchdogTerminalStatus.CONNECTOR_VALIDATION_ERROR,
             248: IndexingWatchdogTerminalStatus.BLOCKED_BY_DELETION,
             249: IndexingWatchdogTerminalStatus.BLOCKED_BY_STOP_SIGNAL,
             250: IndexingWatchdogTerminalStatus.FENCE_NOT_FOUND,
@@ -796,6 +802,15 @@ def connector_indexing_task(
         # get back the total number of indexed docs and return it
         n_final_progress = redis_connector_index.get_progress()
         redis_connector_index.set_generator_complete(HTTPStatus.OK.value)
+    except ConnectorValidationError:
+        raise SimpleJobException(
+            f"Indexing task failed: attempt={index_attempt_id} "
+            f"tenant={tenant_id} "
+            f"cc_pair={cc_pair_id} "
+            f"search_settings={search_settings_id}",
+            code=IndexingWatchdogTerminalStatus.CONNECTOR_VALIDATION_ERROR.code,
+        )
+
     except Exception as e:
         logger.exception(
             f"Indexing spawned task failed: attempt={index_attempt_id} "
@@ -803,8 +818,8 @@ def connector_indexing_task(
             f"cc_pair={cc_pair_id} "
             f"search_settings={search_settings_id}"
         )
-
         raise e
+
     finally:
         if lock.owned():
             lock.release()
@@ -1064,9 +1079,13 @@ def connector_indexing_proxy_task(
                     )
                 )
                 continue
-    except Exception:
+    except Exception as e:
         result.status = IndexingWatchdogTerminalStatus.WATCHDOG_EXCEPTIONED
-        result.exception_str = traceback.format_exc()
+        if isinstance(e, ConnectorValidationError):
+            # No need to expose full stack trace for validation errors
+            result.exception_str = str(e)
+        else:
+            result.exception_str = traceback.format_exc()
 
     # handle exit and reporting
     elapsed = time.monotonic() - start

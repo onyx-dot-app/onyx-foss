@@ -431,6 +431,7 @@ def connector_pruning_generator_task(
                 f"cc_pair={cc_pair_id} "
                 f"connector_source={cc_pair.connector.source}"
             )
+
             runnable_connector = instantiate_connector(
                 db_session,
                 cc_pair.connector.source,

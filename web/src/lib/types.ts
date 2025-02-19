@@ -98,6 +98,7 @@ export type ValidInputTypes =
   | "event"
   | "slim_retrieval";
 export type ValidStatuses =
+  | "invalid"
   | "success"
   | "completed_with_errors"
   | "canceled"

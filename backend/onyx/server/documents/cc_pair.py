@@ -25,6 +25,9 @@ from onyx.background.celery.versioned_apps.primary import app as primary_app
 from onyx.background.indexing.models import IndexAttemptErrorPydantic
 from onyx.configs.constants import OnyxCeleryPriority
 from onyx.configs.constants import OnyxCeleryTask
+from onyx.connectors.factory import validate_ccpair_for_user
+from onyx.connectors.interfaces import ConnectorValidationError
+from onyx.db.connector import delete_connector
 from onyx.db.connector_credential_pair import add_credential_to_connector
 from onyx.db.connector_credential_pair import (
     get_connector_credential_pair_from_id_for_user,
@@ -617,6 +620,10 @@ def associate_credential_to_connector(
     )
 
     try:
+        validate_ccpair_for_user(
+            connector_id, credential_id, db_session, user, tenant_id
+        )
+
         response = add_credential_to_connector(
             db_session=db_session,
             user=user,
@@ -641,9 +648,25 @@ def associate_credential_to_connector(
         )
 
         return response
+
+    except ConnectorValidationError as e:
+        # If validation fails, delete the connector and commit the changes
+        # Ensures we don't leave invalid connectors in the database
+        # NOTE: consensus is that it makes sense to unify connector and ccpair creation flows
+        # which would rid us of needing to handle cases like these
+        delete_connector(db_session, connector_id)
+        db_session.commit()
+
+        raise HTTPException(
+            status_code=400, detail="Connector validation error: " + str(e)
+        )
+
     except IntegrityError as e:
         logger.error(f"IntegrityError: {e}")
         raise HTTPException(status_code=400, detail="Name must be unique")
+
+    except Exception:
+        raise HTTPException(status_code=500, detail="Unexpected error")
 
 
 @router.delete("/connector/{connector_id}/credential/{credential_id}")

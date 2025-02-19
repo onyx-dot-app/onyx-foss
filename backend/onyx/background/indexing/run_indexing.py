@@ -21,6 +21,7 @@ from onyx.configs.constants import DocumentSource
 from onyx.configs.constants import MilestoneRecordType
 from onyx.connectors.connector_runner import ConnectorRunner
 from onyx.connectors.factory import instantiate_connector
+from onyx.connectors.interfaces import ConnectorValidationError
 from onyx.connectors.models import ConnectorCheckpoint
 from onyx.connectors.models import ConnectorFailure
 from onyx.connectors.models import Document
@@ -86,6 +87,11 @@ def _get_connector_runner(
             credential=attempt.connector_credential_pair.credential,
             tenant_id=tenant_id,
         )
+
+        # validate the connector settings
+
+        runnable_connector.validate_connector_settings()
+
     except Exception as e:
         logger.exception(f"Unable to instantiate connector due to {e}")
 
@@ -567,8 +573,28 @@ def _run_indexing(
             "Connector run exceptioned after elapsed time: "
             f"{time.monotonic() - start_time} seconds"
         )
+        if isinstance(e, ConnectorValidationError):
+            # On validation errors during indexing, we want to cancel the indexing attempt
+            # and mark the CCPair as invalid. This prevents the connector from being
+            # used in the future until the credentials are updated.
+            with get_session_with_current_tenant() as db_session_temp:
+                mark_attempt_canceled(
+                    index_attempt_id,
+                    db_session_temp,
+                    reason=str(e),
+                )
 
-        if isinstance(e, ConnectorStopSignal):
+                if ctx.is_primary:
+                    update_connector_credential_pair(
+                        db_session=db_session_temp,
+                        connector_id=ctx.connector_id,
+                        credential_id=ctx.credential_id,
+                        status=ConnectorCredentialPairStatus.INVALID,
+                    )
+            memory_tracer.stop()
+            raise e
+
+        elif isinstance(e, ConnectorStopSignal):
             with get_session_with_current_tenant() as db_session_temp:
                 mark_attempt_canceled(
                     index_attempt_id,
