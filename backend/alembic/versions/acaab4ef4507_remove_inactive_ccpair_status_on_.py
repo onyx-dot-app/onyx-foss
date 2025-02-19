@@ -1,7 +1,7 @@
 """remove inactive ccpair status on downgrade
 
 Revision ID: acaab4ef4507
-Revises: b7a7eee5aa15
+Revises: b388730a2899
 Create Date: 2025-02-16 18:21:41.330212
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy import update
 
 # revision identifiers, used by Alembic.
 revision = "acaab4ef4507"
-down_revision = "b7a7eee5aa15"
+down_revision = "b388730a2899"
 branch_labels = None
 depends_on = None
 
