@@ -48,7 +48,7 @@ from onyx.configs.constants import OnyxCeleryTask
 from onyx.configs.constants import OnyxRedisConstants
 from onyx.configs.constants import OnyxRedisLocks
 from onyx.configs.constants import OnyxRedisSignals
-from onyx.connectors.interfaces import ConnectorValidationError
+from onyx.connectors.exceptions import ConnectorValidationError
 from onyx.db.connector import mark_ccpair_with_indexing_trigger
 from onyx.db.connector_credential_pair import fetch_connector_credential_pairs
 from onyx.db.connector_credential_pair import get_connector_credential_pair_from_id
@@ -927,6 +927,7 @@ def connector_indexing_proxy_task(
         task_logger.error("self.request.id is None!")
 
     client = SimpleJobClient()
+    task_logger.info(f"submitting connector_indexing_task with tenant_id={tenant_id}")
 
     job = client.submit(
         connector_indexing_task,
@@ -1055,6 +1056,7 @@ def connector_indexing_proxy_task(
 
                     if not index_attempt.is_finished():
                         continue
+
             except Exception:
                 task_logger.exception(
                     log_builder.build(
@@ -1062,6 +1064,7 @@ def connector_indexing_proxy_task(
                     )
                 )
                 continue
+
     except Exception as e:
         result.status = IndexingWatchdogTerminalStatus.WATCHDOG_EXCEPTIONED
         if isinstance(e, ConnectorValidationError):

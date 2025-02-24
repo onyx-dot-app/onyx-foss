@@ -265,6 +265,7 @@ def document_by_cc_pair_cleanup_task(
     if completion_status != OnyxCeleryTaskCompletionStatus.SUCCEEDED:
         return False
 
+    task_logger.info(f"document_by_cc_pair_cleanup_task finished: doc={document_id}")
     return True
 
 
