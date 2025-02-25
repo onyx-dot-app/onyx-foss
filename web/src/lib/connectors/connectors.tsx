@@ -462,14 +462,52 @@ export const connectorConfigs: Record<
   },
   jira: {
     description: "Configure Jira connector",
-    subtext: `Specify any link to a Jira page below and click "Index" to Index. Based on the provided link, we will index the ENTIRE PROJECT, not just the specified page. For example, entering https://onyx.atlassian.net/jira/software/projects/DAN/boards/1 and clicking the Index button will index the whole DAN Jira project.`,
+    subtext: `Configure which Jira content to index. You can index everything or specify a particular project.`,
     values: [
       {
         type: "text",
-        query: "Enter the Jira project URL:",
-        label: "Jira Project URL",
-        name: "jira_project_url",
+        query: "Enter the Jira base URL:",
+        label: "Jira Base URL",
+        name: "jira_base_url",
         optional: false,
+        description:
+          "The base URL of your Jira instance (e.g., https://your-domain.atlassian.net)",
+      },
+      {
+        type: "tab",
+        name: "indexing_scope",
+        label: "How Should We Index Your Jira?",
+        optional: true,
+        tabs: [
+          {
+            value: "everything",
+            label: "Everything",
+            fields: [
+              {
+                type: "string_tab",
+                label: "Everything",
+                name: "everything",
+                description:
+                  "This connector will index all issues the provided credentials have access to!",
+              },
+            ],
+          },
+          {
+            value: "project",
+            label: "Project",
+            fields: [
+              {
+                type: "text",
+                query: "Enter the project key:",
+                label: "Project Key",
+                name: "project_key",
+                description:
+                  "The key of a specific project to index (e.g., 'PROJ').",
+              },
+            ],
+          },
+        ],
+        defaultTab: "everything",
       },
       {
         type: "list",
@@ -1309,6 +1347,7 @@ export interface ConfluenceConfig {
 
 export interface JiraConfig {
   jira_project_url: string;
+  project_key?: string;
   comment_email_blacklist?: string[];
 }
 
