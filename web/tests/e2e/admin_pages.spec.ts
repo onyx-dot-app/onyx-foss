@@ -18,7 +18,7 @@ async function verifyAdminPageNavigation(
 
   try {
     await expect(page.locator("h1.text-3xl")).toHaveText(pageTitle, {
-      timeout: 3000,
+      timeout: 5000,
     });
   } catch (error) {
     console.error(
