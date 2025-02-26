@@ -410,7 +410,7 @@ def _build_qa_response_blocks(
 
 
 def _build_continue_in_web_ui_block(
-    tenant_id: str | None,
+    tenant_id: str,
     message_id: int | None,
 ) -> Block:
     if message_id is None:
@@ -482,7 +482,7 @@ def build_follow_up_resolved_blocks(
 
 def build_slack_response_blocks(
     answer: ChatOnyxBotResponse,
-    tenant_id: str | None,
+    tenant_id: str,
     message_info: SlackMessageInfo,
     channel_conf: ChannelConfig | None,
     use_citations: bool,

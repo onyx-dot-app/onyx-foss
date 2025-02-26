@@ -109,7 +109,7 @@ def handle_message(
     slack_channel_config: SlackChannelConfig,
     client: WebClient,
     feedback_reminder_id: str | None,
-    tenant_id: str | None,
+    tenant_id: str,
 ) -> bool:
     """Potentially respond to the user message depending on filters and if an answer was generated
 

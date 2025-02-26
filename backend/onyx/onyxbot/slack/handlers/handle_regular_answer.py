@@ -72,7 +72,7 @@ def handle_regular_answer(
     channel: str,
     logger: OnyxLoggingAdapter,
     feedback_reminder_id: str | None,
-    tenant_id: str | None,
+    tenant_id: str,
     num_retries: int = DANSWER_BOT_NUM_RETRIES,
     thread_context_percent: float = MAX_THREAD_CONTEXT_PERCENTAGE,
     should_respond_with_error_msgs: bool = DANSWER_BOT_DISPLAY_ERROR_MSGS,

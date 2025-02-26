@@ -570,7 +570,7 @@ def read_slack_thread(
 
 
 def slack_usage_report(
-    action: str, sender_id: str | None, client: WebClient, tenant_id: str | None
+    action: str, sender_id: str | None, client: WebClient, tenant_id: str
 ) -> None:
     if DISABLE_TELEMETRY:
         return
@@ -663,9 +663,7 @@ def get_feedback_visibility() -> FeedbackVisibility:
 
 
 class TenantSocketModeClient(SocketModeClient):
-    def __init__(
-        self, tenant_id: str | None, slack_bot_id: int, *args: Any, **kwargs: Any
-    ):
+    def __init__(self, tenant_id: str, slack_bot_id: int, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.tenant_id = tenant_id
         self.slack_bot_id = slack_bot_id

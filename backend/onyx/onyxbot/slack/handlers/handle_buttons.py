@@ -151,7 +151,7 @@ def handle_slack_feedback(
     user_id_to_post_confirmation: str,
     channel_id_to_post_confirmation: str,
     thread_ts_to_post_confirmation: str,
-    tenant_id: str | None,
+    tenant_id: str,
 ) -> None:
     message_id, doc_id, doc_rank = decompose_action_id(feedback_id)
 

@@ -109,9 +109,7 @@ def revoke_tasks_blocking_deletion(
     trail=False,
     bind=True,
 )
-def check_for_connector_deletion_task(
-    self: Task, *, tenant_id: str | None
-) -> bool | None:
+def check_for_connector_deletion_task(self: Task, *, tenant_id: str) -> bool | None:
     r = get_redis_client()
     r_replica = get_redis_replica_client()
     r_celery: Redis = self.app.broker_connection().channel().client  # type: ignore
@@ -224,7 +222,7 @@ def try_generate_document_cc_pair_cleanup_tasks(
     cc_pair_id: int,
     db_session: Session,
     lock_beat: RedisLock,
-    tenant_id: str | None,
+    tenant_id: str,
 ) -> int | None:
     """Returns an int if syncing is needed. The int represents the number of sync tasks generated.
     Note that syncing can still be required even if the number of sync tasks generated is zero.
@@ -345,7 +343,7 @@ def try_generate_document_cc_pair_cleanup_tasks(
 
 
 def monitor_connector_deletion_taskset(
-    tenant_id: str | None, key_bytes: bytes, r: Redis
+    tenant_id: str, key_bytes: bytes, r: Redis
 ) -> None:
     fence_key = key_bytes.decode("utf-8")
     cc_pair_id_str = RedisConnector.get_id_from_fence_key(fence_key)
@@ -500,7 +498,7 @@ def monitor_connector_deletion_taskset(
 
 
 def validate_connector_deletion_fences(
-    tenant_id: str | None,
+    tenant_id: str,
     r: Redis,
     r_replica: Redis,
     r_celery: Redis,
@@ -540,7 +538,7 @@ def validate_connector_deletion_fences(
 
 
 def validate_connector_deletion_fence(
-    tenant_id: str | None,
+    tenant_id: str,
     key_bytes: bytes,
     queued_tasks: set[str],
     r: Redis,

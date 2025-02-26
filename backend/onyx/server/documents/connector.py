@@ -902,7 +902,6 @@ def create_connector_with_mock_credential(
             connector_id=connector_id,
             credential_id=credential_id,
             db_session=db_session,
-            tenant_id=tenant_id,
         )
         response = add_credential_to_connector(
             db_session=db_session,

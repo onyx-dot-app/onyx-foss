@@ -15,6 +15,7 @@ from onyx.configs.app_configs import WEB_DOMAIN
 from onyx.configs.constants import AuthType
 from onyx.configs.constants import TENANT_ID_COOKIE_NAME
 from onyx.db.models import User
+from shared_configs.configs import MULTI_TENANT
 
 HTML_EMAIL_TEMPLATE = """\
 <!DOCTYPE html>
@@ -242,13 +243,13 @@ def send_user_email_invite(
 def send_forgot_password_email(
     user_email: str,
     token: str,
+    tenant_id: str,
     mail_from: str = EMAIL_FROM,
-    tenant_id: str | None = None,
 ) -> None:
     # Builds a forgot password email with or without fancy HTML
     subject = "Onyx Forgot Password"
     link = f"{WEB_DOMAIN}/auth/reset-password?token={token}"
-    if tenant_id:
+    if MULTI_TENANT:
         link += f"&{TENANT_ID_COOKIE_NAME}={tenant_id}"
     message = f"<p>Click the following link to reset your password:</p><p>{link}</p>"
     html_content = build_html_email("Reset Your Password", message)

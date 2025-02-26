@@ -76,7 +76,7 @@ def document_by_cc_pair_cleanup_task(
     document_id: str,
     connector_id: int,
     credential_id: int,
-    tenant_id: str | None,
+    tenant_id: str,
 ) -> bool:
     """A lightweight subtask used to clean up document to cc pair relationships.
     Created by connection deletion and connector pruning parent tasks."""
@@ -297,7 +297,7 @@ def cloud_beat_task_generator(
         return None
 
     last_lock_time = time.monotonic()
-    tenant_ids: list[str] | list[None] = []
+    tenant_ids: list[str] = []
 
     try:
         tenant_ids = get_all_tenant_ids()
