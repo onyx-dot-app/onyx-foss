@@ -7,14 +7,9 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import ReactMarkdown from "react-markdown";
 import { OnyxDocument, FilteredOnyxDocument } from "@/lib/search/interfaces";
 import remarkGfm from "remark-gfm";
@@ -54,6 +49,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import SubQuestionsDisplay from "./SubQuestionsDisplay";
 import { StatusRefinement } from "../Refinement";
+import { copyAll, handleCopy } from "./copyingUtils";
 
 export const AgenticMessage = ({
   isStreamingQuestions,
@@ -312,6 +308,8 @@ export const AgenticMessage = ({
     [anchorCallback, paragraphCallback, streamedContent]
   );
 
+  const markdownRef = useRef<HTMLDivElement>(null);
+
   const renderedAlternativeMarkdown = useMemo(() => {
     return (
       <ReactMarkdown
@@ -492,7 +490,11 @@ export const AgenticMessage = ({
 
                         <div className="px-4">
                           {typeof content === "string" ? (
-                            <div className="overflow-x-visible !text-sm max-w-content-max">
+                            <div
+                              onCopy={(e) => handleCopy(e, markdownRef)}
+                              ref={markdownRef}
+                              className="overflow-x-visible !text-sm max-w-content-max"
+                            >
                               {isViewingInitialAnswer
                                 ? renderedMarkdown
                                 : renderedAlternativeMarkdown}
@@ -558,7 +560,16 @@ export const AgenticMessage = ({
                             )}
                           </div>
                           <CustomTooltip showTick line content="Copy">
-                            <CopyButton content={content.toString()} />
+                            <CopyButton
+                              copyAllFn={() =>
+                                copyAll(
+                                  (isViewingInitialAnswer
+                                    ? finalContent
+                                    : finalAlternativeContent) as string,
+                                  markdownRef
+                                )
+                              }
+                            />
                           </CustomTooltip>
                           <CustomTooltip showTick line content="Good response">
                             <HoverableIcon
@@ -644,7 +655,16 @@ export const AgenticMessage = ({
                             )}
                           </div>
                           <CustomTooltip showTick line content="Copy">
-                            <CopyButton content={content.toString()} />
+                            <CopyButton
+                              copyAllFn={() =>
+                                copyAll(
+                                  (isViewingInitialAnswer
+                                    ? finalContent
+                                    : finalAlternativeContent) as string,
+                                  markdownRef
+                                )
+                              }
+                            />
                           </CustomTooltip>
 
                           <CustomTooltip showTick line content="Good response">
