@@ -64,14 +64,15 @@ jobs:
         # with a huge amount of items. Work out the issues before enabling upload.       
       - name: Run Trivy vulnerability scanner in repo mode
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           scan-type: fs
+          scan-ref: .
           scanners: license
           format: table
+          severity: HIGH,CRITICAL
 #           format: sarif
 #           output: trivy-results.sarif
-          severity: HIGH,CRITICAL
 
 #       - name: Upload Trivy scan results to GitHub Security tab
 #         uses: github/codeql-action/upload-sarif@v3
