@@ -168,7 +168,7 @@ def get_chat_sessions_by_user(
     if not include_onyxbot_flows:
         stmt = stmt.where(ChatSession.onyxbot_flow.is_(False))
 
-    stmt = stmt.order_by(desc(ChatSession.time_created))
+    stmt = stmt.order_by(desc(ChatSession.time_updated))
 
     if deleted is not None:
         stmt = stmt.where(ChatSession.deleted == deleted)

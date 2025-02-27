@@ -181,6 +181,7 @@ class ChatSessionDetails(BaseModel):
     name: str | None
     persona_id: int | None = None
     time_created: str
+    time_updated: str
     shared_status: ChatSessionSharedStatus
     folder_id: int | None = None
     current_alternate_model: str | None = None
