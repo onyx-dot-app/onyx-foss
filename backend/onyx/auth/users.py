@@ -420,7 +420,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             except exceptions.UserNotExists:
                 try:
                     # Attempt to get user by email
-                    user = await self.get_by_email(account_email)
+                    user = cast(User, await self.user_db.get_by_email(account_email))
                     if not associate_by_email:
                         raise exceptions.UserAlreadyExists()
 
