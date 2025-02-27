@@ -53,14 +53,17 @@ jobs:
           exclude: '(?i)^(pylint|aio[-_]*).*'
           
       - name: Print report
-        if: ${{ always() }}
+        if: always()
         run: echo "${{ steps.license_check_report.outputs.report }}"
       
       - name: Install npm dependencies
         working-directory: ./web
         run: npm ci
-        
+
+        # be careful enabling the sarif and upload as it may spam the security tab
+        # with a huge amount of items. Work out the issues before enabling upload.       
       - name: Run Trivy vulnerability scanner in repo mode
+        if: always()
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: fs
