@@ -42,6 +42,10 @@ from shared_configs.configs import MULTI_TENANT
 logger = setup_logger()
 
 WEB_CONNECTOR_MAX_SCROLL_ATTEMPTS = 20
+# Threshold for determining when to replace vs append iframe content
+IFRAME_TEXT_LENGTH_THRESHOLD = 700
+# Message indicating JavaScript is disabled, which often appears when scraping fails
+JAVASCRIPT_DISABLED_MESSAGE = "You have JavaScript disabled in your browser"
 
 
 class WEB_CONNECTOR_VALID_SETTINGS(str, Enum):
@@ -138,7 +142,8 @@ def get_internal_links(
         # Account for malformed backslashes in URLs
         href = href.replace("\\", "/")
 
-        if should_ignore_pound and "#" in href:
+        # "#!" indicates the page is using a hashbang URL, which is a client-side routing technique
+        if should_ignore_pound and "#" in href and "#!" not in href:
             href = href.split("#")[0]
 
         if not is_valid_url(href):
@@ -347,7 +352,11 @@ class WebConnector(LoadConnector):
                     continue
 
                 page = context.new_page()
-                page_response = page.goto(initial_url)
+                """wait_until="networkidle" is used to wait for the page to load completely which is necessary
+                for the javascript heavy websites"""
+                page_response = page.goto(
+                    initial_url, wait_until="networkidle", timeout=60000
+                )
                 last_modified = (
                     page_response.header_value("Last-Modified")
                     if page_response
@@ -394,6 +403,26 @@ class WebConnector(LoadConnector):
                     continue
 
                 parsed_html = web_html_cleanup(soup, self.mintlify_cleanup)
+
+                """For websites containing iframes that need to be scraped,
+                the code below can extract text from within these iframes.
+                """
+                logger.info(f"Length of cleaned text {len(parsed_html.cleaned_text)}")
+                if JAVASCRIPT_DISABLED_MESSAGE in parsed_html.cleaned_text:
+                    iframe_count = page.frame_locator("iframe").locator("html").count()
+                    if iframe_count > 0:
+                        iframe_texts = (
+                            page.frame_locator("iframe")
+                            .locator("html")
+                            .all_inner_texts()
+                        )
+                        document_text = "\n".join(iframe_texts)
+                        """ 700 is the threshold value for the length of the text extracted
+                        from the iframe based on the issue faced """
+                        if len(parsed_html.cleaned_text) < IFRAME_TEXT_LENGTH_THRESHOLD:
+                            parsed_html.cleaned_text = document_text
+                        else:
+                            parsed_html.cleaned_text += "\n" + document_text
 
                 doc_batch.append(
                     Document(
