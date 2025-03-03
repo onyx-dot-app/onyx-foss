@@ -16,7 +16,6 @@ from oauthlib.oauth2 import BackendApplicationClient
 from playwright.sync_api import BrowserContext
 from playwright.sync_api import Playwright
 from playwright.sync_api import sync_playwright
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from requests_oauthlib import OAuth2Session  # type:ignore
 from urllib3.exceptions import MaxRetryError
 
@@ -354,19 +353,13 @@ class WebConnector(LoadConnector):
                     continue
 
                 page = context.new_page()
-                # wait_until="networkidle" is used to wait for the page to load completely which is necessary
-                # for the javascript heavy websites
-                try:
-                    page_response = page.goto(
-                        initial_url,
-                        wait_until="networkidle",
-                        timeout=30000,  # 30 seconds
-                    )
-                except PlaywrightTimeoutError:
-                    logger.warning(
-                        f"NetworkIdle timeout for {initial_url}, falling back to default load"
-                    )
-                    page_response = page.goto(initial_url)
+
+                # Can't use wait_until="networkidle" because it interferes with the scrolling behavior
+                page_response = page.goto(
+                    initial_url,
+                    timeout=30000,  # 30 seconds
+                )
+
                 last_modified = (
                     page_response.header_value("Last-Modified")
                     if page_response
