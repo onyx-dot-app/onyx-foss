@@ -1,7 +1,7 @@
 """
 Mixin for connectors that need vision capabilities.
 """
-from onyx.configs.app_configs import ENABLE_INDEXING_TIME_IMAGE_ANALYSIS
+from onyx.configs.llm_configs import get_image_extraction_and_analysis_enabled
 from onyx.llm.factory import get_default_llm_with_vision
 from onyx.llm.interfaces import LLM
 from onyx.utils.logger import setup_logger
@@ -30,7 +30,7 @@ class VisionEnabledConnector:
         Sets self.image_analysis_llm to the LLM instance or None if disabled.
         """
         self.image_analysis_llm: LLM | None = None
-        if ENABLE_INDEXING_TIME_IMAGE_ANALYSIS:
+        if get_image_extraction_and_analysis_enabled():
             try:
                 self.image_analysis_llm = get_default_llm_with_vision()
                 if self.image_analysis_llm is None:
