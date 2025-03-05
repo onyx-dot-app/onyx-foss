@@ -38,6 +38,7 @@ import { SiBookstack } from "react-icons/si";
 import Image, { StaticImageData } from "next/image";
 import jiraSVG from "../../../public/Jira.svg";
 import confluenceSVG from "../../../public/Confluence.svg";
+import deepseekSVG from "../../../public/Deepseek.svg";
 import openAISVG from "../../../public/Openai.svg";
 import amazonSVG from "../../../public/Amazon.svg";
 import geminiSVG from "../../../public/Gemini.svg";
@@ -1148,6 +1149,13 @@ export const MetaIcon = ({
   size = 16,
   className = defaultTailwindCSS,
 }: IconProps) => <LogoIcon size={size} className={className} src={metaSVG} />;
+
+export const DeepseekIcon = ({
+  size = 16,
+  className = defaultTailwindCSS,
+}: IconProps) => (
+  <LogoIcon size={size} className={className} src={deepseekSVG} />
+);
 
 export const MicrosoftIconSVG = ({
   size = 16,
