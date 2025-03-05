@@ -290,21 +290,24 @@ export function SettingsForm() {
             id="chatRetentionInput"
             placeholder="Infinite Retention"
           />
-          <Button
-            onClick={handleSetChatRetention}
-            variant="submit"
-            size="sm"
-            className="mr-3"
-          >
-            Set Retention Limit
-          </Button>
-          <Button
-            onClick={handleClearChatRetention}
-            variant="default"
-            size="sm"
-          >
-            Retain All
-          </Button>
+          <div className="mr-auto flex gap-2">
+            <Button
+              onClick={handleSetChatRetention}
+              variant="submit"
+              size="sm"
+              className="mr-auto"
+            >
+              Set Retention Limit
+            </Button>
+            <Button
+              onClick={handleClearChatRetention}
+              variant="default"
+              size="sm"
+              className="mr-auto"
+            >
+              Retain All
+            </Button>
+          </div>
         </>
       )}
 
