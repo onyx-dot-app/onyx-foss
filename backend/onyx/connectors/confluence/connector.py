@@ -240,7 +240,7 @@ class ConfluenceConnector(
             # Extract basic page information
             page_id = page["id"]
             page_title = page["title"]
-            page_url = f"{self.wiki_base}/wiki{page['_links']['webui']}"
+            page_url = f"{self.wiki_base}{page['_links']['webui']}"
 
             # Get the page content
             page_content = extract_text_from_confluence_html(
