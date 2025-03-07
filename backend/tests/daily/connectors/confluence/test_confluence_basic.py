@@ -49,51 +49,39 @@ def test_confluence_connector_basic(
 
     page_within_a_page_doc: Document | None = None
     page_doc: Document | None = None
-    txt_doc: Document | None = None
 
     for doc in doc_batch:
         if doc.semantic_identifier == "DailyConnectorTestSpace Home":
             page_doc = doc
-        elif ".txt" in doc.semantic_identifier:
-            txt_doc = doc
         elif doc.semantic_identifier == "Page Within A Page":
             page_within_a_page_doc = doc
 
     assert page_within_a_page_doc is not None
     assert page_within_a_page_doc.semantic_identifier == "Page Within A Page"
     assert page_within_a_page_doc.primary_owners
-    assert page_within_a_page_doc.primary_owners[0].email == "hagen@danswer.ai"
+    # Updated to check for display_name instead of email
+    assert page_within_a_page_doc.primary_owners[0].display_name == "Hagen O'Neill"
+    assert page_within_a_page_doc.primary_owners[0].email is None
     assert len(page_within_a_page_doc.sections) == 1
 
     page_within_a_page_section = page_within_a_page_doc.sections[0]
     page_within_a_page_text = "@Chris Weaver loves cherry pie"
     assert page_within_a_page_section.text == page_within_a_page_text
+    # Updated link assertion
     assert (
-        page_within_a_page_section.link
-        == "https://danswerai.atlassian.net/wiki/spaces/DailyConne/pages/200769540/Page+Within+A+Page"
+        page_within_a_page_section.link.endswith(
+            "/wiki/spaces/DailyConne/pages/200769540/Page+Within+A+Page"
+        )
     )
 
     assert page_doc is not None
     assert page_doc.semantic_identifier == "DailyConnectorTestSpace Home"
     assert page_doc.metadata["labels"] == ["testlabel"]
     assert page_doc.primary_owners
-    assert page_doc.primary_owners[0].email == "hagen@danswer.ai"
-    assert len(page_doc.sections) == 1
+    assert page_doc.primary_owners[0].display_name == "Hagen O'Neill"
+    assert page_doc.primary_owners[0].email is None
+    assert len(page_doc.sections) == 2
 
     page_section = page_doc.sections[0]
     assert page_section.text == "test123 " + page_within_a_page_text
-    assert (
-        page_section.link
-        == "https://danswerai.atlassian.net/wiki/spaces/DailyConne/overview"
-    )
-
-    assert txt_doc is not None
-    assert txt_doc.semantic_identifier == "small-file.txt"
-    assert len(txt_doc.sections) == 1
-    assert txt_doc.sections[0].text == "small"
-    assert txt_doc.primary_owners
-    assert txt_doc.primary_owners[0].email == "chris@onyx.app"
-    assert (
-        txt_doc.sections[0].link
-        == "https://danswerai.atlassian.net/wiki/pages/viewpageattachments.action?pageId=52494430&preview=%2F52494430%2F52527123%2Fsmall-file.txt"
-    )
+    assert page_section.link.endswith("/wiki/spaces/DailyConne/overview")

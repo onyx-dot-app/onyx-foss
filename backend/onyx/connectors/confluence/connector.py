@@ -305,7 +305,7 @@ class ConfluenceConnector(
 
             # Create the document
             return Document(
-                id=build_confluence_document_id(self.wiki_base, page_id, self.is_cloud),
+                id=build_confluence_document_id(self.wiki_base, page["_links"]["webui"], self.is_cloud),
                 sections=sections,
                 source=DocumentSource.CONFLUENCE,
                 semantic_identifier=page_title,
@@ -376,7 +376,7 @@ class ConfluenceConnector(
                     content_text, file_storage_name = response
 
                     object_url = build_confluence_document_id(
-                        self.wiki_base, page["_links"]["webui"], self.is_cloud
+                        self.wiki_base, attachment["_links"]["webui"], self.is_cloud
                     )
 
                     if content_text:
