@@ -30,6 +30,7 @@ class VisionEnabledConnector:
         Sets self.image_analysis_llm to the LLM instance or None if disabled.
         """
         self.image_analysis_llm: LLM | None = None
+
         if get_image_extraction_and_analysis_enabled():
             try:
                 self.image_analysis_llm = get_default_llm_with_vision()
