@@ -412,8 +412,8 @@ def _get_all_doc_ids(
             callback=callback,
         )
 
-        message_ts_set: set[str] = set()
         for message_batch in channel_message_batches:
+            slim_doc_batch: list[SlimDocument] = []
             for message in message_batch:
                 if msg_filter_func(message):
                     continue
@@ -421,18 +421,17 @@ def _get_all_doc_ids(
                 # The document id is the channel id and the ts of the first message in the thread
                 # Since we already have the first message of the thread, we dont have to
                 # fetch the thread for id retrieval, saving time and API calls
-                message_ts_set.add(message["ts"])
 
-        channel_metadata_list: list[SlimDocument] = []
-        for message_ts in message_ts_set:
-            channel_metadata_list.append(
-                SlimDocument(
-                    id=_build_doc_id(channel_id=channel_id, thread_ts=message_ts),
-                    perm_sync_data={"channel_id": channel_id},
+                slim_doc_batch.append(
+                    SlimDocument(
+                        id=_build_doc_id(
+                            channel_id=channel_id, thread_ts=message["ts"]
+                        ),
+                        perm_sync_data={"channel_id": channel_id},
+                    )
                 )
-            )
 
-        yield channel_metadata_list
+            yield slim_doc_batch
 
 
 def _process_message(
