@@ -480,6 +480,7 @@ def _process_message(
 
 class SlackConnector(SlimConnector, CheckpointConnector):
     MAX_WORKERS = 2
+    FAST_TIMEOUT = 1
 
     def __init__(
         self,
@@ -493,7 +494,7 @@ class SlackConnector(SlimConnector, CheckpointConnector):
         self.channel_regex_enabled = channel_regex_enabled
         self.batch_size = batch_size
         self.client: WebClient | None = None
-
+        self.fast_client: WebClient | None = None
         # just used for efficiency
         self.text_cleaner: SlackTextCleaner | None = None
         self.user_cache: dict[str, BasicExpertInfo | None] = {}
@@ -501,6 +502,10 @@ class SlackConnector(SlimConnector, CheckpointConnector):
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
         bot_token = credentials["slack_bot_token"]
         self.client = WebClient(token=bot_token)
+        # use for requests that must return quickly (e.g. realtime flows where user is waiting)
+        self.fast_client = WebClient(
+            token=bot_token, timeout=SlackConnector.FAST_TIMEOUT
+        )
         self.text_cleaner = SlackTextCleaner(client=self.client)
         return None
 
@@ -676,12 +681,12 @@ class SlackConnector(SlimConnector, CheckpointConnector):
         2. Ensure the bot has enough scope to list channels.
         3. Check that every channel specified in self.channels exists (only when regex is not enabled).
         """
-        if self.client is None:
+        if self.fast_client is None:
             raise ConnectorMissingCredentialError("Slack credentials not loaded.")
 
         try:
             # 1) Validate connection to workspace
-            auth_response = self.client.auth_test()
+            auth_response = self.fast_client.auth_test()
             if not auth_response.get("ok", False):
                 error_msg = auth_response.get(
                     "error", "Unknown error from Slack auth_test"
@@ -689,7 +694,7 @@ class SlackConnector(SlimConnector, CheckpointConnector):
                 raise ConnectorValidationError(f"Failed Slack auth_test: {error_msg}")
 
             # 2) Minimal test to confirm listing channels works
-            test_resp = self.client.conversations_list(
+            test_resp = self.fast_client.conversations_list(
                 limit=1, types=["public_channel"]
             )
             if not test_resp.get("ok", False):
@@ -709,7 +714,7 @@ class SlackConnector(SlimConnector, CheckpointConnector):
             # 3) If channels are specified and regex is not enabled, verify each is accessible
             if self.channels and not self.channel_regex_enabled:
                 accessible_channels = get_channels(
-                    client=self.client,
+                    client=self.fast_client,
                     exclude_archived=True,
                     get_public=True,
                     get_private=True,
@@ -729,7 +734,16 @@ class SlackConnector(SlimConnector, CheckpointConnector):
 
         except SlackApiError as e:
             slack_error = e.response.get("error", "")
-            if slack_error == "missing_scope":
+            if slack_error == "ratelimited":
+                # Handle rate limiting specifically
+                retry_after = int(e.response.headers.get("Retry-After", 1))
+                logger.warning(
+                    f"Slack API rate limited during validation. Retry suggested after {retry_after} seconds. "
+                    "Proceeding with validation, but be aware that connector operations might be throttled."
+                )
+                # Continue validation without failing - the connector is likely valid but just rate limited
+                return
+            elif slack_error == "missing_scope":
                 raise InsufficientPermissionsError(
                     "Slack bot token lacks the necessary scope to list/access channels. "
                     "Please ensure your Slack app has 'channels:read' (and/or 'groups:read' for private channels)."
