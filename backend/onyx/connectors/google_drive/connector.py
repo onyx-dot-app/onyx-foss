@@ -1104,7 +1104,9 @@ class GoogleDriveConnector(SlimConnector, CheckpointConnector[GoogleDriveCheckpo
             drive_service.files().list(pageSize=1, fields="files(id)").execute()
 
             if isinstance(self._creds, ServiceAccountCredentials):
-                retry_builder()(get_root_folder_id)(drive_service)
+                # default is ~17mins of retries, don't do that here since this is called from
+                # the UI
+                retry_builder(tries=3, delay=0.1)(get_root_folder_id)(drive_service)
 
         except HttpError as e:
             status_code = e.resp.status if e.resp else None
