@@ -261,9 +261,6 @@ def create_bot(
     # Create a default Slack channel config
     default_channel_config = ChannelConfig(
         channel_name=None,
-        respond_member_group_list=[],
-        answer_filters=[],
-        follow_up_tags=[],
         respond_tag_only=True,
     )
     insert_slack_channel_config(
