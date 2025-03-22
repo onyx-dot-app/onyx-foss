@@ -157,10 +157,7 @@ VESPA_CLOUD_CERT_PATH = os.environ.get("VESPA_CLOUD_CERT_PATH")
 VESPA_CLOUD_KEY_PATH = os.environ.get("VESPA_CLOUD_KEY_PATH")
 
 # Number of documents in a batch during indexing (further batching done by chunks before passing to bi-encoder)
-try:
-    INDEX_BATCH_SIZE = int(os.environ.get("INDEX_BATCH_SIZE", 16))
-except ValueError:
-    INDEX_BATCH_SIZE = 16
+INDEX_BATCH_SIZE = int(os.environ.get("INDEX_BATCH_SIZE") or 16)
 
 MAX_DRIVE_WORKERS = int(os.environ.get("MAX_DRIVE_WORKERS", 4))
 

@@ -435,7 +435,7 @@ def _run_indexing(
 
         while checkpoint.has_more:
             logger.info(
-                f"Running '{ctx.source}' connector with checkpoint: {checkpoint}"
+                f"Running '{ctx.source.value}' connector with checkpoint: {checkpoint}"
             )
             for document_batch, failure, next_checkpoint in connector_runner.run(
                 checkpoint
