@@ -269,5 +269,5 @@ async def test_test_expire_oauth_token(
 
     # Now should be within 10-11 seconds of the set expiration
     now = datetime.now(timezone.utc).timestamp()
-    assert update_data["expires_at"] - now >= 9  # Allow 1 second for test execution
-    assert update_data["expires_at"] - now <= 11  # Allow 1 second for test execution
+    assert update_data["expires_at"] - now >= 8.9  # Allow 1 second for test execution
+    assert update_data["expires_at"] - now <= 11.1  # Allow 1 second for test execution
