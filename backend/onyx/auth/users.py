@@ -581,8 +581,10 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         logger.notice(
             f"Verification requested for user {user.id}. Verification token: {token}"
         )
-
-        send_user_verification_email(user.email, token)
+        user_count = await get_user_count()
+        send_user_verification_email(
+            user.email, token, new_organization=user_count == 1
+        )
 
     async def authenticate(
         self, credentials: OAuth2PasswordRequestForm

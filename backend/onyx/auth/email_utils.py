@@ -19,6 +19,7 @@ from onyx.configs.constants import ONYX_SLACK_URL
 from onyx.db.models import User
 from onyx.server.runtime.onyx_runtime import OnyxRuntime
 from onyx.utils.file import FileWithMimeType
+from onyx.utils.url import add_url_params
 from onyx.utils.variable_functionality import fetch_versioned_implementation
 from shared_configs.configs import MULTI_TENANT
 
@@ -384,6 +385,7 @@ def send_forgot_password_email(
 def send_user_verification_email(
     user_email: str,
     token: str,
+    new_organization: bool = False,
     mail_from: str = EMAIL_FROM,
 ) -> None:
     # Builds a verification email
@@ -400,6 +402,8 @@ def send_user_verification_email(
 
     subject = f"{application_name} Email Verification"
     link = f"{WEB_DOMAIN}/auth/verify-email?token={token}"
+    if new_organization:
+        link = add_url_params(link, {"first_user": "true"})
     message = (
         f"<p>Click the following link to verify your email address:</p><p>{link}</p>"
     )
