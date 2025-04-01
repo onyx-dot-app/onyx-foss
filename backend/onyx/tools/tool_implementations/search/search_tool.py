@@ -376,6 +376,7 @@ class SearchTool(Tool[SearchToolOverrideKwargs]):
             db_session=alternate_db_session or self.db_session,
             prompt_config=self.prompt_config,
             retrieved_sections_callback=retrieved_sections_callback,
+            contextual_pruning_config=self.contextual_pruning_config,
         )
 
         search_query_info = SearchQueryInfo(
@@ -447,6 +448,7 @@ class SearchTool(Tool[SearchToolOverrideKwargs]):
             db_session=self.db_session,
             bypass_acl=self.bypass_acl,
             prompt_config=self.prompt_config,
+            contextual_pruning_config=self.contextual_pruning_config,
         )
 
         # Log what we're doing
