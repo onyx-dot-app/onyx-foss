@@ -1333,10 +1333,10 @@ export function createConnectorValidationSchema(
 ): Yup.ObjectSchema<Record<string, any>> {
   const configuration = connectorConfigs[connector];
 
-  return Yup.object().shape({
+  const object = Yup.object().shape({
     access_type: Yup.string().required("Access Type is required"),
     name: Yup.string().required("Connector Name is required"),
-    ...configuration.values.reduce(
+    ...[...configuration.values, ...configuration.advanced_values].reduce(
       (acc, field) => {
         let schema: any =
           field.type === "select"
@@ -1363,6 +1363,8 @@ export function createConnectorValidationSchema(
     pruneFreq: Yup.number().min(0, "Prune frequency must be non-negative"),
     refreshFreq: Yup.number().min(0, "Refresh frequency must be non-negative"),
   });
+
+  return object;
 }
 
 export const defaultPruneFreqDays = 30; // 30 days
