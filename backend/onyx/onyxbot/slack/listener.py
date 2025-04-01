@@ -42,6 +42,7 @@ from onyx.context.search.retrieval.search_runner import (
 from onyx.db.engine import get_all_tenant_ids
 from onyx.db.engine import get_session_with_current_tenant
 from onyx.db.engine import get_session_with_tenant
+from onyx.db.engine import SqlEngine
 from onyx.db.models import SlackBot
 from onyx.db.search_settings import get_current_search_settings
 from onyx.db.slack_bot import fetch_slack_bot
@@ -972,6 +973,9 @@ def _get_socket_client(
 
 
 if __name__ == "__main__":
+    # Initialize the SqlEngine
+    SqlEngine.init_engine(pool_size=20, max_overflow=5)
+
     # Initialize the tenant handler which will manage tenant connections
     logger.info("Starting SlackbotHandler")
     tenant_handler = SlackbotHandler()
