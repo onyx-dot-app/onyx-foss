@@ -59,8 +59,8 @@ export function ClientLayout({
   const { llmProviders } = useChatContext();
   const { popup, setPopup } = usePopup();
   if (
-    pathname.startsWith("/admin/connectors") ||
-    pathname.startsWith("/admin/embeddings")
+    (pathname && pathname.startsWith("/admin/connectors")) ||
+    (pathname && pathname.startsWith("/admin/embeddings"))
   ) {
     return <>{children}</>;
   }

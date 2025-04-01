@@ -23,8 +23,10 @@ export const SEARCH_PARAM_NAMES = {
   SEND_ON_LOAD: "send-on-load",
 };
 
-export function shouldSubmitOnLoad(searchParams: ReadonlyURLSearchParams) {
-  const rawSubmitOnLoad = searchParams.get(SEARCH_PARAM_NAMES.SUBMIT_ON_LOAD);
+export function shouldSubmitOnLoad(
+  searchParams: ReadonlyURLSearchParams | null
+) {
+  const rawSubmitOnLoad = searchParams?.get(SEARCH_PARAM_NAMES.SUBMIT_ON_LOAD);
   if (rawSubmitOnLoad === "true" || rawSubmitOnLoad === "1") {
     return true;
   }

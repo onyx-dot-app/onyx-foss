@@ -149,7 +149,7 @@ export function AssistantEditor({
   const { refreshAssistants, isImageGenerationAvailable } = useAssistants();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isAdminPage = searchParams.get("admin") === "true";
+  const isAdminPage = searchParams?.get("admin") === "true";
 
   const { popup, setPopup } = usePopup();
   const { labels, refreshLabels, createLabel, updateLabel, deleteLabel } =
@@ -469,8 +469,14 @@ export function AssistantEditor({
             description: Yup.string().required(
               "Must provide a description for the Assistant"
             ),
-            system_prompt: Yup.string(),
-            task_prompt: Yup.string(),
+            system_prompt: Yup.string().max(
+              8000,
+              "Instructions must be less than 8000 characters"
+            ),
+            task_prompt: Yup.string().max(
+              8000,
+              "Reminders must be less than 8000 characters"
+            ),
             is_public: Yup.boolean().required(),
             document_set_ids: Yup.array().of(Yup.number()),
             num_chunks: Yup.number().nullable(),
