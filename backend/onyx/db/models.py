@@ -703,7 +703,11 @@ class Connector(Base):
     )
     documents_by_connector: Mapped[
         list["DocumentByConnectorCredentialPair"]
-    ] = relationship("DocumentByConnectorCredentialPair", back_populates="connector")
+    ] = relationship(
+        "DocumentByConnectorCredentialPair",
+        back_populates="connector",
+        passive_deletes=True,
+    )
 
     # synchronize this validation logic with RefreshFrequencySchema etc on front end
     # until we have a centralized validation schema
@@ -757,7 +761,11 @@ class Credential(Base):
     )
     documents_by_credential: Mapped[
         list["DocumentByConnectorCredentialPair"]
-    ] = relationship("DocumentByConnectorCredentialPair", back_populates="credential")
+    ] = relationship(
+        "DocumentByConnectorCredentialPair",
+        back_populates="credential",
+        passive_deletes=True,
+    )
 
     user: Mapped[User | None] = relationship("User", back_populates="credentials")
 
@@ -1110,10 +1118,10 @@ class DocumentByConnectorCredentialPair(Base):
     id: Mapped[str] = mapped_column(ForeignKey("document.id"), primary_key=True)
     # TODO: transition this to use the ConnectorCredentialPair id directly
     connector_id: Mapped[int] = mapped_column(
-        ForeignKey("connector.id"), primary_key=True
+        ForeignKey("connector.id", ondelete="CASCADE"), primary_key=True
     )
     credential_id: Mapped[int] = mapped_column(
-        ForeignKey("credential.id"), primary_key=True
+        ForeignKey("credential.id", ondelete="CASCADE"), primary_key=True
     )
 
     # used to better keep track of document counts at a connector level
@@ -1123,10 +1131,10 @@ class DocumentByConnectorCredentialPair(Base):
     has_been_indexed: Mapped[bool] = mapped_column(Boolean)
 
     connector: Mapped[Connector] = relationship(
-        "Connector", back_populates="documents_by_connector"
+        "Connector", back_populates="documents_by_connector", passive_deletes=True
     )
     credential: Mapped[Credential] = relationship(
-        "Credential", back_populates="documents_by_credential"
+        "Credential", back_populates="documents_by_credential", passive_deletes=True
     )
 
     __table_args__ = (
