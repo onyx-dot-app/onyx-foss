@@ -602,7 +602,7 @@ def get_max_input_tokens(
     )
 
     if input_toks <= 0:
-        raise RuntimeError("No tokens for input for the LLM given settings")
+        return GEN_AI_MODEL_FALLBACK_MAX_TOKENS
 
     return input_toks
 
