@@ -242,15 +242,7 @@ export function AssistantEditor({
     enabledToolsMap[tool.id] = personaCurrentToolIds.includes(tool.id);
   });
 
-  const {
-    selectedFiles,
-    selectedFolders,
-    addSelectedFile,
-    removeSelectedFile,
-    addSelectedFolder,
-    removeSelectedFolder,
-    clearSelectedItems,
-  } = useDocumentsContext();
+  const { selectedFiles, selectedFolders } = useDocumentsContext();
 
   const [showVisibilityWarning, setShowVisibilityWarning] = useState(false);
 
