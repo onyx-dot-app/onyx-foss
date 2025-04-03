@@ -42,9 +42,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import * as Yup from "yup";
-import CollapsibleSection from "./CollapsibleSection";
-import { SuccessfulPersonaUpdateRedirectType } from "./enums";
-import { Persona, PersonaLabel, StarterMessage } from "./interfaces";
+import { FullPersona, PersonaLabel, StarterMessage } from "./interfaces";
 import {
   PersonaUpsertParameters,
   createPersona,
@@ -101,6 +99,7 @@ import { SEARCH_TOOL_ID } from "@/app/chat/tools/constants";
 import TextView from "@/components/chat/TextView";
 import { MinimalOnyxDocument } from "@/lib/search/interfaces";
 import { TabToggle } from "@/components/ui/TabToggle";
+import { MAX_CHARACTERS_PERSONA_DESCRIPTION } from "@/lib/constants";
 
 function findSearchTool(tools: ToolSnapshot[]) {
   return tools.find((tool) => tool.in_code_tool_id === SEARCH_TOOL_ID);
@@ -136,7 +135,7 @@ export function AssistantEditor({
   shouldAddAssistantToUserPreferences,
   admin,
 }: {
-  existingPersona?: Persona | null;
+  existingPersona?: FullPersona | null;
   ccPairs: CCPairBasicInfo[];
   documentSets: DocumentSet[];
   user: User | null;
@@ -183,8 +182,6 @@ export function AssistantEditor({
       setDefaultIconShape(generateRandomIconShape().encodedGrid);
     }
   }, [defaultIconShape]);
-
-  const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
 
   const [removePersonaImage, setRemovePersonaImage] = useState(false);
 
@@ -462,12 +459,12 @@ export function AssistantEditor({
               "Must provide a description for the Assistant"
             ),
             system_prompt: Yup.string().max(
-              8000,
-              "Instructions must be less than 8000 characters"
+              MAX_CHARACTERS_PERSONA_DESCRIPTION,
+              "Instructions must be less than 5000000 characters"
             ),
             task_prompt: Yup.string().max(
-              8000,
-              "Reminders must be less than 8000 characters"
+              MAX_CHARACTERS_PERSONA_DESCRIPTION,
+              "Reminders must be less than 5000000 characters"
             ),
             is_public: Yup.boolean().required(),
             document_set_ids: Yup.array().of(Yup.number()),

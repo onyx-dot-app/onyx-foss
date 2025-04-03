@@ -1383,7 +1383,7 @@ export function ChatPage({
           regenerationRequest?.parentMessage.messageId ||
           lastSuccessfulMessageId,
         chatSessionId: currChatSessionId,
-        promptId: liveAssistant?.prompts[0]?.id || 0,
+        promptId: null,
         filters: buildFilters(
           filterManager.selectedSources,
           filterManager.selectedDocumentSets,

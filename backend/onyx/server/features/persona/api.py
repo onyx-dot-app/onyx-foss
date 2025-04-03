@@ -43,6 +43,7 @@ from onyx.file_store.models import ChatFileType
 from onyx.secondary_llm_flows.starter_message_creation import (
     generate_starter_messages,
 )
+from onyx.server.features.persona.models import FullPersonaSnapshot
 from onyx.server.features.persona.models import GenerateStarterMessageRequest
 from onyx.server.features.persona.models import ImageGenerationToolStatus
 from onyx.server.features.persona.models import PersonaLabelCreate
@@ -424,8 +425,8 @@ def get_persona(
     persona_id: int,
     user: User | None = Depends(current_limited_user),
     db_session: Session = Depends(get_session),
-) -> PersonaSnapshot:
-    return PersonaSnapshot.from_model(
+) -> FullPersonaSnapshot:
+    return FullPersonaSnapshot.from_model(
         get_persona_by_id(
             persona_id=persona_id,
             user=user,
