@@ -445,6 +445,9 @@ class GoogleDriveConnector(SlimConnector, CheckpointConnector[GoogleDriveCheckpo
                 logger.warning(
                     f"User '{user_email}' does not have access to the drive APIs."
                 )
+                # mark this user as done so we don't try to retrieve anything for them
+                # again
+                curr_stage.stage = DriveRetrievalStage.DONE
                 return
             raise
 
@@ -581,6 +584,25 @@ class GoogleDriveConnector(SlimConnector, CheckpointConnector[GoogleDriveCheckpo
             drive_ids_to_retrieve, checkpoint
         )
 
+        # only process emails that we haven't already completed retrieval for
+        non_completed_org_emails = [
+            user_email
+            for user_email, stage in checkpoint.completion_map.items()
+            if stage != DriveRetrievalStage.DONE
+        ]
+
+        # don't process too many emails before returning a checkpoint. This is
+        # to resolve the case where there are a ton of emails that don't have access
+        # to the drive APIs. Without this, we could loop through these emails for
+        # more than 3 hours, causing a timeout and stalling progress.
+        email_batch_takes_us_to_completion = True
+        MAX_EMAILS_TO_PROCESS_BEFORE_CHECKPOINTING = 50
+        if len(non_completed_org_emails) > MAX_EMAILS_TO_PROCESS_BEFORE_CHECKPOINTING:
+            non_completed_org_emails = non_completed_org_emails[
+                :MAX_EMAILS_TO_PROCESS_BEFORE_CHECKPOINTING
+            ]
+            email_batch_takes_us_to_completion = False
+
         user_retrieval_gens = [
             self._impersonate_user_for_retrieval(
                 email,
@@ -591,9 +613,13 @@ class GoogleDriveConnector(SlimConnector, CheckpointConnector[GoogleDriveCheckpo
                 start,
                 end,
             )
-            for email in all_org_emails
+            for email in non_completed_org_emails
         ]
         yield from parallel_yield(user_retrieval_gens, max_workers=MAX_DRIVE_WORKERS)
+
+        # if there are more emails to process, don't mark as complete
+        if not email_batch_takes_us_to_completion:
+            return
 
         remaining_folders = (
             drive_ids_to_retrieve | folder_ids_to_retrieve
