@@ -9,6 +9,7 @@ import sentry_sdk
 import torch
 import uvicorn
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from transformers import logging as transformer_logging  # type:ignore
@@ -126,6 +127,9 @@ def get_model_app() -> FastAPI:
         request_id_prefix = "IDX"
 
     add_onyx_request_id_middleware(application, request_id_prefix, logger)
+
+    # Initialize and instrument the app
+    Instrumentator().instrument(application).expose(application)
 
     return application
 
