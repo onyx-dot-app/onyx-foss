@@ -487,11 +487,6 @@ export default function EmbeddingForm() {
   };
 
   const handleReIndex = async () => {
-    console.log("handleReIndex");
-    console.log(selectedProvider);
-    console.log(advancedEmbeddingDetails);
-    console.log(rerankingDetails);
-    console.log(reindexType);
     if (!selectedProvider) {
       return;
     }

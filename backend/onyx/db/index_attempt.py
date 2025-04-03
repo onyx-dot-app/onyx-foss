@@ -710,6 +710,25 @@ def cancel_indexing_attempts_past_model(
     )
 
 
+def cancel_indexing_attempts_for_search_settings(
+    search_settings_id: int,
+    db_session: Session,
+) -> None:
+    """Stops all indexing attempts that are in progress or not started for
+    the specified search settings."""
+
+    db_session.execute(
+        update(IndexAttempt)
+        .where(
+            IndexAttempt.status.in_(
+                [IndexingStatus.IN_PROGRESS, IndexingStatus.NOT_STARTED]
+            ),
+            IndexAttempt.search_settings_id == search_settings_id,
+        )
+        .values(status=IndexingStatus.FAILED)
+    )
+
+
 def count_unique_cc_pairs_with_successful_index_attempts(
     search_settings_id: int | None,
     db_session: Session,
