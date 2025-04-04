@@ -61,7 +61,11 @@ def research_object_source(
             raise ValueError("Agent 2 task not found")
 
         agent_2_time_cutoff = extract_section(
-            agent_2_instructions, "Time Cutoff:", "Output Objective:"
+            agent_2_instructions, "Time Cutoff:", "Research Topics:"
+        )
+
+        agent_2_research_topics = extract_section(
+            agent_2_instructions, "Research Topics:", "Output Objective"
         )
 
         agent_2_output_objective = extract_section(
@@ -99,8 +103,15 @@ def research_object_source(
 
     document_sources = [document_source] if document_source else None
 
+    if len(question.strip()) > 0:
+        research_area = f"{question} for {object}"
+    elif agent_2_research_topics and len(agent_2_research_topics.strip()) > 0:
+        research_area = f"{agent_2_research_topics} for {object}"
+    else:
+        research_area = object
+
     retrieved_docs = research(
-        question=object,
+        question=research_area,
         search_tool=search_tool,
         document_sources=document_sources,
         time_cutoff=agent_2_source_start_time,
