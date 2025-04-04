@@ -581,9 +581,9 @@ def convert_docx_to_txt(
     all_paras = [p.text for p in doc.paragraphs]
     text_content = "\n".join(all_paras)
 
-    txt_file_path = docx_to_txt_filename(file_path)
+    text_file_name = docx_to_txt_filename(file_path)
     file_store.save_file(
-        file_name=txt_file_path,
+        file_name=text_file_name,
         content=BytesIO(text_content.encode("utf-8")),
         display_name=file.filename,
         file_origin=FileOrigin.CONNECTOR,
