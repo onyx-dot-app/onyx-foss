@@ -1,0 +1,16 @@
+{
+  // Naming, likely doesn't need to be changed
+  "OnyxNamespace": "onyx",
+  "Environment": "production-1",
+  "EFSName": "onyx-efs-1",
+
+  // Region and VPC Stuff
+  "AWSRegion": "us-east-2",
+  "VpcID": "vpc-08822ab4927074015",
+  "SubnetIDs": "subnet-0c0c686bf71a9756e,subnet-0711d1a975b8a035c",
+
+  // Domain and ACM Stuff
+  "DomainName": "ecs-chris.danswer.dev",
+  "ValidationMethod": "DNS",
+  "HostedZoneId": ""  // Only specify if using Route 53 for DNS
+} 
