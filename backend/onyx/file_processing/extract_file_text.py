@@ -2,6 +2,7 @@ import io
 import json
 import os
 import re
+import uuid
 import zipfile
 from collections.abc import Callable
 from collections.abc import Iterator
@@ -567,9 +568,7 @@ def extract_text_and_images(
         return ExtractionResult(text_content="", embedded_images=[], metadata={})
 
 
-def convert_docx_to_txt(
-    file: UploadFile, file_store: FileStore, file_path: str
-) -> None:
+def convert_docx_to_txt(file: UploadFile, file_store: FileStore) -> str:
     """
     Helper to convert docx to a .txt file in the same filestore.
     """
@@ -581,7 +580,7 @@ def convert_docx_to_txt(
     all_paras = [p.text for p in doc.paragraphs]
     text_content = "\n".join(all_paras)
 
-    text_file_name = docx_to_txt_filename(file_path)
+    text_file_name = docx_to_txt_filename(file.filename or f"docx_{uuid.uuid4()}")
     file_store.save_file(
         file_name=text_file_name,
         content=BytesIO(text_content.encode("utf-8")),
@@ -589,6 +588,7 @@ def convert_docx_to_txt(
         file_origin=FileOrigin.CONNECTOR,
         file_type="text/plain",
     )
+    return text_file_name
 
 
 def docx_to_txt_filename(file_path: str) -> str:
