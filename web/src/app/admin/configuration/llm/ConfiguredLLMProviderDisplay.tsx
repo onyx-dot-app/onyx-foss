@@ -28,6 +28,9 @@ function LLMProviderUpdateModal({
     : llmProviderDescriptor?.display_name ||
       llmProviderDescriptor?.name ||
       "Custom LLM Provider";
+
+  const hasAdvancedOptions = llmProviderDescriptor?.name != "azure";
+
   return (
     <Modal
       title={`${llmProviderDescriptor ? "Configure" : "Setup"} ${providerName}`}
@@ -41,6 +44,7 @@ function LLMProviderUpdateModal({
             existingLlmProvider={existingLlmProvider}
             shouldMarkAsDefault={shouldMarkAsDefault}
             setPopup={setPopup}
+            hasAdvancedOptions={hasAdvancedOptions}
           />
         ) : (
           <CustomLLMProviderUpdateForm
