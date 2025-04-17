@@ -376,11 +376,24 @@ class ConfluenceConnector(
             cql=attachment_query,
             expand=",".join(_ATTACHMENT_EXPANSION_FIELDS),
         ):
-            attachment["metadata"].get("mediaType", "")
+            media_type: str = attachment.get("metadata", {}).get("mediaType", "")
+
+            # TODO(rkuo): this check is partially redundant with validate_attachment_filetype
+            # and checks in convert_attachment_to_content/process_attachment
+            # but doing the check here avoids an unnecessary download. Due for refactoring.
+            if not self.allow_images:
+                if media_type.startswith("image/"):
+                    logger.info(
+                        f"Skipping attachment because allow images is False: {attachment['title']}"
+                    )
+                    continue
+
             if not validate_attachment_filetype(
                 attachment,
             ):
-                logger.info(f"Skipping attachment: {attachment['title']}")
+                logger.info(
+                    f"Skipping attachment because it is not an accepted file type: {attachment['title']}"
+                )
                 continue
 
             logger.info(f"Processing attachment: {attachment['title']}")
