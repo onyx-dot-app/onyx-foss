@@ -37,13 +37,12 @@ class LLMProviderManager:
             fast_default_model_name=default_model_name or "gpt-4o-mini",
             is_public=is_public or True,
             groups=groups or [],
-            display_model_names=None,
-            model_names=None,
+            model_configurations=[],
             api_key_changed=True,
         )
 
         llm_response = requests.put(
-            f"{API_SERVER_URL}/admin/llm/provider",
+            f"{API_SERVER_URL}/admin/llm/provider?is_creation=true",
             json=llm_provider.model_dump(),
             headers=(
                 user_performing_action.headers
