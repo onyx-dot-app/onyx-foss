@@ -126,6 +126,10 @@ VERTEXAI_MODEL_NAMES = [
     "gemini-1.5-flash-001",
     "gemini-1.5-flash-002",
 ]
+VERTEXAI_VISIBLE_MODEL_NAMES = [
+    VERTEXAI_DEFAULT_MODEL,
+    VERTEXAI_DEFAULT_FAST_MODEL,
+]
 
 
 _PROVIDER_TO_MODELS_MAP = {
@@ -133,6 +137,13 @@ _PROVIDER_TO_MODELS_MAP = {
     BEDROCK_PROVIDER_NAME: BEDROCK_MODEL_NAMES,
     ANTHROPIC_PROVIDER_NAME: ANTHROPIC_MODEL_NAMES,
     VERTEXAI_PROVIDER_NAME: VERTEXAI_MODEL_NAMES,
+}
+
+_PROVIDER_TO_VISIBLE_MODELS_MAP = {
+    OPENAI_PROVIDER_NAME: OPEN_AI_VISIBLE_MODEL_NAMES,
+    BEDROCK_PROVIDER_NAME: [],
+    ANTHROPIC_PROVIDER_NAME: ANTHROPIC_VISIBLE_MODEL_NAMES,
+    VERTEXAI_PROVIDER_NAME: VERTEXAI_VISIBLE_MODEL_NAMES,
 }
 
 
@@ -228,3 +239,17 @@ def fetch_available_well_known_llms() -> list[WellKnownLLMProviderDescriptor]:
 
 def fetch_models_for_provider(provider_name: str) -> list[str]:
     return _PROVIDER_TO_MODELS_MAP.get(provider_name, [])
+
+
+def fetch_model_names_for_provider_as_set(provider_name: str) -> set[str] | None:
+    model_names: list[str] | None = _PROVIDER_TO_MODELS_MAP.get(provider_name)
+    return set(model_names) if model_names else None
+
+
+def fetch_visible_model_names_for_provider_as_set(
+    provider_name: str,
+) -> set[str] | None:
+    visible_model_names: list[str] | None = _PROVIDER_TO_VISIBLE_MODELS_MAP.get(
+        provider_name
+    )
+    return set(visible_model_names) if visible_model_names else None
