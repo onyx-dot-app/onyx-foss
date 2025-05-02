@@ -44,6 +44,7 @@ from onyx.db.search_settings import get_all_search_settings
 from onyx.db.sync_record import cleanup_sync_records
 from onyx.db.sync_record import insert_sync_record
 from onyx.db.sync_record import update_sync_record_status
+from onyx.db.tag import delete_orphan_tags__no_commit
 from onyx.redis.redis_connector import RedisConnector
 from onyx.redis.redis_connector_delete import RedisConnectorDelete
 from onyx.redis.redis_connector_delete import RedisConnectorDeletePayload
@@ -444,6 +445,9 @@ def monitor_connector_deletion_taskset(
                 cc_pair_id=cc_pair_id,
                 db_session=db_session,
             )
+
+            # delete orphan tags
+            delete_orphan_tags__no_commit(db_session)
 
             # Store IDs before potentially expiring cc_pair
             connector_id_to_delete = cc_pair.connector_id
