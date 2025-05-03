@@ -101,7 +101,7 @@ def get_group_map(google_drive_connector: GoogleDriveConnector) -> dict[str, lis
         admin_service.groups().list,
         list_key="groups",
         domain=google_drive_connector.google_domain,
-        fields="groups(email)",
+        fields="groups(email),nextPageToken",
     ):
         # The id is the group email
         group_email = group["email"]
@@ -112,7 +112,7 @@ def get_group_map(google_drive_connector: GoogleDriveConnector) -> dict[str, lis
             admin_service.members().list,
             list_key="members",
             groupKey=group_email,
-            fields="members(email)",
+            fields="members(email),nextPageToken",
         ):
             group_member_emails.append(member["email"])
         group_map[group_email] = group_member_emails
