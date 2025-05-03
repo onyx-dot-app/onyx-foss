@@ -273,6 +273,11 @@ class FileOrigin(str, Enum):
     INDEXING_CHECKPOINT = "indexing_checkpoint"
     PLAINTEXT_CACHE = "plaintext_cache"
     OTHER = "other"
+    QUERY_HISTORY_CSV = "query_history_csv"
+
+
+class FileType(str, Enum):
+    CSV = "text/csv"
 
 
 class MilestoneRecordType(str, Enum):
@@ -309,6 +314,7 @@ class OnyxCeleryQueues:
     CONNECTOR_PRUNING = "connector_pruning"
     CONNECTOR_DOC_PERMISSIONS_SYNC = "connector_doc_permissions_sync"
     CONNECTOR_EXTERNAL_GROUP_SYNC = "connector_external_group_sync"
+    CSV_GENERATION = "csv_generation"
 
     # Indexing queue
     CONNECTOR_INDEXING = "connector_indexing"
@@ -441,6 +447,9 @@ class OnyxCeleryTask:
     VESPA_METADATA_SYNC_TASK = "vespa_metadata_sync_task"
     CHECK_TTL_MANAGEMENT_TASK = "check_ttl_management_task"
     AUTOGENERATE_USAGE_REPORT_TASK = "autogenerate_usage_report_task"
+
+    EXPORT_QUERY_HISTORY_TASK = "export_query_history_task"
+    EXPORT_QUERY_HISTORY_CLEANUP_TASK = "export_query_history_cleanup_task"
 
 
 # this needs to correspond to the matching entry in supervisord
