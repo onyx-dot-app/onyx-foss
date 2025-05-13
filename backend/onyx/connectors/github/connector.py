@@ -712,11 +712,36 @@ class GithubConnector(CheckpointedConnector[GithubConnectorCheckpoint]):
                 # Try to get organization first
                 try:
                     org = self.github_client.get_organization(self.repo_owner)
-                    org.get_repos().totalCount  # Just check if we can access repos
-                except GithubException:
+                    total_count = org.get_repos().totalCount
+                    if total_count == 0:
+                        raise ConnectorValidationError(
+                            f"Found no repos for organization: {self.repo_owner}. "
+                            "Does the credential have the right scopes?"
+                        )
+                except GithubException as e:
+                    # Check for missing SSO
+                    MISSING_SSO_ERROR_MESSAGE = "You must grant your Personal Access token access to this organization".lower()
+                    if MISSING_SSO_ERROR_MESSAGE in str(e).lower():
+                        SSO_GUIDE_LINK = (
+                            "https://docs.github.com/en/enterprise-cloud@latest/authentication/"
+                            "authenticating-with-saml-single-sign-on/"
+                            "authorizing-a-personal-access-token-for-use-with-saml-single-sign-on"
+                        )
+                        raise ConnectorValidationError(
+                            f"Your GitHub token is missing authorization to access the "
+                            f"`{self.repo_owner}` organization. Please follow the guide to "
+                            f"authorize your token: {SSO_GUIDE_LINK}"
+                        )
                     # If not an org, try as a user
                     user = self.github_client.get_user(self.repo_owner)
-                    user.get_repos().totalCount  # Just check if we can access repos
+
+                    # Check if we can access any repos
+                    total_count = user.get_repos().totalCount
+                    if total_count == 0:
+                        raise ConnectorValidationError(
+                            f"Found no repos for user: {self.repo_owner}. "
+                            "Does the credential have the right scopes?"
+                        )
 
         except RateLimitExceededException:
             raise UnexpectedValidationError(
@@ -769,15 +794,38 @@ class GithubConnector(CheckpointedConnector[GithubConnectorCheckpoint]):
 
 if __name__ == "__main__":
     import os
+    from onyx.connectors.connector_runner import ConnectorRunner
 
+    # Initialize the connector
     connector = GithubConnector(
         repo_owner=os.environ["REPO_OWNER"],
-        repositories=os.environ["REPOSITORIES"],
+        repositories=os.environ.get("REPOSITORIES"),
     )
     connector.load_credentials(
         {"github_access_token": os.environ["ACCESS_TOKEN_GITHUB"]}
     )
-    document_batches = connector.load_from_checkpoint(
-        0, time.time(), connector.build_dummy_checkpoint()
+
+    # Create a time range from epoch to now
+    end_time = datetime.now(timezone.utc)
+    start_time = datetime.fromtimestamp(0, tz=timezone.utc)
+    time_range = (start_time, end_time)
+
+    # Initialize the runner with a batch size of 10
+    runner: ConnectorRunner[GithubConnectorCheckpoint] = ConnectorRunner(
+        connector, batch_size=10, time_range=time_range
     )
-    print(next(document_batches))
+
+    # Get initial checkpoint
+    checkpoint = connector.build_dummy_checkpoint()
+
+    # Run the connector
+    while checkpoint.has_more:
+        for doc_batch, failure, next_checkpoint in runner.run(checkpoint):
+            if doc_batch:
+                print(f"Retrieved batch of {len(doc_batch)} documents")
+                for doc in doc_batch:
+                    print(f"Document: {doc.semantic_identifier}")
+            if failure:
+                print(f"Failure: {failure.failure_message}")
+            if next_checkpoint:
+                checkpoint = next_checkpoint
