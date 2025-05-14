@@ -44,6 +44,8 @@ CURSOR_LOG_FREQUENCY = 50
 
 _MAX_NUM_RATE_LIMIT_RETRIES = 5
 
+ONE_DAY = timedelta(days=1)
+
 
 def _sleep_after_rate_limit_exception(github_client: Github) -> None:
     sleep_time = github_client.get_rate_limit().core.reset.replace(
@@ -628,6 +630,8 @@ class GithubConnector(CheckpointedConnector[GithubConnectorCheckpoint]):
                 headers=next_repo.raw_headers,
                 raw_data=next_repo.raw_data,
             )
+            checkpoint.stage = GithubConnectorStage.PRS
+            checkpoint.reset()
 
         logger.info(f"{len(checkpoint.cached_repo_ids)} repos remaining")
 
@@ -641,7 +645,8 @@ class GithubConnector(CheckpointedConnector[GithubConnectorCheckpoint]):
         checkpoint: GithubConnectorCheckpoint,
     ) -> CheckpointOutput[GithubConnectorCheckpoint]:
         start_datetime = datetime.fromtimestamp(start, tz=timezone.utc)
-        end_datetime = datetime.fromtimestamp(end, tz=timezone.utc)
+        # add a day for timezone safety
+        end_datetime = datetime.fromtimestamp(end, tz=timezone.utc) + ONE_DAY
 
         # Move start time back by 3 hours, since some Issues/PRs are getting dropped
         # Could be due to delayed processing on GitHub side
