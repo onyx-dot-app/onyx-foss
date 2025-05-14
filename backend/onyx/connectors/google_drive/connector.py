@@ -77,6 +77,9 @@ BATCHES_PER_CHECKPOINT = 1
 
 DRIVE_BATCH_SIZE = 80
 
+SHARED_DRIVES_PER_CHECKPOINT = 1
+FOLDERS_PER_CHECKPOINT = 1
+
 
 def _extract_str_list_from_comma_str(string: str | None) -> list[str]:
     if not string:
@@ -360,6 +363,7 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
                 if status == DriveIdStatus.AVAILABLE:
                     return drive_id, True
                 elif status == DriveIdStatus.IN_PROGRESS:
+                    logger.debug(f"Drive id in progress: {drive_id}")
                     found_future_work = True
             return None, found_future_work
 
@@ -369,13 +373,14 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
             def record_drive_processing(drive_id: str) -> None:
                 with cv:
                     completion.processed_drive_ids.add(drive_id)
-                    drive_id_status[drive_id] = (
-                        DriveIdStatus.FINISHED
-                        if drive_id in self._retrieved_folder_and_drive_ids
-                        else DriveIdStatus.AVAILABLE
-                    )
+                    if drive_id in drive_id_status:
+                        drive_id_status[drive_id] = (
+                            DriveIdStatus.FINISHED
+                            if drive_id in self._retrieved_folder_and_drive_ids
+                            else DriveIdStatus.AVAILABLE
+                        )
                     logger.debug(
-                        f"Drive id status: {len(drive_id_status)}, user email: {thread_id},"
+                        f"Drive id finished: {drive_id}, user email: {thread_id},"
                         f"processed drive ids: {len(completion.processed_drive_ids)}"
                     )
                     # wake up other threads waiting for work
@@ -384,7 +389,7 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
             # when entering the iterator with a previous id in the checkpoint, the user
             # has just finished that drive from a previous run.
             if (
-                completion.stage == DriveRetrievalStage.MY_DRIVE_FILES
+                completion.stage == DriveRetrievalStage.SHARED_DRIVE_FILES
                 and completion.current_folder_or_drive_id is not None
             ):
                 record_drive_processing(completion.current_folder_or_drive_id)
@@ -489,7 +494,7 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
                     DriveRetrievalStage.MY_DRIVE_FILES,
                 )
             curr_stage.stage = DriveRetrievalStage.SHARED_DRIVE_FILES
-            resuming = False  # we are starting the next stage for the first time
+            return  # resume from next stage on the next run
 
         if curr_stage.stage == DriveRetrievalStage.SHARED_DRIVE_FILES:
 
@@ -525,15 +530,19 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
                 # Don't enter resuming case for folder retrieval
                 resuming = False
 
-            for drive_id in concurrent_drive_itr(user_email):
+            for num_completed_drives, drive_id in enumerate(
+                concurrent_drive_itr(user_email)
+            ):
                 logger.info(
                     f"Getting files in shared drive '{drive_id}' as '{user_email}. Resuming: {resuming}"
                 )
                 curr_stage.completed_until = 0
                 curr_stage.current_folder_or_drive_id = drive_id
+                if num_completed_drives >= SHARED_DRIVES_PER_CHECKPOINT:
+                    return  # resume from this drive on the next run
                 yield from _yield_from_drive(drive_id, start)
             curr_stage.stage = DriveRetrievalStage.FOLDER_FILES
-            resuming = False  # we are starting the next stage for the first time
+            return  # resume from next stage on the next run
 
         # In the folder files section of service account retrieval we take extra care
         # to not retrieve duplicate docs. In particular, we only add a folder to
@@ -574,9 +583,10 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
                 last_processed_folder = folder_id
 
             skipping_seen_folders = last_processed_folder is not None
-            # NOTE:this assumes a small number of folders to crawl. If someone
+            # NOTE: this assumes a small number of folders to crawl. If someone
             # really wants to specify a large number of folders, we should use
             # binary search to find the first unseen folder.
+            num_completed_folders = 0
             for folder_id in sorted_filtered_folder_ids:
                 if skipping_seen_folders:
                     skipping_seen_folders = folder_id != last_processed_folder
@@ -587,8 +597,13 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
 
                 curr_stage.completed_until = 0
                 curr_stage.current_folder_or_drive_id = folder_id
+
+                if num_completed_folders >= FOLDERS_PER_CHECKPOINT:
+                    return  # resume from this folder on the next run
+
                 logger.info(f"Getting files in folder '{folder_id}' as '{user_email}'")
                 yield from _yield_from_folder_crawl(folder_id, start)
+                num_completed_folders += 1
 
         curr_stage.stage = DriveRetrievalStage.DONE
 
@@ -694,7 +709,11 @@ class GoogleDriveConnector(SlimConnector, CheckpointedConnector[GoogleDriveCheck
             checkpoint.completion_map[user_email].stage != DriveRetrievalStage.DONE
             for user_email in all_org_emails
         ):
-            raise RuntimeError("some users did not complete retrieval")
+            logger.warning(
+                "some users did not complete retrieval, "
+                "returning checkpoint for another run"
+            )
+            return
         checkpoint.completion_stage = DriveRetrievalStage.DONE
 
     def _determine_retrieval_ids(
