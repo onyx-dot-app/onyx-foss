@@ -164,15 +164,15 @@ def _download_and_extract_sections_basic(
     elif (
         mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ):
-        text = xlsx_to_text(io.BytesIO(response_call()))
-        return [TextSection(link=link, text=text)]
+        text = xlsx_to_text(io.BytesIO(response_call()), file_name=file_name)
+        return [TextSection(link=link, text=text)] if text else []
 
     elif (
         mime_type
         == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     ):
-        text = pptx_to_text(io.BytesIO(response_call()))
-        return [TextSection(link=link, text=text)]
+        text = pptx_to_text(io.BytesIO(response_call()), file_name=file_name)
+        return [TextSection(link=link, text=text)] if text else []
 
     elif is_gdrive_image_mime_type(mime_type):
         # For images, store them for later processing
