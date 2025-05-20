@@ -323,10 +323,12 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
                     user = await self.get_by_email(user_create.email)
 
                     # we must use the existing user in the session if it matches
-                    # the user we just got by email
-                    user_by_session = await db_session.get(User, user.id)
-                    if user_by_session:
-                        user = user_by_session
+                    # the user we just got by email. Note that this only applies
+                    # to multi-tenant, due to the overwriting of the user_db
+                    if MULTI_TENANT:
+                        user_by_session = await db_session.get(User, user.id)
+                        if user_by_session:
+                            user = user_by_session
 
                     # Handle case where user has used product outside of web and is now creating an account through web
                     if (
@@ -493,11 +495,13 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             # Handle case where user has used product outside of web and is now creating an account through web
             if not user.role.is_web_login():
                 # We must use the existing user in the session if it matches
-                # the user we just got by email/oauth
-                if user.id:
-                    user_by_session = await db_session.get(User, user.id)
-                    if user_by_session:
-                        user = user_by_session
+                # the user we just got by email/oauth. Note that this only applies
+                # to multi-tenant, due to the overwriting of the user_db
+                if MULTI_TENANT:
+                    if user.id:
+                        user_by_session = await db_session.get(User, user.id)
+                        if user_by_session:
+                            user = user_by_session
 
                 await self.user_db.update(
                     user,
