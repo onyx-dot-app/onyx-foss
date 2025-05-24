@@ -182,6 +182,7 @@ export function ChatPage({
     addSelectedFile,
     addSelectedFolder,
     clearSelectedItems,
+    setSelectedFiles,
     folders: userFolders,
     files: allUserFiles,
     uploadFile,
@@ -1110,6 +1111,14 @@ export function ChatPage({
   const resetInputBar = () => {
     setMessage("");
     setCurrentMessageFiles([]);
+
+    // Reset selectedFiles if they're under the context limit, but preserve selectedFolders.
+    // If under the context limit, the files will be included in the chat history
+    // so we don't need to keep them around.
+    if (selectedDocumentTokens < maxTokens) {
+      setSelectedFiles([]);
+    }
+
     if (endPaddingRef.current) {
       endPaddingRef.current.style.height = `95px`;
     }
@@ -1956,10 +1965,7 @@ export function ChatPage({
     }
   };
 
-  const handleImageUpload = async (
-    acceptedFiles: File[],
-    intent: UploadIntent
-  ) => {
+  const handleMessageSpecificFileUpload = async (acceptedFiles: File[]) => {
     const [_, llmModel] = getFinalLLM(
       llmProviders,
       liveAssistant ?? null,
@@ -1982,8 +1988,6 @@ export function ChatPage({
 
     updateChatState("uploading", currentSessionId());
 
-    const newlyUploadedFileDescriptors: FileDescriptor[] = [];
-
     for (let file of acceptedFiles) {
       const formData = new FormData();
       formData.append("files", file);
@@ -1992,24 +1996,20 @@ export function ChatPage({
       if (response.length > 0 && response[0] !== undefined) {
         const uploadedFile = response[0];
 
-        if (intent == UploadIntent.ADD_TO_DOCUMENTS) {
-          addSelectedFile(uploadedFile);
-        } else {
-          const newFileDescriptor: FileDescriptor = {
-            // Use file_id (storage ID) if available, otherwise fallback to DB id
-            // Ensure it's a string as FileDescriptor expects
-            id: uploadedFile.file_id
-              ? String(uploadedFile.file_id)
-              : String(uploadedFile.id),
-            type: uploadedFile.chat_file_type
-              ? uploadedFile.chat_file_type
-              : ChatFileType.PLAIN_TEXT,
-            name: uploadedFile.name,
-            isUploading: false, // Mark as successfully uploaded
-          };
+        const newFileDescriptor: FileDescriptor = {
+          // Use file_id (storage ID) if available, otherwise fallback to DB id
+          // Ensure it's a string as FileDescriptor expects
+          id: uploadedFile.file_id
+            ? String(uploadedFile.file_id)
+            : String(uploadedFile.id),
+          type: uploadedFile.chat_file_type
+            ? uploadedFile.chat_file_type
+            : ChatFileType.PLAIN_TEXT,
+          name: uploadedFile.name,
+          isUploading: false, // Mark as successfully uploaded
+        };
 
-          setCurrentMessageFiles((prev) => [...prev, newFileDescriptor]);
-        }
+        setCurrentMessageFiles((prev) => [...prev, newFileDescriptor]);
       } else {
         setPopup({
           type: "error",
@@ -2616,10 +2616,7 @@ export function ChatPage({
                 <Dropzone
                   key={currentSessionId()}
                   onDrop={(acceptedFiles) =>
-                    handleImageUpload(
-                      acceptedFiles,
-                      UploadIntent.ATTACH_TO_MESSAGE
-                    )
+                    handleMessageSpecificFileUpload(acceptedFiles)
                   }
                   noClick
                 >
@@ -3354,7 +3351,7 @@ export function ChatPage({
                               }
                               setAlternativeAssistant={setAlternativeAssistant}
                               setFiles={setCurrentMessageFiles}
-                              handleFileUpload={handleImageUpload}
+                              handleFileUpload={handleMessageSpecificFileUpload}
                               textAreaRef={textAreaRef}
                             />
                             {enterpriseSettings &&
