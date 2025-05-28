@@ -16,6 +16,7 @@ from typing import Set
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
 from redis.lock import Lock
+from redis.lock import Lock as RedisLock
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.http_retry import ConnectionErrorRetryHandler
@@ -104,7 +105,6 @@ from shared_configs.configs import POSTGRES_DEFAULT_SCHEMA
 from shared_configs.configs import SLACK_CHANNEL_ID
 from shared_configs.contextvars import CURRENT_TENANT_ID_CONTEXTVAR
 from shared_configs.contextvars import get_current_tenant_id
-
 
 logger = setup_logger()
 
@@ -264,6 +264,8 @@ class SlackbotHandler:
         - If a tenant in self.tenant_ids no longer has Slack bots, remove it (and release the lock in this scope).
         """
 
+        token: Token[str | None]
+
         # tenants that are disabled (e.g. their trial is over and haven't subscribed)
         # for non-cloud, this will return an empty set
         gated_tenants = fetch_ee_implementation_or_noop(
@@ -271,16 +273,14 @@ class SlackbotHandler:
             "get_gated_tenants",
             set(),
         )()
-        all_tenants = [
+        all_active_tenants = [
             tenant_id
             for tenant_id in get_all_tenant_ids()
             if tenant_id not in gated_tenants
         ]
 
-        token: Token[str | None]
-
         # 1) Try to acquire locks for new tenants
-        for tenant_id in all_tenants:
+        for tenant_id in all_active_tenants:
             if (
                 DISALLOWED_SLACK_BOT_TENANT_LIST is not None
                 and tenant_id in DISALLOWED_SLACK_BOT_TENANT_LIST
@@ -295,13 +295,13 @@ class SlackbotHandler:
             # Respect max tenant limit per pod
             if len(self.tenant_ids) >= MAX_TENANTS_PER_POD:
                 logger.info(
-                    f"Max tenants per pod reached ({MAX_TENANTS_PER_POD}); not acquiring more."
+                    f"Max tenants per pod reached, not acquiring more: {MAX_TENANTS_PER_POD=}"
                 )
                 break
 
             redis_client = get_redis_client(tenant_id=tenant_id)
             # Acquire a Redis lock (non-blocking)
-            rlock = redis_client.lock(
+            rlock: RedisLock = redis_client.lock(
                 OnyxRedisLocks.SLACK_BOT_LOCK, timeout=TENANT_LOCK_EXPIRATION
             )
             lock_acquired = rlock.acquire(blocking=False)
@@ -450,6 +450,7 @@ class SlackbotHandler:
                     bot_name = (
                         user_info["user"]["real_name"] or user_info["user"]["name"]
                     )
+                    socket_client.bot_name = bot_name
                     logger.info(
                         f"Started socket client for Slackbot with name '{bot_name}' (tenant: {tenant_id}, app: {slack_bot_id})"
                     )
@@ -692,7 +693,7 @@ def prefilter_requests(req: SocketModeRequest, client: TenantSocketModeClient) -
     if not check_message_limit():
         return False
 
-    logger.debug(f"Handling Slack request with Payload: '{req.payload}'")
+    logger.debug(f"Handling Slack request: {client.bot_name=} '{req.payload=}'")
     return True
 
 
