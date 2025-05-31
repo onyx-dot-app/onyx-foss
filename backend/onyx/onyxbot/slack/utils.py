@@ -2,6 +2,7 @@ import logging
 import random
 import re
 import string
+import threading
 import time
 import uuid
 from collections.abc import Generator
@@ -48,17 +49,38 @@ from shared_configs.contextvars import CURRENT_TENANT_ID_CONTEXTVAR
 
 logger = setup_logger()
 
+slack_token_user_ids: dict[str, str | None] = {}
+slack_token_bot_ids: dict[str, str | None] = {}
+slack_token_lock = threading.Lock()
 
-_DANSWER_BOT_SLACK_BOT_ID: str | None = None
 _DANSWER_BOT_MESSAGE_COUNT: int = 0
 _DANSWER_BOT_COUNT_START_TIME: float = time.time()
 
 
-def get_onyx_bot_slack_bot_id(web_client: WebClient) -> Any:
-    global _DANSWER_BOT_SLACK_BOT_ID
-    if _DANSWER_BOT_SLACK_BOT_ID is None:
-        _DANSWER_BOT_SLACK_BOT_ID = web_client.auth_test().get("user_id")
-    return _DANSWER_BOT_SLACK_BOT_ID
+def get_onyx_bot_auth_ids(
+    tenant_id: str, web_client: WebClient
+) -> tuple[str | None, str | None]:
+    """Returns a tuple of user_id and bot_id."""
+
+    user_id: str | None
+    bot_id: str | None
+
+    global slack_token_user_ids
+    global slack_token_bot_ids
+
+    with slack_token_lock:
+        user_id = slack_token_user_ids.get(tenant_id)
+        bot_id = slack_token_bot_ids.get(tenant_id)
+
+    if user_id is None or bot_id is None:
+        response = web_client.auth_test()
+        user_id = response.get("user_id")
+        bot_id = response.get("bot_id")
+        with slack_token_lock:
+            slack_token_user_ids[tenant_id] = user_id
+            slack_token_bot_ids[tenant_id] = bot_id
+
+    return user_id, bot_id
 
 
 def check_message_limit() -> bool:
@@ -146,9 +168,9 @@ def update_emote_react(
     return
 
 
-def remove_onyx_bot_tag(message_str: str, client: WebClient) -> str:
-    bot_tag_id = get_onyx_bot_slack_bot_id(web_client=client)
-    return re.sub(rf"<@{bot_tag_id}>\s*", "", message_str)
+def remove_onyx_bot_tag(tenant_id: str, message_str: str, client: WebClient) -> str:
+    bot_token_user_id, _ = get_onyx_bot_auth_ids(tenant_id, web_client=client)
+    return re.sub(rf"<@{bot_token_user_id}>\s*", "", message_str)
 
 
 def _check_for_url_in_block(block: Block) -> bool:
@@ -218,7 +240,8 @@ def respond_in_thread_or_channel(
                 unfurl_media=unfurl,
             )
         except Exception as e:
-            logger.warning(f"Failed to post message: {e} \n blocks: {blocks}")
+            blocks_str = str(blocks)[:1024]  # truncate block logging
+            logger.warning(f"Failed to post message: {e} \n blocks: {blocks_str}")
             logger.warning("Trying again without blocks that have urls")
 
             if not blocks:
@@ -255,7 +278,8 @@ def respond_in_thread_or_channel(
                     unfurl_media=unfurl,
                 )
             except Exception as e:
-                logger.warning(f"Failed to post message: {e} \n blocks: {blocks}")
+                blocks_str = str(blocks)[:1024]  # truncate block logging
+                logger.warning(f"Failed to post message: {e} \n blocks: {blocks_str}")
                 logger.warning("Trying again without blocks that have urls")
 
                 if not blocks:
@@ -518,7 +542,7 @@ def fetch_user_semantic_id_from_id(
 
 
 def read_slack_thread(
-    channel: str, thread: str, client: WebClient
+    tenant_id: str, channel: str, thread: str, client: WebClient
 ) -> list[ThreadMessage]:
     thread_messages: list[ThreadMessage] = []
     response = client.conversations_replies(channel=channel, ts=thread)
@@ -532,9 +556,22 @@ def read_slack_thread(
             )
             message_type = MessageType.USER
         else:
-            self_slack_bot_id = get_onyx_bot_slack_bot_id(client)
             blocks: Any
-            if reply.get("user") == self_slack_bot_id:
+            is_onyx_bot_response = False
+
+            reply_user = reply.get("user")
+            reply_bot_id = reply.get("bot_id")
+
+            self_slack_bot_user_id, self_slack_bot_bot_id = get_onyx_bot_auth_ids(
+                tenant_id, client
+            )
+            if reply_user is not None and reply_user == self_slack_bot_user_id:
+                is_onyx_bot_response = True
+
+            if reply_bot_id is not None and reply_bot_id == self_slack_bot_bot_id:
+                is_onyx_bot_response = True
+
+            if is_onyx_bot_response:
                 # OnyxBot response
                 message_type = MessageType.ASSISTANT
                 user_sem_id = "Assistant"
@@ -576,7 +613,7 @@ def read_slack_thread(
                 logger.warning("Skipping Slack thread message, no text found")
                 continue
 
-        message = remove_onyx_bot_tag(message, client=client)
+        message = remove_onyx_bot_tag(tenant_id, message, client=client)
         thread_messages.append(
             ThreadMessage(message=message, sender=user_sem_id, role=message_type)
         )
