@@ -2,14 +2,18 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  # Global version for all Onyx components (overrides .Chart.AppVersion)
+  version: "latest"
+
 postgresql:
   primary:
     persistence:
       storageClass: ""
-      size: 5Gi
+      size: 10Gi
     shmVolume:
       enabled: true
-      sizeLimit: 1Gi
+      sizeLimit: 2Gi
   enabled: true
   auth:
     existingSecret: onyx-secrets
@@ -29,7 +33,7 @@ vespa:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 1Gi
+            storage: 30Gi
         storageClassName: ""
   enabled: true
   replicaCount: 1
@@ -47,13 +51,14 @@ vespa:
     runAsUser: 0
   resources:
     # The Vespa Helm chart specifies default resources, which are quite modest. We override
-    # them here to increase chances of the chart running successfully.
+    # them here to increase chances of the chart running successfully. If you plan to index at
+    # scale, you will likely need to increase these limits further.
     requests:
-      cpu: 1500m
-      memory: 4000Mi
+      cpu: 4000m
+      memory: 8000Mi
     limits:
-      cpu: 1500m
-      memory: 4000Mi
+      cpu: 8000m
+      memory: 32000Mi
 
 persistent:
   storageClassName: ""
@@ -68,11 +73,6 @@ inferenceCapability:
     type: ClusterIP
     servicePort: 9000
     targetPort: 9000
-  pvc:
-    name: inference-model-pvc
-    accessModes:
-      - ReadWriteOnce
-    storage: 3Gi
   name: inference-model-server
   replicaCount: 1
   labels:
@@ -85,13 +85,6 @@ inferenceCapability:
     pullPolicy: IfNotPresent
   containerPorts:
     server: 9000
-  volumeMounts:
-    - name: inference-model-storage
-      mountPath: /root/.cache
-  volumes:
-    - name: inference-model-storage
-      persistentVolumeClaim:
-        claimName: inference-model-pvc
   podLabels:
     - key: app
       value: inference-model-server
@@ -112,17 +105,6 @@ indexCapability:
   podAnnotations: {}
   containerPorts:
     server: 9000
-  volumeMounts:
-    - name: indexing-model-storage
-      mountPath: /root/.cache
-  volumes:
-    - name: indexing-model-storage
-      persistentVolumeClaim:
-        claimName: indexing-model-storage
-  indexingModelPVC:
-    name: indexing-model-storage
-    accessMode: "ReadWriteOnce"
-    storage: "3Gi"
   image:
     repository: onyxdotapp/onyx-model-server
     # Overrides the image tag whose default is the chart appVersion.
@@ -144,12 +126,14 @@ serviceAccount:
   name: ""
 
 nginx:
+  enabled: true
   containerPorts:
     http: 1024
   extraEnvVars:
     - name: DOMAIN
       value: localhost
   service:
+    type: LoadBalancer
     ports:
       http: 80
       onyx: 3000
