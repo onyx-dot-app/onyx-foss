@@ -36,6 +36,57 @@ class KGConfigVars(str, Enum):
     KG_BETA_PERSONA_ID = "KG_BETA_PERSONA_ID"
 
 
+class KGGroundingType(str, Enum):
+    UNGROUNDED = "ungrounded"
+    GROUNDED = "grounded"
+
+
+class KGAttributeTrackType(str, Enum):
+    VALUE = "value"
+    LIST = "list"
+
+
+class KGAttributeTrackInfo(BaseModel):
+    type: KGAttributeTrackType
+    values: set[str] | None
+
+
+class KGEntityTypeClassificationInfo(BaseModel):
+    extraction: bool
+    description: str
+
+
+class KGEntityTypeAttributes(BaseModel):
+    # mapping of metadata keys to their corresponding attribute names
+    # there are several special attributes that you can map to:
+    # - key: used to populate the entity_key field of the kg entity
+    # - parent: used to populate the parent_key field of the kg entity
+    # - subtype: special attribute that can be filtered for
+    metadata_attributes: dict[str, str] = {}
+    # a metadata key: value pair to match for to differentiate entities from the same source
+    entity_filter_attributes: dict[str, Any] = {}
+    # mapping of classification names to their corresponding classification info
+    classification_attributes: dict[str, KGEntityTypeClassificationInfo] = {}
+
+    # mapping of attribute names to their allowed values, populated during extraction
+    attribute_values: dict[str, KGAttributeTrackInfo | None] = {}
+
+
+class KGEntityTypeDefinition(BaseModel):
+    description: str
+    grounding: KGGroundingType
+    grounded_source_name: DocumentSource | None
+    active: bool = False
+    attributes: KGEntityTypeAttributes = KGEntityTypeAttributes()
+    entity_values: list[str] = []
+
+
+class KGChunkRelationship(BaseModel):
+    source: str
+    rel_type: str
+    target: str
+
+
 class KGChunkFormat(BaseModel):
     connector_id: int | None = None
     document_id: str
@@ -46,9 +97,9 @@ class KGChunkFormat(BaseModel):
     secondary_owners: list[str]
     source_type: str
     metadata: dict[str, str | list[str]] | None = None
-    entities: dict[str, int] = {}
-    relationships: dict[str, int] = {}
-    terms: dict[str, int] = {}
+    entities: list[str] = []
+    relationships: list[KGChunkRelationship] = []
+    terms: list[str] = []
     deep_extraction: bool = False
 
 
@@ -104,6 +155,7 @@ class KGPerson(BaseModel):
 
 class NormalizedEntities(BaseModel):
     entities: list[str]
+    entities_w_attributes: list[str]
     entity_normalization_map: dict[str, str]
 
 
@@ -142,7 +194,7 @@ class KGClassificationDecisions(BaseModel):
 class KGClassificationInstructions(BaseModel):
     classification_enabled: bool
     classification_options: str
-    classification_class_definitions: dict[str, dict[str, str | bool]]
+    classification_class_definitions: dict[str, KGEntityTypeClassificationInfo]
 
 
 class KGExtractionInstructions(BaseModel):
@@ -151,6 +203,7 @@ class KGExtractionInstructions(BaseModel):
 
 
 class KGEntityTypeInstructions(BaseModel):
+    metadata_attribute_conversion: dict[str, str]
     classification_instructions: KGClassificationInstructions
     extraction_instructions: KGExtractionInstructions
     filter_instructions: dict[str, Any] | None = None
@@ -210,27 +263,3 @@ class KGDocumentEntitiesRelationshipsAttributes(BaseModel):
     account_participant_emails: set[str]
     converted_attributes_to_relationships: set[str]
     document_attributes: dict[str, Any] | None
-
-
-class KGGroundingType(str, Enum):
-    UNGROUNDED = "ungrounded"
-    GROUNDED = "grounded"
-
-
-class KGDefaultEntityDefinition(BaseModel):
-    description: str
-    grounding: KGGroundingType
-    active: bool = False
-    grounded_source_name: DocumentSource | None
-    attributes: dict = {}
-    entity_values: dict = {}
-
-
-class MetadataTrackType(str, Enum):
-    VALUE = "value"
-    LIST = "list"
-
-
-class MetadataTrackInfo(BaseModel):
-    type: MetadataTrackType
-    values: set[str] | None
