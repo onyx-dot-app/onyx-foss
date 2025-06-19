@@ -1,32 +1,24 @@
 from onyx.background.celery.apps.app_base import task_logger
 from onyx.background.celery.apps.client import celery_app
+from onyx.background.celery.tasks.kg_processing.utils import is_kg_processing_blocked
 from onyx.background.celery.tasks.kg_processing.utils import (
     is_kg_processing_requirements_met,
-)
-from onyx.background.celery.tasks.kg_processing.utils import (
-    is_kg_processing_unblocked,
 )
 from onyx.configs.constants import OnyxCeleryPriority
 from onyx.configs.constants import OnyxCeleryQueues
 from onyx.configs.constants import OnyxCeleryTask
-from onyx.db.engine import get_session_with_current_tenant
 
 
 def try_creating_kg_processing_task(
     tenant_id: str,
-) -> None:
-    """Checks for any conditions that should block the KG processing task from being
-    created, then creates the task.
-
-    Does not check for scheduling related conditions as this function
-    is used to trigger processing immediately.
+) -> bool:
+    """Schedules the KG Processing for a tenant immediately. Will not schedule if
+    the tenant is not ready for KG processing.
     """
 
     try:
-
-        with get_session_with_current_tenant() as db_session:
-            if not is_kg_processing_requirements_met(db_session):
-                return None
+        if not is_kg_processing_requirements_met():
+            return False
 
         # Send the KG processing task
         result = celery_app.send_task(
@@ -39,32 +31,28 @@ def try_creating_kg_processing_task(
         )
 
         if not result:
-            raise RuntimeError("send_task for kg processing failed.")
+            task_logger.error("send_task for kg processing failed.")
+        return bool(result)
 
     except Exception:
         task_logger.exception(
             f"try_creating_kg_processing_task - Unexpected exception for tenant={tenant_id}"
         )
-
-    return
+        return False
 
 
 def try_creating_kg_source_reset_task(
     tenant_id: str,
     source_name: str | None,
     index_name: str,
-) -> str | None:
-    """Checks for any conditions that should block the KG source reset task from being
-    created, then creates the task.
-
+) -> bool:
+    """Schedules the KG Source Reset for a tenant immediately. Will not do anything if
+    the tenant is currently being processed.
     """
 
     try:
-
-        # if blocked - return None
-        with get_session_with_current_tenant() as db_session:
-            if not is_kg_processing_unblocked(db_session):
-                return None
+        if is_kg_processing_blocked():
+            return False
 
         # Send the KG source reset task
         result = celery_app.send_task(
@@ -79,11 +67,11 @@ def try_creating_kg_source_reset_task(
         )
 
         if not result:
-            raise RuntimeError("send_task for kg source reset failed.")
+            task_logger.error("send_task for kg source reset failed.")
+        return bool(result)
 
     except Exception:
         task_logger.exception(
             f"try_creating_kg_source_reset_task - Unexpected exception for tenant={tenant_id}"
         )
-
-    return None
+        return False

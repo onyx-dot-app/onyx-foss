@@ -11,15 +11,10 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from onyx.agents.agent_search.orchestration.nodes.call_tool import ToolCallException
-from onyx.background.celery.tasks.kg_processing.kg_indexing import (
-    try_creating_kg_processing_task,
-)
-from onyx.background.celery.tasks.kg_processing.kg_indexing import (
-    try_creating_kg_source_reset_task,
-)
 from onyx.chat.answer import Answer
 from onyx.chat.chat_utils import create_chat_chain
 from onyx.chat.chat_utils import create_temporary_persona
+from onyx.chat.chat_utils import process_kg_commands
 from onyx.chat.models import AgenticMessageResponseIDInfo
 from onyx.chat.models import AgentMessageIDInfo
 from onyx.chat.models import AgentSearchPacket
@@ -85,7 +80,6 @@ from onyx.db.chat import translate_db_message_to_chat_message_detail
 from onyx.db.chat import translate_db_search_doc_to_server_search_doc
 from onyx.db.chat import update_chat_session_updated_at_timestamp
 from onyx.db.engine import get_session_context_manager
-from onyx.db.kg_config import get_kg_config_settings
 from onyx.db.milestone import check_multi_assistant_milestone
 from onyx.db.milestone import create_milestone_if_not_exists
 from onyx.db.milestone import update_user_assistant_milestone
@@ -103,9 +97,7 @@ from onyx.file_store.models import FileDescriptor
 from onyx.file_store.models import InMemoryChatFile
 from onyx.file_store.utils import load_all_chat_files
 from onyx.file_store.utils import save_files
-from onyx.kg.setup.kg_default_entity_definitions import (
-    populate_missing_default_entity_types__commit,
-)
+from onyx.kg.models import KGException
 from onyx.llm.exceptions import GenAIDisabledException
 from onyx.llm.factory import get_llms_for_persona
 from onyx.llm.factory import get_main_llm_from_tuple
@@ -570,39 +562,6 @@ def stream_chat_message_objects(
 
     llm: LLM
 
-    kg_config_settings = get_kg_config_settings(db_session)
-
-    if kg_config_settings.KG_ENABLED:
-
-        # Temporarily, until we have a draft UI for the KG Operations/Management
-
-        # get Vespa index
-        search_settings = get_current_search_settings(db_session)
-        index_str = search_settings.index_name
-
-        # TODO: Move these special calls  to endpoints
-        if new_msg_req.message == "kg_p":
-            try_creating_kg_processing_task(tenant_id)
-            raise Exception("Extractions done")
-
-        elif new_msg_req.message.startswith("kg_rs_source"):
-            msg_split = [x for x in new_msg_req.message.split(":")]
-            if len(msg_split) > 2:
-                raise Exception("Invalid format for a source reset command")
-            elif len(msg_split) == 2:
-                source_name = msg_split[1].strip()
-            elif len(msg_split) == 1:
-                source_name = None
-            else:
-                raise Exception("Invalid format for a source reset command")
-
-            try_creating_kg_source_reset_task(tenant_id, source_name, index_str)
-            raise Exception(f"KG index reset for source {source_name} done")
-
-        elif new_msg_req.message == "kg_setup":
-            populate_missing_default_entity_types__commit(db_session=db_session)
-            raise Exception("KG setup done")
-
     try:
         # Move these variables inside the try block
         user_id = user.id if user is not None else None
@@ -631,6 +590,9 @@ def stream_chat_message_objects(
             db_session=db_session,
             default_persona=chat_session.persona,
         )
+
+        # TODO: remove once we have an endpoint for this stuff
+        process_kg_commands(new_msg_req.message, persona.name, tenant_id, db_session)
 
         multi_assistant_milestone, _is_new = create_milestone_if_not_exists(
             user=user,
@@ -1095,6 +1057,10 @@ def stream_chat_message_objects(
         yield StreamingError(error=error_msg)
         db_session.rollback()
         return
+
+    # TODO: remove after moving kg stuff to api endpoint
+    except KGException:
+        raise
 
     except Exception as e:
         logger.exception(f"Failed to process chat message due to {e}")

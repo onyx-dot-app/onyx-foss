@@ -169,12 +169,6 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
             grounding=KGGroundingType.GROUNDED,
             grounded_source_name=DocumentSource.SALESFORCE,
         ),
-        "SLACK": KGEntityTypeDefinition(
-            description="A Slack conversation.",
-            attributes=KGEntityTypeAttributes(),
-            grounding=KGGroundingType.GROUNDED,
-            grounded_source_name=DocumentSource.SLACK,
-        ),
         "VENDOR": KGEntityTypeDefinition(
             description=f"The Vendor {vendor_name}, 'us'",
             grounding=KGGroundingType.GROUNDED,
@@ -198,7 +192,7 @@ def populate_missing_default_entity_types__commit(db_session: Session) -> None:
     """
     Populates the database with the missing default entity types.
     """
-    kg_config_settings = get_kg_config_settings(db_session=db_session)
+    kg_config_settings = get_kg_config_settings()
     validate_kg_settings(kg_config_settings)
 
     vendor_name = cast(str, kg_config_settings.KG_VENDOR)
