@@ -403,6 +403,7 @@ def list_personas(
         db_session=db_session,
         get_editable=False,
         joinedload_all=True,
+        include_prompt=False,
     )
 
     if persona_ids:
