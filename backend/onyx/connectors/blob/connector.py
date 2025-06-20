@@ -285,7 +285,7 @@ class BlobStorageConnector(LoadConnector, PollConnector):
                             image_section, _ = store_image_and_create_section(
                                 db_session=db_session,
                                 image_data=downloaded_file,
-                                file_name=f"{self.bucket_type}_{self.bucket_name}_{key.replace('/', '_')}",
+                                file_id=f"{self.bucket_type}_{self.bucket_name}_{key.replace('/', '_')}",
                                 display_name=file_name,
                                 link=link,
                                 file_origin=FileOrigin.CONNECTOR,
@@ -479,10 +479,8 @@ if __name__ == "__main__":
                     print(f"  - Link: {section.link}")
                     if isinstance(section, TextSection) and section.text is not None:
                         print(f"  - Text: {section.text[:100]}...")
-                    elif (
-                        hasattr(section, "image_file_name") and section.image_file_name
-                    ):
-                        print(f"  - Image: {section.image_file_name}")
+                    elif hasattr(section, "image_file_id") and section.image_file_id:
+                        print(f"  - Image: {section.image_file_id}")
                     else:
                         print("Error: Unknown section type")
                 print("---")
