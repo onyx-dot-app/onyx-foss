@@ -361,3 +361,11 @@ class ConnectorFailure(BaseModel):
                 "Exactly one of 'failed_document' or 'failed_entity' must be specified."
             )
         return values
+
+
+class OnyxMetadata(BaseModel):
+    link: str | None = None
+    file_display_name: str | None = None
+    primary_owners: list[BasicExpertInfo] | None = None
+    secondary_owners: list[BasicExpertInfo] | None = None
+    doc_updated_at: datetime | None = None
