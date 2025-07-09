@@ -154,7 +154,6 @@ class SearchRequest(ChunkContext):
     query: str
 
     expanded_queries: QueryExpansions | None = None
-    original_query: str | None = None
 
     search_type: SearchType = SearchType.SEMANTIC
 
@@ -206,7 +205,6 @@ class SearchQuery(ChunkContext):
     precomputed_query_embedding: Embedding | None = None
 
     expanded_queries: QueryExpansions | None = None
-    original_query: str | None
 
 
 class RetrievalDetails(ChunkContext):
