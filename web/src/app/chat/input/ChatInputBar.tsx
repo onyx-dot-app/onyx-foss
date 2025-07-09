@@ -867,15 +867,11 @@ export function ChatInputBar({
                     }
                     availableTags={availableTags}
                     filterManager={filterManager}
-                    trigger={
-                      <ChatInputOption
-                        flexPriority="stiff"
-                        name="Filters"
-                        Icon={FiFilter}
-                        toggle
-                        tooltipContent="Filter your search"
-                      />
-                    }
+                    trigger={{
+                      name: "Filters",
+                      Icon: FiFilter,
+                      tooltipContent: "Filter your search",
+                    }}
                   />
                 )}
               </div>

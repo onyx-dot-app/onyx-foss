@@ -6,7 +6,7 @@ import {
   UserGroup,
   ConnectorStatus,
   CCPairBasicInfo,
-  ValidSources,
+  FederatedConnectorDetail,
 } from "@/lib/types";
 import useSWR, { mutate, useSWRConfig } from "swr";
 import { errorHandlingFetcher } from "./fetcher";
@@ -121,6 +121,20 @@ export const useBasicConnectorStatus = () => {
   };
 };
 
+export const useFederatedConnectors = () => {
+  const { mutate } = useSWRConfig();
+  const url = "/api/federated";
+  const swrResponse = useSWR<FederatedConnectorDetail[]>(
+    url,
+    errorHandlingFetcher
+  );
+
+  return {
+    ...swrResponse,
+    refreshFederatedConnectors: () => mutate(url),
+  };
+};
+
 export const useLabels = () => {
   const { mutate } = useSWRConfig();
   const { data: labels, error } = useSWR<PersonaLabel[]>(
@@ -210,7 +224,7 @@ export interface FilterManager {
   getFilterString: () => string;
   buildFiltersFromQueryString: (
     filterString: string,
-    availableSources: ValidSources[],
+    availableSources: SourceMetadata[],
     availableDocumentSets: string[],
     availableTags: Tag[]
   ) => void;
@@ -267,7 +281,7 @@ export function useFilters(): FilterManager {
 
   function buildFiltersFromQueryString(
     filterString: string,
-    availableSources: ValidSources[],
+    availableSources: SourceMetadata[],
     availableDocumentSets: string[],
     availableTags: Tag[]
   ): void {
@@ -286,12 +300,11 @@ export function useFilters(): FilterManager {
     }
 
     // Parse sources
-    const availableSourcesMetadata = availableSources.map(getSourceMetadata);
     let newSelectedSources: SourceMetadata[] = [];
     const sourcesParam = params.get("sources");
     if (sourcesParam) {
       const sourceNames = sourcesParam.split(",").map(decodeURIComponent);
-      newSelectedSources = availableSourcesMetadata.filter((source) =>
+      newSelectedSources = availableSources.filter((source) =>
         sourceNames.includes(source.internalName)
       );
     }
