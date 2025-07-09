@@ -374,7 +374,11 @@ const Main = () => {
   } = useDocumentSets(true);
 
   if (isDocumentSetsLoading || isEditableDocumentSetsLoading) {
-    return <ThreeDotsLoader />;
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <ThreeDotsLoader />
+      </div>
+    );
   }
 
   if (documentSetsError || !documentSets) {
@@ -401,9 +405,6 @@ const Main = () => {
           href="/admin/documents/sets/new"
           text="New Document Set"
         />
-        {/* <Link href="/admin/documents/sets/new">
-          <Button variant="navigate">New Document Set</Button>
-        </Link> */}
       </div>
 
       {documentSets.length > 0 && (
