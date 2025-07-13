@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { FieldArray, useFormikContext, ErrorMessage, Field } from "formik";
-import { CCPairDescriptor, DocumentSet } from "@/lib/types";
+import { CCPairDescriptor, DocumentSetSummary } from "@/lib/types";
 import {
   Label,
   SelectorFormField,
@@ -43,7 +43,7 @@ import { CheckFormField } from "@/components/ui/CheckField";
 export interface SlackChannelConfigFormFieldsProps {
   isUpdate: boolean;
   isDefault: boolean;
-  documentSets: DocumentSet[];
+  documentSets: DocumentSetSummary[];
   searchEnabledAssistants: MinimalPersonaSnapshot[];
   nonSearchAssistants: MinimalPersonaSnapshot[];
   standardAnswerCategoryResponse: StandardAnswerCategoryResponse;
@@ -72,10 +72,24 @@ export function SlackChannelConfigFormFields({
   const [viewSyncEnabledAssistants, setViewSyncEnabledAssistants] =
     useState(false);
 
-  const documentSetContainsSync = (documentSet: DocumentSet) =>
-    documentSet.cc_pair_descriptors.some(
-      (descriptor) => descriptor.access_type === "sync"
+  // Helper function to check if a document set contains sync connectors
+  const documentSetContainsSync = (documentSet: DocumentSetSummary) => {
+    return documentSet.cc_pair_summaries.some(
+      (summary) => summary.access_type === "sync"
     );
+  };
+
+  // Helper function to check if a document set contains private connectors
+  const documentSetContainsPrivate = (documentSet: DocumentSetSummary) => {
+    return documentSet.cc_pair_summaries.some(
+      (summary) => summary.access_type === "private"
+    );
+  };
+
+  // Helper function to get cc_pair_summaries from DocumentSetSummary
+  const getCcPairSummaries = (documentSet: DocumentSetSummary) => {
+    return documentSet.cc_pair_summaries;
+  };
 
   const [syncEnabledAssistants, availableAssistants] = useMemo(() => {
     const sync: MinimalPersonaSnapshot[] = [];
@@ -94,25 +108,27 @@ export function SlackChannelConfigFormFields({
   }, [searchEnabledAssistants]);
 
   const unselectableSets = useMemo(() => {
-    return documentSets.filter((ds) =>
-      ds.cc_pair_descriptors.some(
-        (descriptor) => descriptor.access_type === "sync"
-      )
-    );
+    return documentSets.filter(documentSetContainsSync);
   }, [documentSets]);
+
   const memoizedPrivateConnectors = useMemo(() => {
     const uniqueDescriptors = new Map();
-    documentSets.forEach((ds) => {
-      ds.cc_pair_descriptors.forEach((descriptor) => {
+    documentSets.forEach((ds: DocumentSetSummary) => {
+      const ccPairSummaries = getCcPairSummaries(ds);
+      ccPairSummaries.forEach((summary: any) => {
         if (
-          descriptor.access_type === "private" &&
-          !uniqueDescriptors.has(descriptor.id)
+          summary.access_type === "private" &&
+          !uniqueDescriptors.has(summary.id)
         ) {
-          uniqueDescriptors.set(descriptor.id, descriptor);
+          uniqueDescriptors.set(summary.id, summary);
         }
       });
     });
     return Array.from(uniqueDescriptors.values());
+  }, [documentSets]);
+
+  const selectableSets = useMemo(() => {
+    return documentSets.filter((ds) => !documentSetContainsSync(ds));
   }, [documentSets]);
 
   useEffect(() => {
@@ -134,12 +150,6 @@ export function SlackChannelConfigFormFields({
     }
   }, [unselectableSets, values.document_sets, setFieldValue, setPopup]);
 
-  const documentSetContainsPrivate = (documentSet: DocumentSet) => {
-    return documentSet.cc_pair_descriptors.some(
-      (descriptor) => descriptor.access_type === "private"
-    );
-  };
-
   const shouldShowPrivacyAlert = useMemo(() => {
     if (values.knowledge_source === "document_sets") {
       const selectedSets = documentSets.filter((ds) =>
@@ -157,15 +167,6 @@ export function SlackChannelConfigFormFields({
     return false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.knowledge_source, values.document_sets, values.persona_id]);
-
-  const selectableSets = useMemo(() => {
-    return documentSets.filter(
-      (ds) =>
-        !ds.cc_pair_descriptors.some(
-          (descriptor) => descriptor.access_type === "sync"
-        )
-    );
-  }, [documentSets]);
 
   return (
     <>
