@@ -1,12 +1,12 @@
 import { fetchSS } from "@/lib/utilsSS";
-import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
+import { Persona } from "@/app/admin/assistants/interfaces";
 import { fetchLLMProvidersSS } from "@/lib/llm/fetchLLMs";
 import { fetchAssistantsSS } from "../assistants/fetchAssistantsSS";
 import { modelSupportsImageInput } from "../llm/utils";
 import { filterAssistants } from "../assistants/utils";
 
 interface AssistantData {
-  assistants: MinimalPersonaSnapshot[];
+  assistants: Persona[];
   hasAnyConnectors: boolean;
   hasImageCompatibleModel: boolean;
 }
@@ -51,7 +51,11 @@ export async function fetchAssistantData(): Promise<AssistantData> {
         )
     );
 
-    let filteredAssistants = filterAssistants(assistants);
+    let filteredAssistants = filterAssistants(
+      assistants,
+      hasAnyConnectors,
+      hasImageCompatibleModel
+    );
 
     return {
       assistants: filteredAssistants,

@@ -8,7 +8,7 @@ import { getDisplayNameForModel, LlmDescriptor } from "@/lib/hooks";
 import { modelSupportsImageInput } from "@/lib/llm/utils";
 import { LLMProviderDescriptor } from "@/app/admin/configuration/llm/interfaces";
 import { getProviderIcon } from "@/app/admin/configuration/llm/utils";
-import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
+import { Persona } from "@/app/admin/assistants/interfaces";
 import { LlmManager } from "@/lib/hooks";
 
 import {
@@ -28,7 +28,7 @@ interface LLMPopoverProps {
   llmProviders: LLMProviderDescriptor[];
   llmManager: LlmManager;
   requiresImageGeneration?: boolean;
-  currentAssistant?: MinimalPersonaSnapshot;
+  currentAssistant?: Persona;
   trigger?: React.ReactElement;
   onSelect?: (value: string) => void;
   currentModelName?: string;

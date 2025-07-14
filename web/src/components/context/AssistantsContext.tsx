@@ -8,7 +8,7 @@ import React, {
   SetStateAction,
   Dispatch,
 } from "react";
-import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
+import { Persona } from "@/app/admin/assistants/interfaces";
 import {
   classifyAssistants,
   orderAssistantsForUser,
@@ -18,18 +18,18 @@ import {
 import { useUser } from "../user/UserProvider";
 
 interface AssistantsContextProps {
-  assistants: MinimalPersonaSnapshot[];
-  visibleAssistants: MinimalPersonaSnapshot[];
-  hiddenAssistants: MinimalPersonaSnapshot[];
-  finalAssistants: MinimalPersonaSnapshot[];
-  ownedButHiddenAssistants: MinimalPersonaSnapshot[];
+  assistants: Persona[];
+  visibleAssistants: Persona[];
+  hiddenAssistants: Persona[];
+  finalAssistants: Persona[];
+  ownedButHiddenAssistants: Persona[];
   refreshAssistants: () => Promise<void>;
   isImageGenerationAvailable: boolean;
   // Admin only
-  editablePersonas: MinimalPersonaSnapshot[];
-  allAssistants: MinimalPersonaSnapshot[];
-  pinnedAssistants: MinimalPersonaSnapshot[];
-  setPinnedAssistants: Dispatch<SetStateAction<MinimalPersonaSnapshot[]>>;
+  editablePersonas: Persona[];
+  allAssistants: Persona[];
+  pinnedAssistants: Persona[];
+  setPinnedAssistants: Dispatch<SetStateAction<Persona[]>>;
 }
 
 const AssistantsContext = createContext<AssistantsContextProps | undefined>(
@@ -38,36 +38,27 @@ const AssistantsContext = createContext<AssistantsContextProps | undefined>(
 
 export const AssistantsProvider: React.FC<{
   children: React.ReactNode;
-  initialAssistants: MinimalPersonaSnapshot[];
-  hasAnyConnectors?: boolean;
-  hasImageCompatibleModel?: boolean;
+  initialAssistants: Persona[];
+  hasAnyConnectors: boolean;
+  hasImageCompatibleModel: boolean;
 }> = ({
   children,
   initialAssistants,
   hasAnyConnectors,
   hasImageCompatibleModel,
 }) => {
-  const [assistants, setAssistants] = useState<MinimalPersonaSnapshot[]>(
+  const [assistants, setAssistants] = useState<Persona[]>(
     initialAssistants || []
   );
   const { user, isAdmin, isCurator } = useUser();
-  const [editablePersonas, setEditablePersonas] = useState<
-    MinimalPersonaSnapshot[]
-  >([]);
-  const [allAssistants, setAllAssistants] = useState<MinimalPersonaSnapshot[]>(
-    []
-  );
+  const [editablePersonas, setEditablePersonas] = useState<Persona[]>([]);
+  const [allAssistants, setAllAssistants] = useState<Persona[]>([]);
 
-  const [pinnedAssistants, setPinnedAssistants] = useState<
-    MinimalPersonaSnapshot[]
-  >(() => {
+  const [pinnedAssistants, setPinnedAssistants] = useState<Persona[]>(() => {
     if (user?.preferences.pinned_assistants) {
       return user.preferences.pinned_assistants
         .map((id) => assistants.find((assistant) => assistant.id === id))
-        .filter(
-          (assistant): assistant is MinimalPersonaSnapshot =>
-            assistant !== undefined
-        );
+        .filter((assistant): assistant is Persona => assistant !== undefined);
     } else {
       return assistants.filter((a) => a.is_default_persona);
     }
@@ -78,10 +69,7 @@ export const AssistantsProvider: React.FC<{
       if (user?.preferences.pinned_assistants) {
         return user.preferences.pinned_assistants
           .map((id) => assistants.find((assistant) => assistant.id === id))
-          .filter(
-            (assistant): assistant is MinimalPersonaSnapshot =>
-              assistant !== undefined
-          );
+          .filter((assistant): assistant is Persona => assistant !== undefined);
       } else {
         return assistants.filter((a) => a.is_default_persona);
       }
@@ -147,9 +135,13 @@ export const AssistantsProvider: React.FC<{
         },
       });
       if (!response.ok) throw new Error("Failed to fetch assistants");
-      let assistants: MinimalPersonaSnapshot[] = await response.json();
+      let assistants: Persona[] = await response.json();
 
-      let filteredAssistants = filterAssistants(assistants);
+      let filteredAssistants = filterAssistants(
+        assistants,
+        hasAnyConnectors,
+        hasImageCompatibleModel
+      );
 
       setAssistants(filteredAssistants);
 

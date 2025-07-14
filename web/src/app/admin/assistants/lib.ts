@@ -1,5 +1,5 @@
 import { LLMProviderView } from "../configuration/llm/interfaces";
-import { MinimalPersonaSnapshot, Persona, StarterMessage } from "./interfaces";
+import { Persona, StarterMessage } from "./interfaces";
 
 interface PersonaUpsertRequest {
   name: string;
@@ -250,10 +250,7 @@ function closerToZeroNegativesFirstComparator(a: number, b: number) {
   return absA > absB ? 1 : -1;
 }
 
-export function personaComparator(
-  a: MinimalPersonaSnapshot | Persona,
-  b: MinimalPersonaSnapshot | Persona
-) {
+export function personaComparator(a: Persona, b: Persona) {
   if (a.display_priority === null && b.display_priority === null) {
     return closerToZeroNegativesFirstComparator(a.id, b.id);
   }

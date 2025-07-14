@@ -18,10 +18,7 @@ import { ChatSession } from "@/app/chat/interfaces";
 import { AllUsersResponse } from "./types";
 import { Credential } from "./connectors/credentials";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
-import {
-  MinimalPersonaSnapshot,
-  PersonaLabel,
-} from "@/app/admin/assistants/interfaces";
+import { Persona, PersonaLabel } from "@/app/admin/assistants/interfaces";
 import { LLMProviderDescriptor } from "@/app/admin/configuration/llm/interfaces";
 import { isAnthropic } from "@/app/admin/configuration/llm/utils";
 import { getSourceMetadata } from "./sources";
@@ -383,7 +380,7 @@ export interface LlmManager {
   updateModelOverrideBasedOnChatSession: (chatSession?: ChatSession) => void;
   imageFilesPresent: boolean;
   updateImageFilesPresent: (present: boolean) => void;
-  liveAssistant: MinimalPersonaSnapshot | null;
+  liveAssistant: Persona | null;
   maxTemperature: number;
 }
 
@@ -431,7 +428,7 @@ providing appropriate defaults for new conversations based on the available tool
 export function useLlmManager(
   llmProviders: LLMProviderDescriptor[],
   currentChatSession?: ChatSession,
-  liveAssistant?: MinimalPersonaSnapshot
+  liveAssistant?: Persona
 ): LlmManager {
   const { user } = useUser();
 

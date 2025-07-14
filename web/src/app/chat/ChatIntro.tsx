@@ -1,11 +1,7 @@
 import { AssistantIcon } from "@/components/assistants/AssistantIcon";
-import { MinimalPersonaSnapshot } from "../admin/assistants/interfaces";
+import { Persona } from "../admin/assistants/interfaces";
 
-export function ChatIntro({
-  selectedPersona,
-}: {
-  selectedPersona: MinimalPersonaSnapshot;
-}) {
+export function ChatIntro({ selectedPersona }: { selectedPersona: Persona }) {
   return (
     <div data-testid="chat-intro" className="flex flex-col items-center gap-6">
       <div className="relative flex flex-col gap-y-4 w-fit mx-auto justify-center">

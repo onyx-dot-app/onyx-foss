@@ -40,6 +40,8 @@ import {
 } from "@/app/admin/settings/interfaces";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import useSWR from "swr";
+import { errorHandlingFetcher } from "@/lib/fetcher";
 import { useIsKGExposed } from "@/app/admin/kg/utils";
 import { useFederatedOAuthStatus } from "@/lib/hooks/useFederatedOAuthStatus";
 

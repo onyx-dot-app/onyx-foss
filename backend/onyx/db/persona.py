@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from datetime import datetime
-from enum import Enum
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -12,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
 from onyx.auth.schemas import UserRole
@@ -22,7 +22,6 @@ from onyx.configs.chat_configs import CONTEXT_CHUNKS_BELOW
 from onyx.configs.constants import NotificationType
 from onyx.context.search.enums import RecencyBiasSetting
 from onyx.db.constants import SLACK_BOT_PERSONA_PREFIX
-from onyx.db.models import ConnectorCredentialPair
 from onyx.db.models import DocumentSet
 from onyx.db.models import Persona
 from onyx.db.models import Persona__User
@@ -44,12 +43,6 @@ from onyx.utils.logger import setup_logger
 from onyx.utils.variable_functionality import fetch_versioned_implementation
 
 logger = setup_logger()
-
-
-class PersonaLoadType(Enum):
-    NONE = "none"
-    MINIMAL = "minimal"
-    FULL = "full"
 
 
 def _add_user_filters(
@@ -329,8 +322,6 @@ def update_persona_public_status(
 
 
 def get_personas_for_user(
-    # defines how much of the persona to pre-load
-    load_type: PersonaLoadType,
     # if user is `None` assume the user is an admin or auth is disabled
     user: User | None,
     db_session: Session,
@@ -338,6 +329,9 @@ def get_personas_for_user(
     include_default: bool = True,
     include_slack_bot_personas: bool = False,
     include_deleted: bool = False,
+    joinedload_all: bool = False,
+    # a bit jank
+    include_prompt: bool = True,
 ) -> Sequence[Persona]:
     stmt = select(Persona)
     stmt = _add_user_filters(stmt, user, get_editable)
@@ -349,45 +343,20 @@ def get_personas_for_user(
     if not include_deleted:
         stmt = stmt.where(Persona.deleted.is_(False))
 
-    if load_type == PersonaLoadType.MINIMAL:
-        # For ChatPage, only load essential relationships
+    if joinedload_all:
         stmt = stmt.options(
-            # Used for retrieval capability checking
-            joinedload(Persona.tools),
-            # Used for filtering
-            joinedload(Persona.labels),
-            # only show document sets in the UI that the assistant has access to
-            joinedload(Persona.document_sets),
-            joinedload(Persona.document_sets)
-            .joinedload(DocumentSet.connector_credential_pairs)
-            .joinedload(ConnectorCredentialPair.connector),
-            joinedload(Persona.document_sets)
-            .joinedload(DocumentSet.connector_credential_pairs)
-            .joinedload(ConnectorCredentialPair.credential),
-            # user
-            joinedload(Persona.user),
+            selectinload(Persona.tools),
+            selectinload(Persona.document_sets),
+            selectinload(Persona.groups),
+            selectinload(Persona.users),
+            selectinload(Persona.labels),
+            selectinload(Persona.user_files),
+            selectinload(Persona.user_folders),
         )
-    elif load_type == PersonaLoadType.FULL:
-        stmt = stmt.options(
-            joinedload(Persona.user),
-            joinedload(Persona.tools),
-            joinedload(Persona.document_sets)
-            .joinedload(DocumentSet.connector_credential_pairs)
-            .joinedload(ConnectorCredentialPair.connector),
-            joinedload(Persona.document_sets)
-            .joinedload(DocumentSet.connector_credential_pairs)
-            .joinedload(ConnectorCredentialPair.credential),
-            joinedload(Persona.document_sets).joinedload(DocumentSet.users),
-            joinedload(Persona.document_sets).joinedload(DocumentSet.groups),
-            joinedload(Persona.groups),
-            joinedload(Persona.users),
-            joinedload(Persona.labels),
-            joinedload(Persona.user_files),
-            joinedload(Persona.user_folders),
-            joinedload(Persona.prompts),
-        )
+        if include_prompt:
+            stmt = stmt.options(selectinload(Persona.prompts))
 
-    results = db_session.execute(stmt).unique().scalars().all()
+    results = db_session.execute(stmt).scalars().all()
     return results
 
 

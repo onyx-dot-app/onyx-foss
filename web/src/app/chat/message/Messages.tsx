@@ -40,7 +40,7 @@ import { CodeBlock } from "./CodeBlock";
 import rehypePrism from "rehype-prism-plus";
 import "prismjs/themes/prism-tomorrow.css";
 import "./custom-code-styles.css";
-import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
+import { Persona } from "@/app/admin/assistants/interfaces";
 import { AssistantIcon } from "@/components/assistants/AssistantIcon";
 import { LikeFeedback, DislikeFeedback } from "@/components/icons/icons";
 import {
@@ -254,8 +254,8 @@ export const AIMessage = ({
   selectedDocuments?: OnyxDocument[] | null;
   toggleDocumentSelection?: () => void;
   docs?: OnyxDocument[] | null;
-  alternativeAssistant?: MinimalPersonaSnapshot | null;
-  currentPersona: MinimalPersonaSnapshot;
+  alternativeAssistant?: Persona | null;
+  currentPersona: Persona;
   messageId: number | null;
   content: string | JSX.Element;
   files?: FileDescriptor[];
