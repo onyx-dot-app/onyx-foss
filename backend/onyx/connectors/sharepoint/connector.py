@@ -1,5 +1,6 @@
 import io
 import os
+import time
 from collections.abc import Generator
 from datetime import datetime
 from datetime import timezone
@@ -11,9 +12,11 @@ from office365.graph_client import GraphClient  # type: ignore
 from office365.onedrive.driveitems.driveItem import DriveItem  # type: ignore
 from office365.onedrive.sites.site import Site  # type: ignore
 from office365.onedrive.sites.sites_with_root import SitesWithRoot  # type: ignore
+from office365.runtime.client_request import ClientRequestException  # type: ignore
 from pydantic import BaseModel
 
 from onyx.configs.app_configs import INDEX_BATCH_SIZE
+from onyx.configs.app_configs import SHAREPOINT_CONNECTOR_SIZE_THRESHOLD
 from onyx.configs.constants import DocumentSource
 from onyx.connectors.interfaces import GenerateDocumentsOutput
 from onyx.connectors.interfaces import LoadConnector
@@ -46,12 +49,72 @@ class SiteDescriptor(BaseModel):
     folder_path: str | None
 
 
+def _sleep_and_retry(query_obj: Any, method_name: str, max_retries: int = 3) -> Any:
+    """
+    Execute a SharePoint query with retry logic for rate limiting.
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            return query_obj.execute_query()
+        except ClientRequestException as e:
+            if (
+                e.response
+                and e.response.status_code in [429, 503]
+                and attempt < max_retries
+            ):
+                logger.warning(
+                    f"Rate limit exceeded on {method_name}, attempt {attempt + 1}/{max_retries + 1}, sleeping and retrying"
+                )
+                retry_after = e.response.headers.get("Retry-After")
+                if retry_after:
+                    sleep_time = int(retry_after)
+                else:
+                    # Exponential backoff: 2^attempt * 5 seconds
+                    sleep_time = min(30, (2**attempt) * 5)
+
+                logger.info(f"Sleeping for {sleep_time} seconds before retry")
+                time.sleep(sleep_time)
+            else:
+                # Either not a rate limit error, or we've exhausted retries
+                if e.response and e.response.status_code == 429:
+                    logger.error(
+                        f"Rate limit retry exhausted for {method_name} after {max_retries} attempts"
+                    )
+                raise e
+
+
 def _convert_driveitem_to_document(
     driveitem: DriveItem,
     drive_name: str,
-) -> Document:
+) -> Document | None:
+    # Check file size before downloading
+    try:
+        size_value = getattr(driveitem, "size", None)
+        if size_value is not None:
+            file_size = int(size_value)
+            if file_size > SHAREPOINT_CONNECTOR_SIZE_THRESHOLD:
+                logger.warning(
+                    f"File '{driveitem.name}' exceeds size threshold of {SHAREPOINT_CONNECTOR_SIZE_THRESHOLD} bytes. "
+                    f"File size: {file_size} bytes. Skipping."
+                )
+                return None
+        else:
+            logger.warning(
+                f"Could not access file size for '{driveitem.name}' Proceeding with download."
+            )
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.info(
+            f"Could not access file size for '{driveitem.name}': {e}. Proceeding with download."
+        )
+
+    # Proceed with download if size is acceptable or not available
+    content = _sleep_and_retry(driveitem.get_content(), "get_content")
+    if content is None:
+        logger.warning(f"Could not access content for '{driveitem.name}'")
+        return None
+
     file_text = extract_file_text(
-        file=io.BytesIO(driveitem.get_content().execute_query().value),
+        file=io.BytesIO(content.value),
         file_name=driveitem.name,
         break_on_unprocessable=False,
     )
@@ -275,7 +338,11 @@ class SharepointConnector(LoadConnector, PollConnector):
             driveitems = self._fetch_driveitems(site_descriptor, start=start, end=end)
             for driveitem, drive_name in driveitems:
                 logger.debug(f"Processing: {driveitem.web_url}")
-                doc_batch.append(_convert_driveitem_to_document(driveitem, drive_name))
+
+                # Convert driveitem to document with size checking
+                doc = _convert_driveitem_to_document(driveitem, drive_name)
+                if doc is not None:
+                    doc_batch.append(doc)
 
                 if len(doc_batch) >= self.batch_size:
                     yield doc_batch
