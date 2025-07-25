@@ -317,7 +317,7 @@ def docx_to_text_and_images(
 
     try:
         doc = docx.Document(file)
-    except BadZipFile as e:
+    except (BadZipFile, ValueError) as e:
         logger.warning(
             f"Failed to extract docx {file_name or 'docx file'}: {e}. Attempting to read as text file."
         )
