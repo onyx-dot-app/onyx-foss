@@ -341,8 +341,18 @@ def docx_to_text_and_images(
 
     for rel_id, rel in doc.part.rels.items():
         if "image" in rel.reltype:
-            # image is typically in rel.target_part.blob
-            image_bytes = rel.target_part.blob
+            # Skip images that are linked rather than embedded (TargetMode="External")
+            if getattr(rel, "is_external", False):
+                continue
+
+            try:
+                # image is typically in rel.target_part.blob
+                image_bytes = rel.target_part.blob
+            except ValueError:
+                # Safeguard against relationships that lack an internal target_part
+                # (e.g., external relationships or other anomalies)
+                continue
+
             image_name = rel.target_part.partname
             # store
             embedded_images.append((image_bytes, os.path.basename(str(image_name))))
