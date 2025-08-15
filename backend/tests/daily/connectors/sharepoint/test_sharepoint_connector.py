@@ -138,7 +138,9 @@ def test_sharepoint_connector_specific_folder(
     ):
         # Initialize connector with the test site URL and specific folder
         connector = SharepointConnector(
-            sites=[os.environ["SHAREPOINT_SITE"] + "/Shared Documents/test"]
+            sites=[os.environ["SHAREPOINT_SITE"] + "/Shared Documents/test"],
+            include_site_pages=False,
+            include_site_documents=True,
         )
 
         # Load credentials
@@ -216,7 +218,9 @@ def test_sharepoint_connector_other_library(
         connector = SharepointConnector(
             sites=[
                 os.environ["SHAREPOINT_SITE"] + "/Other Library",
-            ]
+            ],
+            include_site_pages=False,
+            include_site_documents=True,
         )
 
         # Load credentials

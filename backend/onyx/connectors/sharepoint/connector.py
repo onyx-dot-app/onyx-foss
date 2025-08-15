@@ -506,6 +506,7 @@ class SharepointConnector(
         self.include_site_documents = include_site_documents
         self.sp_tenant_domain: str | None = None
 
+    def validate_connector_settings(self) -> None:
         # Validate that at least one content type is enabled
         if not self.include_site_documents and not self.include_site_pages:
             raise ConnectorValidationError(
