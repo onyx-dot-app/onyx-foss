@@ -22,7 +22,6 @@ from onyx.server.query_and_chat.streaming_models import MessageDelta
 from onyx.server.query_and_chat.streaming_models import ReasoningDelta
 from onyx.utils.threadpool_concurrency import run_with_timeout
 
-
 SchemaType = TypeVar("SchemaType", bound=BaseModel)
 
 # match ```json{...}``` or ```{...}```
