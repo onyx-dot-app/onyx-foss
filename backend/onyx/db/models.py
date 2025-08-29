@@ -3419,13 +3419,8 @@ class ResearchAgentIterationSubStep(Base):
     __tablename__ = "research_agent_iteration_sub_step"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    primary_question_id: Mapped[int] = mapped_column(
-        ForeignKey("chat_message.id", ondelete="CASCADE"), nullable=False
-    )
-    parent_question_id: Mapped[int | None] = mapped_column(
-        ForeignKey("research_agent_iteration_sub_step.id", ondelete="CASCADE"),
-        nullable=True,
-    )
+    primary_question_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
     iteration_nr: Mapped[int] = mapped_column(Integer, nullable=False)
     iteration_sub_step_nr: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -3455,16 +3450,7 @@ class ResearchAgentIterationSubStep(Base):
     )
 
     # Relationships
-    primary_message: Mapped["ChatMessage"] = relationship(
-        "ChatMessage",
-        foreign_keys=[primary_question_id],
-    )
-
-    parent_sub_step: Mapped["ResearchAgentIterationSubStep"] = relationship(
-        "ResearchAgentIterationSubStep",
-        foreign_keys=[parent_question_id],
-        remote_side="ResearchAgentIterationSubStep.id",
-    )
+    # Note: ChatMessage can be accessed via iteration.primary_message
 
     __table_args__ = (
         ForeignKeyConstraint(
