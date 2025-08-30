@@ -22,7 +22,6 @@ import { FilterManager, LlmDescriptor, LlmManager } from "@/lib/hooks";
 import {
   BackendMessage,
   ChatFileType,
-  ChatSessionSharedStatus,
   CitationMap,
   FileChatDisplay,
   FileDescriptor,
@@ -31,7 +30,6 @@ import {
   RegenerationState,
   RetrievalType,
   StreamingError,
-  SubQuestionDetail,
   ToolCallMetadata,
   UserKnowledgeFilePacket,
 } from "../interfaces";
@@ -73,6 +71,7 @@ import {
   MessageStart,
   PacketType,
 } from "../services/streamingModels";
+import { useAssistantsContext } from "@/components/context/AssistantsContext";
 
 const TEMP_USER_MESSAGE_ID = -1;
 const TEMP_ASSISTANT_MESSAGE_ID = -2;
@@ -122,6 +121,7 @@ export function useChatController({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshChatSessions, llmProviders } = useChatContext();
+  const { assistantPreferences, forcedToolIds } = useAssistantsContext();
 
   // Use selectors to access only the specific fields we need
   const currentSessionId = useChatSessionStore(
@@ -157,12 +157,6 @@ export function useChatController({
   const setAbortController = useChatSessionStore(
     (state) => state.setAbortController
   );
-  const setAgenticGenerating = useChatSessionStore(
-    (state) => state.setAgenticGenerating
-  );
-  const setIsFetchingChatMessages = useChatSessionStore(
-    (state) => state.setIsFetchingChatMessages
-  );
   const setIsReady = useChatSessionStore((state) => state.setIsReady);
 
   // Use custom hooks for accessing store data
@@ -170,21 +164,13 @@ export function useChatController({
   const currentMessageHistory = useCurrentMessageHistory();
   const currentChatState = useCurrentChatState();
 
-  const {
-    selectedFiles,
-    selectedFolders,
-    addSelectedFile,
-    uploadFile,
-    setCurrentMessageFiles,
-    clearSelectedItems,
-  } = useDocumentsContext();
+  const { selectedFiles, selectedFolders, uploadFile, setCurrentMessageFiles } =
+    useDocumentsContext();
 
   const navigatingAway = useRef(false);
 
   // Local state that doesn't need to be in the store
   const [maxTokens, setMaxTokens] = useState<number>(4096);
-  const [chatSessionSharedStatus, setChatSessionSharedStatus] =
-    useState<ChatSessionSharedStatus>(ChatSessionSharedStatus.Private);
 
   // Sync store state changes
   useEffect(() => {
@@ -536,6 +522,9 @@ export function useChatController({
       const lastSuccessfulMessageId = getLastSuccessfulMessageId(
         currentMessageTreeLocal
       );
+      const disabledToolIds = liveAssistant
+        ? assistantPreferences?.[liveAssistant?.id]?.disabled_tool_ids
+        : undefined;
 
       const stack = new CurrentMessageFIFO();
       updateCurrentMessageFIFO(stack, {
@@ -581,6 +570,13 @@ export function useChatController({
           searchParams?.get(SEARCH_PARAM_NAMES.SYSTEM_PROMPT) || undefined,
         useExistingUserMessage: isSeededChat,
         useAgentSearch,
+        enabledToolIds:
+          disabledToolIds && liveAssistant
+            ? liveAssistant.tools
+                .filter((tool) => !disabledToolIds?.includes(tool.id))
+                .map((tool) => tool.id)
+            : undefined,
+        forcedToolIds: forcedToolIds,
       });
 
       const delay = (ms: number) => {
@@ -639,7 +635,6 @@ export function useChatController({
           ) {
             setUncaughtError(frozenSessionId, (packet as StreamingError).error);
             updateChatStateAction(frozenSessionId, "input");
-            setAgenticGenerating(frozenSessionId, false);
             updateSubmittedMessage(getCurrentSessionId(), "");
 
             throw new Error((packet as StreamingError).error);
@@ -767,7 +762,6 @@ export function useChatController({
       currentMessageTreeLocal = newMessageDetails.messageTree;
     }
 
-    setAgenticGenerating(frozenSessionId, false);
     resetRegenerationState(frozenSessionId);
 
     updateChatStateAction(frozenSessionId, "input");

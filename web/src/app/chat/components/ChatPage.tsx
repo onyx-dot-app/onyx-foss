@@ -28,8 +28,6 @@ import { OnyxInitializingLoader } from "@/components/OnyxInitializingLoader";
 import { FeedbackModal } from "./modal/FeedbackModal";
 import { ShareChatSessionModal } from "./modal/ShareChatSessionModal";
 import { FiArrowDown } from "react-icons/fi";
-import { ChatIntro } from "./ChatIntro";
-import { StarterMessages } from "../../../components/assistants/StarterMessage";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import Dropzone from "react-dropzone";
@@ -51,6 +49,7 @@ import TextView from "@/components/chat/TextView";
 import { Modal } from "@/components/Modal";
 import { useSendMessageToParent } from "@/lib/extension/utils";
 import { SUBMIT_MESSAGE_TYPES } from "@/lib/extension/constants";
+import { Logo } from "@/components/logo/Logo";
 
 import { getSourceMetadata } from "@/lib/sources";
 import { UserSettingsModal } from "./modal/UserSettingsModal";
@@ -78,7 +77,6 @@ import {
 import {
   useCurrentChatState,
   useSubmittedMessage,
-  useAgenticGenerating,
   useLoadingError,
   useIsReady,
   useIsFetching,
@@ -92,6 +90,8 @@ import {
 import { AIMessage } from "../message/messageComponents/AIMessage";
 import { FederatedOAuthModal } from "@/components/chat/FederatedOAuthModal";
 import { HumanMessage } from "../message/HumanMessage";
+import { AssistantIcon } from "@/components/assistants/AssistantIcon";
+import { StarterMessageDisplay } from "./starterMessages/StarterMessageDisplay";
 
 export function ChatPage({
   toggle,
@@ -115,7 +115,6 @@ export function ChatPage({
     llmProviders,
     folders,
     shouldShowWelcomeModal,
-    proSearchToggled,
     refreshChatSessions,
   } = useChatContext();
 
@@ -468,7 +467,6 @@ export function ChatPage({
   const currentChatState = useCurrentChatState();
   const chatSessionId = useChatSessionStore((state) => state.currentSessionId);
   const submittedMessage = useSubmittedMessage();
-  const agenticGenerating = useAgenticGenerating();
   const loadingError = useLoadingError();
   const uncaughtError = useUncaughtError();
   const isReady = useIsReady();
@@ -531,8 +529,7 @@ export function ChatPage({
     onSubmit,
   });
 
-  const autoScrollEnabled =
-    (user?.preferences?.auto_scroll && !agenticGenerating) ?? false;
+  const autoScrollEnabled = user?.preferences?.auto_scroll ?? false;
 
   useScrollonStream({
     chatState: currentChatState,
@@ -710,14 +707,6 @@ export function ChatPage({
     redirect("/auth/login");
   }
 
-  if (noAssistants)
-    return (
-      <>
-        <HealthCheckBanner />
-        <NoAssistantModal isAdmin={isAdmin} />
-      </>
-    );
-
   const clearSelectedDocuments = () => {
     setSelectedDocuments([]);
     clearSelectedItems();
@@ -730,6 +719,39 @@ export function ChatPage({
         : [...prev, document]
     );
   };
+
+  // Determine whether to show the centered input (no messages yet)
+  const showCenteredInput = useMemo(() => {
+    return (
+      messageHistory.length === 0 &&
+      !isFetchingChatMessages &&
+      !loadingError &&
+      !submittedMessage
+    );
+  }, [
+    messageHistory.length,
+    isFetchingChatMessages,
+    loadingError,
+    submittedMessage,
+  ]);
+
+  const inputContainerClasses = useMemo(() => {
+    return `absolute pointer-events-none z-10 w-full ${
+      showCenteredInput
+        ? "top-1/2 left-0 -translate-y-1/2"
+        : "bottom-0 left-0 translate-y-0"
+    }`;
+  }, [showCenteredInput]);
+
+  // handle error case where no assistants are available
+  if (noAssistants) {
+    return (
+      <>
+        <HealthCheckBanner />
+        <NoAssistantModal isAdmin={isAdmin} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -1060,24 +1082,8 @@ export function ChatPage({
                           {messageHistory.length === 0 &&
                             !isFetchingChatMessages &&
                             !loadingError &&
-                            !submittedMessage && (
-                              <div className="h-full w-[95%] mx-auto flex flex-col justify-center items-center">
-                                <ChatIntro selectedPersona={liveAssistant} />
-
-                                <StarterMessages
-                                  currentPersona={liveAssistant}
-                                  onSubmit={(messageOverride) =>
-                                    onSubmit({
-                                      message: messageOverride,
-                                      selectedFiles: selectedFiles,
-                                      selectedFolders: selectedFolders,
-                                      currentMessageFiles: currentMessageFiles,
-                                      useAgentSearch: deepResearchEnabled,
-                                    })
-                                  }
-                                />
-                              </div>
-                            )}
+                            !submittedMessage &&
+                            null}
                           <div
                             style={{ overflowAnchor: "none" }}
                             key={chatSessionId}
@@ -1238,11 +1244,8 @@ export function ChatPage({
                             <div ref={endDivRef} />
                           </div>
                         </div>
-                        <div
-                          ref={inputRef}
-                          className="absolute pointer-events-none bottom-0 z-10 w-full"
-                        >
-                          {aboveHorizon && (
+                        <div ref={inputRef} className={inputContainerClasses}>
+                          {!showCenteredInput && aboveHorizon && (
                             <div className="mx-auto w-fit !pointer-events-none flex sticky justify-center">
                               <button
                                 onClick={() => clientScrollToBottom()}
@@ -1253,16 +1256,28 @@ export function ChatPage({
                             </div>
                           )}
 
-                          <div className="pointer-events-auto w-[95%] mx-auto relative mb-8">
+                          <div className="pointer-events-auto w-[95%] mx-auto relative mb-8 text-text-600">
+                            {showCenteredInput && (
+                              <div
+                                data-testid="chat-intro"
+                                className="flex text-text-800 justify-center mb-6 transition-opacity duration-300"
+                              >
+                                <AssistantIcon
+                                  colorOverride="text-text-800"
+                                  assistant={liveAssistant}
+                                  size="large"
+                                />
+                                <div className="ml-4 flex justify-center items-center text-center text-3xl font-bold">
+                                  {liveAssistant.name}
+                                </div>
+                              </div>
+                            )}
                             <ChatInputBar
                               deepResearchEnabled={deepResearchEnabled}
                               setDeepResearchEnabled={() =>
                                 toggleDeepResearch()
                               }
                               toggleDocumentSidebar={toggleDocumentSidebar}
-                              availableSources={sources}
-                              availableDocumentSets={documentSets}
-                              availableTags={tags}
                               filterManager={filterManager}
                               llmManager={llmManager}
                               removeDocs={() => {
@@ -1292,10 +1307,33 @@ export function ChatPage({
                               selectedAssistant={
                                 selectedAssistant || liveAssistant
                               }
-                              setFiles={setCurrentMessageFiles}
                               handleFileUpload={handleMessageSpecificFileUpload}
                               textAreaRef={textAreaRef}
                             />
+
+                            {liveAssistant.starter_messages &&
+                              liveAssistant.starter_messages.length > 0 &&
+                              messageHistory.length === 0 &&
+                              showCenteredInput && (
+                                <div className="mt-6">
+                                  <StarterMessageDisplay
+                                    starterMessages={
+                                      liveAssistant.starter_messages
+                                    }
+                                    onSelectStarterMessage={(message) => {
+                                      onSubmit({
+                                        message: message,
+                                        selectedFiles: selectedFiles,
+                                        selectedFolders: selectedFolders,
+                                        currentMessageFiles:
+                                          currentMessageFiles,
+                                        useAgentSearch: deepResearchEnabled,
+                                      });
+                                    }}
+                                  />
+                                </div>
+                              )}
+
                             {enterpriseSettings &&
                               enterpriseSettings.custom_lower_disclaimer_content && (
                                 <div className="mobile:hidden mt-4 flex items-center justify-center relative w-[95%] mx-auto">

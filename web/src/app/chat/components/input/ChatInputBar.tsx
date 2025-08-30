@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { FiPlusCircle, FiPlus, FiFilter } from "react-icons/fi";
+import { FiPlus, FiFilter } from "react-icons/fi";
 import { FiLoader } from "react-icons/fi";
 import { ChatInputOption } from "./ChatInputOption";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
@@ -17,12 +17,6 @@ import {
   StopGeneratingIcon,
 } from "@/components/icons/icons";
 import { OnyxDocument, SourceMetadata } from "@/lib/search/interfaces";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ChatState } from "@/app/chat/interfaces";
 import { useAssistantsContext } from "@/components/context/AssistantsContext";
 import { CalendarIcon, TagIcon, XIcon, FolderIcon } from "lucide-react";
@@ -33,11 +27,12 @@ import { getFormattedDateRangeString } from "@/lib/dateUtils";
 import { truncateString } from "@/lib/utils";
 import { buildImgUrl } from "@/app/chat/components/files/images/utils";
 import { useUser } from "@/components/user/UserProvider";
-import { AgenticToggle } from "./AgenticToggle";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { useDocumentsContext } from "@/app/chat/my-documents/DocumentsContext";
 import { UnconfiguredLlmProviderText } from "@/components/chat/UnconfiguredLlmProviderText";
 import { DeepResearchToggle } from "./DeepResearchToggle";
+import { ActionToggle } from "./ActionManagement";
+import { SelectedTool } from "./SelectedTool";
 
 const MAX_INPUT_HEIGHT = 200;
 
@@ -105,16 +100,13 @@ interface ChatInputBarProps {
   selectedAssistant: MinimalPersonaSnapshot;
 
   toggleDocumentSidebar: () => void;
-  setFiles: (files: FileDescriptor[]) => void;
   handleFileUpload: (files: File[]) => void;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
   filterManager: FilterManager;
-  availableSources: SourceMetadata[];
-  availableDocumentSets: DocumentSetSummary[];
-  availableTags: Tag[];
   retrievalEnabled: boolean;
   deepResearchEnabled: boolean;
   setDeepResearchEnabled: (deepResearchEnabled: boolean) => void;
+  placeholder?: string;
 }
 
 export function ChatInputBar({
@@ -134,15 +126,12 @@ export function ChatInputBar({
   // assistants
   selectedAssistant,
 
-  setFiles,
   handleFileUpload,
   textAreaRef,
-  availableSources,
-  availableDocumentSets,
-  availableTags,
   llmManager,
   deepResearchEnabled,
   setDeepResearchEnabled,
+  placeholder,
 }: ChatInputBarProps) {
   const { user } = useUser();
   const {
@@ -153,6 +142,8 @@ export function ChatInputBar({
     currentMessageFiles,
     setCurrentMessageFiles,
   } = useDocumentsContext();
+
+  const { forcedToolIds, setForcedToolIds } = useAssistantsContext();
 
   // Create a Set of IDs from currentMessageFiles for efficient lookup
   // Assuming FileDescriptor.id corresponds conceptually to FileResponse.file_id or FileResponse.id
@@ -190,8 +181,6 @@ export function ChatInputBar({
       }
     }
   };
-
-  const { finalAssistants: assistantOptions } = useAssistantsContext();
 
   const { llmProviders, inputPrompts } = useChatContext();
 
@@ -486,7 +475,10 @@ export function ChatInputBar({
               style={{ scrollbarWidth: "thin" }}
               role="textarea"
               aria-multiline
-              placeholder={`How can ${selectedAssistant.name} help you today`}
+              placeholder={
+                placeholder ||
+                `How can ${selectedAssistant.name} help you today`
+              }
               value={message}
               onKeyDown={(event) => {
                 if (
@@ -659,7 +651,7 @@ export function ChatInputBar({
             )}
 
             <div className="flex pr-4 pb-2 justify-between bg-input-background items-center w-full ">
-              <div className="space-x-1 flex  px-4 ">
+              <div className="space-x-1 flex px-4 ">
                 <ChatInputOption
                   flexPriority="stiff"
                   Icon={FileUploadIcon}
@@ -669,23 +661,8 @@ export function ChatInputBar({
                   tooltipContent={"Upload files and attach user files"}
                 />
 
-                {retrievalEnabled && (
-                  <FilterPopup
-                    availableSources={availableSources}
-                    availableDocumentSets={
-                      selectedAssistant.document_sets &&
-                      selectedAssistant.document_sets.length > 0
-                        ? selectedAssistant.document_sets
-                        : availableDocumentSets
-                    }
-                    availableTags={availableTags}
-                    filterManager={filterManager}
-                    trigger={{
-                      name: "Filters",
-                      Icon: FiFilter,
-                      tooltipContent: "Filter your search",
-                    }}
-                  />
+                {selectedAssistant.tools.length > 0 && (
+                  <ActionToggle selectedAssistant={selectedAssistant} />
                 )}
 
                 {retrievalEnabled &&
@@ -695,7 +672,32 @@ export function ChatInputBar({
                       setDeepResearchEnabled={setDeepResearchEnabled}
                     />
                   )}
+
+                {forcedToolIds.length > 0 && (
+                  <div className="pl-1 flex items-center gap-2 text-blue-500">
+                    {forcedToolIds.map((toolId) => {
+                      const tool = selectedAssistant.tools.find(
+                        (tool) => tool.id === toolId
+                      );
+                      if (!tool) {
+                        return null;
+                      }
+                      return (
+                        <SelectedTool
+                          key={toolId}
+                          tool={tool}
+                          onClick={() => {
+                            setForcedToolIds((prev) =>
+                              prev.filter((id) => id !== toolId)
+                            );
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
               <div className="flex items-center my-auto gap-x-2">
                 <LLMPopover
                   llmProviders={llmProviders}

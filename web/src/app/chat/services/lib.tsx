@@ -176,6 +176,8 @@ export interface SendMessageParams {
   userFileIds?: number[];
   userFolderIds?: number[];
   useAgentSearch?: boolean;
+  enabledToolIds?: number[];
+  forcedToolIds?: number[];
 }
 
 export async function* sendMessage({
@@ -198,6 +200,8 @@ export async function* sendMessage({
   alternateAssistantId,
   signal,
   useAgentSearch,
+  enabledToolIds,
+  forcedToolIds,
 }: SendMessageParams): AsyncGenerator<PacketType, void, unknown> {
   const documentsAreSelected =
     selectedDocumentIds && selectedDocumentIds.length > 0;
@@ -238,6 +242,8 @@ export async function* sendMessage({
         : null,
     use_existing_user_message: useExistingUserMessage,
     use_agentic_search: useAgentSearch ?? false,
+    allowed_tool_ids: enabledToolIds,
+    forced_tool_ids: forcedToolIds,
   });
 
   const response = await fetch(`/api/chat/send-message`, {
