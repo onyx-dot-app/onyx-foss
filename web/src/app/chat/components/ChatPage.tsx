@@ -362,39 +362,6 @@ export function ChatPage({
     }
   }, [setMessage, setCurrentMessageFiles]);
 
-  const clientScrollToBottom = useCallback((fast?: boolean) => {
-    waitForScrollRef.current = true;
-
-    setTimeout(() => {
-      if (!endDivRef.current || !scrollableDivRef.current) {
-        console.error("endDivRef or scrollableDivRef not found");
-        return;
-      }
-
-      const rect = endDivRef.current.getBoundingClientRect();
-      const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
-
-      if (isVisible) return;
-
-      // Check if all messages are currently rendered
-      // If all messages are already rendered, scroll immediately
-      endDivRef.current.scrollIntoView({
-        behavior: fast ? "auto" : "smooth",
-      });
-
-      if (chatSessionIdRef.current) {
-        useChatSessionStore
-          .getState()
-          .updateHasPerformedInitialScroll(chatSessionIdRef.current, true);
-      }
-    }, 50);
-
-    // Reset waitForScrollRef after 1.5 seconds
-    setTimeout(() => {
-      waitForScrollRef.current = false;
-    }, 1500);
-  }, []);
-
   const debounceNumber = 100; // time for debouncing
 
   // handle re-sizing of the text area
@@ -488,6 +455,40 @@ export function ChatPage({
   );
   const updateCurrentChatSessionSharedStatus = useChatSessionStore(
     (state) => state.updateCurrentChatSessionSharedStatus
+  );
+
+  const clientScrollToBottom = useCallback(
+    (fast?: boolean) => {
+      waitForScrollRef.current = true;
+
+      setTimeout(() => {
+        if (!endDivRef.current || !scrollableDivRef.current) {
+          console.error("endDivRef or scrollableDivRef not found");
+          return;
+        }
+
+        const rect = endDivRef.current.getBoundingClientRect();
+        const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+
+        if (isVisible) return;
+
+        // Check if all messages are currently rendered
+        // If all messages are already rendered, scroll immediately
+        endDivRef.current.scrollIntoView({
+          behavior: fast ? "auto" : "smooth",
+        });
+
+        if (chatSessionIdRef.current) {
+          updateHasPerformedInitialScroll(chatSessionIdRef.current, true);
+        }
+      }, 50);
+
+      // Reset waitForScrollRef after 1.5 seconds
+      setTimeout(() => {
+        waitForScrollRef.current = false;
+      }, 1500);
+    },
+    [updateHasPerformedInitialScroll]
   );
 
   const { onSubmit, stopGenerating, handleMessageSpecificFileUpload } =

@@ -1,5 +1,5 @@
 import React, { RefObject, useCallback, useMemo } from "react";
-import { CitationMap, Message } from "../interfaces";
+import { Message } from "../interfaces";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import { MemoizedHumanMessage } from "../message/MemoizedHumanMessage";
 import { ErrorBanner } from "../message/Resubmit";
