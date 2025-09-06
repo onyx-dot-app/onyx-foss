@@ -115,8 +115,8 @@ def _get_available_tools(
             raise ValueError(f"Tool {tool.name} is not found in the database")
 
         if isinstance(tool, InternetSearchTool):
-            llm_path = DRPath.INTERNET_SEARCH.value
-            path = DRPath.INTERNET_SEARCH
+            llm_path = DRPath.WEB_SEARCH.value
+            path = DRPath.WEB_SEARCH
         elif isinstance(tool, SearchTool):
             llm_path = DRPath.INTERNAL_SEARCH.value
             path = DRPath.INTERNAL_SEARCH
@@ -310,7 +310,7 @@ _ARTIFICIAL_ALL_ENCOMPASSING_TOOL = {
         "name": "run_any_knowledge_retrieval_and_any_action_tool",
         "description": "Use this tool to get ANY external information \
 that is relevant to the question, or for any action to be taken, including image generation. In fact, \
-ANY tool mentioned can be accessed through this generic tool.",
+ANY tool mentioned can be accessed through this generic tool. If in doubt, use this tool.",
         "parameters": {
             "type": "object",
             "properties": {

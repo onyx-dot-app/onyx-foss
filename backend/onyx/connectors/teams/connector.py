@@ -59,7 +59,7 @@ class TeamsConnector(
     def __init__(
         self,
         # TODO: (chris) move from "Display Names" to IDs, since display names
-        # are NOT guaranteed to be unique
+        # are not necessarily guaranteed to be unique
         teams: list[str] = [],
         max_workers: int = MAX_WORKERS,
     ) -> None:
