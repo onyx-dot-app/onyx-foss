@@ -57,6 +57,7 @@ from onyx.connectors.sharepoint.connector_utils import get_sharepoint_external_a
 from onyx.file_processing.extract_file_text import ACCEPTED_IMAGE_FILE_EXTENSIONS
 from onyx.file_processing.extract_file_text import extract_text_and_images
 from onyx.file_processing.extract_file_text import get_file_ext
+from onyx.file_processing.file_validation import EXCLUDED_IMAGE_TYPES
 from onyx.file_processing.image_utils import store_image_and_create_section
 from onyx.utils.logger import setup_logger
 
@@ -289,6 +290,16 @@ def _convert_driveitem_to_document_with_permissions(
     file_size: int | None = None
     try:
         item_json = driveitem.to_json()
+        mime_type = item_json.get("file", {}).get("mimeType")
+        if not mime_type or mime_type in EXCLUDED_IMAGE_TYPES:
+            # NOTE: this function should be refactored to look like Drive doc_conversion.py pattern
+            # for now, this skip must happen before we download the file
+            # Similar to Google Drive, we'll just semi-silently skip excluded image types
+            logger.debug(
+                f"Skipping malformed or excluded mime type {mime_type} for {driveitem.name}"
+            )
+            return None
+
         size_value = item_json.get("size")
         if size_value is not None:
             file_size = int(size_value)
@@ -348,6 +359,7 @@ def _convert_driveitem_to_document_with_permissions(
             f"Zero-length content for '{driveitem.name}'. Skipping text/image extraction."
         )
     elif "." + file_ext in ACCEPTED_IMAGE_FILE_EXTENSIONS:
+        # NOTE: this if should use is_valid_image_type instead with mime_type
         image_section, _ = store_image_and_create_section(
             image_data=content_bytes,
             file_id=driveitem.id,
