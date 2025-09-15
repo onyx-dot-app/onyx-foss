@@ -14,8 +14,8 @@ from onyx.agents.agent_search.shared_graph_utils.operators import (
 from onyx.context.search.models import InferenceSection
 from onyx.context.search.models import SavedSearchDoc
 from onyx.context.search.utils import chunks_or_sections_to_search_docs
-from onyx.tools.tool_implementations.internet_search.internet_search_tool import (
-    InternetSearchTool,
+from onyx.tools.tool_implementations.web_search.web_search_tool import (
+    WebSearchTool,
 )
 
 
@@ -73,7 +73,7 @@ def aggregate_context(
     ):
 
         iteration_tool = iteration_response.tool
-        is_internet = iteration_tool == InternetSearchTool._NAME
+        is_internet = iteration_tool == WebSearchTool._NAME
 
         for cited_doc in iteration_response.cited_documents.values():
             unrolled_inference_sections.append(cited_doc)

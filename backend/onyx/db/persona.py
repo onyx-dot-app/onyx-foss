@@ -20,7 +20,6 @@ from onyx.configs.app_configs import CURATORS_CANNOT_VIEW_OR_EDIT_NON_OWNED_ASSI
 from onyx.configs.app_configs import DISABLE_AUTH
 from onyx.configs.chat_configs import CONTEXT_CHUNKS_ABOVE
 from onyx.configs.chat_configs import CONTEXT_CHUNKS_BELOW
-from onyx.configs.chat_configs import EXA_API_KEY
 from onyx.configs.constants import NotificationType
 from onyx.context.search.enums import RecencyBiasSetting
 from onyx.db.constants import SLACK_BOT_PERSONA_PREFIX
@@ -586,7 +585,7 @@ def upsert_persona(
 
     # ensure all specified tools are valid
     if tools:
-        validate_persona_tools(tools)
+        validate_persona_tools(tools, db_session)
 
     if existing_persona:
         # Built-in personas can only be updated through YAML configuration.
@@ -759,12 +758,15 @@ def update_persona_visibility(
     db_session.commit()
 
 
-def validate_persona_tools(tools: list[Tool]) -> None:
+def validate_persona_tools(tools: list[Tool], db_session: Session) -> None:
+    # local import to avoid circular import. DB layer should not depend on tools layer.
+    from onyx.tools.built_in_tools import get_built_in_tool_by_id
+
     for tool in tools:
-        if tool.in_code_tool_id == "InternetSearchTool" and not EXA_API_KEY:
-            raise ValueError(
-                "Internet Search API key not found, please contact your Onyx admin to get it added!"
-            )
+        if tool.in_code_tool_id is not None:
+            tool_cls = get_built_in_tool_by_id(tool.in_code_tool_id)
+            if not tool_cls.is_available(db_session):
+                raise ValueError(f"Tool {tool.in_code_tool_id} is not available")
 
 
 # TODO: since this gets called with every chat message, could it be more efficient to pregenerate
@@ -891,3 +893,62 @@ def persona_has_search_tool(persona_id: int, db_session: Session) -> bool:
     if persona is None:
         raise ValueError(f"Persona with ID {persona_id} does not exist")
     return any(tool.in_code_tool_id == "run_search" for tool in persona.tools)
+
+
+def get_default_assistant(db_session: Session) -> Persona | None:
+    """Fetch the default assistant (persona with builtin_persona=True)."""
+    return (
+        db_session.query(Persona)
+        .options(selectinload(Persona.tools))
+        .filter(Persona.builtin_persona.is_(True))
+        # NOTE: need to add this since we had prior builtin personas
+        # that have since been deleted
+        .filter(Persona.deleted.is_(False))
+        .one_or_none()
+    )
+
+
+def update_default_assistant_configuration(
+    db_session: Session,
+    tool_ids: list[int] | None = None,
+    system_prompt: str | None = None,
+) -> Persona:
+    """Update only tools and system_prompt for the default assistant.
+
+    Args:
+        db_session: Database session
+        tool_ids: List of tool IDs to enable (if None, tools are not updated)
+        system_prompt: New system prompt (if None, system prompt is not updated)
+
+    Returns:
+        Updated Persona object
+
+    Raises:
+        ValueError: If default assistant not found or invalid tool IDs provided
+    """
+    # Get the default assistant
+    persona = get_default_assistant(db_session)
+    if not persona:
+        raise ValueError("Default assistant not found")
+
+    # Update system prompt if provided
+    if system_prompt is not None:
+        persona.system_prompt = system_prompt
+
+    # Update tools if provided
+    if tool_ids is not None:
+        # Clear existing tool associations
+        persona.tools = []
+
+        # Add new tool associations
+        for tool_id in tool_ids:
+            tool = db_session.query(Tool).filter(Tool.id == tool_id).one_or_none()
+            if not tool:
+                raise ValueError(f"Tool with ID {tool_id} not found")
+            if tool.in_code_tool_id is None:
+                raise ValueError(f"Tool with ID {tool_id} is not a built-in tool")
+
+            persona.tools.append(tool)
+
+    db_session.commit()
+    return persona

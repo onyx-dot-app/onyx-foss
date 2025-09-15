@@ -88,12 +88,12 @@ from onyx.tools.tool import Tool
 from onyx.tools.tool_constructor import construct_tools
 from onyx.tools.tool_constructor import CustomToolConfig
 from onyx.tools.tool_constructor import ImageGenerationToolConfig
-from onyx.tools.tool_constructor import InternetSearchToolConfig
 from onyx.tools.tool_constructor import SearchToolConfig
-from onyx.tools.tool_implementations.internet_search.internet_search_tool import (
-    InternetSearchTool,
-)
+from onyx.tools.tool_constructor import WebSearchToolConfig
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
+from onyx.tools.tool_implementations.web_search.web_search_tool import (
+    WebSearchTool,
+)
 from onyx.utils.logger import setup_logger
 from onyx.utils.long_term_log import LongTermLogger
 from onyx.utils.telemetry import mt_cloud_telemetry
@@ -159,12 +159,10 @@ def _get_force_search_settings(
             override_kwargs=search_tool_override_kwargs,
         )
 
-    internet_search_available = any(
-        isinstance(tool, InternetSearchTool) for tool in tools
-    )
+    web_search_available = any(isinstance(tool, WebSearchTool) for tool in tools)
     search_tool_available = any(isinstance(tool, SearchTool) for tool in tools)
 
-    if not internet_search_available and not search_tool_available:
+    if not web_search_available and not search_tool_available:
         # Does not matter much which tool is set here as force is false and neither tool is available
         return ForceUseTool(force_use=False, tool_name=SearchTool._NAME)
     # Currently, the internet search tool does not support query override
@@ -199,9 +197,7 @@ def _get_force_search_settings(
 
     return ForceUseTool(
         force_use=False,
-        tool_name=(
-            SearchTool._NAME if search_tool_available else InternetSearchTool._NAME
-        ),
+        tool_name=(SearchTool._NAME if search_tool_available else WebSearchTool._NAME),
         args=args,
         override_kwargs=None,
     )
@@ -594,7 +590,7 @@ def stream_chat_message_objects(
                 latest_query_files=latest_query_files,
                 bypass_acl=bypass_acl,
             ),
-            internet_search_tool_config=InternetSearchToolConfig(
+            internet_search_tool_config=WebSearchToolConfig(
                 answer_style_config=answer_style_config,
                 document_pruning_config=document_pruning_config,
             ),
