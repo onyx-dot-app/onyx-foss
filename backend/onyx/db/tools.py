@@ -2,7 +2,6 @@ from typing import Any
 from typing import cast
 from typing import Type
 from typing import TYPE_CHECKING
-from typing import Union
 from uuid import UUID
 
 from sqlalchemy import select
@@ -10,21 +9,12 @@ from sqlalchemy.orm import Session
 
 from onyx.db.models import Tool
 from onyx.server.features.tool.models import Header
+from onyx.tools.built_in_tools import BUILT_IN_TOOL_TYPES
 from onyx.utils.headers import HeaderItemDict
 from onyx.utils.logger import setup_logger
 
 if TYPE_CHECKING:
-    from onyx.tools.tool_implementations.images.image_generation_tool import (
-        ImageGenerationTool,
-    )
-    from onyx.tools.tool_implementations.knowledge_graph.knowledge_graph_tool import (
-        KnowledgeGraphTool,
-    )
-    from onyx.tools.tool_implementations.search.search_tool import SearchTool
-    from onyx.tools.tool_implementations.web_search.web_search_tool import WebSearchTool
-    from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
-        OktaProfileTool,
-    )
+    pass
 
 logger = setup_logger()
 
@@ -124,15 +114,7 @@ def delete_tool__no_commit(tool_id: int, db_session: Session) -> None:
 
 def get_builtin_tool(
     db_session: Session,
-    tool_type: Type[
-        Union[
-            "SearchTool",
-            "ImageGenerationTool",
-            "WebSearchTool",
-            "KnowledgeGraphTool",
-            "OktaProfileTool",
-        ]
-    ],
+    tool_type: Type[BUILT_IN_TOOL_TYPES],
 ) -> Tool:
     """
     Retrieves a built-in tool from the database based on the tool type.
