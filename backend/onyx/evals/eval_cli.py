@@ -10,7 +10,11 @@ from typing import Any
 
 import braintrust
 import requests
+from braintrust_langchain import BraintrustCallbackHandler
+from braintrust_langchain import set_global_handler
 
+from onyx.configs.app_configs import BRAINTRUST_API_KEY
+from onyx.configs.app_configs import BRAINTRUST_PROJECT
 from onyx.configs.app_configs import POSTGRES_API_SERVER_POOL_OVERFLOW
 from onyx.configs.app_configs import POSTGRES_API_SERVER_POOL_SIZE
 from onyx.configs.constants import POSTGRES_WEB_APP_NAME
@@ -26,6 +30,15 @@ def setup_session_factory() -> None:
         pool_size=POSTGRES_API_SERVER_POOL_SIZE,
         max_overflow=POSTGRES_API_SERVER_POOL_OVERFLOW,
     )
+
+
+def setup_braintrust() -> None:
+    braintrust.init_logger(
+        project=BRAINTRUST_PROJECT,
+        api_key=BRAINTRUST_API_KEY,
+    )
+    handler = BraintrustCallbackHandler()
+    set_global_handler(handler)
 
 
 def load_data_local(
