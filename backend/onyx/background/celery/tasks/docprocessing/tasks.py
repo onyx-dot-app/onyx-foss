@@ -86,7 +86,6 @@ from onyx.file_store.document_batch_storage import DocumentBatchStorage
 from onyx.file_store.document_batch_storage import get_document_batch_storage
 from onyx.httpx.httpx_pool import HttpxPool
 from onyx.indexing.embedder import DefaultIndexingEmbedder
-from onyx.indexing.indexing_pipeline import run_indexing_pipeline
 from onyx.natural_language_processing.search_nlp_models import EmbeddingModel
 from onyx.natural_language_processing.search_nlp_models import (
     InformationContentClassificationModel,
@@ -1268,6 +1267,8 @@ def _docprocessing_task(
     tenant_id: str,
     batch_num: int,
 ) -> None:
+    from onyx.indexing.indexing_pipeline import run_indexing_pipeline
+
     start_time = time.monotonic()
 
     if tenant_id:
