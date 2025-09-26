@@ -456,6 +456,7 @@ export enum ValidSources {
   Hubspot = "hubspot",
   Document360 = "document360",
   File = "file",
+  UserFile = "user_file",
   GoogleSites = "google_sites",
   Loopio = "loopio",
   Dropbox = "dropbox",
@@ -518,6 +519,7 @@ export type ConfigurableSources = Exclude<
   | ValidSources.NotApplicable
   | ValidSources.IngestionApi
   | ValidSources.FederatedSlack // is part of ValiedSources.Slack
+  | ValidSources.UserFile
 >;
 
 export const oauthSupportedSources: ConfigurableSources[] = [

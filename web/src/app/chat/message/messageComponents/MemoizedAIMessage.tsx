@@ -4,6 +4,7 @@ import { FeedbackType, Message, CitationMap } from "../../interfaces";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import { AIMessage } from "./AIMessage";
 import { LlmDescriptor } from "@/lib/hooks";
+import { ProjectFile } from "@/app/chat/projects/projectsService";
 
 interface BaseMemoizedAIMessageProps {
   rawPackets: any[];
@@ -15,6 +16,7 @@ interface BaseMemoizedAIMessageProps {
   nodeId: number;
   otherMessagesCanSwitchTo: number[];
   onMessageSelection: (messageId: number) => void;
+  projectFiles?: ProjectFile[];
 }
 
 interface InternalMemoizedAIMessageProps extends BaseMemoizedAIMessageProps {
@@ -48,7 +50,10 @@ const _MemoizedAIMessage = React.memo(function _MemoizedAIMessage({
   nodeId,
   otherMessagesCanSwitchTo,
   onMessageSelection,
-}: InternalMemoizedAIMessageProps) {
+  projectFiles,
+}: InternalMemoizedAIMessageProps & {
+  projectFiles?: ProjectFile[];
+}) {
   return (
     <AIMessage
       rawPackets={rawPackets}
@@ -56,7 +61,7 @@ const _MemoizedAIMessage = React.memo(function _MemoizedAIMessage({
         handleFeedback,
         assistant,
         docs,
-        userFiles: [],
+        userFiles: projectFiles || [],
         citations,
         setPresentingDocument,
         regenerate,
@@ -83,7 +88,10 @@ export const MemoizedAIMessage = ({
   parentMessage,
   otherMessagesCanSwitchTo,
   onMessageSelection,
-}: MemoizedAIMessageProps) => {
+  projectFiles,
+}: MemoizedAIMessageProps & {
+  projectFiles?: ProjectFile[];
+}) => {
   const regenerate = useMemo(() => {
     if (messageId === undefined) {
       return undefined;
@@ -125,6 +133,7 @@ export const MemoizedAIMessage = ({
       nodeId={nodeId}
       otherMessagesCanSwitchTo={otherMessagesCanSwitchTo}
       onMessageSelection={onMessageSelection}
+      projectFiles={projectFiles}
     />
   );
 };

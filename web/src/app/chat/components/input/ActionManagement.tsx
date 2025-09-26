@@ -828,15 +828,14 @@ export function ActionToggle({
             relative 
             cursor-pointer 
             flex 
-            items-center 
+            items-center justify-center leading-none
             group 
             rounded-lg 
             text-input-text 
             hover:bg-background-chat-hover 
             hover:text-neutral-900 
             dark:hover:text-neutral-50
-            py-1.5 
-            px-2 
+            p-2
             flex-none 
             whitespace-nowrap 
             overflow-hidden 
@@ -845,7 +844,7 @@ export function ActionToggle({
             data-testid="action-management-toggle"
             title={open ? undefined : "Configure actions"}
           >
-            <SlidersVerticalIcon size={16} className="my-auto flex-none" />
+            <SlidersVerticalIcon size={16} className="block flex-none" />
           </button>
         </PopoverTrigger>
         <PopoverContent

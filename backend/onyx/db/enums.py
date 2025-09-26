@@ -131,3 +131,10 @@ class EmbeddingPrecision(str, PyEnum):
     # good reason to specify anything else
     BFLOAT16 = "bfloat16"
     FLOAT = "float"
+
+
+class UserFileStatus(str, PyEnum):
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELED = "CANCELED"
