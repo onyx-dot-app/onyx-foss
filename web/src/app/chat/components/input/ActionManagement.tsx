@@ -25,7 +25,7 @@ import { useAssistantsContext } from "@/components/context/AssistantsContext";
 import Link from "next/link";
 import { getIconForAction } from "../../services/actionUtils";
 import { useUser } from "@/components/user/UserProvider";
-import { useFilters } from "@/lib/hooks";
+import { FilterManager, useSourcePreferences } from "@/lib/hooks";
 import { listSourceMetadata } from "@/lib/sources";
 import {
   FiServer,
@@ -433,11 +433,13 @@ function MCPToolsList({
 interface ActionToggleProps {
   selectedAssistant: MinimalPersonaSnapshot;
   availableSources?: ValidSources[];
+  filterManager: FilterManager;
 }
 
 export function ActionToggle({
   selectedAssistant,
   availableSources = [],
+  filterManager,
 }: ActionToggleProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
@@ -446,10 +448,20 @@ export function ActionToggle({
   const [sourceSearchTerm, setSourceSearchTerm] = useState("");
   const [showFadeMask, setShowFadeMask] = useState(false);
   const [showTopShadow, setShowTopShadow] = useState(false);
-  // Use existing filter system
-  const filterManager = useFilters();
   const { selectedSources, setSelectedSources } = filterManager;
   const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
+
+  const {
+    sourcesInitialized,
+    enableAllSources,
+    disableAllSources,
+    toggleSource,
+    isSourceEnabled,
+  } = useSourcePreferences({
+    availableSources,
+    selectedSources,
+    setSelectedSources,
+  });
   const [mcpToolsPopup, setMcpToolsPopup] = useState<{
     serverId: number | null;
     serverName: string;
@@ -520,44 +532,6 @@ export function ActionToggle({
       // If clicking on a new tool, replace any existing forced tools with just this one
       setForcedToolIds([toolId]);
     }
-  };
-
-  const enableAllSources = () => {
-    const allSourceMetadata = getConfiguredSources(availableSources);
-    setSelectedSources(allSourceMetadata);
-  };
-
-  const disableAllSources = () => {
-    setSelectedSources([]);
-  };
-
-  const toggleSource = (sourceUniqueKey: string) => {
-    const configuredSource = getConfiguredSources(availableSources).find(
-      (s) => s.uniqueKey === sourceUniqueKey
-    );
-    if (!configuredSource) return;
-
-    const isCurrentlySelected = selectedSources.some(
-      (s) => s.uniqueKey === configuredSource.uniqueKey
-    );
-
-    if (isCurrentlySelected) {
-      setSelectedSources((prev) =>
-        prev.filter((s) => s.uniqueKey !== configuredSource.uniqueKey)
-      );
-    } else {
-      setSelectedSources((prev) => [...prev, configuredSource]);
-    }
-  };
-
-  const isSourceEnabled = (sourceUniqueKey: string) => {
-    const configuredSource = getConfiguredSources(availableSources).find(
-      (s) => s.uniqueKey === sourceUniqueKey
-    );
-    if (!configuredSource) return false;
-    return selectedSources.some(
-      (s) => s.uniqueKey === configuredSource.uniqueKey
-    );
   };
 
   // Simple and clean overflow detection
