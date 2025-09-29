@@ -100,16 +100,11 @@ export function ActionItem({
   const label = tool ? tool.display_name || tool.name : providedLabel!;
   // Generate test ID based on tool name if available
   const toolName = tool?.name || providedLabel || "";
-  const testIdBase = toolName
-    .toLowerCase()
-    .replace(/tool$/i, "")
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+  console.log("toolName", toolName);
 
   return (
     <div
-      data-testid={`tool-option-${testIdBase}`}
+      data-testid={`tool-option-${toolName}`}
       className={`
       group
       flex 
@@ -822,6 +817,7 @@ export function ActionToggle({
           </button>
         </PopoverTrigger>
         <PopoverContent
+          data-testid="tool-options"
           side="top"
           align="start"
           // Keep main popover open when interacting with nested MCP popup
