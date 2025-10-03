@@ -29,7 +29,7 @@ from onyx.connectors.interfaces import CheckpointedConnectorWithPermSync
 from onyx.connectors.interfaces import CheckpointOutput
 from onyx.connectors.interfaces import GenerateSlimDocumentOutput
 from onyx.connectors.interfaces import SecondsSinceUnixEpoch
-from onyx.connectors.interfaces import SlimConnector
+from onyx.connectors.interfaces import SlimConnectorWithPermSync
 from onyx.connectors.jira.access import get_project_permissions
 from onyx.connectors.jira.utils import best_effort_basic_expert_info
 from onyx.connectors.jira.utils import best_effort_get_field_from_issue
@@ -360,7 +360,8 @@ class JiraConnectorCheckpoint(ConnectorCheckpoint):
 
 
 class JiraConnector(
-    CheckpointedConnectorWithPermSync[JiraConnectorCheckpoint], SlimConnector
+    CheckpointedConnectorWithPermSync[JiraConnectorCheckpoint],
+    SlimConnectorWithPermSync,
 ):
     def __init__(
         self,
@@ -570,7 +571,7 @@ class JiraConnector(
             # if we didn't retrieve a full batch, we're done
             checkpoint.has_more = current_offset - starting_offset == page_size
 
-    def retrieve_all_slim_documents(
+    def retrieve_all_slim_docs_perm_sync(
         self,
         start: SecondsSinceUnixEpoch | None = None,
         end: SecondsSinceUnixEpoch | None = None,
@@ -756,7 +757,7 @@ if __name__ == "__main__":
     start = 0
     end = datetime.now().timestamp()
 
-    for slim_doc in connector.retrieve_all_slim_documents(
+    for slim_doc in connector.retrieve_all_slim_docs_perm_sync(
         start=start,
         end=end,
     ):
