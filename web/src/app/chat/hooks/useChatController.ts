@@ -953,7 +953,9 @@ export function useChatController({
 
           setPopup({
             type: "warning",
-            message: `Some files were not uploaded. ${detailsParts.join(" | ")}`,
+            message: `Some files were not uploaded. ${detailsParts.join(
+              " | "
+            )}`,
           });
         }
       } catch (error) {
