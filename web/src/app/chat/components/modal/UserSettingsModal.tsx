@@ -310,63 +310,48 @@ export function UserSettings({ onClose }: UserSettingsProps) {
   };
 
   return (
-    <div className="flex flex-col p-padding-content">
-      {/* {(showPasswordSection || hasConnectors) && (
-        <div className="w-1/4 pr-4 flex-shrink-0">
-          <nav>
-            <ul className="space-y-2">
+    <div className="flex flex-col gap-padding-content p-padding-content">
+      {(showPasswordSection || hasConnectors) && (
+        <nav>
+          <ul className="flex space-x-2">
+            <li>
+              <Button
+                tertiary
+                active={activeSection === "settings"}
+                onClick={() => setActiveSection("settings")}
+              >
+                Settings
+              </Button>
+            </li>
+            {showPasswordSection && (
               <li>
-                <button
-                  className={`w-full text-base text-left py-2 px-4 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                    activeSection === "settings"
-                      ? "bg-neutral-100 dark:bg-neutral-700 font-semibold"
-                      : ""
-                  }`}
-                  onClick={() => setActiveSection("settings")}
+                <Button
+                  tertiary
+                  active={activeSection === "password"}
+                  onClick={() => setActiveSection("password")}
                 >
-                  Settings
-                </button>
+                  Password
+                </Button>
               </li>
-              {showPasswordSection && (
-                <li>
-                  <button
-                    className={`w-full text-left py-2 px-4 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                      activeSection === "password"
-                        ? "bg-neutral-100 dark:bg-neutral-700 font-semibold"
-                        : ""
-                    }`}
-                    onClick={() => setActiveSection("password")}
-                  >
-                    Password
-                  </button>
-                </li>
-              )}
-              {hasConnectors && (
-                <li>
-                  <button
-                    className={`w-full text-base text-left py-2 px-4 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                      activeSection === "connectors"
-                        ? "bg-neutral-100 dark:bg-neutral-700 font-semibold"
-                        : ""
-                    }`}
-                    onClick={() => setActiveSection("connectors")}
-                  >
-                    Connectors
-                  </button>
-                </li>
-              )}
-            </ul>
-          </nav>
-        </div>
-      )} */}
+            )}
+            {hasConnectors && (
+              <li>
+                <Button
+                  tertiary
+                  active={activeSection === "connectors"}
+                  onClick={() => setActiveSection("connectors")}
+                >
+                  Connectors
+                </Button>
+              </li>
+            )}
+          </ul>
+        </nav>
+      )}
 
       {popup}
 
-      <div
-        className={`${
-          showPasswordSection || hasConnectors ? "w-3/4" : "w-full"
-        } overflow-y-scroll default-scrollbar !w-full`}
-      >
+      <div className="w-full overflow-y-scroll">
         {activeSection === "settings" && (
           <div className="space-y-6">
             <div>
