@@ -355,14 +355,12 @@ def stream_chat_message_objects(
         long_term_logger = LongTermLogger(
             metadata={"user_id": str(user_id), "chat_session_id": str(chat_session_id)}
         )
-
         persona = _get_persona_for_chat_session(
             new_msg_req=new_msg_req,
             user=user,
             db_session=db_session,
             default_persona=chat_session.persona,
         )
-
         # TODO: remove once we have an endpoint for this stuff
         process_kg_commands(new_msg_req.message, persona.name, tenant_id, db_session)
 
