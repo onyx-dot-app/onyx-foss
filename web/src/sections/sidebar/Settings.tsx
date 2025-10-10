@@ -198,6 +198,7 @@ export default function Settings({
         <div className="flex flex-col w-full h-full" id="onyx-user-dropdown">
           <NavigationTab
             className="!w-full"
+            iconClassName="w-5 h-5"
             icon={({ className }) => (
               <Avatar
                 className={cn(
