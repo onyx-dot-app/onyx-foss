@@ -86,11 +86,7 @@ To see ongoing and upcoming projects, check out our [roadmap](https://github.com
 
 
 ## 📚 Licensing
-There are two editions of Onyx:
-
-- Onyx Community Edition (CE) is available freely under the MIT license.
-- Onyx Enterprise Edition (EE) includes extra features that are primarily useful for larger organizations.
-For feature details, check out [our website](https://www.onyx.app/pricing).
+This is the FOSS version of Onyx and is freely available under the MIT license!
 
 
 
