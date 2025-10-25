@@ -48,6 +48,10 @@ import Text from "@/refresh-components/texts/Text";
 import InputTypeIn from "@/refresh-components/inputs/InputTypeIn";
 import { cn } from "@/lib/utils";
 import SvgSettings from "@/icons/settings";
+import {
+  ToolAuthStatus,
+  useToolOAuthStatus,
+} from "@/lib/hooks/useToolOAuthStatus";
 
 // Get source metadata for configured sources - deduplicated by source type
 function getConfiguredSources(
@@ -91,6 +95,8 @@ interface ActionItemProps {
   onSourceManagementOpen?: () => void;
   hasNoConnectors?: boolean;
   tooltipSide?: "top" | "right" | "bottom" | "left";
+  toolAuthStatus?: ToolAuthStatus;
+  onOAuthAuthenticate?: () => void;
 }
 
 function ActionItem({
@@ -104,6 +110,8 @@ function ActionItem({
   onSourceManagementOpen,
   hasNoConnectors = false,
   tooltipSide = "left",
+  toolAuthStatus,
+  onOAuthAuthenticate,
 }: ActionItemProps) {
   // If a tool is provided, derive the icon and label from it
   const Icon = tool ? getIconForAction(tool) : ProvidedIcon!;
@@ -162,6 +170,35 @@ function ActionItem({
               </Text>
             </div>
             <div className="flex items-center gap-2">
+              {/* OAuth Authentication Indicator */}
+              {tool?.oauth_config_id && toolAuthStatus && (
+                <div
+                  className="flex items-center gap-2 transition-opacity duration-200 opacity-0 group-hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (
+                      !toolAuthStatus.hasToken ||
+                      toolAuthStatus.isTokenExpired
+                    ) {
+                      onOAuthAuthenticate?.();
+                    }
+                  }}
+                >
+                  {!toolAuthStatus.hasToken || toolAuthStatus.isTokenExpired ? (
+                    <SvgKey
+                      className={cn(
+                        "h-[1rem] w-[1rem]",
+                        "transition-colors",
+                        "cursor-pointer",
+                        "stroke-yellow-500",
+                        "hover:stroke-yellow-600"
+                      )}
+                    />
+                  ) : (
+                    <SvgCheck className="stroke-status-text-success-05 h-[1rem] w-[1rem]" />
+                  )}
+                </div>
+              )}
               {!isSearchToolWithNoConnectors && (
                 <div
                   className={cn(
@@ -384,6 +421,11 @@ export function ActionToggle({
   const [showTopShadow, setShowTopShadow] = useState(false);
   const { selectedSources, setSelectedSources } = filterManager;
   const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
+
+  // Use the OAuth hook
+  const { getToolAuthStatus, authenticateTool } = useToolOAuthStatus(
+    selectedAssistant.id
+  );
 
   const { enableAllSources, disableAllSources, toggleSource, isSourceEnabled } =
     useSourcePreferences({
@@ -951,6 +993,8 @@ export function ActionToggle({
                       setSecondaryView({ type: "sources" })
                     }
                     hasNoConnectors={hasNoConnectors}
+                    toolAuthStatus={getToolAuthStatus(tool)}
+                    onOAuthAuthenticate={() => authenticateTool(tool)}
                   />
                 ))}
 
