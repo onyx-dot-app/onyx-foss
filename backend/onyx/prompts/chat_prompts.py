@@ -11,9 +11,9 @@ Try to cite inline as opposed to leaving all citations until the very end of the
 """.rstrip()
 
 REQUIRE_CITATION_STATEMENT_V2 = """
-Cite relevant statements INLINE using the format [[1]](https://example.com) with the document number (an integer) in between
-the brackets. To cite multiple documents, use [[1]](https://example.com), [[2]](https://example.com) format instead of \
-[[1, 2]](https://example.com). \
+Cite relevant statements INLINE using the format [1], [3], etc. to reference the document_citation_number from the tool call response. \
+DO NOT provide any links following the citations. In other words, avoid using the format [1](https://example.com). \
+Avoid using double brackets like [[1]]. To cite multiple documents, use [1], [3] format instead of [1, 3]. \
 Try to cite inline as opposed to leaving all citations until the very end of the response.
 """.rstrip()
 

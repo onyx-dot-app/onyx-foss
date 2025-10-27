@@ -98,14 +98,6 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 
-def _format_tool_name(tool_name: str) -> str:
-    """Convert tool name to LLM-friendly format."""
-    name = tool_name.replace(" ", "_")
-    # take care of camel case like GetAPIKey -> GET_API_KEY for LLM readability
-    name = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "_", name)
-    return name.upper()
-
-
 def _get_available_tools(
     db_session: Session,
     graph_config: GraphConfig,
@@ -702,8 +694,7 @@ def clarifier(
                     should_stream_answer=True,
                     writer=writer,
                     ind=0,
-                    final_search_results=context_llm_docs,
-                    displayed_search_results=context_llm_docs,
+                    search_results=context_llm_docs,
                     generate_final_answer=True,
                     chat_message_id=str(graph_config.persistence.chat_session_id),
                 )
