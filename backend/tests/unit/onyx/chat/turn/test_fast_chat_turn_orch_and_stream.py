@@ -9,15 +9,14 @@ injection with simple fake versions of all dependencies except for the emitter
 """
 
 from collections.abc import AsyncIterator
+from collections.abc import Sequence
 from typing import Any
 from typing import List
-from unittest.mock import Mock
 from uuid import UUID
 from uuid import uuid4
 
 import pytest
 from agents import AgentOutputSchemaBase
-from agents import FunctionTool
 from agents import Handoff
 from agents import Model
 from agents import ModelResponse
@@ -51,13 +50,9 @@ from onyx.server.query_and_chat.streaming_models import CitationStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
-from onyx.tools.tool_implementations.images.image_generation_tool import (
-    ImageGenerationTool,
-)
-from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
-    OktaProfileTool,
-)
-from onyx.tools.tool_implementations.search.search_tool import SearchTool
+
+# TODO: Probably shouldn't need so many imports from OpenAI
+# This test needs to be simplified
 
 
 # =============================================================================
@@ -714,7 +709,7 @@ def fake_redis_client() -> FakeRedis:
 
 
 @pytest.fixture
-def fake_tools() -> list[FunctionTool]:
+def fake_tools() -> Sequence[Tool]:
     """Fixture providing a list of fake tools."""
     return []
 
@@ -742,7 +737,7 @@ def chat_turn_dependencies(
     fake_llm: LLM,
     fake_model: Model,
     fake_db_session: FakeSession,
-    fake_tools: list[FunctionTool],
+    fake_tools: Sequence[Tool],
     fake_redis_client: FakeRedis,
 ) -> ChatTurnDependencies:
     """Fixture providing a complete ChatTurnDependencies object with fake implementations."""
@@ -752,12 +747,9 @@ def chat_turn_dependencies(
         model_settings=ModelSettings(temperature=0.0, include_usage=True),
         llm=fake_llm,
         db_session=fake_db_session,  # type: ignore[arg-type]
-        tools=fake_tools,
+        tools=fake_tools,  # type: ignore[arg-type]
         redis_client=fake_redis_client,  # type: ignore[arg-type]
         emitter=emitter,
-        search_pipeline=Mock(SearchTool),
-        image_generation_tool=Mock(ImageGenerationTool),
-        okta_profile_tool=Mock(OktaProfileTool),
     )
 
 
