@@ -16,7 +16,6 @@ from onyx.agents.agent_sdk.monkey_patches import (
 )
 from onyx.agents.agent_sdk.sync_agent_stream_adapter import SyncAgentStream
 from onyx.agents.agent_search.dr.enums import ResearchType
-from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.chat.chat_utils import saved_search_docs_from_llm_docs
 from onyx.chat.models import PromptConfig
 from onyx.chat.stop_signal_checker import is_connected
@@ -28,11 +27,11 @@ from onyx.chat.turn.context_handler.citation import (
 )
 from onyx.chat.turn.context_handler.task_prompt import update_task_prompt
 from onyx.chat.turn.infra.chat_turn_event_stream import unified_event_stream
-from onyx.chat.turn.infra.session_sink import extract_final_answer_from_packets
-from onyx.chat.turn.infra.session_sink import save_iteration
 from onyx.chat.turn.models import AgentToolType
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.chat.turn.models import ChatTurnDependencies
+from onyx.chat.turn.save_turn import extract_final_answer_from_packets
+from onyx.chat.turn.save_turn import save_turn
 from onyx.server.query_and_chat.streaming_models import CitationDelta
 from onyx.server.query_and_chat.streaming_models import CitationInfo
 from onyx.server.query_and_chat.streaming_models import CitationStart
@@ -122,8 +121,12 @@ def _run_agent_loop(
         )
         agent_turn_messages = list(citation_result.updated_messages)
         ctx.ordered_fetched_documents.extend(citation_result.new_llm_docs)
-        ctx.documents_cited_count += citation_result.num_docs_cited
-        ctx.tool_calls_cited_count += citation_result.num_tool_calls_cited
+        ctx.documents_processed_by_citation_context_handler += (
+            citation_result.num_docs_cited
+        )
+        ctx.tool_calls_processed_by_citation_context_handler += (
+            citation_result.num_tool_calls_cited
+        )
 
         # TODO: Make this configurable on OnyxAgent level
         stopping_tools = ["image_generation"]
@@ -162,13 +165,6 @@ def _fast_chat_turn_core(
     )
     ctx = starter_context or ChatTurnContext(
         run_dependencies=dependencies,
-        aggregated_context=AggregatedDRContext(
-            context="context",
-            cited_documents=[],
-            is_internet_marker_dict={},
-            global_iteration_responses=[],
-        ),
-        iteration_instructions=[],
         chat_session_id=chat_session_id,
         message_id=message_id,
         research_type=research_type,
@@ -189,12 +185,15 @@ def _fast_chat_turn_core(
     final_answer = extract_final_answer_from_packets(
         dependencies.emitter.packet_history
     )
-    save_iteration(
+    save_turn(
         db_session=dependencies.db_session,
         message_id=message_id,
         chat_session_id=chat_session_id,
         research_type=research_type,
-        ctx=ctx,
+        model_name=dependencies.llm.config.model_name,
+        model_provider=dependencies.llm.config.model_provider,
+        iteration_instructions=ctx.iteration_instructions,
+        global_iteration_responses=ctx.global_iteration_responses,
         final_answer=final_answer,
         unordered_fetched_inference_sections=ctx.unordered_fetched_inference_sections,
         ordered_fetched_documents=ctx.ordered_fetched_documents,
@@ -289,12 +288,12 @@ def _emit_citations_for_final_answer(
     ctx: ChatTurnContext,
 ) -> None:
     index = ctx.current_run_step + 1
-    if ctx.collected_citations:
+    if ctx.citations:
         dependencies.emitter.emit(Packet(ind=index, obj=CitationStart()))
         dependencies.emitter.emit(
             Packet(
                 ind=index,
-                obj=CitationDelta(citations=ctx.collected_citations),  # type: ignore[arg-type]
+                obj=CitationDelta(citations=ctx.citations),
             )
         )
         dependencies.emitter.emit(Packet(ind=index, obj=SectionEnd(type="section_end")))
@@ -318,7 +317,7 @@ def _default_packet_translation(
                 final_answer_piece = ""
                 for response_part in processor.process_token(ev.data.delta):
                     if isinstance(response_part, CitationInfo):
-                        ctx.collected_citations.append(response_part)
+                        ctx.citations.append(response_part)
                     else:
                         final_answer_piece += response_part.answer_piece or ""
                 obj = MessageDelta(type="message_delta", content=final_answer_piece)
