@@ -103,6 +103,7 @@ export interface ChatInputBarProps {
   deepResearchEnabled: boolean;
   setPresentingDocument?: (document: MinimalOnyxDocument) => void;
   toggleDeepResearch: () => void;
+  disabled: boolean;
 }
 
 function ChatInputBarInner({
@@ -127,6 +128,7 @@ function ChatInputBarInner({
   deepResearchEnabled,
   toggleDeepResearch,
   setPresentingDocument,
+  disabled,
 }: ChatInputBarProps) {
   const { user } = useUser();
 
@@ -350,7 +352,14 @@ function ChatInputBarInner({
   };
 
   return (
-    <div id="onyx-chat-input" className="max-w-full w-[50rem]">
+    <div
+      id="onyx-chat-input"
+      className={cn(
+        "max-w-full w-[50rem]",
+        disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+      )}
+      aria-disabled={disabled}
+    >
       {showPrompts && user?.preferences?.shortcut_enabled && (
         <div className="text-sm absolute inset-x-0 top-0 w-full transform -translate-y-full">
           <div className="rounded-lg overflow-y-auto max-h-[200px] py-1.5 bg-background-neutral-01 border border-border-01 shadow-lg mx-2 px-1.5 mt-2 rounded z-10">
@@ -429,7 +438,7 @@ function ChatInputBarInner({
             "pb-2",
             "pt-3"
           )}
-          autoFocus
+          autoFocus={!disabled}
           style={{ scrollbarWidth: "thin" }}
           role="textarea"
           aria-multiline
@@ -456,6 +465,7 @@ function ChatInputBarInner({
             }
           }}
           suppressContentEditableWarning={true}
+          disabled={disabled}
         />
 
         {(selectedDocuments.length > 0 ||
@@ -535,6 +545,7 @@ function ChatInputBarInner({
                   tooltip="Attach Files"
                   tertiary
                   transient={open}
+                  disabled={disabled}
                 />
               )}
               selectedFileIds={currentMessageFiles.map((f) => f.id)}
@@ -544,6 +555,7 @@ function ChatInputBarInner({
                 selectedAssistant={selectedAssistant}
                 filterManager={filterManager}
                 availableSources={memoizedAvailableSources}
+                disabled={disabled}
               />
             )}
             {showDeepResearch && (
@@ -553,6 +565,8 @@ function ChatInputBarInner({
                 engaged={deepResearchEnabled}
                 action
                 folded
+                disabled={disabled}
+                className={disabled ? "bg-transparent" : ""}
               >
                 Deep Research
               </SelectButton>
@@ -577,6 +591,8 @@ function ChatInputBarInner({
                     }}
                     engaged
                     action
+                    disabled={disabled}
+                    className={disabled ? "bg-transparent" : ""}
                   >
                     {tool.display_name}
                   </SelectButton>
@@ -589,6 +605,7 @@ function ChatInputBarInner({
               <LLMPopover
                 llmManager={llmManager}
                 requiresImageGeneration={false}
+                disabled={disabled}
               />
             </div>
             <IconButton
