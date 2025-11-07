@@ -14,36 +14,38 @@ function LogoSection({ folded, setFolded }: LogoSectionProps) {
     (className?: string) => <Logo folded={folded} className={className} />,
     [folded]
   );
+  const closeButton = useCallback(
+    (shouldFold: boolean) => (
+      <IconButton
+        icon={SvgSidebar}
+        tertiary
+        tooltip="Close Sidebar"
+        onClick={() => setFolded?.(shouldFold)}
+      />
+    ),
+    [setFolded]
+  );
 
   return (
     <div
       className={cn(
-        "flex flex-row items-center px-4 py-1 flex-shrink-0 gap-4 min-h-[2.5rem]",
-        folded ? "justify-center" : "justify-between"
+        "flex flex-row items-center py-1 gap-1 min-h-[3.5rem] px-[15px]",
+        folded ? "justify-start" : "justify-between"
       )}
     >
       {folded === undefined ? (
         logo()
       ) : folded ? (
-        <div className="h-[2rem] flex flex-col justify-center items-center">
-          {logo("visible group-hover/SidebarWrapper:hidden")}
-          <IconButton
-            icon={SvgSidebar}
-            tertiary
-            tooltip="Close Sidebar"
-            onClick={() => setFolded?.(false)}
-            className="hidden group-hover/SidebarWrapper:flex"
-          />
-        </div>
+        <>
+          <div className="group-hover/SidebarWrapper:hidden">{logo()}</div>
+          <div className="w-full justify-center hidden group-hover/SidebarWrapper:flex">
+            {closeButton(false)}
+          </div>
+        </>
       ) : (
         <>
           {logo()}
-          <IconButton
-            icon={SvgSidebar}
-            tertiary
-            tooltip="Close Sidebar"
-            onClick={() => setFolded?.(true)}
-          />
+          {closeButton(true)}
         </>
       )}
     </div>
@@ -67,8 +69,8 @@ export default function SidebarWrapper({
     <div>
       <div
         className={cn(
-          "h-screen flex flex-col bg-background-tint-02 py-2 gap-4 group/SidebarWrapper",
-          folded ? "w-[3.5rem]" : "w-[15rem]"
+          "h-screen flex flex-col bg-background-tint-02 py-2 gap-4 group/SidebarWrapper transition-width duration-200 ease-in-out",
+          folded ? "w-[3.4rem]" : "w-[15rem]"
         )}
       >
         <LogoSection folded={folded} setFolded={setFolded} />
