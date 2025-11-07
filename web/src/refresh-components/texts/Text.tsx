@@ -56,7 +56,8 @@ const colors = {
   },
 };
 
-export interface TextProps extends HTMLAttributes<HTMLParagraphElement> {
+export interface TextProps
+  extends Omit<HTMLAttributes<HTMLParagraphElement>, "as"> {
   nowrap?: boolean;
 
   // Fonts
@@ -90,6 +91,9 @@ export interface TextProps extends HTMLAttributes<HTMLParagraphElement> {
   textLight05?: boolean;
   textDark03?: boolean;
   textDark05?: boolean;
+
+  // Tag type override
+  as?: "p" | "span" | "div";
 }
 
 export default function Text({
@@ -124,6 +128,7 @@ export default function Text({
   textDark05,
   children,
   className,
+  as,
   ...rest
 }: TextProps) {
   const font = headingH1
@@ -184,8 +189,10 @@ export default function Text({
                     ? "textDark05"
                     : "text05";
 
+  const Tag = as ?? "p";
+
   return (
-    <p
+    <Tag
       {...rest}
       className={cn(
         fonts[font],
@@ -195,6 +202,6 @@ export default function Text({
       )}
     >
       {children}
-    </p>
+    </Tag>
   );
 }
