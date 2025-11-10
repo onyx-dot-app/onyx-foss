@@ -3,9 +3,6 @@ description: "Sets up Python with uv, installs deps, generates OpenAPI schema an
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # ratchet:actions/checkout@v4
-
     - name: Setup uv
       uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # ratchet:astral-sh/setup-uv@v3
 
@@ -19,7 +16,8 @@ runs:
       run: |
         uv pip install --system \
           -r backend/requirements/default.txt \
-          -r backend/requirements/dev.txt
+          -r backend/requirements/dev.txt \
+          -r backend/requirements/model_server.txt
 
     - name: Generate OpenAPI schema
       shell: bash
