@@ -40,6 +40,8 @@ from onyx.llm.interfaces import ToolChoiceOptions
 from onyx.llm.llm_provider_options import OLLAMA_PROVIDER_NAME
 from onyx.llm.llm_provider_options import VERTEX_CREDENTIALS_FILE_KWARG
 from onyx.llm.llm_provider_options import VERTEX_LOCATION_KWARG
+from onyx.llm.model_response import ModelResponse
+from onyx.llm.model_response import ModelResponseStream
 from onyx.llm.utils import model_is_reasoning_model
 from onyx.server.utils import mask_string
 from onyx.utils.logger import setup_logger
@@ -48,7 +50,7 @@ from onyx.utils.long_term_log import LongTermLogger
 logger = setup_logger()
 
 if TYPE_CHECKING:
-    from litellm import ModelResponse, CustomStreamWrapper, Message
+    from litellm import CustomStreamWrapper, Message
 
 
 _LLM_PROMPT_LONG_TERM_LOG_CATEGORY = "llm_prompt"
@@ -488,7 +490,7 @@ class DefaultMultiLLM(LLM):
             max_input_tokens=self._max_input_tokens,
         )
 
-    def _invoke_implementation(
+    def _invoke_implementation_langchain(
         self,
         prompt: LanguageModelInput,
         tools: list[dict] | None = None,
@@ -523,7 +525,7 @@ class DefaultMultiLLM(LLM):
         else:
             raise ValueError("Unexpected response choice type")
 
-    def _stream_implementation(
+    def _stream_implementation_langchain(
         self,
         prompt: LanguageModelInput,
         tools: list[dict] | None = None,
@@ -538,7 +540,7 @@ class DefaultMultiLLM(LLM):
             self.log_model_configs()
 
         if DISABLE_LITELLM_STREAMING:
-            yield self.invoke(
+            yield self.invoke_langchain(
                 prompt,
                 tools,
                 tool_choice,
@@ -609,3 +611,65 @@ class DefaultMultiLLM(LLM):
                 logger.debug(f"Raw Model Output:\n{log_msg}")
             else:
                 logger.debug(f"Raw Model Output:\n{content}")
+
+    def _invoke_implementation(
+        self,
+        prompt: LanguageModelInput,
+        tools: list[dict] | None = None,
+        tool_choice: ToolChoiceOptions | None = None,
+        structured_response_format: dict | None = None,
+        timeout_override: int | None = None,
+        max_tokens: int | None = None,
+    ) -> ModelResponse:
+        from litellm import ModelResponse as LiteLLMModelResponse
+
+        from onyx.llm.model_response import from_litellm_model_response
+
+        if LOG_ONYX_MODEL_INTERACTIONS:
+            self.log_model_configs()
+
+        response = cast(
+            LiteLLMModelResponse,
+            self._completion(
+                prompt=prompt,
+                tools=tools,
+                tool_choice=tool_choice,
+                stream=False,
+                structured_response_format=structured_response_format,
+                timeout_override=timeout_override,
+                max_tokens=max_tokens,
+            ),
+        )
+
+        return from_litellm_model_response(response)
+
+    def _stream_implementation(
+        self,
+        prompt: LanguageModelInput,
+        tools: list[dict] | None = None,
+        tool_choice: ToolChoiceOptions | None = None,
+        structured_response_format: dict | None = None,
+        timeout_override: int | None = None,
+        max_tokens: int | None = None,
+    ) -> Iterator[ModelResponseStream]:
+        from litellm import CustomStreamWrapper as LiteLLMCustomStreamWrapper
+        from onyx.llm.model_response import from_litellm_model_response_stream
+
+        if LOG_ONYX_MODEL_INTERACTIONS:
+            self.log_model_configs()
+
+        response = cast(
+            LiteLLMCustomStreamWrapper,
+            self._completion(
+                prompt=prompt,
+                tools=tools,
+                tool_choice=tool_choice,
+                stream=True,
+                structured_response_format=structured_response_format,
+                timeout_override=timeout_override,
+                max_tokens=max_tokens,
+            ),
+        )
+
+        for chunk in response:
+            yield from_litellm_model_response_stream(chunk)
