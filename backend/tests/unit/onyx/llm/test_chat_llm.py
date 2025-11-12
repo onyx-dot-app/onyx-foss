@@ -10,7 +10,7 @@ from litellm.types.utils import Delta
 from litellm.types.utils import Function as LiteLLMFunction
 
 from onyx.configs.app_configs import MOCK_LLM_RESPONSE
-from onyx.llm.chat_llm import DefaultMultiLLM
+from onyx.llm.chat_llm import LitellmLLM
 from onyx.llm.utils import get_max_input_tokens
 
 
@@ -27,11 +27,11 @@ def _create_delta(
 
 
 @pytest.fixture
-def default_multi_llm() -> DefaultMultiLLM:
+def default_multi_llm() -> LitellmLLM:
     model_provider = "openai"
     model_name = "gpt-3.5-turbo"
 
-    return DefaultMultiLLM(
+    return LitellmLLM(
         api_key="test_key",
         timeout=30,
         model_provider=model_provider,
@@ -43,7 +43,7 @@ def default_multi_llm() -> DefaultMultiLLM:
     )
 
 
-def test_multiple_tool_calls(default_multi_llm: DefaultMultiLLM) -> None:
+def test_multiple_tool_calls(default_multi_llm: LitellmLLM) -> None:
     # Mock the litellm.completion function
     with patch("litellm.completion") as mock_completion:
         # Create a mock response with multiple tool calls using litellm objects
@@ -152,11 +152,12 @@ def test_multiple_tool_calls(default_multi_llm: DefaultMultiLLM) -> None:
             temperature=0.0,  # Default value from GEN_AI_TEMPERATURE
             timeout=30,
             parallel_tool_calls=False,
+            reasoning_effort="minimal",
             mock_response=MOCK_LLM_RESPONSE,
         )
 
 
-def test_multiple_tool_calls_streaming(default_multi_llm: DefaultMultiLLM) -> None:
+def test_multiple_tool_calls_streaming(default_multi_llm: LitellmLLM) -> None:
     # Mock the litellm.completion function
     with patch("litellm.completion") as mock_completion:
         # Create a mock response with multiple tool calls using litellm objects
@@ -297,5 +298,6 @@ def test_multiple_tool_calls_streaming(default_multi_llm: DefaultMultiLLM) -> No
             temperature=0.0,  # Default value from GEN_AI_TEMPERATURE
             timeout=30,
             parallel_tool_calls=False,
+            reasoning_effort="minimal",
             mock_response=MOCK_LLM_RESPONSE,
         )
