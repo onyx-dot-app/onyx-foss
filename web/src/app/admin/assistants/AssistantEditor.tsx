@@ -912,7 +912,6 @@ export default function AssistantEditor({
                     <div className="flex flex-col gap-2">
                       <Button
                         secondary
-                        type="button"
                         onClick={() => {
                           const fileInput = document.createElement("input");
                           fileInput.type = "file";
@@ -936,7 +935,6 @@ export default function AssistantEditor({
                       {values.uploaded_image && (
                         <Button
                           secondary
-                          type="button"
                           onClick={() => {
                             setUploadedImagePreview(null);
                             setFieldValue("uploaded_image", null);
@@ -957,7 +955,6 @@ export default function AssistantEditor({
                           removePersonaImage) && (
                           <Button
                             secondary
-                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               const newShape = generateRandomIconShape();
@@ -981,7 +978,6 @@ export default function AssistantEditor({
                         !values.uploaded_image && (
                           <Button
                             secondary
-                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setRemovePersonaImage(false);
@@ -999,7 +995,6 @@ export default function AssistantEditor({
                         !values.uploaded_image && (
                           <Button
                             secondary
-                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setRemovePersonaImage(true);
