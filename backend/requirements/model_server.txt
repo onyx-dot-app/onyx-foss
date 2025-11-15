@@ -1,4 +1,4 @@
-accelerate==1.6.0
+accelerate==1.11.0
 einops==0.8.1
 cohere==5.6.1
 google-cloud-aiplatform==1.121.0
