@@ -66,6 +66,7 @@ export default function LLMConnectionModal({
     any[]
   >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const modelOptions = useMemo(
     () => getModelOptions(llmDescriptor, fetchedModelConfigurations as any[]),
@@ -113,28 +114,6 @@ export default function LLMConnectionModal({
     }
   };
 
-  const testModelChangeWithApiKey = async (
-    modelName: string,
-    formikProps: FormikProps<any>
-  ) => {
-    if (!llmDescriptor) return;
-    setApiStatus("loading");
-    setShowApiMessage(true);
-    const result = await testApiKeyHelper(
-      llmDescriptor,
-      initialValues,
-      formikProps.values,
-      undefined,
-      modelName
-    );
-    if (result.ok) {
-      setApiStatus("success");
-    } else {
-      setErrorMessage(result.errorMessage);
-      setApiStatus("error");
-    }
-  };
-
   const testFileInputChange = async (
     customConfig: Record<string, any>,
     formikProps: FormikProps<any>
@@ -170,8 +149,16 @@ export default function LLMConnectionModal({
     }
   }, [tabConfig, activeTab]);
 
+  // Reset when modal opens to ensure fresh form
+  useEffect(() => {
+    if (modal.isOpen) {
+      setFormResetKey((prev) => prev + 1);
+    }
+  }, [modal.isOpen]);
+
   return (
     <Formik
+      key={formResetKey}
       initialValues={initialValues}
       validationSchema={getValidationSchema(
         isCustomProvider ? "custom" : llmDescriptor?.name,
@@ -224,28 +211,26 @@ export default function LLMConnectionModal({
           model_configurations: modelConfigsToUse,
         };
 
-        if (apiStatus !== "success") {
-          setApiStatus("loading");
-          setShowApiMessage(true);
-          let result;
+        setApiStatus("loading");
+        setShowApiMessage(true);
+        let result;
 
-          if (llmDescriptor) {
-            result = await testApiKeyHelper(
-              llmDescriptor,
-              initialValues,
-              payload
-            );
-          } else {
-            result = await testCustomProvider(payload);
-          }
-          if (!result.ok) {
-            setErrorMessage(result.errorMessage);
-            setApiStatus("error");
-            setIsSubmitting(false);
-            return;
-          }
-          setApiStatus("success");
+        if (llmDescriptor) {
+          result = await testApiKeyHelper(
+            llmDescriptor,
+            initialValues,
+            payload
+          );
+        } else {
+          result = await testCustomProvider(payload);
         }
+        if (!result.ok) {
+          setErrorMessage(result.errorMessage);
+          setApiStatus("error");
+          setIsSubmitting(false);
+          return;
+        }
+        setApiStatus("success");
 
         const response = await fetch(
           `${LLM_PROVIDERS_ADMIN_URL}${"?is_creation=true"}`,
@@ -306,10 +291,6 @@ export default function LLMConnectionModal({
                 setFetchedModelConfigurations(value);
               } else if (field === "default_model_name") {
                 formikProps.setFieldValue("default_model_name", value);
-                // Trigger validation of the newly set default model
-                if (value) {
-                  testModelChangeWithApiKey(value, formikProps);
-                }
               } else if (field === "_modelListUpdated") {
                 // Ignore this field as it's just for forcing re-renders
                 return;
@@ -349,64 +330,58 @@ export default function LLMConnectionModal({
               setShowModelsApiErrorMessage={setShowModelsApiErrorMessage}
               setApiStatus={setApiStatus}
             />
-            <Form className="flex flex-col gap-4 p-4 bg-background-tint-01">
-              {isCustomProvider ? (
-                <LLMConnectionFieldsCustom
-                  showApiMessage={showApiMessage}
-                  apiStatus={apiStatus}
-                  errorMessage={errorMessage}
-                  disabled={isSubmitting}
-                />
-              ) : tabConfig ? (
-                <LLMConnectionFieldsWithTabs
-                  llmDescriptor={llmDescriptor!}
-                  tabConfig={tabConfig}
-                  modelOptions={modelOptions}
-                  onApiKeyBlur={(apiKey) => testApiKey(apiKey, formikProps)}
-                  showApiMessage={showApiMessage}
-                  apiStatus={apiStatus}
-                  errorMessage={errorMessage}
-                  onFetchModels={handleFetchModels}
-                  isFetchingModels={isFetchingModels}
-                  canFetchModels={canFetchModels}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  testModelChangeWithApiKey={(modelName) =>
-                    testModelChangeWithApiKey(modelName, formikProps)
-                  }
-                  modelsApiStatus={modelsApiStatus}
-                  modelsErrorMessage={modelsErrorMessage}
-                  showModelsApiErrorMessage={showModelsApiErrorMessage}
-                  disabled={isSubmitting}
-                />
-              ) : (
-                <LLMConnectionFieldsBasic
-                  llmDescriptor={llmDescriptor!}
-                  modalContent={modalContent}
-                  modelOptions={modelOptions}
-                  showApiMessage={showApiMessage}
-                  apiStatus={apiStatus}
-                  errorMessage={errorMessage}
-                  isFetchingModels={isFetchingModels}
-                  onApiKeyBlur={(apiKey) => testApiKey(apiKey, formikProps)}
-                  formikValues={formikProps.values}
-                  setDefaultModelName={(value) =>
-                    formikProps.setFieldValue("default_model_name", value)
-                  }
-                  onFetchModels={handleFetchModels}
-                  canFetchModels={canFetchModels}
-                  modelsApiStatus={modelsApiStatus}
-                  modelsErrorMessage={modelsErrorMessage}
-                  showModelsApiErrorMessage={showModelsApiErrorMessage}
-                  testModelChangeWithApiKey={(modelName) =>
-                    testModelChangeWithApiKey(modelName, formikProps)
-                  }
-                  testFileInputChange={(customConfig) =>
-                    testFileInputChange(customConfig, formikProps)
-                  }
-                  disabled={isSubmitting}
-                />
-              )}
+            <Form className="flex flex-col gap-0">
+              <div className="flex flex-col p-4 gap-4 bg-background-tint-01 w-full">
+                {isCustomProvider ? (
+                  <LLMConnectionFieldsCustom
+                    showApiMessage={showApiMessage}
+                    apiStatus={apiStatus}
+                    errorMessage={errorMessage}
+                    disabled={isSubmitting}
+                  />
+                ) : tabConfig ? (
+                  <LLMConnectionFieldsWithTabs
+                    llmDescriptor={llmDescriptor!}
+                    tabConfig={tabConfig}
+                    modelOptions={modelOptions}
+                    showApiMessage={showApiMessage}
+                    apiStatus={apiStatus}
+                    errorMessage={errorMessage}
+                    onFetchModels={handleFetchModels}
+                    isFetchingModels={isFetchingModels}
+                    canFetchModels={canFetchModels}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    modelsApiStatus={modelsApiStatus}
+                    modelsErrorMessage={modelsErrorMessage}
+                    showModelsApiErrorMessage={showModelsApiErrorMessage}
+                    disabled={isSubmitting}
+                  />
+                ) : (
+                  <LLMConnectionFieldsBasic
+                    llmDescriptor={llmDescriptor!}
+                    modalContent={modalContent}
+                    modelOptions={modelOptions}
+                    showApiMessage={showApiMessage}
+                    apiStatus={apiStatus}
+                    errorMessage={errorMessage}
+                    isFetchingModels={isFetchingModels}
+                    formikValues={formikProps.values}
+                    setDefaultModelName={(value) =>
+                      formikProps.setFieldValue("default_model_name", value)
+                    }
+                    onFetchModels={handleFetchModels}
+                    canFetchModels={canFetchModels}
+                    modelsApiStatus={modelsApiStatus}
+                    modelsErrorMessage={modelsErrorMessage}
+                    showModelsApiErrorMessage={showModelsApiErrorMessage}
+                    testFileInputChange={(customConfig) =>
+                      testFileInputChange(customConfig, formikProps)
+                    }
+                    disabled={isSubmitting}
+                  />
+                )}
+              </div>
             </Form>
           </ProviderModal>
         );
