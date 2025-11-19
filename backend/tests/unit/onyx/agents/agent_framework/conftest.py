@@ -192,7 +192,9 @@ class FakeTool(Tool):
     ) -> Any:
         queries = kwargs.get("queries", [])
         self.calls.append({"queries": queries})
-        run_context.context[f"{self._tool_name}_called"] = True
+        context = run_context.context
+        flag_name = f"{self._tool_name}_called"
+        context[flag_name] = True
         return f"{self.display_name} results for: {', '.join(queries)}"
 
     def build_tool_message_content(self, *args: Any) -> str:
