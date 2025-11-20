@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn, noProp } from "@/lib/utils";
-import UserFilesModalContent from "@/components/modals/UserFilesModalContent";
+import UserFilesModal from "@/components/modals/UserFilesModal";
 import { useCreateModal } from "@/refresh-components/contexts/ModalContext";
 import {
   ProjectFile,
@@ -273,7 +273,7 @@ export default function FilePickerPopover({
       />
 
       <recentFilesModal.Provider>
-        <UserFilesModalContent
+        <UserFilesModal
           title="Recent Files"
           description="Upload files or pick from your recent files."
           icon={SvgFiles}
@@ -286,7 +286,6 @@ export default function FilePickerPopover({
           }}
           handleUploadChange={handleUploadChange}
           onView={onFileClick}
-          onClose={() => recentFilesModal.toggle(false)}
           selectedFileIds={selectedFileIds}
           onDelete={handleDeleteFile}
         />

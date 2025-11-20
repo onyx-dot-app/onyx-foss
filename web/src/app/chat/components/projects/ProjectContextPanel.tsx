@@ -11,7 +11,7 @@ import { MinimalOnyxDocument } from "@/lib/search/interfaces";
 import Button from "@/refresh-components/buttons/Button";
 
 import AddInstructionModal from "@/components/modals/AddInstructionModal";
-import UserFilesModalContent from "@/components/modals/UserFilesModalContent";
+import UserFilesModal from "@/components/modals/UserFilesModal";
 import { useCreateModal } from "@/refresh-components/contexts/ModalContext";
 import Text from "@/refresh-components/texts/Text";
 import SvgFolderOpen from "@/icons/folder-open";
@@ -106,7 +106,7 @@ export default function ProjectContextPanel({
       </addInstructionModal.Provider>
 
       <projectFilesModal.Provider>
-        <UserFilesModalContent
+        <UserFilesModal
           title="Project files"
           description="Sessions in this project can access the files here."
           icon={SvgFiles}
@@ -117,7 +117,6 @@ export default function ProjectContextPanel({
             if (!currentProjectId) return;
             await unlinkFileFromProject(currentProjectId, file.id);
           }}
-          onClose={() => projectFilesModal.toggle(false)}
         />
       </projectFilesModal.Provider>
 
