@@ -13,7 +13,7 @@ import Button from "@/refresh-components/buttons/Button";
 import { usePopup } from "@/components/admin/connectors/Popup";
 import InputSelect from "@/refresh-components/inputs/InputSelect";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import Separator from "@/refresh-components/Separator";
 import Text from "@/components/ui/text";
 import {
   MCPAuthenticationPerformer,
