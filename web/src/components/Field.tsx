@@ -25,7 +25,7 @@ import ReactMarkdown from "react-markdown";
 import { FaMarkdown } from "react-icons/fa";
 import { useState, useEffect, memo, JSX } from "react";
 import remarkGfm from "remark-gfm";
-import { Checkbox } from "@/components/ui/checkbox";
+import Checkbox from "@/refresh-components/inputs/Checkbox";
 
 import { transformLinkUri } from "@/lib/utils";
 import FileInput from "@/app/admin/connectors/[connector]/pages/ConnectorInput/FileInput";
@@ -721,6 +721,7 @@ export const BooleanFormField = memo(function BooleanFormField({
               tooltip={disabledTooltip}
             >
               <Checkbox
+                aria-label={`${label.toLowerCase().replace(" ", "-")}-checkbox`}
                 id={checkboxId}
                 className={`
                      ${disabled ? "opacity-50" : ""}

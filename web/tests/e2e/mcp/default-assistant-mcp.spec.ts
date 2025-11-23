@@ -199,7 +199,7 @@ test.describe("Default Assistant MCP Integration", () => {
     console.log(`[test] Server ID: ${serverId}`);
 
     // Select all tools
-    const selectAllCheckbox = page.getByTestId("tool-checkbox-select-all");
+    const selectAllCheckbox = page.getByLabel("tool-checkbox-select-all");
     await expect(selectAllCheckbox).toBeVisible({ timeout: 5000 });
     await selectAllCheckbox.scrollIntoViewIfNeeded();
     await selectAllCheckbox.click();
@@ -272,7 +272,9 @@ test.describe("Default Assistant MCP Integration", () => {
     }
 
     // Select the MCP server checkbox (to enable all tools)
-    const serverCheckbox = page.getByTestId(`mcp-server-select-${serverId}`);
+    const serverCheckbox = page.getByLabel(
+      "mcp-server-select-all-tools-checkbox"
+    );
     await expect(serverCheckbox).toBeVisible({ timeout: 5000 });
     await serverCheckbox.scrollIntoViewIfNeeded();
     await serverCheckbox.check();
@@ -433,15 +435,15 @@ test.describe("Default Assistant MCP Integration", () => {
     }
 
     // Find a specific tool checkbox
-    const firstToolCheckbox = mcpServerSection
-      .locator('input[type="checkbox"]')
-      .nth(1); // Skip the server-level checkbox
+    const firstToolCheckbox = mcpServerSection.getByLabel(
+      `mcp-server-tool-checkbox-tool_0`
+    );
 
     await expect(firstToolCheckbox).toBeVisible({ timeout: 5000 });
     await firstToolCheckbox.scrollIntoViewIfNeeded();
 
     // Get initial state and toggle
-    const initialChecked = await firstToolCheckbox.isChecked();
+    const initialChecked = await firstToolCheckbox.getAttribute("aria-checked");
     console.log(`[test] Initial tool state: ${initialChecked}`);
     await firstToolCheckbox.click();
     await page.waitForTimeout(300);
@@ -484,16 +486,14 @@ test.describe("Default Assistant MCP Integration", () => {
     }
 
     // Verify the tool state persisted
-    const firstToolCheckboxAfter = mcpServerSectionAfter
-      .locator('input[type="checkbox"]')
-      .nth(1);
-    await expect(firstToolCheckboxAfter).toBeVisible({ timeout: 5000 });
-    const finalChecked = await firstToolCheckboxAfter.isChecked();
-    expect(finalChecked).toBe(!initialChecked);
-
-    console.log(
-      `[test] Tool state persisted across page reload (${initialChecked} -> ${finalChecked})`
+    const firstToolCheckboxAfter = mcpServerSectionAfter.getByLabel(
+      `mcp-server-tool-checkbox-tool_0`
     );
+    await expect(firstToolCheckboxAfter).toBeVisible({ timeout: 5000 });
+    const finalChecked =
+      await firstToolCheckboxAfter.getAttribute("aria-checked");
+    console.log(`[test] Final tool state: ${finalChecked}`);
+    expect(finalChecked).not.toEqual(initialChecked);
   });
 
   test("Instructions persist when saving default assistant", async ({
