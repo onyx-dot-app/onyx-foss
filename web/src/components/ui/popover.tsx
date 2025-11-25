@@ -4,6 +4,7 @@ import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 
 import { cn } from "@/lib/utils";
+import Separator from "@/refresh-components/Separator";
 
 const Popover = PopoverPrimitive.Root;
 
@@ -34,10 +35,6 @@ const sizeClasses = {
   small: ["w-[10rem]"],
   medium: ["w-[15.5rem]"],
 };
-
-function SeparatorLine() {
-  return <div className="border-b mx-3" />;
-}
 
 export interface PopoverMenuProps {
   // size variants
@@ -91,7 +88,7 @@ export function PopoverMenu({
               <></>
             ) : child === null ? (
               // Render `null`s as separator lines
-              <SeparatorLine />
+              <Separator className="py-0 px-2" />
             ) : (
               child
             )}
@@ -100,7 +97,7 @@ export function PopoverMenu({
       </div>
       {footer && (
         <>
-          <SeparatorLine />
+          <Separator className="py-0 px-2" />
           {footer}
         </>
       )}
