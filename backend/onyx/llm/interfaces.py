@@ -4,10 +4,11 @@ from collections.abc import Iterator
 from braintrust import traced
 from pydantic import BaseModel
 
-from onyx.llm.message_types import LanguageModelInput
-from onyx.llm.message_types import ToolChoiceOptions
 from onyx.llm.model_response import ModelResponse
 from onyx.llm.model_response import ModelResponseStream
+from onyx.llm.models import LanguageModelInput
+from onyx.llm.models import ReasoningEffort
+from onyx.llm.models import ToolChoiceOptions
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
@@ -42,7 +43,7 @@ class LLM(abc.ABC):
         structured_response_format: dict | None = None,
         timeout_override: int | None = None,
         max_tokens: int | None = None,
-        reasoning_effort: str | None = "medium",
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> "ModelResponse":
         raise NotImplementedError
 
@@ -54,6 +55,6 @@ class LLM(abc.ABC):
         structured_response_format: dict | None = None,
         timeout_override: int | None = None,
         max_tokens: int | None = None,
-        reasoning_effort: str | None = "medium",
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> Iterator[ModelResponseStream]:
         raise NotImplementedError

@@ -5,6 +5,7 @@ from onyx.context.search.models import ContextExpansionType
 from onyx.context.search.models import InferenceChunk
 from onyx.context.search.models import InferenceSection
 from onyx.llm.interfaces import LLM
+from onyx.llm.models import ReasoningEffort
 from onyx.prompts.search_prompts import DOCUMENT_CONTEXT_SELECTION_PROMPT
 from onyx.prompts.search_prompts import DOCUMENT_SELECTION_PROMPT
 from onyx.tools.tool_implementations.search.constants import (
@@ -120,7 +121,7 @@ def classify_section_relevance(
 
     # Call LLM for classification
     try:
-        response = llm.invoke(prompt=prompt_text)
+        response = llm.invoke(prompt=prompt_text, reasoning_effort=ReasoningEffort.OFF)
         llm_response = response.choice.message.content
 
         if not llm_response:
@@ -254,7 +255,7 @@ def select_sections_for_expansion(
 
     # Call LLM for selection
     try:
-        response = llm.invoke(prompt=prompt_text)
+        response = llm.invoke(prompt=prompt_text, reasoning_effort=ReasoningEffort.OFF)
         llm_response = response.choice.message.content
 
         if not llm_response:
