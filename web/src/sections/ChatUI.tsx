@@ -10,7 +10,6 @@ import React, {
   useState,
 } from "react";
 import IconButton from "@/refresh-components/buttons/IconButton";
-import SvgChevronDown from "@/icons/chevron-down";
 import { Message } from "@/app/chat/interfaces";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import HumanMessage from "@/app/chat/message/HumanMessage";
@@ -33,6 +32,7 @@ import { useDeepResearchToggle } from "../app/chat/hooks/useDeepResearchToggle";
 import { useUser } from "@/components/user/UserProvider";
 import { HORIZON_DISTANCE_PX } from "@/lib/constants";
 import Spacer from "@/refresh-components/Spacer";
+import { SvgChevronDown } from "@opal/icons";
 
 export interface ChatUIHandle {
   scrollToBottom: () => boolean;
