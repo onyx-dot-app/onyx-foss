@@ -339,12 +339,8 @@ def run_llm_loop(
         has_called_search_tool: bool = False
         citation_mapping: dict[int, str] = {}  # Maps citation_num -> document_id/URL
 
-        current_tool_call_index = (
-            0  # TODO: just use the cycle count after parallel tool calls are supported
-        )
-
+        reasoning_cycles = 0
         for llm_cycle_count in range(MAX_LLM_CYCLES):
-
             if forced_tool_id:
                 # Needs to be just the single one because the "required" currently doesn't have a specified tool, just a binary
                 final_tools = [tool for tool in tools if tool.id == forced_tool_id]
@@ -446,7 +442,7 @@ def run_llm_loop(
                 tool_definitions=[tool.tool_definition() for tool in final_tools],
                 tool_choice=tool_choice,
                 llm=llm,
-                turn_index=current_tool_call_index,
+                turn_index=llm_cycle_count + reasoning_cycles,
                 citation_processor=citation_processor,
                 state_container=state_container,
                 # The rich docs representation is passed in so that when yielding the answer, it can also
@@ -462,7 +458,9 @@ def run_llm_loop(
                     packet = next(step_generator)
                     emitter.emit(packet)
                 except StopIteration as e:
-                    llm_step_result, current_tool_call_index = e.value
+                    llm_step_result, has_reasoned = e.value
+                    if has_reasoned:
+                        reasoning_cycles += 1
                     break
 
             # Type narrowing: generator always returns a result, so this can't be None
@@ -477,19 +475,24 @@ def run_llm_loop(
             tool_calls = llm_step_result.tool_calls or []
 
             just_ran_web_search = False
-            for tool_call in tool_calls:
-                # TODO replace the [tool_call] with the list of tool calls once parallel tool calls are supported
-                tool_responses, citation_mapping = run_tool_calls(
-                    tool_calls=[tool_call],
-                    tools=final_tools,
-                    turn_index=current_tool_call_index,
-                    message_history=truncated_message_history,
-                    memories=memories,
-                    user_info=None,  # TODO, this is part of memories right now, might want to separate it out
-                    citation_mapping=citation_mapping,
-                    citation_processor=citation_processor,
-                    skip_search_query_expansion=has_called_search_tool,
-                )
+            tool_responses, citation_mapping = run_tool_calls(
+                tool_calls=tool_calls,
+                tools=final_tools,
+                message_history=truncated_message_history,
+                memories=memories,
+                user_info=None,  # TODO, this is part of memories right now, might want to separate it out
+                citation_mapping=citation_mapping,
+                citation_processor=citation_processor,
+                skip_search_query_expansion=has_called_search_tool,
+            )
+
+            for tool_response in tool_responses:
+                # Extract tool_call from the response (set by run_tool_calls)
+                if tool_response.tool_call is None:
+                    raise ValueError("Tool response missing tool_call reference")
+
+                tool_call = tool_response.tool_call
+                tab_index = tool_call.tab_index
 
                 # Track if search tool was called (for skipping query expansion on subsequent calls)
                 if tool_call.tool_name == SearchTool.NAME:
@@ -531,7 +534,8 @@ def run_llm_loop(
 
                     tool_call_info = ToolCallInfo(
                         parent_tool_call_id=None,  # Top-level tool calls are attached to the chat message
-                        turn_index=current_tool_call_index,
+                        turn_index=llm_cycle_count + reasoning_cycles,
+                        tab_index=tab_index,
                         tool_name=tool_call.tool_name,
                         tool_call_id=tool_call.tool_call_id,
                         tool_id=tool.id,
@@ -596,8 +600,6 @@ def run_llm_loop(
                             # Update the citation processor
                             citation_processor.update_citation_mapping(citation_to_doc)
 
-                current_tool_call_index += 1
-
             # If no tool calls, then it must have answered, wrap up
             if not llm_step_result.tool_calls or len(llm_step_result.tool_calls) == 0:
                 break
@@ -620,5 +622,8 @@ def run_llm_loop(
             raise RuntimeError("LLM did not return an answer.")
 
         emitter.emit(
-            Packet(turn_index=current_tool_call_index, obj=OverallStop(type="stop"))
+            Packet(
+                turn_index=llm_cycle_count + reasoning_cycles,
+                obj=OverallStop(type="stop"),
+            )
         )

@@ -153,12 +153,15 @@ def _update_tool_call_with_delta(
 
 def _extract_tool_call_kickoffs(
     id_to_tool_call_map: dict[int, dict[str, Any]],
+    turn_index: int,
 ) -> list[ToolCallKickoff]:
     """Extract ToolCallKickoff objects from the tool call map.
 
     Returns a list of ToolCallKickoff objects for valid tool calls (those with both id and name).
+    Each tool call is assigned the given turn_index and a tab_index based on its order.
     """
     tool_calls: list[ToolCallKickoff] = []
+    tab_index = 0
     for tool_call_data in id_to_tool_call_map.values():
         if tool_call_data.get("id") and tool_call_data.get("name"):
             try:
@@ -180,8 +183,11 @@ def _extract_tool_call_kickoffs(
                     tool_call_id=tool_call_data["id"],
                     tool_name=tool_call_data["name"],
                     tool_args=tool_args,
+                    turn_index=turn_index,
+                    tab_index=tab_index,
                 )
             )
+            tab_index += 1
     return tool_calls
 
 
@@ -342,6 +348,8 @@ def run_llm_step(
     # TODO this is maybe ok but does not align well with the backend logic too well
     llm_msg_history = translate_history_to_llm_format(history)
 
+    has_reasoned = False
+
     # Uncomment the line below to log the entire message history to the console
     if LOG_ONYX_MODEL_INTERACTIONS:
         logger.info(
@@ -418,7 +426,7 @@ def run_llm_step(
                         turn_index=turn_index,
                         obj=ReasoningDone(),
                     )
-                    turn_index += 1
+                    has_reasoned = True
                     reasoning_start = False
 
                 if not answer_start:
@@ -451,7 +459,7 @@ def run_llm_step(
                         turn_index=turn_index,
                         obj=ReasoningDone(),
                     )
-                    turn_index += 1
+                    has_reasoned = True
                     reasoning_start = False
 
                 for tool_call_delta in delta.tool_calls:
@@ -464,7 +472,7 @@ def run_llm_step(
                 for tool_call_delta in flush_delta.tool_calls:
                     _update_tool_call_with_delta(id_to_tool_call_map, tool_call_delta)
 
-        tool_calls = _extract_tool_call_kickoffs(id_to_tool_call_map)
+        tool_calls = _extract_tool_call_kickoffs(id_to_tool_call_map, turn_index)
         if tool_calls:
             tool_calls_list: list[ToolCall] = [
                 ToolCall(
@@ -497,7 +505,7 @@ def run_llm_step(
             turn_index=turn_index,
             obj=ReasoningDone(),
         )
-        turn_index += 1
+        has_reasoned = True
 
     # Flush any remaining content from citation processor
     if citation_processor:
@@ -537,5 +545,5 @@ def run_llm_step(
             answer=accumulated_answer if accumulated_answer else None,
             tool_calls=tool_calls if tool_calls else None,
         ),
-        turn_index,
+        has_reasoned,
     )

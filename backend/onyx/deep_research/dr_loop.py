@@ -346,6 +346,7 @@ def run_deep_research_llm_loop(
                     tool_call_info = ToolCallInfo(
                         parent_tool_call_id=None,
                         turn_index=cycle + reasoning_cycles,
+                        tab_index=0,
                         tool_name=tool_call.tool_name,
                         tool_call_id=tool_call.tool_call_id,
                         tool_id=999,  # TODO
