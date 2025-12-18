@@ -139,13 +139,12 @@ export default function ActionsPopover({
     useAssistantPreferences();
   const { forcedToolIds, setForcedToolIds } = useForcedTools();
 
-  const { user, isAdmin, isCurator } = useUser();
+  const { isAdmin, isCurator } = useUser();
 
   const { tools: availableTools } = useAvailableTools();
   const { ccPairs } = useCCPairs();
   const { currentProjectId, allCurrentProjectFiles } = useProjectsContext();
   const availableToolIds = availableTools.map((tool) => tool.id);
-  const isProjectContext = currentProjectId !== null;
 
   // Check if there are any connectors available
   const hasNoConnectors = !ccPairs || ccPairs.length === 0;
@@ -189,7 +188,7 @@ export default function ActionsPopover({
 
     // Special handling for Project Search
     // Ensure Project Search is hidden if no files exist
-    if (tool.in_code_tool_id === SEARCH_TOOL_ID && isProjectContext) {
+    if (tool.in_code_tool_id === SEARCH_TOOL_ID && !!currentProjectId) {
       if (!allCurrentProjectFiles || allCurrentProjectFiles.length === 0) {
         return false;
       }
@@ -523,15 +522,12 @@ export default function ActionsPopover({
             disabled={disabledToolIds.includes(tool.id)}
             isForced={forcedToolIds.includes(tool.id)}
             onToggle={() => toggleToolForCurrentAssistant(tool.id)}
-            onForceToggle={() => {
-              toggleForcedTool(tool.id);
-              setOpen(false);
-            }}
+            onForceToggle={() => toggleForcedTool(tool.id)}
             onSourceManagementOpen={() => setSecondaryView({ type: "sources" })}
             hasNoConnectors={hasNoConnectors}
             toolAuthStatus={getToolAuthStatus(tool)}
             onOAuthAuthenticate={() => authenticateTool(tool)}
-            isProjectContext={isProjectContext}
+            onClose={() => setOpen(false)}
           />
         )),
 
