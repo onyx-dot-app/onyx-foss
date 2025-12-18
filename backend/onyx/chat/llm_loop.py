@@ -4,6 +4,7 @@ from typing import cast
 from sqlalchemy.orm import Session
 
 from onyx.chat.chat_state import ChatStateContainer
+from onyx.chat.chat_utils import create_tool_call_failure_messages
 from onyx.chat.citation_processor import DynamicCitationProcessor
 from onyx.chat.emitter import Emitter
 from onyx.chat.llm_step import run_llm_step
@@ -474,6 +475,12 @@ def run_llm_loop(
             tool_responses: list[ToolResponse] = []
             tool_calls = llm_step_result.tool_calls or []
 
+            # Quick note for why citation_mapping and citation_processors are both needed:
+            # 1. Tools return lightweight string mappings, not SearchDoc objects
+            # 2. The SearchDoc resolution is deliberately deferred to llm_loop.py
+            # 3. The citation_processor operates on SearchDoc objects and can't provide a complete reverse URL lookup for
+            # in-flight citations
+            # It can be cleaned up but not super trivial or worthwhile right now
             just_ran_web_search = False
             tool_responses, citation_mapping = run_tool_calls(
                 tool_calls=tool_calls,
@@ -485,6 +492,14 @@ def run_llm_loop(
                 citation_processor=citation_processor,
                 skip_search_query_expansion=has_called_search_tool,
             )
+
+            # Failure case, give something reasonable to the LLM to try again
+            if tool_calls and not tool_responses:
+                failure_messages = create_tool_call_failure_messages(
+                    tool_calls[0], token_counter
+                )
+                simple_chat_history.extend(failure_messages)
+                continue
 
             for tool_response in tool_responses:
                 # Extract tool_call from the response (set by run_tool_calls)
