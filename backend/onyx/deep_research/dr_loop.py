@@ -25,12 +25,15 @@ from onyx.deep_research.utils import check_special_tool_calls
 from onyx.deep_research.utils import create_think_tool_token_processor
 from onyx.llm.interfaces import LLM
 from onyx.llm.interfaces import LLMUserIdentity
+from onyx.llm.models import ReasoningEffort
 from onyx.llm.models import ToolChoiceOptions
 from onyx.llm.utils import model_is_reasoning_model
 from onyx.prompts.deep_research.orchestration_layer import CLARIFICATION_PROMPT
+from onyx.prompts.deep_research.orchestration_layer import FINAL_REPORT_PROMPT
 from onyx.prompts.deep_research.orchestration_layer import ORCHESTRATOR_PROMPT
 from onyx.prompts.deep_research.orchestration_layer import ORCHESTRATOR_PROMPT_REASONING
 from onyx.prompts.deep_research.orchestration_layer import RESEARCH_PLAN_PROMPT
+from onyx.prompts.deep_research.orchestration_layer import USER_FINAL_REPORT_QUERY
 from onyx.prompts.prompt_utils import get_current_llm_day_time
 from onyx.server.query_and_chat.streaming_models import AgentResponseDelta
 from onyx.server.query_and_chat.streaming_models import AgentResponseStart
@@ -50,7 +53,71 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 
 MAX_USER_MESSAGES_FOR_CONTEXT = 5
-MAX_ORCHESTRATOR_CYCLES = 8
+# Might be something like:
+# 1. Research 1-2
+# 2. Think
+# 3. Research 3-4
+# 4. Think
+# 5. Research 5-6
+# 6. Think
+# 7. Research, possibly something new or different from the plan
+# 8. Think
+# 9. Generate report
+MAX_ORCHESTRATOR_CYCLES = 9
+
+# Similar but without the 4 thinking tool calls
+MAX_ORCHESTRATOR_CYCLES_REASONING = 5
+
+
+def generate_final_report(
+    history: list[ChatMessageSimple],
+    llm: LLM,
+    token_counter: Callable[[str], int],
+    state_container: ChatStateContainer,
+    emitter: Emitter,
+    user_identity: LLMUserIdentity | None,
+) -> None:
+    final_report_prompt = FINAL_REPORT_PROMPT.format(
+        current_datetime=get_current_llm_day_time(full_sentence=False),
+    )
+    system_prompt = ChatMessageSimple(
+        message=final_report_prompt,
+        token_count=token_counter(final_report_prompt),
+        message_type=MessageType.SYSTEM,
+    )
+    reminder_message = ChatMessageSimple(
+        message=USER_FINAL_REPORT_QUERY,
+        token_count=token_counter(USER_FINAL_REPORT_QUERY),
+        message_type=MessageType.USER,
+    )
+    final_report_history = construct_message_history(
+        system_prompt=system_prompt,
+        custom_agent_prompt=None,
+        simple_chat_history=history,
+        reminder_message=reminder_message,
+        project_files=None,
+        available_tokens=llm.config.max_input_tokens,
+    )
+
+    llm_step_result, _ = run_llm_step(
+        emitter=emitter,
+        history=final_report_history,
+        tool_definitions=[],
+        tool_choice=ToolChoiceOptions.NONE,
+        llm=llm,
+        turn_index=999,  # TODO
+        citation_processor=DynamicCitationProcessor(),
+        state_container=state_container,
+        reasoning_effort=ReasoningEffort.LOW,
+        final_documents=None,
+        user_identity=user_identity,
+    )
+
+    final_report = llm_step_result.answer
+    if final_report is None:
+        raise ValueError("LLM failed to generate the final deep research report")
+
+    state_container.set_answer_tokens(final_report)
 
 
 def run_deep_research_llm_loop(
@@ -202,6 +269,12 @@ def run_deep_research_llm_loop(
         llm.config.model_name, llm.config.model_provider
     )
 
+    max_orchestrator_cycles = (
+        MAX_ORCHESTRATOR_CYCLES
+        if not is_reasoning_model
+        else MAX_ORCHESTRATOR_CYCLES_REASONING
+    )
+
     orchestrator_prompt_template = (
         ORCHESTRATOR_PROMPT if not is_reasoning_model else ORCHESTRATOR_PROMPT_REASONING
     )
@@ -209,19 +282,19 @@ def run_deep_research_llm_loop(
     token_count_prompt = orchestrator_prompt_template.format(
         current_datetime=get_current_llm_day_time(full_sentence=False),
         current_cycle_count=1,
-        max_cycles=MAX_ORCHESTRATOR_CYCLES,
+        max_cycles=max_orchestrator_cycles,
         research_plan=research_plan,
     )
     orchestration_tokens = token_counter(token_count_prompt)
 
     reasoning_cycles = 0
-    for cycle in range(MAX_ORCHESTRATOR_CYCLES):
+    for cycle in range(max_orchestrator_cycles):
         research_agent_calls: list[ToolCallKickoff] = []
 
         orchestrator_prompt = orchestrator_prompt_template.format(
             current_datetime=get_current_llm_day_time(full_sentence=False),
             current_cycle_count=cycle,
-            max_cycles=MAX_ORCHESTRATOR_CYCLES,
+            max_cycles=max_orchestrator_cycles,
             research_plan=research_plan,
         )
 
@@ -274,112 +347,128 @@ def run_deep_research_llm_loop(
                 "Deep Research failed to generate any research tasks for the agents."
             )
 
-        # TODO generate report if there are no tool calls and cycle is not 0
+        if not tool_calls:
+            logger.warning("No tool calls found, this should not happen.")
+            generate_final_report(
+                history=simple_chat_history,
+                llm=llm,
+                token_counter=token_counter,
+                state_container=state_container,
+                emitter=emitter,
+                user_identity=user_identity,
+            )
+            break
 
         most_recent_reasoning: str | None = None
-        if tool_calls:
-            special_tool_calls = check_special_tool_calls(tool_calls=tool_calls)
+        special_tool_calls = check_special_tool_calls(tool_calls=tool_calls)
 
-            if special_tool_calls.generate_report_tool_call:
-                logger.info("Generate report tool call found, not implemented yet.")
-                break
-            elif special_tool_calls.think_tool_call:
-                think_tool_call = special_tool_calls.think_tool_call
-                # Only process the THINK_TOOL and skip all other tool calls
-                # This will not actually get saved to the db as a tool call but we'll attach it to the tool(s) called after
-                # it as if it were just a reasoning model doing it. In the chat history, because it happens in 2 steps,
-                # we will show it as a separate message.
-                most_recent_reasoning = state_container.reasoning_tokens
-                tool_call_message = think_tool_call.to_msg_str()
+        if special_tool_calls.generate_report_tool_call:
+            generate_final_report(
+                history=simple_chat_history,
+                llm=llm,
+                token_counter=token_counter,
+                state_container=state_container,
+                emitter=emitter,
+                user_identity=user_identity,
+            )
+            break
+        elif special_tool_calls.think_tool_call:
+            think_tool_call = special_tool_calls.think_tool_call
+            # Only process the THINK_TOOL and skip all other tool calls
+            # This will not actually get saved to the db as a tool call but we'll attach it to the tool(s) called after
+            # it as if it were just a reasoning model doing it. In the chat history, because it happens in 2 steps,
+            # we will show it as a separate message.
+            most_recent_reasoning = state_container.reasoning_tokens
+            tool_call_message = think_tool_call.to_msg_str()
 
-                think_tool_msg = ChatMessageSimple(
-                    message=tool_call_message,
-                    token_count=token_counter(tool_call_message),
-                    message_type=MessageType.TOOL_CALL,
-                    tool_call_id=think_tool_call.tool_call_id,
-                    image_files=None,
+            think_tool_msg = ChatMessageSimple(
+                message=tool_call_message,
+                token_count=token_counter(tool_call_message),
+                message_type=MessageType.TOOL_CALL,
+                tool_call_id=think_tool_call.tool_call_id,
+                image_files=None,
+            )
+            simple_chat_history.append(think_tool_msg)
+
+            think_tool_response_msg = ChatMessageSimple(
+                message=THINK_TOOL_RESPONSE_MESSAGE,
+                token_count=THINK_TOOL_RESPONSE_TOKEN_COUNT,
+                message_type=MessageType.TOOL_CALL_RESPONSE,
+                tool_call_id=think_tool_call.tool_call_id,
+                image_files=None,
+            )
+            simple_chat_history.append(think_tool_response_msg)
+            reasoning_cycles += 1
+            continue
+        else:
+            for tool_call in tool_calls:
+                if tool_call.tool_name != RESEARCH_AGENT_TOOL_NAME:
+                    logger.warning(f"Unexpected tool call: {tool_call.tool_name}")
+                    continue
+
+                research_agent_calls.append(tool_call)
+
+            if not research_agent_calls:
+                logger.warning(
+                    "No research agent tool calls found, this should not happen."
                 )
-                simple_chat_history.append(think_tool_msg)
-
-                think_tool_response_msg = ChatMessageSimple(
-                    message=THINK_TOOL_RESPONSE_MESSAGE,
-                    token_count=THINK_TOOL_RESPONSE_TOKEN_COUNT,
-                    message_type=MessageType.TOOL_CALL_RESPONSE,
-                    tool_call_id=think_tool_call.tool_call_id,
-                    image_files=None,
-                )
-                simple_chat_history.append(think_tool_response_msg)
-                reasoning_cycles += 1
-                continue
-            else:
-                for tool_call in tool_calls:
-                    if tool_call.tool_name != RESEARCH_AGENT_TOOL_NAME:
-                        logger.warning(f"Unexpected tool call: {tool_call.tool_name}")
-                        continue
-
-                    research_agent_calls.append(tool_call)
-
-                if not research_agent_calls:
-                    logger.warning(
-                        "No research agent tool calls found, this should not happen."
-                    )
-                    # TODO generate report, best attempt
-                    break
-
-                research_results = run_research_agent_calls(
-                    research_agent_calls=research_agent_calls,
-                    tools=allowed_tools,
-                    emitter=emitter,
-                    state_container=state_container,
+                generate_final_report(
+                    history=simple_chat_history,
                     llm=llm,
-                    is_reasoning_model=is_reasoning_model,
                     token_counter=token_counter,
+                    state_container=state_container,
+                    emitter=emitter,
                     user_identity=user_identity,
                 )
+                break
 
-                # Need to process citations
-                for research_result in research_results:
-                    tool_call_info = ToolCallInfo(
-                        parent_tool_call_id=None,
-                        turn_index=cycle + reasoning_cycles,
-                        tab_index=0,
-                        tool_name=tool_call.tool_name,
-                        tool_call_id=tool_call.tool_call_id,
-                        tool_id=999,  # TODO
-                        reasoning_tokens=most_recent_reasoning,
-                        tool_call_arguments=tool_call.tool_args,
-                        tool_call_response=research_result.report,
-                        search_docs=research_result.search_docs,
-                        generated_images=None,
-                    )
-                    state_container.add_tool_call(tool_call_info)
+            research_results = run_research_agent_calls(
+                research_agent_calls=research_agent_calls,
+                tools=allowed_tools,
+                emitter=emitter,
+                state_container=state_container,
+                llm=llm,
+                is_reasoning_model=is_reasoning_model,
+                token_counter=token_counter,
+                user_identity=user_identity,
+            )
 
-                    tool_call_message = tool_call.to_msg_str()
-                    tool_call_token_count = token_counter(tool_call_message)
+            for research_result in research_results:
+                tool_call_info = ToolCallInfo(
+                    parent_tool_call_id=None,
+                    turn_index=cycle + reasoning_cycles,
+                    tab_index=0,
+                    tool_name=tool_call.tool_name,
+                    tool_call_id=tool_call.tool_call_id,
+                    tool_id=999,  # TODO
+                    reasoning_tokens=most_recent_reasoning,
+                    tool_call_arguments=tool_call.tool_args,
+                    tool_call_response=research_result.intermediate_report,
+                    search_docs=research_result.search_docs,
+                    generated_images=None,
+                )
+                state_container.add_tool_call(tool_call_info)
 
-                    tool_call_msg = ChatMessageSimple(
-                        message=tool_call_message,
-                        token_count=tool_call_token_count,
-                        message_type=MessageType.TOOL_CALL,
-                        tool_call_id=tool_call.tool_call_id,
-                        image_files=None,
-                    )
-                    simple_chat_history.append(tool_call_msg)
+                tool_call_message = tool_call.to_msg_str()
+                tool_call_token_count = token_counter(tool_call_message)
 
-                    tool_call_response_msg = ChatMessageSimple(
-                        message=research_result.report,
-                        token_count=token_counter(research_result.report),
-                        message_type=MessageType.TOOL_CALL_RESPONSE,
-                        tool_call_id=tool_call.tool_call_id,
-                        image_files=None,
-                    )
-                    simple_chat_history.append(tool_call_response_msg)
+                tool_call_msg = ChatMessageSimple(
+                    message=tool_call_message,
+                    token_count=tool_call_token_count,
+                    message_type=MessageType.TOOL_CALL,
+                    tool_call_id=tool_call.tool_call_id,
+                    image_files=None,
+                )
+                simple_chat_history.append(tool_call_msg)
 
-            if not special_tool_calls.think_tool_call:
-                most_recent_reasoning = None
-        else:
-            logger.warning("No tool calls found, this should not happen.")
-            # TODO generate report, best attempt
+                tool_call_response_msg = ChatMessageSimple(
+                    message=research_result.intermediate_report,
+                    token_count=token_counter(research_result.intermediate_report),
+                    message_type=MessageType.TOOL_CALL_RESPONSE,
+                    tool_call_id=tool_call.tool_call_id,
+                    image_files=None,
+                )
+                simple_chat_history.append(tool_call_response_msg)
 
-        if llm_step_result.answer:
-            state_container.set_answer_tokens(llm_step_result.answer)
+        if not special_tool_calls.think_tool_call:
+            most_recent_reasoning = None

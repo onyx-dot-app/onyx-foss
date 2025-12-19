@@ -32,7 +32,7 @@ Focus on providing a thorough research of the user's query over being helpful.
 
 For context, the date is {current_datetime}.
 
-The research plan should be formatted as a numbered list of steps and have less than 7 individual steps.
+The research plan should be formatted as a numbered list of steps and have 6 or less individual steps.
 
 Each step should be a standalone exploration question or topic that can be researched independently but may build on previous steps.
 
@@ -110,7 +110,7 @@ Provide inline citations in the format [1], [2], [3], etc. based on the citation
 """
 
 
-USER_FINAL_REPORT_QUERY = """
+USER_FINAL_REPORT_QUERY = f"""
 Provide a comprehensive answer to my previous query. CRITICAL: be as detailed as possible, stay on topic, and provide clear organization in your response.
 
 Ignore the format styles of the intermediate {RESEARCH_AGENT_TOOL_NAME} reports, those are not end user facing and different from your task.
