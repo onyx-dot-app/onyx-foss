@@ -18,13 +18,13 @@ from onyx.server.query_and_chat.placement import Placement
 from onyx.server.query_and_chat.streaming_models import CustomToolDelta
 from onyx.server.query_and_chat.streaming_models import CustomToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.tools.interface import Tool
 from onyx.tools.models import CHAT_SESSION_ID_PLACEHOLDER
 from onyx.tools.models import CustomToolCallSummary
 from onyx.tools.models import CustomToolUserFileSnapshot
 from onyx.tools.models import DynamicSchemaInfo
 from onyx.tools.models import MESSAGE_ID_PLACEHOLDER
 from onyx.tools.models import ToolResponse
-from onyx.tools.tool import Tool
 from onyx.tools.tool_implementations.custom.openapi_parsing import MethodSpec
 from onyx.tools.tool_implementations.custom.openapi_parsing import (
     openapi_to_method_specs,
