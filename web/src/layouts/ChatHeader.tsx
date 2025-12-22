@@ -19,7 +19,7 @@ import {
 } from "@/sections/sidebar/sidebarUtils";
 import { LOCAL_STORAGE_KEYS } from "@/sections/sidebar/constants";
 import { deleteChatSession } from "@/app/chat/services/lib";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
 import ConfirmationModalLayout from "@/refresh-components/layouts/ConfirmationModalLayout";
 import { PopoverMenu } from "@/components/ui/popover";
@@ -60,12 +60,23 @@ export default function ChatHeader({ settings, chatSession }: ChatHeaderProps) {
     refreshCurrentProjectDetails,
     currentProjectId,
   } = useProjectsContext();
-  const { refreshChatSessions, currentChatSessionId } = useChatSessions();
+  const { refreshChatSessions } = useChatSessions();
   const { popup, setPopup } = usePopup();
   const router = useRouter();
+  const pathname = usePathname();
 
   const customHeaderContent =
     settings?.enterpriseSettings?.custom_header_content;
+
+  // Determine if header should render:
+  // - Always show on landing page (/chat with no chatSession, no currentProjectId)
+  // - Always show on chat page (has chatSession)
+  // - Only show on project view / agents page if whitelabeling content exists
+  const isLandingPage =
+    pathname === "/chat" && !chatSession && !currentProjectId;
+  const isChatPage = !!chatSession;
+  const shouldRenderHeader =
+    isLandingPage || isChatPage || !!customHeaderContent;
 
   const availableProjects = useMemo(() => {
     if (!projects) return [];
@@ -205,6 +216,10 @@ export default function ChatHeader({ settings, chatSession }: ChatHeaderProps) {
     handleMoveClick,
   ]);
 
+  if (!shouldRenderHeader) {
+    return null;
+  }
+
   return (
     <>
       {popup}
@@ -269,7 +284,7 @@ export default function ChatHeader({ settings, chatSession }: ChatHeaderProps) {
         <div
           className={cn(
             "flex-1 flex flex-row items-center justify-end px-1",
-            !currentChatSessionId && "invisible"
+            !chatSession && "invisible"
           )}
         >
           <Button
