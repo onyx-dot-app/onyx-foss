@@ -1,6 +1,5 @@
 import mimetypes
 from io import BytesIO
-from pathlib import Path
 from typing import Any
 
 import requests
@@ -35,6 +34,7 @@ from onyx.connectors.models import ImageSection
 from onyx.connectors.models import SlimDocument
 from onyx.connectors.models import TextSection
 from onyx.file_processing.extract_file_text import extract_text_and_images
+from onyx.file_processing.extract_file_text import get_file_ext
 from onyx.file_processing.file_types import OnyxFileExtensions
 from onyx.file_processing.html_utils import parse_html_page_basic
 from onyx.file_processing.image_utils import store_image_and_create_section
@@ -47,8 +47,6 @@ logger = setup_logger()
 
 MAX_API_PAGE_SIZE = 2000  # max allowed by API
 DRUPAL_WIKI_SPACE_KEY = "space"
-
-SUPPORTED_ATTACHMENT_EXTENSIONS = OnyxFileExtensions.ALL_ALLOWED_EXTENSIONS
 
 
 rate_limited_get = retry_builder()(
@@ -94,17 +92,15 @@ class DrupalWikiConnector(
         # If drupal_wiki_scope is "all_spaces", we should index all spaces
         # If it's "specific_spaces", we should only index the specified spaces
         # If it's None, we use the include_all_spaces parameter
-        if drupal_wiki_scope == "all_spaces":
-            logger.info("drupal_wiki_scope is 'all_spaces', will index all spaces")
-            self.include_all_spaces = True
-        elif drupal_wiki_scope == "specific_spaces":
-            logger.info(
-                "drupal_wiki_scope is 'specific_spaces', will only index specified spaces"
-            )
-            self.include_all_spaces = False
+
+        if drupal_wiki_scope is not None:
+            logger.debug(f"drupal_wiki_scope is set to {drupal_wiki_scope}")
+
+            self.include_all_spaces = drupal_wiki_scope == "all_spaces"
+            # If scope is specific_spaces, include_all_spaces correctly defaults to False
         else:
-            logger.info(
-                f"drupal_wiki_scope not set, using include_all_spaces={include_all_spaces}"
+            logger.debug(
+                f"drupal_wiki_scope is not set, using include_all_spaces={include_all_spaces}"
             )
             self.include_all_spaces = include_all_spaces
 
@@ -115,9 +111,8 @@ class DrupalWikiConnector(
         self.include_attachments = include_attachments
         self.allow_images = allow_images
 
-        # Will be set by load_credentials
-        self.headers: dict[str, str] | None = None
-        self._api_token: str | None = None
+        self.headers: dict[str, str] = {"Accept": "application/json"}
+        self._api_token: str | None = None  # set by load_credentials
 
     def set_allow_images(self, value: bool) -> None:
         logger.info(f"Setting allow_images to {value}.")
@@ -135,7 +130,7 @@ class DrupalWikiConnector(
         """
         url = f"{self.base_url}/api/rest/scope/api/attachment"
         params = {"pageId": str(page_id)}
-        logger.info(f"Fetching attachments for page {page_id} from {url}")
+        logger.debug(f"Fetching attachments for page {page_id} from {url}")
 
         try:
             response = rate_limited_get(url, headers=self.headers, params=params)
@@ -161,11 +156,7 @@ class DrupalWikiConnector(
         logger.info(f"Downloading attachment {attachment_id} from {url}")
 
         # Use headers without Accept for binary downloads
-        if self.headers is None:
-            raise ValueError(
-                "Headers not set in connector instance"
-            )  # because mypy complains
-        download_headers = {"Authorization": self.headers["Authorization"]}
+        download_headers = {"Authorization": f"Bearer {self._api_token}"}
 
         response = rate_limited_get(url, headers=download_headers)
         response.raise_for_status()
@@ -187,11 +178,12 @@ class DrupalWikiConnector(
             return False
 
         # Get file extension
-        file_extension = Path(file_name).suffix.lower()
+        file_extension = get_file_ext(file_name)
 
-        if file_extension in SUPPORTED_ATTACHMENT_EXTENSIONS:
+        if file_extension in OnyxFileExtensions.ALL_ALLOWED_EXTENSIONS:
             return True
-        logger.info(f"Unsupported file type: {file_extension} for {file_name}")
+
+        logger.warning(f"Unsupported file type: {file_extension} for {file_name}")
         return False
 
     def _get_media_type_from_filename(self, filename: str) -> str:
@@ -250,8 +242,7 @@ class DrupalWikiConnector(
             if media_type.startswith("image/"):
                 if not self.allow_images:
                     logger.info(
-                        "Skipping image attachment %s because allow_images is False",
-                        file_name,
+                        f"Skipping image attachment {file_name} because allow_images is False",
                     )
                     return [], None
 
@@ -267,7 +258,7 @@ class DrupalWikiConnector(
                         file_origin=FileOrigin.CONNECTOR,
                     )
                     sections.append(image_section)
-                    logger.info("Stored image attachment with file name: %s", file_name)
+                    logger.debug(f"Stored image attachment with file name: {file_name}")
                 except Exception as e:
                     return [], f"Image storage failed: {e}"
 
@@ -286,10 +277,8 @@ class DrupalWikiConnector(
                     try:
                         media_for_image = get_image_type_from_bytes(image_data)
                     except ValueError:
-                        logger.debug(
-                            "Unable to determine media type for embedded image %s on attachment %s",
-                            image_name,
-                            file_name,
+                        logger.warning(
+                            f"Unable to determine media type for embedded image {image_name} on attachment {file_name}"
                         )
 
                 image_counter += 1
@@ -310,10 +299,7 @@ class DrupalWikiConnector(
                     sections.append(image_section)
                 except Exception as err:
                     logger.warning(
-                        "Failed to store embedded image %s for attachment %s: %s",
-                        image_name or image_counter,
-                        file_name,
-                        err,
+                        f"Failed to store embedded image {image_name or image_counter} for attachment {file_name}: {err}"
                     )
 
             extraction_result = extract_text_and_images(
@@ -327,7 +313,7 @@ class DrupalWikiConnector(
             if text_content:
                 sections.insert(0, TextSection(text=text_content, link=download_url))
                 logger.info(
-                    "Extracted %d characters from %s", len(text_content), file_name
+                    f"Extracted {len(text_content)} characters from {file_name}"
                 )
             elif not sections:
                 return [], f"No text extracted for {file_name}"
@@ -336,10 +322,7 @@ class DrupalWikiConnector(
 
         except Exception as e:
             logger.error(
-                "Failed to process attachment %s on page %s: %s",
-                attachment.get("name", "unknown"),
-                page_id,
-                e,
+                f"Failed to process attachment {attachment.get('name', 'unknown')} on page {page_id}: {e}"
             )
             return [], f"Failed to process attachment: {e}"
 
@@ -353,16 +336,20 @@ class DrupalWikiConnector(
         Returns:
             None
         """
-        if "drupal_wiki_api_token" not in credentials:
+
+        api_token = credentials.get("drupal_wiki_api_token", "").strip()
+
+        if not api_token:
             raise ConnectorValidationError(
                 "API token is required for Drupal Wiki connector"
             )
 
-        self._api_token = credentials["drupal_wiki_api_token"]
-        self.headers = {
-            "Accept": "application/json",
-            "Authorization": f"Bearer {self._api_token}",
-        }
+        self._api_token = api_token
+        self.headers.update(
+            {
+                "Authorization": f"Bearer {api_token}",
+            }
+        )
 
         return None
 
@@ -383,13 +370,13 @@ class DrupalWikiConnector(
         while has_more and len(all_space_ids) > last_num_ids:
             last_num_ids = len(all_space_ids)
             params = {"size": size, "page": page}
-            logger.info(f"Fetching spaces from {url} (page={page}, size={size})")
+            logger.debug(f"Fetching spaces from {url} (page={page}, size={size})")
             response = rate_limited_get(url, headers=self.headers, params=params)
             response.raise_for_status()
             resp_json = response.json()
             space_response = DrupalWikiSpaceResponse.model_validate(resp_json)
 
-            logger.info(f"Fetched {len(space_response.content)} spaces (page={page})")
+            logger.info(f"Fetched {len(space_response.content)} spaces from {page}")
             # Collect ids into the set to deduplicate
             for space in space_response.content:
                 all_space_ids.add(space.id)
@@ -401,7 +388,7 @@ class DrupalWikiConnector(
 
         # Return a deterministic, sorted list of ids
         space_id_list = list(sorted(all_space_ids))
-        logger.info(f"Total spaces fetched: {len(space_id_list)}")
+        logger.debug(f"Total spaces fetched: {len(space_id_list)}")
         return space_id_list
 
     def _get_pages_for_space(
@@ -422,9 +409,8 @@ class DrupalWikiConnector(
         page = 0
         all_pages = []
         has_more = True
-        max_pages = 100  # Safety limit to prevent infinite loops
 
-        while has_more and page < max_pages:
+        while has_more:
             params: dict[str, str | int] = {
                 DRUPAL_WIKI_SPACE_KEY: str(space_id),
                 "size": size,
@@ -435,7 +421,7 @@ class DrupalWikiConnector(
             if modified_after is not None:
                 params["modifiedAfter"] = int(modified_after)
 
-            logger.info(
+            logger.debug(
                 f"Fetching pages for space {space_id} from {url} ({page=}, {size=}, {modified_after=})"
             )
             response = rate_limited_get(url, headers=self.headers, params=params)
@@ -446,7 +432,6 @@ class DrupalWikiConnector(
                 page_response = DrupalWikiPageResponse.model_validate(resp_json)
             except Exception as e:
                 logger.error(f"Failed to validate Drupal Wiki page response: {e}")
-                logger.debug(f"Response data: {resp_json}")
                 raise ConnectorValidationError(f"Invalid API response format: {e}")
 
             logger.info(
@@ -462,12 +447,7 @@ class DrupalWikiConnector(
 
             page += 1
 
-        if page >= max_pages:
-            logger.warning(
-                f"Reached maximum page limit ({max_pages}) while fetching pages for space {space_id}"
-            )
-
-        logger.info(f"Total pages fetched for space {space_id}: {len(all_pages)}")
+        logger.debug(f"Total pages fetched for space {space_id}: {len(all_pages)}")
         return all_pages
 
     def _get_page_content(self, page_id: int) -> DrupalWikiPage:
@@ -535,18 +515,14 @@ class DrupalWikiConnector(
                     )
                     if error:
                         logger.warning(
-                            "Error processing attachment %s: %s",
-                            attachment.get("name", "Unknown"),
-                            error,
+                            f"Error processing attachment {attachment.get('name', 'Unknown')}: {error}"
                         )
                         continue
 
                     if attachment_sections:
                         sections.extend(attachment_sections)
-                        logger.info(
-                            "Added %d section(s) for attachment %s",
-                            len(attachment_sections),
-                            attachment.get("name", "Unknown"),
+                        logger.debug(
+                            f"Added {len(attachment_sections)} section(s) for attachment {attachment.get('name', 'Unknown')}"
                         )
 
             # Create metadata
@@ -609,7 +585,7 @@ class DrupalWikiConnector(
 
         while checkpoint.current_page_id_index < len(checkpoint.page_ids):
             page_id = checkpoint.page_ids[checkpoint.current_page_id_index]
-            logger.info(f"Processing page ID: {page_id}")
+            logger.debug(f"Processing page ID: {page_id}")
 
             try:
                 # Get the page content directly
@@ -648,14 +624,9 @@ class DrupalWikiConnector(
         # the connector implementer, is that when you return a checkpoint, this connector will
         # at a later time (generally within a few seconds) call the load_from_checkpoint function
         # again with the checkpoint you last returned as long as has_more=True.
-        #
-        # So, the current implementation doesn't take advantage of that system. This means that
-        # all runs of the connector will start from scratch, i.e. what you've implemented here is
-        # more akin to a LoadConnector.
 
         # Process spaces if include_all_spaces is True or spaces are provided
         if self.include_all_spaces or self.spaces:
-            logger.info("Processing spaces")
             # If include_all_spaces is True, always fetch all spaces
             if self.include_all_spaces:
                 logger.info("Fetching all spaces")
@@ -673,7 +644,7 @@ class DrupalWikiConnector(
             # Process spaces from the checkpoint
             while checkpoint.current_space_index < len(checkpoint.spaces):
                 space_id = checkpoint.spaces[checkpoint.current_space_index]
-                logger.info(f"Processing space ID: {space_id}")
+                logger.debug(f"Processing space ID: {space_id}")
 
                 # Get pages for the current space, filtered by start time if provided
                 pages = self._get_pages_for_space(space_id, modified_after=start)
@@ -681,7 +652,7 @@ class DrupalWikiConnector(
                 # Process pages from the checkpoint
                 while checkpoint.current_page_index < len(pages):
                     page = pages[checkpoint.current_page_index]
-                    logger.info(f"Processing page: {page.title} (ID: {page.id})")
+                    logger.debug(f"Processing page: {page.title} (ID: {page.id})")
 
                     # For space-based pages, we already filtered by modifiedAfter in the API call
                     # Only need to check the end time boundary
@@ -790,7 +761,7 @@ class DrupalWikiConnector(
                             id=page_url,
                         )
                     )
-                    logger.info(f"Added slim document for page {page_content.id}")
+                    logger.debug(f"Added slim document for page {page_content.id}")
 
                     # Process attachments for this page
                     attachments = self._get_page_attachments(page_content.id)
@@ -802,13 +773,13 @@ class DrupalWikiConnector(
                                     id=attachment_url,
                                 )
                             )
-                            logger.info(
+                            logger.debug(
                                 f"Added slim document for attachment {attachment['id']}"
                             )
 
                     # Yield batch if it reaches the batch size
                     if len(slim_docs) >= self.batch_size:
-                        logger.info(
+                        logger.debug(
                             f"Yielding batch of {len(slim_docs)} slim documents"
                         )
                         yield slim_docs
@@ -848,7 +819,7 @@ class DrupalWikiConnector(
 
                 # Process each page
                 for page in pages:
-                    logger.info(f"Processing page: {page.title} (ID: {page.id})")
+                    logger.debug(f"Processing page: {page.title} (ID: {page.id})")
                     # Skip pages outside the time range
                     if end and page.lastModified >= end:
                         logger.info(
@@ -894,7 +865,7 @@ class DrupalWikiConnector(
 
         # Yield remaining documents
         if slim_docs:
-            logger.info(f"Yielding final batch of {len(slim_docs)} slim documents")
+            logger.debug(f"Yielding final batch of {len(slim_docs)} slim documents")
             yield slim_docs
 
     def validate_connector_settings(self) -> None:
