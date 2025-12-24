@@ -7,7 +7,7 @@ interface SwitchFieldProps extends Omit<SwitchProps, "checked"> {
   name: string;
 }
 
-export default function UnlabeledSwitchField({
+export default function SwitchField({
   name,
   onCheckedChange,
   ...props
@@ -16,9 +16,11 @@ export default function UnlabeledSwitchField({
 
   return (
     <Switch
+      id={name}
       checked={field.value}
       onCheckedChange={(checked) => {
         helpers.setValue(Boolean(checked));
+        helpers.setTouched(true);
         onCheckedChange?.(checked);
       }}
       {...props}
