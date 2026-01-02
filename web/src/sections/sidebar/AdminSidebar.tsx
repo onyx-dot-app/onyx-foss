@@ -30,6 +30,7 @@ import {
   SvgFileText,
   SvgFolder,
   SvgGlobe,
+  SvgImage,
   SvgKey,
   SvgOnyxLogo,
   SvgOnyxOctagon,
@@ -173,6 +174,11 @@ const collections = (
               name: "Web Search",
               icon: SvgGlobe,
               link: "/admin/configuration/web-search",
+            },
+            {
+              name: "Image Generation",
+              icon: SvgImage,
+              link: "/admin/configuration/image-generation",
             },
             ...(!enableCloud
               ? [
