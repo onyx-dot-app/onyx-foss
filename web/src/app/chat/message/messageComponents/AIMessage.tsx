@@ -1,3 +1,10 @@
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  RefObject,
+} from "react";
 import {
   Packet,
   PacketType,
@@ -15,7 +22,6 @@ import { FeedbackType } from "@/app/chat/interfaces";
 import { OnyxDocument } from "@/lib/search/interfaces";
 import CitedSourcesToggle from "@/app/chat/message/messageComponents/CitedSourcesToggle";
 import { TooltipGroup } from "@/components/tooltip/CustomTooltip";
-import { useRef, useState, useEffect, useCallback, RefObject } from "react";
 import {
   useChatSessionStore,
   useDocumentSidebarVisible,
@@ -46,7 +52,8 @@ import IconButton from "@/refresh-components/buttons/IconButton";
 import CopyIconButton from "@/refresh-components/buttons/CopyIconButton";
 import LLMPopover from "@/refresh-components/popovers/LLMPopover";
 import { parseLlmDescriptor } from "@/lib/llm/utils";
-import { LlmManager } from "@/lib/hooks";
+import { LlmDescriptor, LlmManager } from "@/lib/hooks";
+import { Message } from "@/app/chat/interfaces";
 import { useCreateModal } from "@/refresh-components/contexts/ModalContext";
 import FeedbackModal, {
   FeedbackModalProps,
@@ -54,6 +61,13 @@ import FeedbackModal, {
 import { usePopup } from "@/components/admin/connectors/Popup";
 import { useFeedbackController } from "../../hooks/useFeedbackController";
 import { SvgThumbsDown, SvgThumbsUp } from "@opal/icons";
+
+// Type for the regeneration factory function passed from ChatUI
+export type RegenerationFactory = (regenerationRequest: {
+  messageId: number;
+  parentMessage: Message;
+  forceSearch?: boolean;
+}) => (modelOverride: LlmDescriptor) => Promise<void>;
 
 export interface AIMessageProps {
   rawPackets: Packet[];
@@ -64,9 +78,38 @@ export interface AIMessageProps {
   llmManager: LlmManager | null;
   otherMessagesCanSwitchTo?: number[];
   onMessageSelection?: (nodeId: number) => void;
+  // Stable regeneration callback - takes (parentMessage) and returns a function that takes (modelOverride)
+  onRegenerate?: RegenerationFactory;
+  // Parent message needed to construct regeneration request
+  parentMessage?: Message | null;
 }
 
-export default function AIMessage({
+// TODO: Consider more robust comparisons:
+// - `rawPackets.length` assumes packets are append-only. Could compare the last
+//   packet or use a shallow comparison if packets can be modified in place.
+// - `chatState.docs`, `chatState.citations`, and `otherMessagesCanSwitchTo` use
+//   reference equality. Shallow array/object comparison would be more robust if
+//   these are recreated with the same values.
+function arePropsEqual(prev: AIMessageProps, next: AIMessageProps): boolean {
+  return (
+    prev.nodeId === next.nodeId &&
+    prev.messageId === next.messageId &&
+    prev.currentFeedback === next.currentFeedback &&
+    prev.rawPackets.length === next.rawPackets.length &&
+    prev.chatState.assistant?.id === next.chatState.assistant?.id &&
+    prev.chatState.docs === next.chatState.docs &&
+    prev.chatState.citations === next.chatState.citations &&
+    prev.chatState.overriddenModel === next.chatState.overriddenModel &&
+    prev.chatState.researchType === next.chatState.researchType &&
+    prev.otherMessagesCanSwitchTo === next.otherMessagesCanSwitchTo &&
+    prev.onRegenerate === next.onRegenerate &&
+    prev.parentMessage?.messageId === next.parentMessage?.messageId
+    // Skip: chatState.regenerate, chatState.setPresentingDocument,
+    //       llmManager, onMessageSelection (function/object props)
+  );
+}
+
+const AIMessage = React.memo(function AIMessage({
   rawPackets,
   chatState,
   nodeId,
@@ -75,6 +118,8 @@ export default function AIMessage({
   llmManager,
   otherMessagesCanSwitchTo,
   onMessageSelection,
+  onRegenerate,
+  parentMessage,
 }: AIMessageProps) {
   const markdownRef = useRef<HTMLDivElement>(null);
   const finalAnswerRef = useRef<HTMLDivElement>(null);
@@ -647,20 +692,27 @@ export default function AIMessage({
                         data-testid="AIMessage/dislike-button"
                       />
 
-                      {chatState.regenerate && llmManager && (
-                        <div data-testid="AIMessage/regenerate">
-                          <LLMPopover
-                            llmManager={llmManager}
-                            currentModelName={chatState.overriddenModel}
-                            onSelect={(modelName) => {
-                              const llmDescriptor =
-                                parseLlmDescriptor(modelName);
-                              chatState.regenerate!(llmDescriptor);
-                            }}
-                            folded
-                          />
-                        </div>
-                      )}
+                      {onRegenerate &&
+                        messageId !== undefined &&
+                        parentMessage &&
+                        llmManager && (
+                          <div data-testid="AIMessage/regenerate">
+                            <LLMPopover
+                              llmManager={llmManager}
+                              currentModelName={chatState.overriddenModel}
+                              onSelect={(modelName) => {
+                                const llmDescriptor =
+                                  parseLlmDescriptor(modelName);
+                                const regenerator = onRegenerate({
+                                  messageId,
+                                  parentMessage,
+                                });
+                                regenerator(llmDescriptor);
+                              }}
+                              folded
+                            />
+                          </div>
+                        )}
 
                       {nodeId &&
                         (citations.length > 0 || documentMap.size > 0) && (
@@ -696,4 +748,6 @@ export default function AIMessage({
       </div>
     </>
   );
-}
+}, arePropsEqual);
+
+export default AIMessage;

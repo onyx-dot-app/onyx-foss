@@ -104,6 +104,14 @@ const ChatUI = React.memo(
       const [aboveHorizon, setAboveHorizon] = useState(false);
       const debounceNumber = 100;
 
+      // Use refs to keep callbacks stable while always using latest values
+      const onSubmitRef = useRef(onSubmit);
+      const deepResearchEnabledRef = useRef(deepResearchEnabled);
+      const currentMessageFilesRef = useRef(currentMessageFiles);
+      onSubmitRef.current = onSubmit;
+      deepResearchEnabledRef.current = deepResearchEnabled;
+      currentMessageFilesRef.current = currentMessageFiles;
+
       const createRegenerator = useCallback(
         (regenerationRequest: {
           messageId: number;
@@ -111,10 +119,10 @@ const ChatUI = React.memo(
           forceSearch?: boolean;
         }) => {
           return async function (modelOverride: LlmDescriptor) {
-            return await onSubmit({
+            return await onSubmitRef.current({
               message: regenerationRequest.parentMessage.message,
-              currentMessageFiles,
-              deepResearch: deepResearchEnabled,
+              currentMessageFiles: currentMessageFilesRef.current,
+              deepResearch: deepResearchEnabledRef.current,
               modelOverride,
               messageIdToResend: regenerationRequest.parentMessage.messageId,
               regenerationRequest,
@@ -122,19 +130,19 @@ const ChatUI = React.memo(
             });
           };
         },
-        [onSubmit, deepResearchEnabled, currentMessageFiles]
+        [] // Stable - uses refs for latest values
       );
 
       const handleEditWithMessageId = useCallback(
         (editedContent: string, msgId: number) => {
-          onSubmit({
+          onSubmitRef.current({
             message: editedContent,
             messageIdToResend: msgId,
             currentMessageFiles: [],
-            deepResearch: deepResearchEnabled,
+            deepResearch: deepResearchEnabledRef.current,
           });
         },
-        [onSubmit, deepResearchEnabled]
+        [] // Stable - uses refs for latest values
       );
 
       const handleScroll = useCallback(() => {
@@ -267,17 +275,7 @@ const ChatUI = React.memo(
                         content={message.message}
                         files={message.files}
                         messageId={message.messageId}
-                        onEdit={(editedContent) => {
-                          if (
-                            message.messageId !== undefined &&
-                            message.messageId !== null
-                          ) {
-                            handleEditWithMessageId(
-                              editedContent,
-                              message.messageId
-                            );
-                          }
-                        }}
+                        onEdit={handleEditWithMessageId}
                         otherMessagesCanSwitchTo={
                           parentMessage?.childrenNodeIds ?? emptyChildrenIds
                         }
@@ -305,19 +303,11 @@ const ChatUI = React.memo(
                   // since this is a "parsed" version of the message tree
                   // so the previous message is guaranteed to be the parent of the current message
                   const previousMessage = i !== 0 ? messages[i - 1] : null;
-                  const regenerate =
-                    message.messageId !== undefined && previousMessage
-                      ? createRegenerator({
-                          messageId: message.messageId,
-                          parentMessage: previousMessage,
-                        })
-                      : undefined;
                   const chatStateData = {
                     assistant: liveAssistant,
                     docs: message.documents ?? emptyDocs,
                     citations: message.citations,
                     setPresentingDocument,
-                    regenerate,
                     overriddenModel: llmManager.currentLlm?.modelName,
                     researchType: message.researchType,
                   };
@@ -337,6 +327,8 @@ const ChatUI = React.memo(
                           parentMessage?.childrenNodeIds ?? emptyChildrenIds
                         }
                         onMessageSelection={onMessageSelection}
+                        onRegenerate={createRegenerator}
+                        parentMessage={previousMessage}
                       />
                     </div>
                   );

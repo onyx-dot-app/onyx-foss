@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FileDescriptor } from "@/app/chat/interfaces";
 import "katex/dist/katex.min.css";
 import MessageSwitcher from "@/app/chat/message/MessageSwitcher";
@@ -93,15 +93,34 @@ interface HumanMessageProps {
   otherMessagesCanSwitchTo?: number[];
   onMessageSelection?: (messageId: number) => void;
 
-  // Editing functionality
-  onEdit?: (editedContent: string) => void;
+  // Editing functionality - takes (editedContent, messageId) to allow stable callback reference
+  onEdit?: (editedContent: string, messageId: number) => void;
 
   // Streaming and generation
   stopGenerating?: () => void;
   disableSwitchingForStreaming?: boolean;
 }
 
-export default function HumanMessage({
+// TODO: Consider using shallow array comparison for `files` and
+// `otherMessagesCanSwitchTo` instead of reference equality. Currently we rely
+// on stable references from the parent, but shallow comparison would be more
+// robust if those arrays are recreated.
+function arePropsEqual(
+  prev: HumanMessageProps,
+  next: HumanMessageProps
+): boolean {
+  return (
+    prev.content === next.content &&
+    prev.messageId === next.messageId &&
+    prev.files === next.files &&
+    prev.disableSwitchingForStreaming === next.disableSwitchingForStreaming &&
+    prev.otherMessagesCanSwitchTo === next.otherMessagesCanSwitchTo &&
+    prev.onEdit === next.onEdit
+    // Skip: stopGenerating, onMessageSelection (inline function props)
+  );
+}
+
+const HumanMessage = React.memo(function HumanMessage({
   content: initialContent,
   files,
   messageId,
@@ -160,7 +179,12 @@ export default function HumanMessage({
             <MessageEditing
               content={content}
               onSubmitEdit={(editedContent) => {
-                onEdit?.(editedContent);
+                // Don't update UI for edits that can't be persisted
+                if (messageId === undefined || messageId === null) {
+                  setIsEditing(false);
+                  return;
+                }
+                onEdit?.(editedContent, messageId);
                 setContent(editedContent);
                 setIsEditing(false);
               }}
@@ -257,4 +281,6 @@ export default function HumanMessage({
       </div>
     </div>
   );
-}
+}, arePropsEqual);
+
+export default HumanMessage;
