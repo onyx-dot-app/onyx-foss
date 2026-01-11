@@ -585,13 +585,12 @@ def update_default_vision_provider(
 
 def fetch_auto_mode_providers(db_session: Session) -> list[LLMProviderModel]:
     """Fetch all LLM providers that are in Auto mode."""
-    return list(
-        db_session.scalars(
-            select(LLMProviderModel)
-            .where(LLMProviderModel.is_auto_mode == True)  # noqa: E712
-            .options(selectinload(LLMProviderModel.model_configurations))
-        ).all()
+    query = (
+        select(LLMProviderModel)
+        .where(LLMProviderModel.is_auto_mode.is_(True))
+        .options(selectinload(LLMProviderModel.model_configurations))
     )
+    return list(db_session.scalars(query).all())
 
 
 def sync_auto_mode_models(
@@ -637,11 +636,12 @@ def sync_auto_mode_models(
         ).all()
     }
 
-    # Remove models that are no longer in GitHub config
+    # Mark models that are no longer in GitHub config as not visible
     for model_name, model in existing_models.items():
         if model_name not in recommended_visible_model_names:
-            db_session.delete(model)
-            changes += 1
+            if model.is_visible:
+                model.is_visible = False
+                changes += 1
 
     # Add or update models from GitHub config
     for model_config in recommended_visible_models:
