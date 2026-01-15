@@ -38,8 +38,10 @@ from onyx.chat.save_chat import save_chat_turn
 from onyx.chat.stop_signal_checker import is_connected as check_stop_signal
 from onyx.chat.stop_signal_checker import reset_cancel_status
 from onyx.configs.constants import DEFAULT_PERSONA_ID
+from onyx.configs.constants import DocumentSource
 from onyx.configs.constants import MessageType
 from onyx.configs.constants import MilestoneRecordType
+from onyx.context.search.models import BaseFilters
 from onyx.context.search.models import CitationDocInfo
 from onyx.context.search.models import SearchDoc
 from onyx.db.chat import create_new_chat_message
@@ -49,6 +51,7 @@ from onyx.db.chat import reserve_message_id
 from onyx.db.memory import get_memories
 from onyx.db.models import ChatMessage
 from onyx.db.models import ChatSession
+from onyx.db.models import Persona
 from onyx.db.models import User
 from onyx.db.projects import get_project_token_count
 from onyx.db.projects import get_user_files_from_project
@@ -91,6 +94,22 @@ from shared_configs.contextvars import get_current_tenant_id
 
 logger = setup_logger()
 ERROR_TYPE_CANCELLED = "cancelled"
+
+
+def _should_enable_slack_search(
+    persona: Persona,
+    filters: BaseFilters | None,
+) -> bool:
+    """Determine if Slack search should be enabled.
+
+    Returns True if:
+    - Source type filter exists and includes Slack, OR
+    - Default persona with no source type filter
+    """
+    source_types = filters.source_type if filters else None
+    return (source_types is not None and DocumentSource.SLACK in source_types) or (
+        persona.id == DEFAULT_PERSONA_ID and source_types is None
+    )
 
 
 def _extract_project_file_texts_and_images(
@@ -505,6 +524,9 @@ def handle_stream_message_objects(
                 ),
                 bypass_acl=bypass_acl,
                 slack_context=slack_context,
+                enable_slack_search=_should_enable_slack_search(
+                    persona, new_msg_req.internal_search_filters
+                ),
             ),
             custom_tool_config=CustomToolConfig(
                 chat_session_id=chat_session.id,
