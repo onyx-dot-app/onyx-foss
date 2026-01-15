@@ -62,6 +62,7 @@ import {
   SvgLock,
   SvgOnyxOctagon,
   SvgSliders,
+  SvgTrash,
 } from "@opal/icons";
 import CustomAgentAvatar, {
   agentAvatarIconMap,
@@ -86,6 +87,8 @@ import useFilter from "@/hooks/useFilter";
 import EnabledCount from "@/refresh-components/EnabledCount";
 import useOnMount from "@/hooks/useOnMount";
 import { useAppRouter } from "@/hooks/appNavigation";
+import { deleteAgent } from "@/lib/agents";
+import ConfirmationModalLayout from "@/refresh-components/layouts/ConfirmationModalLayout";
 import ShareAgentModal from "@/sections/modals/ShareAgentModal";
 
 interface AgentIconEditorProps {
@@ -446,6 +449,7 @@ export default function AgentEditorPage({
   const { popup, setPopup } = usePopup();
   const { refresh: refreshAgents } = useAgents();
   const shareAgentModal = useCreateModal();
+  const deleteAgentModal = useCreateModal();
 
   // LLM Model Selection
   const getCurrentLlm = useCallback(
@@ -862,6 +866,30 @@ export default function AgentEditorPage({
     }
   }
 
+  // Delete agent handler
+  async function handleDeleteAgent() {
+    if (!existingAgent) return;
+
+    const error = await deleteAgent(existingAgent.id);
+
+    if (error) {
+      setPopup({
+        type: "error",
+        message: `Failed to delete agent: ${error}`,
+      });
+    } else {
+      setPopup({
+        type: "success",
+        message: "Agent deleted successfully",
+      });
+
+      await refreshAgents();
+      router.push("/chat/agents");
+    }
+
+    deleteAgentModal.toggle(false);
+  }
+
   // FilePickerPopover callbacks - defined outside render to avoid inline functions
   function handlePickRecentFile(
     file: ProjectFile,
@@ -1028,6 +1056,29 @@ export default function AgentEditorPage({
                     }}
                   />
                 </shareAgentModal.Provider>
+
+                <deleteAgentModal.Provider>
+                  {deleteAgentModal.isOpen && (
+                    <ConfirmationModalLayout
+                      icon={SvgTrash}
+                      title="Delete Agent"
+                      submit={
+                        <Button danger onClick={handleDeleteAgent}>
+                          Delete Agent
+                        </Button>
+                      }
+                      onClose={() => deleteAgentModal.toggle(false)}
+                    >
+                      <GeneralLayouts.Section alignItems="start" gap={0.5}>
+                        <Text>
+                          Anyone using this agent will no longer be able to
+                          access it. Deletion cannot be undone.
+                        </Text>
+                        <Text>Are you sure you want to delete this agent?</Text>
+                      </GeneralLayouts.Section>
+                    </ConfirmationModalLayout>
+                  )}
+                </deleteAgentModal.Provider>
 
                 <Form className="h-full w-full">
                   <SettingsLayouts.Root>
@@ -1480,6 +1531,28 @@ export default function AgentEditorPage({
                           </GeneralLayouts.Section>
                         </GeneralLayouts.Section>
                       </SimpleCollapsible>
+
+                      {existingAgent && (
+                        <>
+                          <Separator noPadding />
+
+                          <Card>
+                            <InputLayouts.Horizontal
+                              label="Delete This Agent"
+                              description="Anyone using this agent will no longer be able to access it."
+                              center
+                            >
+                              <Button
+                                secondary
+                                danger
+                                onClick={() => deleteAgentModal.toggle(true)}
+                              >
+                                Delete Agent
+                              </Button>
+                            </InputLayouts.Horizontal>
+                          </Card>
+                        </>
+                      )}
                     </SettingsLayouts.Body>
                   </SettingsLayouts.Root>
                 </Form>
