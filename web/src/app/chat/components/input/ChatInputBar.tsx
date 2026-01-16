@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   useCallback,
   useContext,
@@ -19,7 +21,7 @@ import { ChatState } from "@/app/chat/interfaces";
 import { useForcedTools } from "@/lib/hooks/useForcedTools";
 import { CalendarIcon, XIcon } from "lucide-react";
 import { getFormattedDateRangeString } from "@/lib/dateUtils";
-import { truncateString, cn, hasNonImageFiles } from "@/lib/utils";
+import { truncateString, cn } from "@/lib/utils";
 import { useUser } from "@/components/user/UserProvider";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
@@ -262,7 +264,7 @@ const ChatInputBar = React.memo(
         [setCurrentMessageFiles]
       );
 
-      const { promptShortcuts } = usePromptShortcuts();
+      const { userPromptShortcuts } = usePromptShortcuts();
       const { ccPairs, isLoading: ccPairsLoading } = useCCPairs();
       const { data: federatedConnectorsData, isLoading: federatedLoading } =
         useFederatedConnectors();
@@ -338,12 +340,12 @@ const ChatInputBar = React.memo(
 
       const filteredPrompts = useMemo(
         () =>
-          promptShortcuts.filter(
+          userPromptShortcuts.filter(
             (prompt) =>
               prompt.active &&
               prompt.prompt.toLowerCase().startsWith(startFilterSlash)
           ),
-        [promptShortcuts, startFilterSlash]
+        [userPromptShortcuts, startFilterSlash]
       );
 
       // Determine if we should hide processing state based on context limits
