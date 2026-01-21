@@ -382,6 +382,41 @@ const ChatInputBar = React.memo(
       combinedSettings?.settings?.deep_research_enabled,
     ]);
 
+    function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+      if (!user?.preferences?.shortcut_enabled || !showPrompts) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (tabbingIconIndex === sortedFilteredPrompts.length) {
+          // "Create a new prompt" is selected
+          window.open("/chat/settings/chat-preferences", "_self");
+        } else {
+          const selectedPrompt = sortedFilteredPrompts[tabbingIconIndex];
+          if (selectedPrompt) {
+            updateInputPrompt(selectedPrompt);
+          }
+        }
+      } else if (e.key === "Tab" && e.shiftKey) {
+        // Shift+Tab: cycle backward
+        e.preventDefault();
+        setTabbingIconIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === "Tab") {
+        // Tab: cycle forward
+        e.preventDefault();
+        setTabbingIconIndex((prev) =>
+          Math.min(prev + 1, sortedFilteredPrompts.length)
+        );
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setTabbingIconIndex((prev) =>
+          Math.min(prev + 1, sortedFilteredPrompts.length)
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setTabbingIconIndex((prev) => Math.max(prev - 1, 0));
+      }
+    }
+
     return (
       <div
         ref={containerRef}
@@ -416,6 +451,7 @@ const ChatInputBar = React.memo(
           <Popover.Anchor asChild>
             <textarea
               onPaste={handlePaste}
+              onKeyDownCapture={handleKeyDown}
               onChange={handleInputChange}
               ref={textAreaRef}
               id="onyx-chat-input-textarea"
@@ -480,6 +516,7 @@ const ChatInputBar = React.memo(
                 sortedFilteredPrompts.length > 0 ? null : undefined,
                 <LineItem
                   key="create-new"
+                  href="/chat/settings/chat-preferences"
                   icon={SvgPlus}
                   selected={tabbingIconIndex === sortedFilteredPrompts.length}
                   emphasized={tabbingIconIndex === sortedFilteredPrompts.length}
@@ -671,6 +708,5 @@ const ChatInputBar = React.memo(
     );
   }
 );
-ChatInputBar.displayName = "ChatInputBar";
 
 export default ChatInputBar;
