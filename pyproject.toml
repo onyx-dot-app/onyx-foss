@@ -94,6 +94,7 @@ backend = [
     "python-dateutil==2.8.2",
     "python-gitlab==5.6.0",
     "python-pptx==0.6.23",
+    "pypandoc_binary==1.16.2",
     "pypdf==6.6.0",
     "pytest-mock==3.12.0",
     "pytest-playwright==0.7.0",
@@ -199,6 +200,12 @@ members = ["backend", "tools/ods"]
 include = ["backend"]
 exclude = ["backend/generated"]
 typeCheckingMode = "off"
+
+[tool.mypy]
+# NOTE: pypandoc doesn't provide type stubs or py.typed marker
+# See: https://github.com/JessicaTegner/pypandoc
+[tool.mypy-pypandoc]
+ignore_missing_imports = true
 
 [tool.setuptools.packages.find]
 where = ["backend"]
