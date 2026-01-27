@@ -376,6 +376,7 @@ class LocalSandboxManager(SandboxManager):
                 disabled_tools=OPENCODE_DISABLED_TOOLS,
                 user_name=user_name,
                 user_role=user_role,
+                use_demo_data=use_demo_data,
             )
             logger.debug("Agent instructions ready")
 
