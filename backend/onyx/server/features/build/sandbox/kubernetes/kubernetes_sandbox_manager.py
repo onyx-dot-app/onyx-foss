@@ -62,6 +62,7 @@ from onyx.server.features.build.configs import SANDBOX_NEXTJS_PORT_END
 from onyx.server.features.build.configs import SANDBOX_NEXTJS_PORT_START
 from onyx.server.features.build.configs import SANDBOX_S3_BUCKET
 from onyx.server.features.build.configs import SANDBOX_SERVICE_ACCOUNT_NAME
+from onyx.server.features.build.s3.s3_client import build_s3_client
 from onyx.server.features.build.sandbox.base import SandboxManager
 from onyx.server.features.build.sandbox.kubernetes.internal.acp_exec_client import (
     ACPEvent,
@@ -1288,8 +1289,6 @@ echo "Session cleanup complete"
         """
         import tempfile
 
-        import boto3
-
         pod_name = self._get_pod_name(str(sandbox_id))
         session_path = f"/workspace/sessions/{session_id}"
 
@@ -1298,8 +1297,8 @@ echo "Session cleanup complete"
 
         logger.info(f"Restoring snapshot for session {session_id} from {s3_key}")
 
-        # Download snapshot from S3 to temp file
-        s3_client = boto3.client("s3")
+        # Download snapshot from S3 - uses IAM roles (IRSA)
+        s3_client = build_s3_client()
         tmp_path: str | None = None
 
         try:
