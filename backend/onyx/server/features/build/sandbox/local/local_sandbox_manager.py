@@ -765,6 +765,56 @@ class LocalSandboxManager(SandboxManager):
         for event in client.send_message(message):
             yield event
 
+    def _sanitize_path(self, path: str) -> str:
+        """Sanitize a user-provided path to prevent path traversal attacks.
+
+        Removes '..' components and normalizes the path to prevent attacks like
+        'files/../../../../etc/passwd'.
+
+        Args:
+            path: User-provided relative path
+
+        Returns:
+            Sanitized path string with '..' components removed
+        """
+        # Parse the path and filter out '..' components
+        path_obj = Path(path.lstrip("/"))
+        clean_parts = [p for p in path_obj.parts if p != ".."]
+        return str(Path(*clean_parts)) if clean_parts else "."
+
+    def _is_path_allowed(self, session_path: Path, target_path: Path) -> bool:
+        """Check if target_path is allowed for access.
+
+        Allows paths within session_path OR within the files/ symlink.
+        The files/ symlink intentionally points outside session_path to
+        provide access to knowledge files.
+
+        Args:
+            session_path: The session's root directory
+            target_path: The path being accessed
+
+        Returns:
+            True if access is allowed, False otherwise
+        """
+        files_symlink = session_path / "files"
+
+        # Check if path is within the files/ symlink (or is the symlink itself)
+        if files_symlink.is_symlink():
+            try:
+                # Use lexical check (without resolving symlinks)
+                # This handles both the symlink itself (returns '.') and paths within it
+                target_path.relative_to(files_symlink)
+                return True
+            except ValueError:
+                pass
+
+        # Standard check: path must be within session directory
+        try:
+            target_path.resolve().relative_to(session_path.resolve())
+            return True
+        except ValueError:
+            return False
+
     def list_directory(
         self, sandbox_id: UUID, session_id: UUID, path: str
     ) -> list[FilesystemEntry]:
@@ -782,12 +832,12 @@ class LocalSandboxManager(SandboxManager):
             ValueError: If path traversal attempted or path is not a directory
         """
         session_path = self._get_session_path(sandbox_id, session_id)
-        target_path = session_path / path.lstrip("/")
+        # Security: sanitize path to remove path traversal attempts
+        clean_path = self._sanitize_path(path)
+        target_path = session_path / clean_path
 
-        # Security: ensure path is within sessions directory
-        try:
-            target_path.resolve().relative_to(session_path.resolve())
-        except ValueError:
+        # Security check
+        if not self._is_path_allowed(session_path, target_path):
             raise ValueError("Path traversal not allowed")
 
         if not target_path.is_dir():
@@ -825,12 +875,12 @@ class LocalSandboxManager(SandboxManager):
             ValueError: If path traversal attempted or path is not a file
         """
         session_path = self._get_session_path(sandbox_id, session_id)
-        target_path = session_path / path.lstrip("/")
+        # Security: sanitize path to remove path traversal attempts
+        clean_path = self._sanitize_path(path)
+        target_path = session_path / clean_path
 
-        # Security: ensure path is within sessions directory
-        try:
-            target_path.resolve().relative_to(session_path.resolve())
-        except ValueError:
+        # Security check
+        if not self._is_path_allowed(session_path, target_path):
             raise ValueError("Path traversal not allowed")
 
         if not target_path.is_file():
