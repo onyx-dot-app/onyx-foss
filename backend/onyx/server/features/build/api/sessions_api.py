@@ -638,7 +638,7 @@ def download_webapp(
 
 
 @router.post("/{session_id}/upload", response_model=UploadResponse)
-async def upload_file_endpoint(
+def upload_file_endpoint(
     session_id: UUID,
     file: UploadFile = File(...),
     user: User = Depends(current_user),
@@ -654,8 +654,8 @@ async def upload_file_endpoint(
     if not file.filename:
         raise HTTPException(status_code=400, detail="File has no filename")
 
-    # Read file content
-    content = await file.read()
+    # Read file content (use sync file interface)
+    content = file.file.read()
 
     # Validate file (extension, mime type, size)
     is_valid, error = validate_file(file.filename, file.content_type, len(content))

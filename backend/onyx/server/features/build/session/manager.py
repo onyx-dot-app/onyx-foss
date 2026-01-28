@@ -464,10 +464,15 @@ class SessionManager:
             sandbox = existing_sandbox
             sandbox_id = sandbox.id
 
-            if sandbox.status == SandboxStatus.TERMINATED:
-                # Re-provision terminated sandbox
+            if sandbox.status in (
+                SandboxStatus.TERMINATED,
+                SandboxStatus.SLEEPING,
+                SandboxStatus.FAILED,
+            ):
+                # Re-provision sandbox (pod doesn't exist or failed)
                 logger.info(
-                    f"Re-provisioning terminated sandbox {sandbox_id} for user {user_id}"
+                    f"Re-provisioning {sandbox.status.value} sandbox {sandbox_id} "
+                    f"for user {user_id}"
                 )
                 sandbox_info = self._sandbox_manager.provision(
                     sandbox_id=sandbox_id,
@@ -508,11 +513,14 @@ class SessionManager:
                         f"for new session {session_id}"
                     )
             else:
-                # Handle other statuses (SLEEPING, PROVISIONING, FAILED, etc.)
-                logger.info(
-                    f"Reusing existing sandbox {sandbox_id} (status: {sandbox.status}) "
-                    f"for new session {session_id}"
+                # PROVISIONING status - sandbox is being created by another request
+                # Just fail this request
+                msg = (
+                    f"Sandbox {sandbox_id} has status {sandbox.status.value} and is being "
+                    f"created by another request for new session {session_id}"
                 )
+                logger.error(msg)
+                raise RuntimeError(msg)
         else:
             # Create new Sandbox record for the user (uses flush, caller commits)
             sandbox = create_sandbox__no_commit(
@@ -595,6 +603,9 @@ class SessionManager:
         """
         existing = get_empty_session_for_user(user_id, self._db_session)
         if existing:
+            logger.info(
+                f"Existing empty session {existing.id} found for user {user_id}"
+            )
             # Verify sandbox is healthy before returning existing session
             sandbox = get_sandbox_by_user_id(self._db_session, user_id)
 
