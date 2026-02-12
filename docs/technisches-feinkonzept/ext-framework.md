@@ -1,10 +1,10 @@
 # Modulspezifikation: Extension Framework Basis
 
-**Dokumentstatus**: Entwurf
+**Dokumentstatus**: Freigegeben
 **Version**: 1.0.0
 **Autor**: Nikolaj Ivanov (CCJ / Coffee Studios)
 **Datum**: 2026-02-12
-**Status**: [x] Entwurf | [ ] Review | [ ] Freigegeben
+**Status**: [ ] Entwurf | [ ] Review | [x] Freigegeben
 **Priorität**: [x] Kritisch | [ ] Hoch | [ ] Normal | [ ] Niedrig
 
 ---
