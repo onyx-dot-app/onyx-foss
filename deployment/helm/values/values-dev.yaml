@@ -1,0 +1,144 @@
+# ===========================================================
+# VÖB Service Chatbot — DEV Environment Helm Values
+# ===========================================================
+# Leichtgewichtig: 1 Replica pro Service, Lightweight Worker
+# Shared Node Pool (devtest), kein Autoscaling
+#
+# PostgreSQL + Object Storage Credentials werden als
+# K8s Secrets bereitgestellt (Terraform Output oder manuell).
+# ===========================================================
+
+global:
+  version: "latest"
+
+# --- Externe PostgreSQL (StackIT Flex 2.4 Single) ---
+# Host/Port kommen nach terraform apply aus den Outputs.
+# Bis dahin: Platzhalter, die beim Deploy überschrieben werden.
+auth:
+  postgresql:
+    enabled: true
+    secretName: "onyx-postgresql"
+    values:
+      username: "onyx_app"
+      password: ""  # → terraform output -raw pg_password
+  redis:
+    enabled: true
+    secretName: "onyx-redis"
+    values:
+      redis_password: "voeb-dev-redis-2026"  # TODO: Starkes Passwort generieren
+  objectstorage:
+    enabled: true
+    secretName: "onyx-objectstorage"
+    values:
+      s3_aws_access_key_id: ""      # → StackIT Object Storage Credentials
+      s3_aws_secret_access_key: ""
+
+configMap:
+  # PostgreSQL (Platzhalter — nach terraform apply eintragen)
+  POSTGRES_HOST: "REPLACE_AFTER_TERRAFORM_APPLY"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "onyx"
+
+  # Object Storage
+  S3_ENDPOINT_URL: "https://object.storage.eu01.onstackit.cloud"
+  S3_FILE_STORE_BUCKET_NAME: "vob-dev"
+
+  # Domain (Platzhalter — nach DNS-Setup eintragen)
+  DOMAIN: "dev.chatbot.voeb.example.com"
+  WEB_DOMAIN: "https://dev.chatbot.voeb.example.com"
+
+  # Auth: Erstmal deaktiviert (Entra ID kommt in Phase 3)
+  AUTH_TYPE: "disabled"
+
+  # Logging
+  LOG_LEVEL: "INFO"
+
+  # Celery: Lightweight Mode (ein konsolidierter Worker)
+  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
+
+# --- TLS ---
+letsencrypt:
+  enabled: false  # DEV: Erstmal ohne TLS starten, später aktivieren
+
+# --- Backend API: 1 Replica ---
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  nodeSelector:
+    environment: devtest
+
+# --- Frontend: 1 Replica ---
+webserver:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+  nodeSelector:
+    environment: devtest
+
+# --- Vespa: 1 Replica, reduzierte Ressourcen ---
+vespa:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+
+# --- Redis: Minimal ---
+redis:
+  redisStandalone:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+# --- Model Server: 1 Replica, reduziert ---
+inferenceCapability:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  nodeSelector:
+    environment: devtest
+
+indexCapability:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  nodeSelector:
+    environment: devtest

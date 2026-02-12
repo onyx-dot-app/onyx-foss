@@ -9,6 +9,14 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [Infra] **Phase 2: StackIT DEV-Infrastruktur (in Arbeit)**
+  - StackIT CLI Setup + Service Account `voeb-terraform` mit API Key
+  - Container Registry im Portal aktiviert
+  - Terraform `init` + `plan` erfolgreich (SKE Cluster, PostgreSQL Flex, Object Storage)
+  - Terraform-Code Fix: `default_region` für Provider v0.80+
+  - Runbook-Struktur `docs/runbooks/` mit Index + erstem Runbook (Projekt-Setup)
+  - Implementierungsplan aktualisiert mit verifizierten Befehlen
+  - Blockiert: SA benötigt `project.admin`-Rolle (wartet auf Org-Admin)
 - [Feature] **Phase 4a: Extension Framework Basis**
   - `backend/ext/` Paketstruktur mit `__init__.py`, `config.py`, `routers/`
   - Feature Flag System: `EXT_ENABLED` Master-Switch + 6 Modul-Flags (AND-gated, alle default `false`)

@@ -1,0 +1,257 @@
+# ===========================================================
+# StackIT Build & Deploy Pipeline
+# ===========================================================
+# Triggers:
+#   - Push auf develop → Automatisch DEV deployen
+#   - Manuell → Environment wählbar (dev/test/prod)
+#
+# Voraussetzungen (GitHub Secrets):
+#   - STACKIT_PROJECT_ID
+#   - STACKIT_REGISTRY_USER
+#   - STACKIT_REGISTRY_PASSWORD
+#   - STACKIT_KUBECONFIG (base64-encoded)
+# ===========================================================
+
+name: StackIT Build & Deploy
+
+on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.claude/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      image_tag:
+        description: 'Image tag (default: git SHA)'
+        required: false
+        type: string
+
+env:
+  REGISTRY: registry.onstackit.cloud
+  PROJECT_ID: ${{ secrets.STACKIT_PROJECT_ID }}
+  HELM_CHART_PATH: deployment/helm/charts/onyx
+
+jobs:
+  # =========================================================
+  # BUILD: Docker Images bauen und pushen
+  # =========================================================
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.image_tag }}" ]; then
+            echo "value=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login to StackIT Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.STACKIT_REGISTRY_USER }}
+          password: ${{ secrets.STACKIT_REGISTRY_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # --- Backend ---
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/onyx-backend:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/onyx-backend:latest
+
+      # --- Frontend ---
+      - name: Build & Push Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/onyx-web-server:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/onyx-web-server:latest
+
+      # --- Model Server ---
+      - name: Build & Push Model Server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.model_server
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/onyx-model-server:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/onyx-model-server:latest
+
+  # =========================================================
+  # DEPLOY DEV: Automatisch bei push auf develop
+  # =========================================================
+  deploy-dev:
+    needs: build
+    if: >
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Deploy to DEV
+        run: |
+          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          PROJECT="${{ env.PROJECT_ID }}"
+
+          helm upgrade --install onyx-dev \
+            ${{ env.HELM_CHART_PATH }} \
+            --namespace onyx-dev \
+            --create-namespace \
+            -f deployment/helm/values/values-common.yaml \
+            -f deployment/helm/values/values-dev.yaml \
+            --set "global.version=${IMAGE_TAG}" \
+            --set "api.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
+            --set "webserver.image.repository=${REGISTRY}/${PROJECT}/onyx-web-server" \
+            --set "celery_shared.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
+            --set "inferenceCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --set "indexCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --wait --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n onyx-dev
+          kubectl get svc -n onyx-dev
+
+  # =========================================================
+  # DEPLOY TEST: Manuell
+  # =========================================================
+  deploy-test:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'test'
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Deploy to TEST
+        run: |
+          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          PROJECT="${{ env.PROJECT_ID }}"
+
+          helm upgrade --install onyx-test \
+            ${{ env.HELM_CHART_PATH }} \
+            --namespace onyx-test \
+            --create-namespace \
+            -f deployment/helm/values/values-common.yaml \
+            -f deployment/helm/values/values-dev.yaml \
+            --set "global.version=${IMAGE_TAG}" \
+            --set "api.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
+            --set "webserver.image.repository=${REGISTRY}/${PROJECT}/onyx-web-server" \
+            --set "celery_shared.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
+            --set "inferenceCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --set "indexCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --wait --timeout 10m
+
+  # =========================================================
+  # DEPLOY PROD: Manuell + Required Reviewers
+  # =========================================================
+  deploy-prod:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      # In GitHub Settings: Required reviewers aktivieren!
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Deploy to PROD
+        run: |
+          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          PROJECT="${{ env.PROJECT_ID }}"
+
+          helm upgrade --install onyx-prod \
+            ${{ env.HELM_CHART_PATH }} \
+            --namespace onyx-prod \
+            -f deployment/helm/values/values-common.yaml \
+            -f deployment/helm/values/values-prod.yaml \
+            --set "global.version=${IMAGE_TAG}" \
+            --set "api.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
+            --set "webserver.image.repository=${REGISTRY}/${PROJECT}/onyx-web-server" \
+            --set "celery_shared.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
+            --set "inferenceCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --set "indexCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --wait --timeout 15m
+
+      - name: Verify PROD deployment
+        run: |
+          echo "=== Pods ==="
+          kubectl get pods -n onyx-prod
+          echo "=== Services ==="
+          kubectl get svc -n onyx-prod
+          echo "=== Ingress ==="
+          kubectl get ingress -n onyx-prod
