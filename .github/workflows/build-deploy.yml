@@ -1,0 +1,47 @@
+name: Build & Push Docker Images
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: backend
+            dockerfile: backend/Dockerfile
+            image: voeb-chatbot-backend
+          - service: web
+            dockerfile: web/Dockerfile
+            image: voeb-chatbot-web
+          - service: model-server
+            dockerfile: backend/Dockerfile.model_server
+            image: voeb-chatbot-model-server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Registry
+        uses: docker/login-action@v3
+        with:
+          # Docker Hub oder StackIT Registry
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ secrets.REGISTRY_PREFIX }}/${{ matrix.image }}:${{ github.ref_name }}
+            ${{ secrets.REGISTRY_PREFIX }}/${{ matrix.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

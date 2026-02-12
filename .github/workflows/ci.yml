@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15.2-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements/default.txt
+          pip install -r requirements/dev.txt
+
+      - name: Ruff Lint
+        run: |
+          cd backend
+          ruff check .
+
+      - name: Ruff Format Check
+        run: |
+          cd backend
+          ruff format --check .
+
+      - name: MyPy Type Check
+        run: |
+          cd backend
+          mypy . --ignore-missing-imports
+
+      - name: Backend Tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        run: |
+          cd backend
+          pytest tests/ -v --tb=short
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd web
+          npm ci
+
+      - name: Frontend Lint
+        run: |
+          cd web
+          npm run lint
+
+      - name: Frontend Type Check
+        run: |
+          cd web
+          npx tsc --noEmit
+
+      - name: Frontend Build
+        run: |
+          cd web
+          npm run build

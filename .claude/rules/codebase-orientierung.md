@@ -46,12 +46,43 @@ web/src/ext/                 ← Frontend-Extensions
   lib/api.ts                 ← API-Client
 ```
 
-## Konfiguration
+## Konfiguration (Lokal / Docker)
 ```
 deployment/docker_compose/
   .env                       ← Umgebungsvariablen + EXT_-Flags
   env.template               ← Template
   docker-compose.yml         ← Docker (READ-ONLY Struktur)
+```
+
+## StackIT Cloud-Infrastruktur (NEU)
+```
+deployment/terraform/
+  modules/stackit/
+    main.tf                  ← SKE Cluster, PostgreSQL Flex, Object Storage
+    variables.tf             ← Alle Variablen mit DEV-Defaults
+    outputs.tf               ← Kubeconfig, PG-Credentials, Bucket-URL
+    versions.tf              ← Provider stackitcloud/stackit ~> 0.56
+  environments/dev/
+    main.tf                  ← DEV-Umgebung (ruft Modul auf)
+    backend.tf               ← State-Backend (lokal, remote vorbereitet)
+    terraform.tfvars         ← Projekt-spezifische Werte
+```
+
+## Helm Value-Overlays (NEU)
+```
+deployment/helm/
+  charts/onyx/               ← Onyx Helm Chart (READ-ONLY, nicht verändern!)
+  values/
+    values-common.yaml       ← Gemeinsame Config (PG extern, MinIO aus, Vespa+Redis an)
+    values-dev.yaml          ← DEV: 1 Replica, Lightweight, Auth disabled
+```
+Deployment: `helm upgrade --install -f values-common.yaml -f values-dev.yaml`
+
+## CI/CD (NEU)
+```
+.github/workflows/
+  stackit-deploy.yml         ← Build → StackIT Registry → Helm Deploy (DEV/TEST/PROD)
+  upstream-check.yml         ← Wöchentlicher Upstream-Merge-Check
 ```
 
 ## Enterprise-Docs
@@ -65,5 +96,7 @@ docs/
   technisches-feinkonzept/   ← Modulspezifikationen
   adr/                       ← Architecture Decisions
   abnahme/                   ← Abnahmeprotokolle
-  referenz/                  ← Business-Dokumente
+  referenz/
+    stackit-implementierungsplan.md  ← DEV-Infrastruktur Step-by-Step
+    stackit-infrastruktur.md         ← StackIT Specs + Architekturentscheidungen
 ```

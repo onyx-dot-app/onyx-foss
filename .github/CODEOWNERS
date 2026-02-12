@@ -8,3 +8,21 @@
 # Agent context files
 /CLAUDE.md @Weves
 /AGENTS.md @Weves
+
+# -----------------------------------------------------------
+# VÖB Fork — Custom Extension Ownership (Nikolaj Ivanov / CCJ)
+# -----------------------------------------------------------
+
+# 7 erlaubte Core-Dateien: Pflicht-Review bei Änderungen
+backend/onyx/server/app.py           @nikolajIvanov
+backend/onyx/llm/llm_call.py         @nikolajIvanov
+backend/onyx/auth/permissions.py      @nikolajIvanov
+backend/onyx/chat/prompt_builder.py   @nikolajIvanov
+web/src/app/layout.tsx                @nikolajIvanov
+web/src/components/header/            @nikolajIvanov
+web/src/lib/constants.ts              @nikolajIvanov
+
+# Extension-Code + Enterprise-Docs
+backend/ext/                          @nikolajIvanov
+web/src/ext/                          @nikolajIvanov
+docs/                                 @nikolajIvanov
