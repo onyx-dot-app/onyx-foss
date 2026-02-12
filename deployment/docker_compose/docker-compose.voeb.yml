@@ -1,0 +1,24 @@
+# Docker Compose Override for VÖB Extension Framework
+# Mounts backend/ext/ into containers so ext code is available at runtime.
+#
+# Usage (Dev):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.voeb.yml up -d
+#
+# Or set COMPOSE_FILE environment variable:
+#   export COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml:docker-compose.voeb.yml
+#   docker compose up -d
+
+services:
+  api_server:
+    volumes:
+      - ../../backend/ext:/app/ext
+    env_file:
+      - path: .env
+        required: false
+
+  background:
+    volumes:
+      - ../../backend/ext:/app/ext
+    env_file:
+      - path: .env
+        required: false
