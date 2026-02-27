@@ -8,12 +8,10 @@ Verifizierte Step-by-Step-Anleitungen für Setup, Deployment und Betrieb der Sta
 
 | # | Runbook | Status | Beschreibung |
 |---|---------|--------|-------------|
-| 1 | [stackit-projekt-setup.md](./stackit-projekt-setup.md) | Verifiziert | StackIT CLI, Service Account, Container Registry |
-| 2 | stackit-terraform-deploy.md | Ausstehend | Terraform init/plan/apply (SKE, PG, Storage) |
-| 3 | stackit-k8s-namespace.md | Ausstehend | Namespace, Secrets, Resource Quota |
-| 4 | stackit-helm-deploy.md | Ausstehend | Helm Install/Upgrade Onyx |
-| 5 | stackit-ci-cd.md | Ausstehend | GitHub Actions Pipeline konfigurieren |
-| 6 | stackit-troubleshooting.md | Ausstehend | Häufige Fehler + Lösungen |
+| 1 | [stackit-projekt-setup.md](./stackit-projekt-setup.md) | ✅ Verifiziert | StackIT CLI, Service Account, Container Registry |
+| 2 | [stackit-postgresql.md](./stackit-postgresql.md) | ✅ Verifiziert | DB anlegen, Readonly-User, Managed PG Einschränkungen |
+| 3 | [helm-deploy.md](./helm-deploy.md) | ✅ Verifiziert | Helm Install/Upgrade, Secrets, Redis, Troubleshooting |
+| 4 | stackit-ci-cd.md | Ausstehend | GitHub Actions Pipeline konfigurieren |
 
 ## Konventionen
 

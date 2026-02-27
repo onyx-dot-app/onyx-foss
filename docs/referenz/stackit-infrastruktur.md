@@ -25,7 +25,7 @@
 
 | Environment | Node-Typ | vCPU | RAM | Anzahl |
 |-------------|----------|------|-----|--------|
-| DEV + TEST (shared) | g1a.2d | 2 | 8 GB | 1 |
+| DEV + TEST (shared) | g1a.4d | 4 | 16 GB | 1 |
 | PROD (dedicated) | g1a.4d | 4 | 16 GB | 2 (bei Bedarf 3) |
 
 **PROD allokierbare Kapazität (2× g1a.4d):** ~7 CPU / ~31 GB RAM
@@ -41,9 +41,15 @@
 | TEST | Flex 2.4 Single | 2 | 4 GB | Nein |
 | PROD | Flex 4.8 Replica | 4 | 8 GB | Ja (3-Node Set) |
 
-**Disk Performance:** Premium Performance Tier 2 (SSD-level IOPS), 1 Disk pro Node
+**Disk Performance:** Premium Performance Tier 2 (`premium-perf2-stackit`, SSD-level IOPS), 1 Disk pro Node
 **Backup:** PostgreSQL PITR (automatisch), Object Storage für Backup-Daten
 **PROD-Besonderheit:** 3-Node Replica Set (Primary + 2 Standby) als ein verwaltetes Set
+
+**Managed PG Einschränkungen:**
+- Kein `CREATEROLE` / `SUPERUSER` für App-User
+- User-Verwaltung ausschließlich über StackIT API (Terraform)
+- Datenbank muss manuell angelegt werden (Terraform erstellt nur Instanz + User)
+- Details: [PostgreSQL Runbook](../runbooks/stackit-postgresql.md)
 
 ---
 
@@ -118,7 +124,7 @@
 | Redis | In-Cluster Pod | In-Cluster Pod | In-Cluster Pod |
 | LLM | Mistral via AI Serving | gleich | gleich + Monitoring |
 | Backups | PG PITR (auto) | PG PITR (auto) | PG PITR + ObjStore Versioning |
-| Resource Quotas | CPU: 2, RAM: 8 GB | CPU: 2, RAM: 8 GB | CPU: 8, RAM: 24 GB |
+| Resource Quotas | Entfernt (DEV) | CPU: 2, RAM: 8 GB | CPU: 8, RAM: 24 GB |
 | Network Policy | Namespace-isoliert | Namespace-isoliert | Namespace-isoliert + Egress-Rules |
 
 ---

@@ -96,6 +96,16 @@ resource "stackit_postgresflex_user" "app" {
   roles       = ["login", "createdb"]
 }
 
+# Read-Only User für Knowledge Graph Queries
+# Onyx erstellt diesen User normalerweise per Alembic-Migration,
+# aber Managed PG (StackIT Flex) erlaubt kein CREATEROLE.
+resource "stackit_postgresflex_user" "readonly" {
+  project_id  = var.project_id
+  instance_id = stackit_postgresflex_instance.main.instance_id
+  username    = "db_readonly_user"
+  roles       = ["login"]
+}
+
 # -----------------------------------------------------------
 # 3. Object Storage (S3-kompatibel)
 # -----------------------------------------------------------

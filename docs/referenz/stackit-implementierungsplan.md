@@ -15,10 +15,10 @@
 | Ressource | Spec | Geschätzte Kosten |
 |-----------|------|-------------------|
 | 1× SKE Cluster | 1 Node Pool (`devtest`) | ~72 EUR/Monat |
-| 1× Worker Node | g1a.2d (2 vCPU, 8 GB RAM) | ~70 EUR/Monat |
+| 1× Worker Node | g1a.4d (4 vCPU, 16 GB RAM) | ~142 EUR/Monat |
 | 1× PostgreSQL Flex 2.4 | Single (2 CPU, 4 GB, 20 GB SSD) | ~30 EUR/Monat |
 | 1× Object Storage Bucket | `vob-dev` | ~5 EUR/Monat |
-| **TOTAL DEV** | | **~180 EUR/Monat** |
+| **TOTAL DEV** | | **~250 EUR/Monat** |
 
 ---
 
@@ -45,7 +45,7 @@ deployment/
         main.tf                       ← SKE + PostgreSQL + ObjectStorage
         variables.tf                  ← Alle Variablen mit Defaults
         outputs.tf                    ← Kubeconfig, PG-Credentials, Bucket
-        versions.tf                   ← Provider stackitcloud/stackit ~> 0.56
+        versions.tf                   ← Provider stackitcloud/stackit ~> 0.80
     environments/
       dev/                            ← NEU
         main.tf                       ← Ruft Modul mit DEV-Werten auf
@@ -159,7 +159,7 @@ terraform apply tfplan
 Das Modul in `deployment/terraform/modules/stackit/main.tf` provisioniert:
 
 **SKE Cluster** (`vob-chatbot`):
-- 1 Node Pool `devtest` mit 1× g1a.2d
+- 1 Node Pool `devtest` mit 1× g1a.4d
 - Kubernetes v1.32.12 (SKE weist nächst-verfügbare Version zu)
 - Flatcar OS
 - Maintenance-Window: 02:00–04:00 UTC
@@ -203,7 +203,7 @@ kubectl cluster-info
 
 ## Phase 3: Kubernetes-Namespace einrichten
 
-> **Status**: ⏭️ **Nächster Schritt**
+> **Status**: ✅ Abgeschlossen (2026-02-27). Namespace, Image Pull Secret erstellt. Resource Quota entfernt (blockiert Pods ohne explizite Limits).
 
 ### 3.1 DEV Namespace
 
@@ -224,6 +224,9 @@ kubectl create secret docker-registry stackit-registry \
 
 ### 3.3 Resource Quota (DEV)
 
+> **ENTFERNT:** Resource Quota blockiert Pods ohne explizite Resource Limits (z.B. NGINX Admission Webhook Job aus dem Onyx Chart). Für DEV wird keine Quota gesetzt. Für PROD wird eine angepasste Quota mit höheren Limits definiert.
+
+<!--
 ```yaml
 apiVersion: v1
 kind: ResourceQuota
@@ -237,12 +240,13 @@ spec:
     limits.cpu: "8"
     limits.memory: 16Gi
 ```
+-->
 
 ---
 
 ## Phase 4: Helm Deploy (DEV)
 
-> **Status**: ⏳ Wartet auf Phase 3
+> **Status**: ✅ **Abgeschlossen** (2026-02-27). Alle 10 Pods Running, API Health OK, UI erreichbar unter `http://188.34.74.187`.
 
 ### 4.1 Helm Values anpassen
 
@@ -263,12 +267,11 @@ helm upgrade --install onyx-dev \
   --namespace onyx-dev \
   -f deployment/helm/values/values-common.yaml \
   -f deployment/helm/values/values-dev.yaml \
-  --set "global.version=latest" \
-  --wait --timeout 10m
+  -f deployment/helm/values/values-dev-secrets.yaml
 
 # Verifizieren
 kubectl get pods -n onyx-dev
-kubectl get svc -n onyx-dev
+curl -s http://<EXTERNAL_IP>/api/health
 ```
 
 ### 4.3 Ressourcen auf DEV-Node
@@ -281,9 +284,14 @@ kubectl get svc -n onyx-dev
 | Redis | 100m | 128Mi | 1 |
 | Model Server (Inference) | 250m | 768Mi | 1 |
 | Model Server (Indexing) | 250m | 768Mi | 1 |
-| **TOTAL DEV** | **~1.5 CPU** | **~4.4 Gi** | |
+| Celery Beat | 100m | 256Mi | 1 |
+| Celery Worker Primary | 250m | 512Mi | 1 |
+| Redis Operator | 500m | — | 1 |
+| **TOTAL DEV (onyx-dev)** | **~2.1 CPU** | **~4.7 Gi** | |
+| kube-system (Calico, DNS, VPN, Metrics) | ~1.4 CPU | ~2 Gi | — |
+| **TOTAL Node** | **~3.5 CPU** | **~6.7 Gi** | |
 
-**Verfügbar (1× g1a.2d)**: 2 CPU / 8 GB RAM → ausreichend für DEV. Bei Bedarf auf g1a.4d skalierbar.
+**Verfügbar (1× g1a.4d)**: 4 CPU / 16 GB RAM. ~1.4 CPU werden von kube-system (Calico, CoreDNS, VPN, Metrics) beansprucht.
 
 ---
 
@@ -298,7 +306,7 @@ Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
 2. Images werden in StackIT Container Registry gepusht
 3. Helm Deploy in `onyx-dev` Namespace
 
-**Voraussetzung**: GitHub Secrets aus Phase 1.3 müssen gesetzt sein.
+**Voraussetzung**: GitHub Secrets aus Phase 1.4 müssen gesetzt sein.
 
 ---
 
@@ -326,12 +334,14 @@ Onyx unterstützt das nativ über LiteLLM.
 
 | Kriterium | Test | Status |
 |-----------|------|--------|
-| K8s Cluster läuft | `kubectl get nodes` → Ready | [x] ✅ (2026-02-27 verifiziert) |
-| PostgreSQL erreichbar | `psql -h <PG_HOST> -U onyx_app -c "SELECT 1"` | [ ] |
-| Vespa deployed | `kubectl get pods -n onyx-dev -l app=vespa` | [ ] |
-| Object Storage | `aws s3 ls s3://vob-dev/ --endpoint-url https://...` | [ ] |
-| Onyx UI erreichbar | Browser → LoadBalancer IP | [ ] |
-| CI/CD funktioniert | Push auf develop → Pods updated | [ ] |
+| K8s Cluster läuft | `kubectl get nodes` → Ready, g1a.4d | [x] ✅ (2026-02-27) |
+| PostgreSQL erreichbar | DB `onyx` existiert, Alembic-Migrationen laufen | [x] ✅ (2026-02-27) |
+| Vespa deployed | Pod Running, Application Package deployed | [x] ✅ (2026-02-27) |
+| Redis deployed | Pod Running, Celery Beat/Worker verbunden | [x] ✅ (2026-02-27) |
+| Object Storage | Credentials aktiv, api-server startet ohne Fehler | [x] ✅ (2026-02-27) |
+| API Health | `curl http://188.34.74.187/api/health` → `{"success":true}` | [x] ✅ (2026-02-27) |
+| Onyx UI erreichbar | `http://188.34.74.187/auth/login` → Login-Seite | [x] ✅ (2026-02-27) |
+| CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (GitHub Secrets fehlen) |
 
 ---
 
@@ -356,10 +366,13 @@ Onyx unterstützt das nativ über LiteLLM.
 | 3 | Container Registry aktivieren | Niko | ✅ Erledigt (2026-02-12) |
 | 4 | SA `project.admin`-Rolle zuweisen | Org-Admin | ✅ Erledigt (2026-02-22) |
 | 5 | Terraform apply (DEV) | Niko | ✅ Erledigt (2026-02-22) |
-| 6 | StackIT AI Model Serving API Keys | StackIT | Blockiert |
-| 7 | DNS-Zone | VÖB IT | Offen |
-| 8 | Entra ID Credentials | VÖB IT | Blockiert |
-| 9 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |
+| 6 | Helm Deploy (DEV) | Niko | ✅ Erledigt (2026-02-27) |
+| 7 | DB `onyx` + `db_readonly_user` anlegen | Niko | ✅ Erledigt (2026-02-27) |
+| 8 | Object Storage Credentials | Niko | ✅ Erledigt (2026-02-27) |
+| 9 | StackIT AI Model Serving API Keys | StackIT | Blockiert |
+| 10 | DNS-Zone (`dev.chatbot.voeb.example.com` → `188.34.74.187`) | VÖB IT | Offen |
+| 11 | Entra ID Credentials | VÖB IT | Blockiert |
+| 12 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |
 
 ---
 

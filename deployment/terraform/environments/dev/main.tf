@@ -2,11 +2,11 @@
 # DEV Environment — VÖB Service Chatbot
 # ===========================================================
 # Provisioniert:
-#   - 1× SKE Cluster (1 Node: g1a.2d, 2 vCPU, 8 GB)
+#   - 1× SKE Cluster (1 Node: g1a.4d, 4 vCPU, 16 GB)
 #   - 1× PostgreSQL Flex 2.4 Single (2 CPU, 4 GB)
 #   - 1× Object Storage Bucket (vob-dev)
 #
-# Geschätzte Kosten: ~180 EUR/Monat
+# Geschätzte Kosten: ~250 EUR/Monat
 # ===========================================================
 
 module "stackit" {
@@ -22,10 +22,10 @@ module "stackit" {
   availability_zones = ["eu01-3"]
 
   node_pool = {
-    machine_type = "g1a.2d"
+    machine_type = "g1a.4d"
     minimum      = 1
     maximum      = 1
-    volume_size  = 30
+    volume_size  = 50
     volume_type  = "storage_premium_perf2"
   }
 
@@ -71,6 +71,12 @@ output "pg_port" {
 output "pg_password" {
   description = "PostgreSQL Passwort"
   value       = module.stackit.pg_password
+  sensitive   = true
+}
+
+output "pg_readonly_password" {
+  description = "PostgreSQL Read-Only Passwort"
+  value       = module.stackit.pg_readonly_password
   sensitive   = true
 }
 

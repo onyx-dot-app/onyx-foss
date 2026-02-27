@@ -8,7 +8,7 @@
 - **Basis:** Fork von Onyx FOSS (MIT) mit Custom Extension Layer
 
 ## Tech Stack (zusätzlich zu Onyx)
-- IaC: Terraform (`deployment/terraform/`) — StackIT Provider ~> 0.56
+- IaC: Terraform (`deployment/terraform/`) — StackIT Provider ~> 0.80
 - Helm: Value-Overlays (`deployment/helm/values/`) — Onyx Chart READ-ONLY
 - CI/CD: `.github/workflows/stackit-deploy.yml` (Build → StackIT Registry → Helm Deploy)
 - CI: `upstream-check.yml` (wöchentlicher Merge-Kompatibilitäts-Check)
@@ -18,22 +18,18 @@
 ## Aktueller Status
 
 - **Phase 0-1.5:** ✅ Grundlagen, Dev Environment, Dokumentation
-- **Phase 2 (Cloud / M1 Infrastruktur):** 🔧 **IN ARBEIT**
-  - ✅ StackIT-Zugang vorhanden
-  - ✅ Terraform-Module erstellt (SKE, PostgreSQL Flex, Object Storage)
-  - ✅ Helm Value-Overlays erstellt (values-common.yaml, values-dev.yaml)
-  - ✅ CI/CD Pipeline erstellt (stackit-deploy.yml)
-  - ✅ Implementierungsplan: `docs/referenz/stackit-implementierungsplan.md`
-  - ✅ StackIT CLI installiert + Login
-  - ✅ Service Account `voeb-terraform` erstellt + Key generiert
-  - ✅ Container Registry aktiviert
-  - ✅ Terraform init + plan erfolgreich (5 Ressourcen: SKE, PG, Storage)
-  - ✅ Terraform-Code Fix: `default_region` (Provider v0.80)
-  - ✅ Runbooks erstellt: `docs/runbooks/`
-  - ✅ SA `project.admin`-Rolle erteilt (2026-02-22)
-  - ✅ Terraform apply (DEV) erfolgreich (2026-02-22) — SKE, PG Flex, Object Storage provisioniert
-  - ⏳ K8s Namespace + Secrets erstellen
-  - ⏳ Erster Helm Deploy (DEV)
+- **Phase 2 (Cloud / M1 Infrastruktur):** ✅ **DEV LIVE** (2026-02-27)
+  - ✅ StackIT-Zugang, CLI, Service Account, Container Registry
+  - ✅ Terraform apply: SKE (g1a.4d), PG Flex, Object Storage
+  - ✅ K8s Namespace `onyx-dev` + Image Pull Secret + Redis Operator
+  - ✅ PostgreSQL: DB `onyx` angelegt, `db_readonly_user` per Terraform
+  - ✅ Object Storage: Credentials erstellt, in Helm Secrets konfiguriert
+  - ✅ Helm Release `onyx-dev`: Alle 10 Pods 1/1 Running
+  - ✅ API Health OK, Login funktioniert unter `http://188.34.74.187`
+  - ✅ Runbooks: stackit-projekt-setup.md, stackit-postgresql.md, helm-deploy.md
+  - ⏳ CI/CD Pipeline: GitHub Secrets noch nicht gesetzt
+  - ⏳ DNS: `dev.chatbot.voeb.example.com` → `188.34.74.187`
+  - ⏳ TLS/HTTPS (nach DNS-Setup)
   - 📋 Scope: **Nur DEV-Umgebung.** TEST/PROD folgt nach stabilem DEV.
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
@@ -42,7 +38,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**K8s Namespace + Secrets einrichten, dann erster Helm Deploy (DEV).** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**DNS-Setup + TLS → CI/CD GitHub Secrets → LLM-Integration (wartet auf StackIT API Keys).** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

@@ -49,6 +49,19 @@ output "pg_instance_id" {
   value       = stackit_postgresflex_instance.main.instance_id
 }
 
+# --- PostgreSQL Read-Only User ---
+
+output "pg_readonly_username" {
+  description = "PostgreSQL read-only username"
+  value       = stackit_postgresflex_user.readonly.username
+}
+
+output "pg_readonly_password" {
+  description = "PostgreSQL read-only password (auto-generated)"
+  value       = stackit_postgresflex_user.readonly.password
+  sensitive   = true
+}
+
 # --- Object Storage ---
 
 output "bucket_name" {

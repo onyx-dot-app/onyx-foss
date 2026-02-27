@@ -61,7 +61,7 @@ deployment/terraform/
     main.tf                  ← SKE Cluster, PostgreSQL Flex, Object Storage
     variables.tf             ← Alle Variablen mit DEV-Defaults
     outputs.tf               ← Kubeconfig, PG-Credentials, Bucket-URL
-    versions.tf              ← Provider stackitcloud/stackit ~> 0.56
+    versions.tf              ← Provider stackitcloud/stackit ~> 0.80
   environments/dev/
     main.tf                  ← DEV-Umgebung (ruft Modul auf)
     backend.tf               ← State-Backend (lokal, remote vorbereitet)

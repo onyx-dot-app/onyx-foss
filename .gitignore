@@ -74,3 +74,6 @@ deployment/terraform/environments/**/*.auto.tfvars
 **/tfplan
 **/kubeconfig*.yaml
 **/kubeconfig*.yml
+
+# Helm Secrets (Passwörter, API Keys)
+deployment/helm/values/*-secrets.yaml
