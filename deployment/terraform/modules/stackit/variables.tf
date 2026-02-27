@@ -66,10 +66,10 @@ variable "node_pool" {
     volume_type  = string
   })
   default = {
-    machine_type = "g1a.4d"  # 4 vCPU, 16 GB RAM
+    machine_type = "g1a.2d"  # 2 vCPU, 8 GB RAM (DEV-Sizing)
     minimum      = 1
     maximum      = 1
-    volume_size  = 50
+    volume_size  = 30
     volume_type  = "storage_premium_perf2"
   }
 }

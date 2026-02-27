@@ -25,7 +25,7 @@
 
 | Environment | Node-Typ | vCPU | RAM | Anzahl |
 |-------------|----------|------|-----|--------|
-| DEV + TEST (shared) | g1a.4d | 4 | 16 GB | 1 |
+| DEV + TEST (shared) | g1a.2d | 2 | 8 GB | 1 |
 | PROD (dedicated) | g1a.4d | 4 | 16 GB | 2 (bei Bedarf 3) |
 
 **PROD allokierbare Kapazität (2× g1a.4d):** ~7 CPU / ~31 GB RAM

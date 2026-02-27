@@ -71,5 +71,6 @@ docs/referenz/*.pdf
 # StackIT Credentials + Terraform Secrets
 deployment/terraform/environments/**/credentials.json
 deployment/terraform/environments/**/*.auto.tfvars
+**/tfplan
 **/kubeconfig*.yaml
 **/kubeconfig*.yml

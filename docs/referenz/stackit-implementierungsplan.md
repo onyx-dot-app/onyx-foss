@@ -15,10 +15,10 @@
 | Ressource | Spec | Geschätzte Kosten |
 |-----------|------|-------------------|
 | 1× SKE Cluster | 1 Node Pool (`devtest`) | ~72 EUR/Monat |
-| 1× Worker Node | g1a.4d (4 vCPU, 16 GB RAM) | ~142 EUR/Monat |
+| 1× Worker Node | g1a.2d (2 vCPU, 8 GB RAM) | ~70 EUR/Monat |
 | 1× PostgreSQL Flex 2.4 | Single (2 CPU, 4 GB, 20 GB SSD) | ~30 EUR/Monat |
 | 1× Object Storage Bucket | `vob-dev` | ~5 EUR/Monat |
-| **TOTAL DEV** | | **~250 EUR/Monat** |
+| **TOTAL DEV** | | **~180 EUR/Monat** |
 
 ---
 
@@ -133,6 +133,8 @@ docker login registry.onstackit.cloud
 
 ## Phase 2: DEV-Infrastruktur provisionieren
 
+> **Status**: ✅ Abgeschlossen (2026-02-22). SKE Cluster, PostgreSQL Flex und Object Storage laufen.
+
 ### 2.1 Terraform initialisieren
 
 > **Voraussetzung:** `STACKIT_SERVICE_ACCOUNT_KEY_PATH` muss gesetzt sein (siehe Phase 1.1).
@@ -157,8 +159,8 @@ terraform apply tfplan
 Das Modul in `deployment/terraform/modules/stackit/main.tf` provisioniert:
 
 **SKE Cluster** (`vob-chatbot`):
-- 1 Node Pool `devtest` mit 1× g1a.4d
-- Kubernetes >= 1.31
+- 1 Node Pool `devtest` mit 1× g1a.2d
+- Kubernetes v1.32.12 (SKE weist nächst-verfügbare Version zu)
 - Flatcar OS
 - Maintenance-Window: 02:00–04:00 UTC
 - ACL: offen (wird später eingeschränkt)
@@ -177,8 +179,12 @@ Das Modul in `deployment/terraform/modules/stackit/main.tf` provisioniert:
 ### 2.3 Outputs sichern
 
 ```bash
-# Kubeconfig speichern
-terraform output -raw kubeconfig > ~/.kube/voeb-chatbot.yaml
+# Kubeconfig über StackIT CLI holen (NICHT terraform output — Token läuft nach ~1h ab)
+stackit ske kubeconfig create vob-chatbot \
+  --project-id <PROJECT_ID> \
+  --expiration 12h
+# Speichert automatisch in ~/.kube/config bzw. --filepath angeben
+
 export KUBECONFIG=~/.kube/voeb-chatbot.yaml
 
 # PostgreSQL-Zugangsdaten
@@ -191,9 +197,13 @@ kubectl get nodes
 kubectl cluster-info
 ```
 
+> **Hinweis:** `terraform output -raw kubeconfig` generiert ein Client-Zertifikat mit ~1h Gültigkeit. Für den täglichen Zugriff immer `stackit ske kubeconfig create` mit `--expiration` verwenden.
+
 ---
 
 ## Phase 3: Kubernetes-Namespace einrichten
+
+> **Status**: ⏭️ **Nächster Schritt**
 
 ### 3.1 DEV Namespace
 
@@ -232,6 +242,8 @@ spec:
 
 ## Phase 4: Helm Deploy (DEV)
 
+> **Status**: ⏳ Wartet auf Phase 3
+
 ### 4.1 Helm Values anpassen
 
 Nach `terraform apply` die tatsächlichen Werte in `deployment/helm/values/values-dev.yaml` eintragen:
@@ -265,17 +277,19 @@ kubectl get svc -n onyx-dev
 |-----------|------------|-------------|----------|
 | Backend API | 250m | 512Mi | 1 |
 | Frontend | 100m | 256Mi | 1 |
-| Vespa | 1000m | 2Gi | 1 |
+| Vespa | 500m | 2Gi | 1 |
 | Redis | 100m | 128Mi | 1 |
-| Model Server (Inference) | 500m | 1Gi | 1 |
-| Model Server (Indexing) | 500m | 1Gi | 1 |
-| **TOTAL DEV** | **~2.5 CPU** | **~5 Gi** | |
+| Model Server (Inference) | 250m | 768Mi | 1 |
+| Model Server (Indexing) | 250m | 768Mi | 1 |
+| **TOTAL DEV** | **~1.5 CPU** | **~4.4 Gi** | |
 
-**Verfügbar (1× g1a.4d)**: 4 CPU / 16 GB RAM → genug Headroom.
+**Verfügbar (1× g1a.2d)**: 2 CPU / 8 GB RAM → ausreichend für DEV. Bei Bedarf auf g1a.4d skalierbar.
 
 ---
 
 ## Phase 5: CI/CD Pipeline
+
+> **Status**: ⏳ Pipeline erstellt, GitHub Secrets noch nicht gesetzt
 
 Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
 
@@ -289,6 +303,8 @@ Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
 ---
 
 ## Phase 6: LLM-Integration (nach funktionierendem Deploy)
+
+> **Status**: 🔒 Blockiert — StackIT AI Model Serving API Keys ausstehend
 
 StackIT AI Model Serving bietet eine OpenAI-kompatible API.
 Onyx unterstützt das nativ über LiteLLM.
@@ -310,7 +326,7 @@ Onyx unterstützt das nativ über LiteLLM.
 
 | Kriterium | Test | Status |
 |-----------|------|--------|
-| K8s Cluster läuft | `kubectl get nodes` → Ready | [ ] |
+| K8s Cluster läuft | `kubectl get nodes` → Ready | [x] ✅ (2026-02-27 verifiziert) |
 | PostgreSQL erreichbar | `psql -h <PG_HOST> -U onyx_app -c "SELECT 1"` | [ ] |
 | Vespa deployed | `kubectl get pods -n onyx-dev -l app=vespa` | [ ] |
 | Object Storage | `aws s3 ls s3://vob-dev/ --endpoint-url https://...` | [ ] |
@@ -338,8 +354,8 @@ Onyx unterstützt das nativ über LiteLLM.
 | 1 | StackIT Project ID für Terraform | Niko | ✅ Erledigt (2026-02-12) |
 | 2 | Service Account erstellen | Niko | ✅ Erledigt (2026-02-12) |
 | 3 | Container Registry aktivieren | Niko | ✅ Erledigt (2026-02-12) |
-| 4 | SA `project.admin`-Rolle zuweisen | Org-Admin | **Blockiert** — Niko hat nur `editor`-Rolle |
-| 5 | Terraform apply (DEV) | Niko | Blockiert durch Nr. 4 |
+| 4 | SA `project.admin`-Rolle zuweisen | Org-Admin | ✅ Erledigt (2026-02-22) |
+| 5 | Terraform apply (DEV) | Niko | ✅ Erledigt (2026-02-22) |
 | 6 | StackIT AI Model Serving API Keys | StackIT | Blockiert |
 | 7 | DNS-Zone | VÖB IT | Offen |
 | 8 | Entra ID Credentials | VÖB IT | Blockiert |

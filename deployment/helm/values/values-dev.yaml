@@ -70,8 +70,7 @@ api:
     limits:
       cpu: 500m
       memory: 1Gi
-  nodeSelector:
-    environment: devtest
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.
 
 # --- Frontend: 1 Replica ---
 webserver:
@@ -83,19 +82,18 @@ webserver:
     limits:
       cpu: 250m
       memory: 512Mi
-  nodeSelector:
-    environment: devtest
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.
 
-# --- Vespa: 1 Replica, reduzierte Ressourcen ---
+# --- Vespa: 1 Replica, minimale Requests (DEV) ---
 vespa:
   enabled: true
   replicaCount: 1
   resources:
     requests:
-      cpu: 1000m
+      cpu: 500m
       memory: 2Gi
     limits:
-      cpu: 2000m
+      cpu: 1500m
       memory: 4Gi
   volumeClaimTemplates:
     - metadata:
@@ -118,27 +116,25 @@ redis:
         cpu: 250m
         memory: 256Mi
 
-# --- Model Server: 1 Replica, reduziert ---
+# --- Model Server: 1 Replica, minimale Requests (DEV) ---
 inferenceCapability:
   replicaCount: 1
   resources:
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 250m
+      memory: 768Mi
     limits:
       cpu: 1000m
       memory: 2Gi
-  nodeSelector:
-    environment: devtest
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.
 
 indexCapability:
   replicaCount: 1
   resources:
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 250m
+      memory: 768Mi
     limits:
       cpu: 1000m
       memory: 2Gi
-  nodeSelector:
-    environment: devtest
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.

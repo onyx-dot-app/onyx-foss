@@ -30,8 +30,8 @@
   - ✅ Terraform init + plan erfolgreich (5 Ressourcen: SKE, PG, Storage)
   - ✅ Terraform-Code Fix: `default_region` (Provider v0.80)
   - ✅ Runbooks erstellt: `docs/runbooks/`
-  - ⏳ SA `project.admin`-Rolle — **wartet auf Org-Admin**
-  - ⏳ Terraform apply (DEV) — blockiert durch SA-Berechtigungen
+  - ✅ SA `project.admin`-Rolle erteilt (2026-02-22)
+  - ✅ Terraform apply (DEV) erfolgreich (2026-02-22) — SKE, PG Flex, Object Storage provisioniert
   - ⏳ K8s Namespace + Secrets erstellen
   - ⏳ Erster Helm Deploy (DEV)
   - 📋 Scope: **Nur DEV-Umgebung.** TEST/PROD folgt nach stabilem DEV.
@@ -42,12 +42,11 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**M1 Infrastruktur (DEV) fertigstellen.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**K8s Namespace + Secrets einrichten, dann erster Helm Deploy (DEV).** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
-| SA `project.admin`-Rolle | Org-Admin | Terraform apply blockiert |
 | Entra ID Zugangsdaten | VÖB IT | Phase 3 |
 | LLM API Keys | StackIT | Chat nicht testbar |
 | JNnovate Scope | JNnovate | Aufgabenverteilung |
@@ -56,3 +55,4 @@
 | Blocker | Gelöst | Datum |
 |---------|--------|-------|
 | StackIT Zugang | ✅ Zugang vorhanden | Feb 2026 |
+| SA `project.admin`-Rolle | ✅ Rolle erteilt | 2026-02-22 |
