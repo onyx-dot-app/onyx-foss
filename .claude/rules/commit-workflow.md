@@ -26,8 +26,53 @@ git push origin feature/{modulname}
 ```
 
 ## Commit-Format
+
 ```
-<type>(<scope>): <description>
-Types: feat, fix, docs, refactor, test, chore, spec
-Scopes: ext-token, ext-rbac, ext-analytics, ext-branding, ext-prompts, ext-access, ext-framework, docs, ci
+<type>(<scope>): <kurze Beschreibung>
+
+- Konkrete Änderung 1
+- Konkrete Änderung 2
+- ...
+```
+
+### Regeln
+- **Titel**: Max. 72 Zeichen, Imperativ ("Add", nicht "Added"), kleingeschrieben nach Scope
+- **Body**: Bullet-Liste mit konkreten Änderungen (was + warum)
+- **Leerzeile** zwischen Titel und Body
+- **Sprache**: Deutsch oder Englisch, aber konsistent innerhalb eines Commits
+
+### Types
+| Type | Verwendung |
+|------|------------|
+| `feat` | Neues Feature / neue Funktionalität |
+| `fix` | Bugfix |
+| `docs` | Nur Dokumentation |
+| `refactor` | Code-Umbau ohne Funktionsänderung |
+| `test` | Tests hinzufügen/ändern |
+| `chore` | Build, CI, Dependencies, Tooling |
+| `spec` | Modulspezifikation |
+
+### Scopes
+| Scope | Bereich |
+|-------|---------|
+| `ext-framework` | Extension Framework Basis |
+| `ext-token` | Token Limits Modul |
+| `ext-rbac` | RBAC Modul |
+| `ext-analytics` | Analytics Modul |
+| `ext-branding` | Branding Modul |
+| `ext-prompts` | Custom Prompts Modul |
+| `ext-access` | Access Control Modul |
+| `stackit-infra` | Terraform, StackIT Ressourcen |
+| `helm` | Helm Charts, Values |
+| `ci` | GitHub Actions, CI/CD Pipelines |
+| `docs` | Dokumentation allgemein |
+
+### Beispiel
+```
+docs(stackit-infra): Doku an tatsächlichen DEV-Stand anpassen
+
+- Terraform apply + SA-Rolle als erledigt markiert (2026-02-22)
+- Kubeconfig-Anleitung: stackit CLI statt terraform output
+- K8s-Version auf v1.32 korrigiert
+- Phasen-Status-Marker im Implementierungsplan ergänzt
 ```
