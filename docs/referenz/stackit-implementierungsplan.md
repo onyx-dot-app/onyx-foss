@@ -29,7 +29,7 @@
 | CloudNativePG (in-cluster) | **StackIT Managed PostgreSQL Flex** (extern) | Backups, PITR managed |
 | MinIO (in-cluster) | **StackIT Object Storage** (extern) | S3-kompatibel, kein Overhead |
 | Docker Hub Images | **StackIT Container Registry** | Datensouveränität |
-| OpenAI / LiteLLM | **StackIT AI Model Serving** | Daten bleiben in DE |
+| OpenAI / LiteLLM | **StackIT AI Model Serving** (`openai/gpt-oss-120b`) | Daten bleiben in DE, OpenAI-kompatible API |
 | Vespa (in-cluster) | **Vespa (in-cluster)** — bleibt | Kein managed Vespa verfügbar |
 | Redis (in-cluster) | **Redis (in-cluster)** — bleibt | Lightweight genug |
 
@@ -312,21 +312,109 @@ Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
 
 ## Phase 6: LLM-Integration (nach funktionierendem Deploy)
 
-> **Status**: 🔒 Blockiert — StackIT AI Model Serving API Keys ausstehend
+> **Status**: ✅ Chat-Modell konfiguriert (2026-02-27). Embedding-Modell ausstehend.
 
-StackIT AI Model Serving bietet eine OpenAI-kompatible API.
-Onyx unterstützt das nativ über LiteLLM.
+StackIT AI Model Serving bietet eine **OpenAI-kompatible API** (vLLM-Backend).
+Onyx unterstützt das nativ über LiteLLM — keine Code-Änderung nötig, reine Admin-UI-Konfiguration.
 
-**Konfiguration über Onyx Admin UI** (nach Deploy):
+### 6.1 Voraussetzung: Auth Token erstellen
+
+Im StackIT Portal → AI Model Serving → Token erstellen (Name + Laufzeit, z.B. `onyx-dev` / 90d).
+Ein Token gilt für **alle Modelle** (Chat + Embedding) im Projekt.
+
+> ⚠️ Token wird nur einmalig bei Erstellung angezeigt — sofort sicher speichern!
+
+### 6.2 Chat-Modell konfigurieren (Onyx Admin UI)
+
+> ✅ **Verifiziert am 2026-02-27** — GPT-OSS 120B antwortet korrekt.
+
+Pfad: Admin UI → `http://<HOST>/admin/configuration/llm` → **Setup Custom LLM**
 
 | Feld | Wert |
 |------|------|
-| API Endpoint | `https://ai-model-serving.eu01.onstackit.cloud/v1` |
-| API Key | StackIT Service Account Token |
-| Model | `mistral-large-latest` |
-| Embedding Model | StackIT Embedding Plus |
+| Display Name | `StackIT - Demo Dev` |
+| Provider Name | `openai` |
+| API Key | StackIT AI Model Serving Auth Token |
+| API Base | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
+| Model Name | `openai/gpt-oss-120b` |
+| Max Input Tokens | `130048` |
+| Default Model | `openai/gpt-oss-120b` |
 
-**Token-Kalkulation DEV** (5 User, ~550 Queries/Monat): ~2 EUR/Monat LLM-Kosten.
+> **LiteLLM-Besonderheit:** StackIT-Modell-IDs enthalten einen Prefix (z.B. `openai/gpt-oss-120b`).
+> In der Onyx Admin UI muss der **volle StackIT-Modellname** als Model Name eingetragen werden.
+> Onyx baut intern `{provider}/{model}` → `openai/openai/gpt-oss-120b`.
+> LiteLLM splittet beim ersten `/`, erkennt Provider=`openai`, und schickt `openai/gpt-oss-120b` korrekt an die API.
+>
+> **NICHT** den "OpenAI"-Provider aus der Standardliste verwenden — dessen Formular validiert auf `sk-`-Key-Format.
+> Stattdessen immer **"Setup Custom LLM"** nutzen.
+>
+> **Provider Name ist IMMER `openai`** — unabhängig vom Modell (GPT-OSS, Qwen, Llama, Gemma, ...).
+> Der Provider Name bestimmt das API-Protokoll (OpenAI-kompatibel), nicht das Modell.
+> Den Modellhersteller (z.B. `qwen`, `google`) **NICHT** als Provider Name eintragen.
+
+**Modell-Details GPT-OSS 120B:**
+- 131K Token Kontext, 4-bit Quantisierung
+- Tool Calling, Reasoning, Structured Output
+- 0,45 EUR / 1M Input-Tokens, 0,65 EUR / 1M Output-Tokens
+
+#### Qwen3-VL 235B (zweites Chat-Modell)
+
+> ✅ **Verifiziert am 2026-02-27** — Qwen3-VL antwortet korrekt.
+
+Separater Custom LLM Provider in der Admin UI:
+
+| Feld | Wert |
+|------|------|
+| Display Name | `StackIT - Demo - Qwen3` |
+| Provider Name | `openai` |
+| API Key | Gleicher StackIT Auth Token |
+| API Base | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
+| Model Name | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` |
+| Default Model | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` |
+
+**Modell-Details Qwen3-VL 235B:**
+- 218K Token Kontext, 8-bit Quantisierung
+- Vision, OCR (32 Sprachen), Tool Calling
+- 0,45 EUR / 1M Input-Tokens, 0,65 EUR / 1M Output-Tokens
+
+### 6.3 Embedding-Modell konfigurieren
+
+> ⏳ Noch nicht konfiguriert.
+
+Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Eintrag in der Admin UI.
+
+| Feld | Wert |
+|------|------|
+| Display Name | `StackIT Embedding - Dev` |
+| Provider Name | `openai` |
+| API Key | Gleicher Auth Token |
+| API Base | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
+| Model Name | `intfloat/e5-mistral-7b-instruct` |
+| Default Model | `intfloat/e5-mistral-7b-instruct` |
+
+**Modell-Details E5 Mistral 7B:** 4096 Dimensionen, max 4096 Tokens, 0,02 EUR / 1M Tokens.
+
+### 6.4 Weitere verfügbare Modelle (Fallback / Alternativen)
+
+| Modell | StackIT Model ID | Kontext | Status |
+|--------|------------------|---------|--------|
+| **GPT-OSS 120B** | `openai/gpt-oss-120b` | 131K | ✅ Verifiziert |
+| **Qwen3-VL 235B** | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | 218K | ✅ Verifiziert |
+| Llama 3.3 70B | `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` | 128K | Verfügbar |
+| Gemma 3 27B | `google/gemma-3-27b-it` | 37K | Verfügbar |
+| Mistral-Nemo 12B | `neuralmagic/Mistral-Nemo-Instruct-2407-FP8` | 128K | Verfügbar |
+| Llama 3.1 8B | `neuralmagic/Meta-Llama-3.1-8B-Instruct-FP8` | 128K | Verfügbar |
+
+> Bei Modellwechsel: Die **volle StackIT Model ID** als Model Name eintragen (s. Abschnitt 6.2).
+
+### 6.5 Rate Limits
+
+- **TPM:** 200.000 Tokens/Minute (Output-Tokens 5× gewichtet)
+- **RPM:** 30–600 Requests/Minute (modellabhängig)
+
+### 6.6 Token-Kalkulation DEV
+
+5 User, ~550 Queries/Monat → ~2–3 EUR/Monat LLM-Kosten (Chat + Embedding).
 
 ---
 
@@ -341,6 +429,9 @@ Onyx unterstützt das nativ über LiteLLM.
 | Object Storage | Credentials aktiv, api-server startet ohne Fehler | [x] ✅ (2026-02-27) |
 | API Health | `curl http://188.34.74.187/api/health` → `{"success":true}` | [x] ✅ (2026-02-27) |
 | Onyx UI erreichbar | `http://188.34.74.187/auth/login` → Login-Seite | [x] ✅ (2026-02-27) |
+| LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
+| LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
+| LLM Embedding-Modell | E5 Mistral 7B für Dokumenten-Suche | [ ] ⏳ |
 | CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (GitHub Secrets fehlen) |
 
 ---
@@ -369,7 +460,7 @@ Onyx unterstützt das nativ über LiteLLM.
 | 6 | Helm Deploy (DEV) | Niko | ✅ Erledigt (2026-02-27) |
 | 7 | DB `onyx` + `db_readonly_user` anlegen | Niko | ✅ Erledigt (2026-02-27) |
 | 8 | Object Storage Credentials | Niko | ✅ Erledigt (2026-02-27) |
-| 9 | StackIT AI Model Serving API Keys | StackIT | Blockiert |
+| 9 | StackIT AI Model Serving (Chat-Modell konfiguriert) | Niko | ✅ Erledigt (2026-02-27) |
 | 10 | DNS-Zone (`dev.chatbot.voeb.example.com` → `188.34.74.187`) | VÖB IT | Offen |
 | 11 | Entra ID Credentials | VÖB IT | Blockiert |
 | 12 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |

@@ -30,6 +30,8 @@
   - ⏳ CI/CD Pipeline: GitHub Secrets noch nicht gesetzt
   - ⏳ DNS: `dev.chatbot.voeb.example.com` → `188.34.74.187`
   - ⏳ TLS/HTTPS (nach DNS-Setup)
+  - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
+  - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert
   - 📋 Scope: **Nur DEV-Umgebung.** TEST/PROD folgt nach stabilem DEV.
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
@@ -38,13 +40,12 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**DNS-Setup + TLS → CI/CD GitHub Secrets → LLM-Integration (wartet auf StackIT API Keys).** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**Embedding-Modell konfigurieren → DNS-Setup + TLS → CI/CD GitHub Secrets.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
 | Entra ID Zugangsdaten | VÖB IT | Phase 3 |
-| LLM API Keys | StackIT | Chat nicht testbar |
 | JNnovate Scope | JNnovate | Aufgabenverteilung |
 
 ## Erledigte Blocker
@@ -52,3 +53,4 @@
 |---------|--------|-------|
 | StackIT Zugang | ✅ Zugang vorhanden | Feb 2026 |
 | SA `project.admin`-Rolle | ✅ Rolle erteilt | 2026-02-22 |
+| LLM API Keys | ✅ StackIT AI Model Serving Token erstellt, GPT-OSS 120B konfiguriert | 2026-02-27 |
