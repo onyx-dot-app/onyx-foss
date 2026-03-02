@@ -1,0 +1,38 @@
+name: Upstream Compatibility Check
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Jeden Montag 8 Uhr
+  workflow_dispatch:       # Manuell auslösbar
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/onyx-dot-app/onyx.git || true
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Test merge compatibility
+        run: |
+          git checkout -b test-upstream-merge origin/main
+          if git merge upstream/main --no-commit --no-ff; then
+            echo "✅ Upstream-Merge erfolgreich — keine Konflikte"
+            git merge --abort
+          else
+            echo "⚠️ MERGE-KONFLIKTE ERKANNT"
+            echo "Konflikt-Dateien:"
+            git diff --name-only --diff-filter=U
+            git merge --abort
+            exit 1
+          fi
+
+      - name: Notify on conflict
+        if: failure()
+        run: |
+          echo "::warning::Upstream hat sich geändert und verursacht Merge-Konflikte. Bitte prüfen."

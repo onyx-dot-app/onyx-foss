@@ -44,7 +44,9 @@ dependencies:
     version: 5.4.0
     repository: https://charts.min.io/
     condition: minio.enabled
-  - name: code-interpreter
-    version: 0.2.0
-    repository: https://onyx-dot-app.github.io/code-interpreter/
-    condition: codeInterpreter.enabled
+  # HINWEIS: code-interpreter Repo ist upstream 404 (Stand Feb 2026).
+  # Dependency deaktiviert da codeInterpreter.enabled=false.
+  # - name: code-interpreter
+  #   version: 0.2.0
+  #   repository: https://onyx-dot-app.github.io/code-interpreter/
+  #   condition: codeInterpreter.enabled

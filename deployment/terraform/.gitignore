@@ -1,0 +1,4 @@
+# Override: Terraform Lock-Datei MUSS versioniert werden
+# (Root .gitignore ignoriert .terraform.lock.hcl global)
+# Siehe: https://developer.hashicorp.com/terraform/language/files/dependency-lock
+!**/.terraform.lock.hcl

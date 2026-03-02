@@ -1,0 +1,14 @@
+# VÖB Production Image — extends Onyx Backend with Extension Framework
+#
+# Builds on top of the official Onyx backend image and adds the ext/ package.
+# This avoids modifying the upstream Dockerfile (zero merge conflicts).
+#
+# Build:
+#   docker build -f Dockerfile.voeb -t voeb-chatbot-backend:latest ../../backend
+#
+# The build context is ../../backend, so ./ext maps to backend/ext/
+
+ARG IMAGE_TAG=latest
+FROM onyxdotapp/onyx-backend:${IMAGE_TAG}
+
+COPY --chown=onyx:onyx ./ext /app/ext

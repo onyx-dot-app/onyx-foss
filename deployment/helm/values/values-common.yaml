@@ -1,0 +1,72 @@
+# ===========================================================
+# VÖB Service Chatbot — Gemeinsame Helm Values
+# ===========================================================
+# Gilt für ALLE Environments (dev, test, prod).
+# Environment-spezifische Overrides in values-{env}.yaml
+#
+# Usage:
+#   helm upgrade --install onyx-dev deployment/helm/charts/onyx \
+#     -f deployment/helm/values/values-common.yaml \
+#     -f deployment/helm/values/values-dev.yaml \
+#     --namespace onyx-dev
+# ===========================================================
+
+global:
+  pullPolicy: IfNotPresent
+  host: "0.0.0.0"
+
+# --- PostgreSQL: DEAKTIVIERT ---
+# Wir nutzen StackIT Managed PostgreSQL Flex (extern).
+# Connection-Details kommen per Environment-Values.
+postgresql:
+  enabled: false
+
+# --- MinIO: DEAKTIVIERT ---
+# Wir nutzen StackIT Object Storage (S3-kompatibel, extern).
+minio:
+  enabled: false
+
+# --- OpenSearch: DEAKTIVIERT ---
+# Wir nutzen Vespa als Vektor-Datenbank.
+opensearch:
+  enabled: false
+
+# --- Vespa: IN-CLUSTER ---
+vespa:
+  enabled: true
+  image:
+    repository: vespa
+    tag: "8.609.39"
+
+# --- Redis: IN-CLUSTER ---
+redis:
+  enabled: true
+  redisStandalone:
+    tag: "v7.0.15"
+
+# --- Ingress Controller ---
+nginx:
+  enabled: true
+  controller:
+    service:
+      type: LoadBalancer
+
+# --- Bots: DEAKTIVIERT ---
+slackbot:
+  enabled: false
+discordbot:
+  enabled: false
+
+# --- Optionale Features: DEAKTIVIERT ---
+codeInterpreter:
+  enabled: false
+mcpServer:
+  enabled: false
+
+# --- Gemeinsame Konfiguration ---
+configMap:
+  DISABLE_TELEMETRY: "true"
+
+# --- Image Pull Secret für StackIT Container Registry ---
+imagePullSecrets:
+  - name: stackit-registry

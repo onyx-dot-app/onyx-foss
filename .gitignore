@@ -57,3 +57,23 @@ node_modules
 
 # plans
 plans/
+
+# ===========================================================
+# VÖB Fork — Alle Ergänzungen unterhalb dieser Linie
+# Maintainer: Nikolaj Ivanov (CCJ / Coffee Studios)
+# ===========================================================
+
+# Vertrauliche Business-Dokumente (Preise, Verträge, Kalkulationen)
+docs/referenz/*.xlsx
+docs/referenz/*.docx
+docs/referenz/*.pdf
+
+# StackIT Credentials + Terraform Secrets
+deployment/terraform/environments/**/credentials.json
+deployment/terraform/environments/**/*.auto.tfvars
+**/tfplan
+**/kubeconfig*.yaml
+**/kubeconfig*.yml
+
+# Helm Secrets (Passwörter, API Keys)
+deployment/helm/values/*-secrets.yaml

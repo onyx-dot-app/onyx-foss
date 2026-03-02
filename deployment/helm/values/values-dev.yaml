@@ -1,0 +1,190 @@
+# ===========================================================
+# VÖB Service Chatbot — DEV Environment Helm Values
+# ===========================================================
+# Leichtgewichtig: 1 Replica pro Service, Lightweight Worker
+# Shared Node Pool (devtest), kein Autoscaling
+#
+# PostgreSQL + Object Storage Credentials werden als
+# K8s Secrets bereitgestellt (Terraform Output oder manuell).
+# ===========================================================
+
+global:
+  version: "latest"
+
+# --- Externe PostgreSQL (StackIT Flex 2.4 Single) ---
+# Host/Port kommen nach terraform apply aus den Outputs.
+# Bis dahin: Platzhalter, die beim Deploy überschrieben werden.
+auth:
+  postgresql:
+    enabled: true
+    secretName: "onyx-postgresql"
+    values:
+      username: "onyx_app"
+      password: ""  # → Wird über values-dev-secrets.yaml gesetzt (gitignored)
+  redis:
+    enabled: true
+    secretName: "onyx-redis"
+    values:
+      redis_password: "voeb-dev-redis-2026"  # TODO: Starkes Passwort generieren
+  objectstorage:
+    enabled: true
+    secretName: "onyx-objectstorage"
+    values:
+      s3_aws_access_key_id: ""       # → values-dev-secrets.yaml
+      s3_aws_secret_access_key: ""   # → values-dev-secrets.yaml
+
+configMap:
+  # PostgreSQL (StackIT Managed Flex 2.4)
+  POSTGRES_HOST: "be7fe911-4eac-4c9d-a7a8-6dfff674c41f.postgresql.eu01.onstackit.cloud"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "onyx"
+
+  # Redis: Chart generiert "onyx-dev-master" (Bitnami), aber OT Redis Operator
+  # erstellt Service als "onyx-dev". Muss explizit überschrieben werden.
+  REDIS_HOST: "onyx-dev"
+
+  # Read-Only DB User (wird von Alembic-Migration für Knowledge Graph benötigt).
+  # User wird per Terraform auf PG Flex angelegt, da Managed PG kein CREATEROLE erlaubt.
+  DB_READONLY_USER: "db_readonly_user"
+
+  # Object Storage
+  S3_ENDPOINT_URL: "https://object.storage.eu01.onstackit.cloud"
+  S3_FILE_STORE_BUCKET_NAME: "vob-dev"
+
+  # Domain (IP solange kein DNS/TLS — nach DNS-Setup auf FQDN + HTTPS ändern)
+  DOMAIN: "188.34.74.187"
+  WEB_DOMAIN: "http://188.34.74.187"
+
+  # Auth: Basic Auth (Entra ID kommt in Phase 3)
+  AUTH_TYPE: "basic"
+  REQUIRE_EMAIL_VERIFICATION: "false"  # DEV: Kein SMTP konfiguriert
+
+  # Logging
+  LOG_LEVEL: "INFO"
+
+  # Celery: Lightweight Mode (ein konsolidierter Worker statt 8 separate)
+  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
+
+# --- Celery Worker: Nur Beat + Primary, alle anderen auf 0 ---
+# Lightweight Mode: celery_worker_primary übernimmt alles.
+# Die separaten Worker werden auf replicaCount: 0 gesetzt.
+celery_beat:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+celery_worker_primary:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+celery_worker_heavy:
+  replicaCount: 0
+
+celery_worker_light:
+  replicaCount: 0
+
+celery_worker_docfetching:
+  replicaCount: 0
+
+celery_worker_docprocessing:
+  replicaCount: 0
+
+celery_worker_monitoring:
+  replicaCount: 0
+
+celery_worker_user_file_processing:
+  replicaCount: 0
+
+# --- TLS ---
+letsencrypt:
+  enabled: false  # DEV: Erstmal ohne TLS starten, später aktivieren
+
+# --- Backend API: 1 Replica ---
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.
+
+# --- Frontend: 1 Replica ---
+webserver:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.
+
+# --- Vespa: 1 Replica, minimale Requests (DEV) ---
+vespa:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 1500m
+      memory: 4Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+
+# --- Redis: Minimal ---
+redis:
+  redisStandalone:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+# --- Model Server: 1 Replica, minimale Requests (DEV) ---
+inferenceCapability:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.
+
+indexCapability:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  # nodeSelector: nicht nötig bei 1 Node Pool. Wird für PROD gesetzt.

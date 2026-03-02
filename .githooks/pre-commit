@@ -1,0 +1,39 @@
+#!/bin/bash
+# Git Pre-Commit Hook: Blockiert Commits mit verbotenen Onyx-Dateiänderungen
+# Setup: git config core.hooksPath .githooks && chmod +x .githooks/pre-commit
+
+ALLOWED_CORE_FILES=(
+  "backend/onyx/server/app.py"
+  "backend/onyx/llm/llm_call.py"
+  "backend/onyx/auth/permissions.py"
+  "web/src/app/layout.tsx"
+  "web/src/components/header/"
+  "web/src/lib/constants.ts"
+  "backend/onyx/chat/prompt_builder.py"
+)
+
+CHANGED_FILES=$(git diff --cached --name-only)
+BLOCKED=false
+
+for file in $CHANGED_FILES; do
+  if [[ "$file" == backend/onyx/* ]] || [[ "$file" == web/src/* && "$file" != web/src/ext/* ]]; then
+    ALLOWED=false
+    for allowed in "${ALLOWED_CORE_FILES[@]}"; do
+      if [[ "$file" == $allowed* ]]; then
+        ALLOWED=true
+        break
+      fi
+    done
+    if [ "$ALLOWED" = false ]; then
+      echo "❌ BLOCKED: $file (Onyx-Core, nicht erlaubt)"
+      BLOCKED=true
+    fi
+  fi
+done
+
+if [ "$BLOCKED" = true ]; then
+  echo ""
+  echo "COMMIT ABGELEHNT: Verbotene Onyx-Dateiänderungen."
+  echo "Bypass: git commit --no-verify"
+  exit 1
+fi
