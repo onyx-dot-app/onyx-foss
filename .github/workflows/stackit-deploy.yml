@@ -145,6 +145,9 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
 
+      - name: Build Helm dependencies
+        run: helm dependency build ${{ env.HELM_CHART_PATH }}
+
       - name: Deploy to DEV
         run: |
           IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
@@ -198,6 +201,9 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Build Helm dependencies
+        run: helm dependency build ${{ env.HELM_CHART_PATH }}
 
       - name: Deploy to TEST
         run: |
@@ -254,6 +260,9 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Build Helm dependencies
+        run: helm dependency build ${{ env.HELM_CHART_PATH }}
 
       - name: Deploy to PROD
         run: |

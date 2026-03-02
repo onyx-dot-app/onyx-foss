@@ -108,16 +108,24 @@ stackit project member add <SA_EMAIL> \
 Aktivierung über das [StackIT Portal](https://portal.stackit.cloud/) → Sidebar → Container Registry.
 
 ```bash
-# Docker Login
+# Docker Login (persönlich, für Entwicklung)
 docker login registry.onstackit.cloud
 # Username: StackIT-Email
 # Password: CLI Secret (Portal → User Profile)
 
-# Image-Naming:
-# registry.onstackit.cloud/<PROJECT_ID>/onyx-backend:<tag>
-# registry.onstackit.cloud/<PROJECT_ID>/onyx-web-server:<tag>
-# registry.onstackit.cloud/<PROJECT_ID>/onyx-model-server:<tag>
+# Docker Login (Robot Account, für CI/CD)
+docker login registry.onstackit.cloud \
+  -u 'robot$voeb-chatbot+github-ci' \
+  -p '<ROBOT_TOKEN>'
+
+# Image-Naming (Registry-Projektname, NICHT Project UUID):
+# registry.onstackit.cloud/voeb-chatbot/onyx-backend:<tag>
+# registry.onstackit.cloud/voeb-chatbot/onyx-web-server:<tag>
+# registry.onstackit.cloud/voeb-chatbot/onyx-model-server:<tag>
 ```
+
+> **Hinweis:** Die Container Registry nutzt einen eigenen Projektnamen (`voeb-chatbot`),
+> nicht die StackIT Project UUID. Siehe [Container Registry Doku](stackit-container-registry.md).
 
 ### 1.4 GitHub Secrets anlegen
 
