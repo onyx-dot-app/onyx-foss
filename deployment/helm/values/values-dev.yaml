@@ -25,7 +25,7 @@ auth:
     enabled: true
     secretName: "onyx-redis"
     values:
-      redis_password: "voeb-dev-redis-2026"  # TODO: Starkes Passwort generieren
+      redis_password: ""  # → GitHub Secret REDIS_PASSWORD (per --set im Workflow)
   objectstorage:
     enabled: true
     secretName: "onyx-objectstorage"

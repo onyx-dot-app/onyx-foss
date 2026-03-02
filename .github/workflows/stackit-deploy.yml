@@ -14,12 +14,13 @@
 #   Global:
 #     - STACKIT_REGISTRY_USER      (Robot Account Name aus Container Registry)
 #     - STACKIT_REGISTRY_PASSWORD  (Robot Account Token aus Container Registry)
-#     - STACKIT_KUBECONFIG         (base64-encoded, muss bei Ablauf erneuert werden)
+#     - STACKIT_KUBECONFIG         (base64-encoded, Ablauf prüfen! Aktuell: 2026-05-28)
 #   Per Environment (dev/test/prod):
 #     - POSTGRES_PASSWORD          (Managed PG Flex App-User Passwort)
 #     - S3_ACCESS_KEY_ID           (StackIT Object Storage)
 #     - S3_SECRET_ACCESS_KEY       (StackIT Object Storage)
 #     - DB_READONLY_PASSWORD       (PG Readonly User für Knowledge Graph)
+#     - REDIS_PASSWORD             (Redis Standalone Passwort)
 #
 # Hinweis: Die StackIT Project ID (UUID) wird NICHT als Secret benötigt.
 # Die Container Registry nutzt einen eigenen Projektnamen (REGISTRY_PROJECT).
@@ -50,14 +51,24 @@ on:
         required: false
         type: string
 
+# Least-Privilege: Nur Lesezugriff auf Repo-Inhalte.
+permissions:
+  contents: read
+
+# Nur ein Deploy pro Environment gleichzeitig. Laufende Builds bei neuem Push abbrechen.
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'dev' }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: registry.onstackit.cloud
   REGISTRY_PROJECT: voeb-chatbot
   HELM_CHART_PATH: deployment/helm/charts/onyx
-  # Model Server: Upstream-Image von Docker Hub (wir ändern nichts am Model Server)
-  # Repository und Tag getrennt, weil Helm "repository:tag" zusammensetzt.
+  # Model Server: Upstream-Image von Docker Hub (wir ändern nichts am Model Server).
+  # Gepinnt auf konkrete Version — ":latest" ist nicht reproduzierbar.
+  # Bei Upstream-Update: Tag hier und in MEMORY.md aktualisieren.
   MODEL_SERVER_REPO: docker.io/onyxdotapp/onyx-model-server
-  MODEL_SERVER_TAG: latest
+  MODEL_SERVER_TAG: v2.9.8
 
 jobs:
   # =========================================================
@@ -68,7 +79,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.tag.outputs.value }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Determine image tag
         id: tag
@@ -86,20 +97,20 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Login to StackIT Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.STACKIT_REGISTRY_USER }}
           password: ${{ secrets.STACKIT_REGISTRY_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build & Push Backend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./backend
           push: true
@@ -116,20 +127,20 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Login to StackIT Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.STACKIT_REGISTRY_USER }}
           password: ${{ secrets.STACKIT_REGISTRY_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build & Push Frontend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./web
           push: true
@@ -151,15 +162,15 @@ jobs:
     environment: dev
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@bf6a7d304bc2fdb57e0331155b7ebf2c504acf0a # v4
         with:
           version: 'v3.16.0'
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415 # v4
 
       - name: Configure kubeconfig
         run: |
@@ -188,6 +199,7 @@ jobs:
             ${{ env.HELM_CHART_PATH }} \
             --namespace onyx-dev \
             --create-namespace \
+            --history-max 5 \
             -f deployment/helm/values/values-common.yaml \
             -f deployment/helm/values/values-dev.yaml \
             --set "global.version=${IMAGE_TAG}" \
@@ -199,6 +211,7 @@ jobs:
             --set "indexCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
             --set "indexCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
             --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
             --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
@@ -214,21 +227,48 @@ jobs:
           DEPLOYMENTS="onyx-dev-api-server onyx-dev-celery-worker-primary onyx-dev-web-server onyx-dev-celery-beat"
 
           for dep in $DEPLOYMENTS; do
+            echo "Patching $dep to Recreate strategy..."
             kubectl patch deployment "$dep" -n "$NAMESPACE" \
               --type='json' \
-              -p='[{"op":"replace","path":"/spec/strategy","value":{"type":"Recreate"}}]' \
-              2>/dev/null || true
+              -p='[{"op":"replace","path":"/spec/strategy","value":{"type":"Recreate"}}]'
           done
 
           echo "Waiting for all deployments to be ready..."
+          FAILED=0
           for dep in $DEPLOYMENTS onyx-dev-indexing-model onyx-dev-inference-model; do
             echo "  Waiting for $dep..."
-            kubectl rollout status deployment/"$dep" -n "$NAMESPACE" --timeout=10m || true
+            if ! kubectl rollout status deployment/"$dep" -n "$NAMESPACE" --timeout=10m; then
+              echo "::error::Deployment $dep failed to become ready"
+              kubectl describe deployment/"$dep" -n "$NAMESPACE" | tail -20
+              kubectl logs deployment/"$dep" -n "$NAMESPACE" --tail=30 || true
+              FAILED=1
+            fi
           done
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+      - name: Smoke test
+        run: |
+          echo "Waiting for API to be reachable..."
+          DOMAIN=$(kubectl get configmap env-configmap -n onyx-dev -o jsonpath='{.data.WEB_DOMAIN}')
+          for i in $(seq 1 12); do
+            if curl --silent --fail --max-time 5 "${DOMAIN}/api/health" > /dev/null 2>&1; then
+              echo "Health check passed: ${DOMAIN}/api/health"
+              exit 0
+            fi
+            echo "  Attempt $i/12 — waiting 10s..."
+            sleep 10
+          done
+          echo "::error::Health check failed after 2 minutes"
+          exit 1
 
       - name: Verify deployment
+        if: always()
         run: |
+          echo "=== Pods ==="
           kubectl get pods -n onyx-dev
+          echo "=== Services ==="
           kubectl get svc -n onyx-dev
 
   # =========================================================
@@ -241,15 +281,15 @@ jobs:
     environment: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@bf6a7d304bc2fdb57e0331155b7ebf2c504acf0a # v4
         with:
           version: 'v3.16.0'
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415 # v4
 
       - name: Configure kubeconfig
         run: |
@@ -278,6 +318,7 @@ jobs:
             ${{ env.HELM_CHART_PATH }} \
             --namespace onyx-test \
             --create-namespace \
+            --history-max 5 \
             -f deployment/helm/values/values-common.yaml \
             -f deployment/helm/values/values-test.yaml \
             --set "global.version=${IMAGE_TAG}" \
@@ -289,14 +330,18 @@ jobs:
             --set "indexCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
             --set "indexCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
             --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
             --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
-            --wait --timeout 10m
+            --atomic --timeout 10m
 
       - name: Verify deployment
+        if: always()
         run: |
+          echo "=== Pods ==="
           kubectl get pods -n onyx-test
+          echo "=== Services ==="
           kubectl get svc -n onyx-test
 
   # =========================================================
@@ -311,15 +356,15 @@ jobs:
       # In GitHub Settings: Required reviewers aktivieren!
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@bf6a7d304bc2fdb57e0331155b7ebf2c504acf0a # v4
         with:
           version: 'v3.16.0'
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415 # v4
 
       - name: Configure kubeconfig
         run: |
@@ -347,6 +392,7 @@ jobs:
           helm upgrade --install onyx-prod \
             ${{ env.HELM_CHART_PATH }} \
             --namespace onyx-prod \
+            --history-max 5 \
             -f deployment/helm/values/values-common.yaml \
             -f deployment/helm/values/values-prod.yaml \
             --set "global.version=${IMAGE_TAG}" \
@@ -358,12 +404,14 @@ jobs:
             --set "indexCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
             --set "indexCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
             --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
             --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
-            --wait --timeout 15m
+            --atomic --timeout 15m
 
       - name: Verify PROD deployment
+        if: always()
         run: |
           echo "=== Pods ==="
           kubectl get pods -n onyx-prod

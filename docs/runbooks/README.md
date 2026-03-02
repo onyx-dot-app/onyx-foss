@@ -11,7 +11,7 @@ Verifizierte Step-by-Step-Anleitungen für Setup, Deployment und Betrieb der Sta
 | 1 | [stackit-projekt-setup.md](./stackit-projekt-setup.md) | ✅ Verifiziert | StackIT CLI, Service Account, Container Registry |
 | 2 | [stackit-postgresql.md](./stackit-postgresql.md) | ✅ Verifiziert | DB anlegen, Readonly-User, Managed PG Einschränkungen |
 | 3 | [helm-deploy.md](./helm-deploy.md) | ✅ Verifiziert | Helm Install/Upgrade, Secrets, Redis, Troubleshooting |
-| 4 | stackit-ci-cd.md | Ausstehend | GitHub Actions Pipeline konfigurieren |
+| 4 | [ci-cd-pipeline.md](./ci-cd-pipeline.md) | ✅ Verifiziert | CI/CD Pipeline: Deploy, Rollback, Secrets, Troubleshooting |
 
 ## Konventionen
 

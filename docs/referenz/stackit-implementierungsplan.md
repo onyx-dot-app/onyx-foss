@@ -318,20 +318,65 @@ curl -s http://<EXTERNAL_IP>/api/health
 
 ## Phase 5: CI/CD Pipeline
 
-> **Status**: ✅ GitHub Secrets gesetzt, Robot Account erstellt (2026-03-02). Drei Test-Runs durchgeführt:
-> - Run #1: Build OK, Deploy fehlgeschlagen (fehlender `helm dependency build`-Step) → Fix: `f3a22017f`
-> - Run #2: Build OK, Deploy fehlgeschlagen (Helm Repos nicht registriert) → Fix: `64c9c7aca`
-> - Run #3: Läuft (2026-03-02) — beide Fixes angewendet
-> - Upstream-Workflows: 21 Onyx-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
+> **Status**: ✅ Produktionsreif (2026-03-02). Pipeline getestet über 5 Runs, alle Probleme gelöst.
+> - Run #1: Deploy fehlgeschlagen — fehlender `helm dependency build`-Step → Fix: `f3a22017f`
+> - Run #2: Deploy fehlgeschlagen — Helm Repos nicht registriert → Fix: `64c9c7aca`
+> - Run #3: Deploy fehlgeschlagen — `Insufficient CPU` bei RollingUpdate auf Single-Node → Fix: Recreate-Strategie
+> - Run #4: Deploy OK (Pipeline grün), aber API-Server CrashLoop (`LICENSE_ENFORCEMENT_ENABLED` Default `true` aktiviert EE-Code) + Model Server ImagePullBackOff → Rollback
+> - **Run #5: Komplett grün** (ea70a11, ~10 Min). Alle 10 Pods Running, Health Check OK.
+> - 21 Onyx-Upstream-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
 
-Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
+### Pipeline-Architektur
 
-**Ablauf**:
-1. Push auf `develop` → Build-Job baut 3 Docker Images
-2. Images werden in StackIT Container Registry gepusht
-3. Helm Deploy in `onyx-dev` Namespace
+```
+prepare (6s)          → Git SHA als Image Tag bestimmen
+  ├── build-backend   → ~6 Min (parallel)  → StackIT Registry
+  └── build-frontend  → ~8 Min (parallel)  → StackIT Registry
+deploy-{env}          → ~2 Min (Helm upgrade + Smoke Test)
+```
 
-**Voraussetzung**: GitHub Secrets aus Phase 1.4 müssen gesetzt sein.
+**Gesamtdauer: ~10 Minuten** (Build parallel + Deploy).
+
+### Sicherheitsmaßnahmen (Enterprise)
+
+- **SHA-gepinnte GitHub Actions** — alle 6 Actions auf Commit-Hash fixiert (Supply-Chain-Schutz)
+- **Least-Privilege Permissions** — `permissions: contents: read`
+- **Concurrency Control** — max 1 Deploy pro Environment, cancel-in-progress
+- **Secrets ausschließlich über GitHub Secrets** — keine Credentials in Git (auch Redis)
+- **Model Server gepinnt** — `v2.9.8` statt `:latest` (Reproduzierbarkeit)
+
+### Deploy-Verhalten pro Environment
+
+| Feature | DEV | TEST | PROD |
+|---------|-----|------|------|
+| Trigger | `develop`-Push oder manuell | Nur manuell | Nur manuell |
+| Helm Rollback | Manuell | `--atomic` (automatisch) | `--atomic` (automatisch) |
+| Recreate-Patch | Ja (Single-Node) | Nein | Nein |
+| Smoke Test | `/api/health` (120s Timeout) | — | — |
+| Required Reviewers | Nein | Nein | Ja (GitHub Settings) |
+
+### Image-Strategie
+
+| Dienst | Image-Quelle | Tag |
+|--------|-------------|-----|
+| Backend (API + Celery) | StackIT Registry | Git SHA (`ea70a11`) |
+| Frontend (Web) | StackIT Registry | Git SHA |
+| Model Server | Docker Hub Upstream | `v2.9.8` (gepinnt) |
+
+Der Model Server wird **nicht** von uns gebaut — er ist identisch mit Upstream Onyx und wird direkt von Docker Hub gepullt. Das spart ~12 Min Build-Zeit und eliminiert das ImagePullBackOff-Problem (StackIT Registry → Docker Hub).
+
+### Kritische Konfiguration
+
+- `LICENSE_ENFORCEMENT_ENABLED: "false"` in `values-common.yaml` — **PFLICHT**. Onyx FOSS hat Default `true`, was EE-Code-Pfade aktiviert und zum Crash führt (`onyx.server.tenants` existiert nicht im FOSS-Fork).
+- Kubeconfig-Ablauf: **2026-05-28** — muss vorher erneuert werden.
+
+### Voraussetzung
+
+GitHub Secrets aus Phase 1.4 müssen gesetzt sein + `REDIS_PASSWORD` pro Environment.
+
+### Runbook
+
+Detaillierte Anleitung: [`docs/runbooks/ci-cd-pipeline.md`](../runbooks/ci-cd-pipeline.md)
 
 ---
 
@@ -457,7 +502,7 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 | LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Embedding-Modell | E5 Mistral 7B für Dokumenten-Suche | [ ] ⏳ |
-| CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (Run #3 läuft, Helm-Fixes angewendet) |
+| CI/CD funktioniert | Push auf develop → Pods updated | [x] ✅ Run #5 (2026-03-02): 10 Min, 10/10 Pods, Health OK |
 
 ---
 

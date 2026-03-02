@@ -52,18 +52,43 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Run #2 fehlgeschlagen: Helm Repos nicht auf CI-Runner registriert → Fix: `64c9c7aca`
   - `helm repo add` für alle 6 Chart-Dependencies in allen 3 Deploy-Jobs (dev/test/prod)
   - 21 Onyx-Upstream-Workflows deaktiviert (irrelevant für Fork, erzeugten Fehler-E-Mails)
-
-### Deprecated
-- N/A
-
-### Removed
-- N/A
-
-### Fixed
-- N/A
+- [Bugfix] **API-Server EE-Crash behoben** (2026-03-02)
+  - `LICENSE_ENFORCEMENT_ENABLED` hat in Onyx FOSS den Default `"true"` — aktiviert EE-Code-Pfade (`onyx.server.tenants`), die im FOSS-Fork nicht existieren → `ModuleNotFoundError` → CrashLoopBackOff
+  - Fix: `LICENSE_ENFORCEMENT_ENABLED: "false"` explizit in `values-common.yaml` gesetzt
+- [Bugfix] **Model Server ImagePullBackOff behoben** (2026-03-02)
+  - Eigenes Image in StackIT Registry konnte nicht gepullt werden
+  - Fix: Upstream Docker Hub Image (`docker.io/onyxdotapp/onyx-model-server:v2.9.8`) statt eigenem Build
+- [Bugfix] **Helm Image-Tag-Konstruktion** (2026-03-02)
+  - Repository und Tag wurden zusammen gesetzt → Helm erzeugte `repo:latest:sha` (ungültig)
+  - Fix: `image.repository` und `image.tag` getrennt per `--set`
+- [Bugfix] **Recreate-Strategie für Single-Node DEV** (2026-03-02)
+  - RollingUpdate scheiterte auf g1a.4d (4 vCPU) — nicht genug CPU für alte + neue Pods gleichzeitig
+  - Fix: kubectl-Patch auf Recreate-Strategie nach Helm Deploy
 
 ### Security
-- N/A
+- [Security] **GitHub Actions SHA-Pinning** (2026-03-02)
+  - Alle 6 Actions auf Commit-SHA fixiert statt Major-Version-Tags (Supply-Chain-Schutz)
+  - `actions/checkout`, `docker/login-action`, `docker/setup-buildx-action`, `docker/build-push-action`, `azure/setup-helm`, `azure/setup-kubectl`
+- [Security] **Least-Privilege Permissions** (2026-03-02)
+  - `permissions: contents: read` — Workflow hat nur Lesezugriff auf Repo
+- [Security] **Redis-Passwort aus Git entfernt** (2026-03-02)
+  - War hardcoded in `values-dev.yaml` → jetzt über GitHub Secret `REDIS_PASSWORD`
+- [Security] **Concurrency Control** (2026-03-02)
+  - Max 1 Deploy pro Environment gleichzeitig, verhindert Race Conditions
+- [Security] **Model Server Version gepinnt** (2026-03-02)
+  - `v2.9.8` statt `:latest` — reproduzierbare Deployments
+
+### Changed
+- [Infra] **CI/CD Pipeline auf Enterprise-Niveau gehärtet** (2026-03-02)
+  - Backend + Frontend Build parallel (~8 Min statt ~38 Min sequentiell)
+  - Model Server Build entfernt (nutzt Upstream Docker Hub Image)
+  - Smoke Test nach Deploy (`/api/health` mit 120s Timeout)
+  - `--atomic` für TEST/PROD (automatischer Rollback bei Fehler)
+  - `--history-max 5` (Helm Release-Cleanup)
+  - Fehlerbehandlung: `|| true` entfernt, echtes Error-Reporting mit `kubectl describe` + Logs
+  - Verify-Steps mit `if: always()` (Pod-Status auch bei Fehler sichtbar)
+  - Kubeconfig-Ablauf im Header dokumentiert (2026-05-28)
+  - Runbook: `docs/runbooks/ci-cd-pipeline.md`
 
 ---
 

@@ -27,9 +27,10 @@
   - ✅ Helm Release `onyx-dev`: Alle 10 Pods 1/1 Running
   - ✅ API Health OK, Login funktioniert unter `http://188.34.74.187`
   - ✅ Runbooks: stackit-projekt-setup.md, stackit-postgresql.md, helm-deploy.md
-  - ✅ CI/CD Pipeline: Secrets gesetzt, Robot Account erstellt, Helm-Repo-Fix deployed (2026-03-02)
+  - ✅ CI/CD Pipeline: Produktionsreif (2026-03-02) — Parallel-Build ~8 Min, SHA-gepinnte Actions, Smoke Tests, Concurrency
   - ✅ Upstream-Workflows: 21 Onyx-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
-  - ⚠️ CI/CD: Pipeline läuft (Run #4 grün), aber neues Image crasht API-Server (EE-Modul fehlt) → Rollback aktiv
+  - ✅ CI/CD Run #5 (ea70a11): 10 Min, alle 10 Pods Running, Health Check OK
+  - ✅ EE-Crash gelöst: `LICENSE_ENFORCEMENT_ENABLED: "false"` in values-common.yaml
   - ⏳ DNS: `dev.chatbot.voeb.example.com` → `188.34.74.187`
   - ⏳ TLS/HTTPS (nach DNS-Setup)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
@@ -42,7 +43,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. API-Server EE-Crash fixen (ENV prüfen) → 2. Optimierten Workflow committen + Run #5 → 3. Embedding-Modell → 4. Branding (ohne EE) → 5. TEST-Umgebung.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. Embedding-Modell konfigurieren → 2. DNS + TLS → 3. Branding (ohne EE) → 4. TEST-Umgebung.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
