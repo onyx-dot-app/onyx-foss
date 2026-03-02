@@ -145,6 +145,15 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
 
+      - name: Add Helm repositories
+        run: |
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
+          helm repo add opensearch https://opensearch-project.github.io/helm-charts
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
+          helm repo add minio https://charts.min.io/
+
       - name: Build Helm dependencies
         run: helm dependency build ${{ env.HELM_CHART_PATH }}
 
@@ -201,6 +210,15 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
+          helm repo add opensearch https://opensearch-project.github.io/helm-charts
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
+          helm repo add minio https://charts.min.io/
 
       - name: Build Helm dependencies
         run: helm dependency build ${{ env.HELM_CHART_PATH }}
@@ -260,6 +278,15 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.STACKIT_KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
+          helm repo add opensearch https://opensearch-project.github.io/helm-charts
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
+          helm repo add minio https://charts.min.io/
 
       - name: Build Helm dependencies
         run: helm dependency build ${{ env.HELM_CHART_PATH }}
