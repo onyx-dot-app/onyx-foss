@@ -318,7 +318,11 @@ curl -s http://<EXTERNAL_IP>/api/health
 
 ## Phase 5: CI/CD Pipeline
 
-> **Status**: ✅ GitHub Secrets gesetzt, Robot Account erstellt (2026-03-02). Erster Dry-Run steht aus.
+> **Status**: ✅ GitHub Secrets gesetzt, Robot Account erstellt (2026-03-02). Drei Test-Runs durchgeführt:
+> - Run #1: Build OK, Deploy fehlgeschlagen (fehlender `helm dependency build`-Step) → Fix: `f3a22017f`
+> - Run #2: Build OK, Deploy fehlgeschlagen (Helm Repos nicht registriert) → Fix: `64c9c7aca`
+> - Run #3: Läuft (2026-03-02) — beide Fixes angewendet
+> - Upstream-Workflows: 21 Onyx-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
 
 Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
 
@@ -453,7 +457,7 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 | LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Embedding-Modell | E5 Mistral 7B für Dokumenten-Suche | [ ] ⏳ |
-| CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (Secrets gesetzt, Dry-Run ausstehend) |
+| CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (Run #3 läuft, Helm-Fixes angewendet) |
 
 ---
 
@@ -485,6 +489,8 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 | 10 | DNS-Zone (`dev.chatbot.voeb.example.com` → `188.34.74.187`) | VÖB IT | Offen |
 | 11 | Entra ID Credentials | VÖB IT | Blockiert |
 | 12 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |
+| 13 | CI/CD Pipeline Helm-Fixes | Niko | ✅ Erledigt (2026-03-02) — `f3a22017f` + `64c9c7aca` |
+| 14 | Upstream-Workflows deaktivieren | Niko | ✅ Erledigt (2026-03-02) — 21 Workflows disabled via API |
 
 ---
 

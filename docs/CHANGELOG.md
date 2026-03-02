@@ -47,6 +47,11 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - [Bugfix] Core-Datei-Pfade in `.claude/rules/` und `.claude/hooks/` korrigiert (4 von 7 Pfade waren falsch)
+- [Bugfix] **CI/CD Pipeline Helm-Fixes** (2026-03-02)
+  - Run #1 fehlgeschlagen: `helm dependency build`-Step fehlte im Deploy-Job → Fix: `f3a22017f`
+  - Run #2 fehlgeschlagen: Helm Repos nicht auf CI-Runner registriert → Fix: `64c9c7aca`
+  - `helm repo add` für alle 6 Chart-Dependencies in allen 3 Deploy-Jobs (dev/test/prod)
+  - 21 Onyx-Upstream-Workflows deaktiviert (irrelevant für Fork, erzeugten Fehler-E-Mails)
 
 ### Deprecated
 - N/A
