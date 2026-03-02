@@ -27,7 +27,7 @@
   - ✅ Helm Release `onyx-dev`: Alle 10 Pods 1/1 Running
   - ✅ API Health OK, Login funktioniert unter `http://188.34.74.187`
   - ✅ Runbooks: stackit-projekt-setup.md, stackit-postgresql.md, helm-deploy.md
-  - ⏳ CI/CD Pipeline: GitHub Secrets noch nicht gesetzt
+  - ✅ CI/CD Pipeline: GitHub Secrets gesetzt, Robot Account erstellt (2026-03-02)
   - ⏳ DNS: `dev.chatbot.voeb.example.com` → `188.34.74.187`
   - ⏳ TLS/HTTPS (nach DNS-Setup)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
@@ -40,7 +40,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**Embedding-Modell konfigurieren → DNS-Setup + TLS → CI/CD GitHub Secrets.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**Embedding-Modell konfigurieren → DNS-Setup + TLS → CI/CD Pipeline testen (Dry-Run).** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

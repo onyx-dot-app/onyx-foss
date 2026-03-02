@@ -9,6 +9,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [Infra] **CI/CD Pipeline aktiviert** (2026-03-02)
+  - GitHub Secrets konfiguriert (3 global + 4 per DEV Environment)
+  - Container Registry Robot Account `github-ci` für CI/CD erstellt
+  - Workflow `stackit-deploy.yml` überarbeitet: Secrets-Injection, Registry-Projektname, kubectl für alle Environments
+  - Image Pull Secret auf Cluster mit Robot Account Credentials aktualisiert
+  - Dokumentation: `docs/referenz/stackit-container-registry.md` (Konzepte, Auth, Secret-Mapping)
+  - Implementierungsplan Phase 1.4 + 5 aktualisiert
 - [Infra] **Phase 2: StackIT DEV-Infrastruktur (in Arbeit)**
   - StackIT CLI Setup + Service Account `voeb-terraform` mit API Key
   - Container Registry im Portal aktiviert

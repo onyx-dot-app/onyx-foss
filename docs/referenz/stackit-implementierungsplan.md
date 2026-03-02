@@ -121,13 +121,26 @@ docker login registry.onstackit.cloud
 
 ### 1.4 GitHub Secrets anlegen
 
-| Secret | Wert |
-|--------|------|
-| `STACKIT_PROJECT_ID` | Project UUID aus Portal |
-| `STACKIT_SERVICE_ACCOUNT_KEY` | Inhalt von credentials.json |
-| `STACKIT_REGISTRY_USER` | Registry Username |
-| `STACKIT_REGISTRY_PASSWORD` | Registry Password |
-| `STACKIT_KUBECONFIG` | Base64-encoded Kubeconfig (nach Phase 2) |
+**Global (Repository-weit):**
+
+| Secret | Wert | Quelle |
+|--------|------|--------|
+| `STACKIT_REGISTRY_USER` | Robot Account Name (z.B. `robot$voeb-chatbot+github-ci`) | Container Registry UI → Robot Accounts |
+| `STACKIT_REGISTRY_PASSWORD` | Robot Account Token | Container Registry UI (einmalig bei Erstellung) |
+| `STACKIT_KUBECONFIG` | Base64-encoded Kubeconfig | `stackit ske kubeconfig create` → `base64` |
+
+**Per GitHub Environment (dev/test/prod):**
+
+| Secret | Wert | Quelle |
+|--------|------|--------|
+| `POSTGRES_PASSWORD` | PG Flex App-User Passwort | `terraform output -raw pg_password` |
+| `S3_ACCESS_KEY_ID` | Object Storage Access Key | `stackit object-storage credentials` |
+| `S3_SECRET_ACCESS_KEY` | Object Storage Secret Key | `stackit object-storage credentials` |
+| `DB_READONLY_PASSWORD` | PG Readonly User Passwort | `terraform output` (readonly user) |
+
+> **Hinweis:** `STACKIT_PROJECT_ID` wird NICHT als Secret benötigt.
+> Die Container Registry nutzt einen eigenen Projektnamen (`voeb-chatbot`), nicht die Project UUID.
+> Siehe [Container Registry Doku](stackit-container-registry.md) für Details.
 
 ---
 
@@ -297,7 +310,7 @@ curl -s http://<EXTERNAL_IP>/api/health
 
 ## Phase 5: CI/CD Pipeline
 
-> **Status**: ⏳ Pipeline erstellt, GitHub Secrets noch nicht gesetzt
+> **Status**: ✅ GitHub Secrets gesetzt, Robot Account erstellt (2026-03-02). Erster Dry-Run steht aus.
 
 Die Pipeline `.github/workflows/stackit-deploy.yml` ist bereits erstellt.
 
@@ -432,7 +445,7 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 | LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Embedding-Modell | E5 Mistral 7B für Dokumenten-Suche | [ ] ⏳ |
-| CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (GitHub Secrets fehlen) |
+| CI/CD funktioniert | Push auf develop → Pods updated | [ ] ⏳ (Secrets gesetzt, Dry-Run ausstehend) |
 
 ---
 
