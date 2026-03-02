@@ -29,7 +29,7 @@
   - ✅ Runbooks: stackit-projekt-setup.md, stackit-postgresql.md, helm-deploy.md
   - ✅ CI/CD Pipeline: Secrets gesetzt, Robot Account erstellt, Helm-Repo-Fix deployed (2026-03-02)
   - ✅ Upstream-Workflows: 21 Onyx-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
-  - ⏳ CI/CD Validierung: Run #3 läuft (Build OK, Deploy-Fix für Helm Repos angewendet)
+  - ⚠️ CI/CD: Pipeline läuft (Run #4 grün), aber neues Image crasht API-Server (EE-Modul fehlt) → Rollback aktiv
   - ⏳ DNS: `dev.chatbot.voeb.example.com` → `188.34.74.187`
   - ⏳ TLS/HTTPS (nach DNS-Setup)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
@@ -42,7 +42,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**CI/CD Run #3 validieren → Embedding-Modell konfigurieren → DNS-Setup + TLS → TEST-Umgebung aufsetzen.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. API-Server EE-Crash fixen (ENV prüfen) → 2. Optimierten Workflow committen + Run #5 → 3. Embedding-Modell → 4. Branding (ohne EE) → 5. TEST-Umgebung.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

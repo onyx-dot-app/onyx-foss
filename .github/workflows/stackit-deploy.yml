@@ -5,6 +5,11 @@
 #   - Push auf develop → Automatisch DEV deployen
 #   - Manuell → Environment wählbar (dev/test/prod)
 #
+# Build-Architektur:
+#   - Backend + Frontend werden PARALLEL gebaut (je ~7 Min)
+#   - Model Server wird NICHT gebaut (identisch mit Upstream, nutzt Docker Hub Image)
+#   - Gesamte Build-Zeit: ~7-8 Minuten statt ~35 Minuten
+#
 # Voraussetzungen (GitHub Secrets):
 #   Global:
 #     - STACKIT_REGISTRY_USER      (Robot Account Name aus Container Registry)
@@ -49,16 +54,19 @@ env:
   REGISTRY: registry.onstackit.cloud
   REGISTRY_PROJECT: voeb-chatbot
   HELM_CHART_PATH: deployment/helm/charts/onyx
+  # Model Server: Upstream-Image von Docker Hub (wir ändern nichts am Model Server)
+  # Repository und Tag getrennt, weil Helm "repository:tag" zusammensetzt.
+  MODEL_SERVER_REPO: docker.io/onyxdotapp/onyx-model-server
+  MODEL_SERVER_TAG: latest
 
 jobs:
   # =========================================================
-  # BUILD: Docker Images bauen und pushen
+  # PREPARE: Image Tag bestimmen (wird von Build-Jobs genutzt)
   # =========================================================
-  build:
+  prepare:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.tag.outputs.value }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -71,6 +79,15 @@ jobs:
             echo "value=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           fi
 
+  # =========================================================
+  # BUILD BACKEND: Parallel mit Frontend
+  # =========================================================
+  build-backend:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Login to StackIT Container Registry
         uses: docker/login-action@v3
         with:
@@ -81,48 +98,52 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # --- Backend ---
       - name: Build & Push Backend
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-backend:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-backend:${{ needs.prepare.outputs.image_tag }}
             ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-backend:latest
 
-      # --- Frontend ---
+  # =========================================================
+  # BUILD FRONTEND: Parallel mit Backend
+  # =========================================================
+  build-frontend:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to StackIT Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.STACKIT_REGISTRY_USER }}
+          password: ${{ secrets.STACKIT_REGISTRY_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build & Push Frontend
         uses: docker/build-push-action@v6
         with:
           context: ./web
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-web-server:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-web-server:${{ needs.prepare.outputs.image_tag }}
             ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-web-server:latest
-
-      # --- Model Server ---
-      - name: Build & Push Model Server
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile.model_server
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-model-server:${{ steps.tag.outputs.value }}
-            ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-model-server:latest
 
   # =========================================================
   # DEPLOY DEV: Automatisch bei push auf develop
   # =========================================================
   deploy-dev:
-    needs: build
+    needs: [prepare, build-backend, build-frontend]
     if: >
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
@@ -159,7 +180,7 @@ jobs:
 
       - name: Deploy to DEV
         run: |
-          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          IMAGE_TAG="${{ needs.prepare.outputs.image_tag }}"
           REGISTRY="${{ env.REGISTRY }}"
           PROJECT="${{ env.REGISTRY_PROJECT }}"
 
@@ -173,8 +194,10 @@ jobs:
             --set "api.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
             --set "webserver.image.repository=${REGISTRY}/${PROJECT}/onyx-web-server" \
             --set "celery_shared.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
-            --set "inferenceCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
-            --set "indexCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --set "inferenceCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
+            --set "inferenceCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
+            --set "indexCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
+            --set "indexCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
             --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
@@ -212,7 +235,7 @@ jobs:
   # DEPLOY TEST: Manuell
   # =========================================================
   deploy-test:
-    needs: build
+    needs: [prepare, build-backend, build-frontend]
     if: github.event_name == 'workflow_dispatch' && inputs.environment == 'test'
     runs-on: ubuntu-latest
     environment: test
@@ -247,7 +270,7 @@ jobs:
 
       - name: Deploy to TEST
         run: |
-          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          IMAGE_TAG="${{ needs.prepare.outputs.image_tag }}"
           REGISTRY="${{ env.REGISTRY }}"
           PROJECT="${{ env.REGISTRY_PROJECT }}"
 
@@ -261,8 +284,10 @@ jobs:
             --set "api.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
             --set "webserver.image.repository=${REGISTRY}/${PROJECT}/onyx-web-server" \
             --set "celery_shared.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
-            --set "inferenceCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
-            --set "indexCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --set "inferenceCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
+            --set "inferenceCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
+            --set "indexCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
+            --set "indexCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
             --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
@@ -278,7 +303,7 @@ jobs:
   # DEPLOY PROD: Manuell + Required Reviewers
   # =========================================================
   deploy-prod:
-    needs: build
+    needs: [prepare, build-backend, build-frontend]
     if: github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'
     runs-on: ubuntu-latest
     environment:
@@ -315,7 +340,7 @@ jobs:
 
       - name: Deploy to PROD
         run: |
-          IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          IMAGE_TAG="${{ needs.prepare.outputs.image_tag }}"
           REGISTRY="${{ env.REGISTRY }}"
           PROJECT="${{ env.REGISTRY_PROJECT }}"
 
@@ -328,8 +353,10 @@ jobs:
             --set "api.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
             --set "webserver.image.repository=${REGISTRY}/${PROJECT}/onyx-web-server" \
             --set "celery_shared.image.repository=${REGISTRY}/${PROJECT}/onyx-backend" \
-            --set "inferenceCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
-            --set "indexCapability.image.repository=${REGISTRY}/${PROJECT}/onyx-model-server" \
+            --set "inferenceCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
+            --set "inferenceCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
+            --set "indexCapability.image.repository=${{ env.MODEL_SERVER_REPO }}" \
+            --set "indexCapability.image.tag=${{ env.MODEL_SERVER_TAG }}" \
             --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \

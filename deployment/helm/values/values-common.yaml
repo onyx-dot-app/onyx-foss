@@ -66,6 +66,10 @@ mcpServer:
 # --- Gemeinsame Konfiguration ---
 configMap:
   DISABLE_TELEMETRY: "true"
+  # KRITISCH: LICENSE_ENFORCEMENT_ENABLED hat Default "true" in Onyx FOSS.
+  # Das aktiviert EE-Code-Pfade (onyx.server.tenants etc.) die wir nicht haben.
+  # Muss explizit auf "false" gesetzt werden.
+  LICENSE_ENFORCEMENT_ENABLED: "false"
 
 # --- Image Pull Secret für StackIT Container Registry ---
 imagePullSecrets:
