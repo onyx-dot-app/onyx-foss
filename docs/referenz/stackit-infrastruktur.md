@@ -1,6 +1,6 @@
 # StackIT Infrastruktur — Technische Referenz
 
-**Stand**: Februar 2026
+**Stand**: März 2026
 **Region**: EU01 (Frankfurt)
 **Provider**: StackIT (Deutsche Telekom)
 
@@ -23,13 +23,17 @@
 
 ### Worker Nodes (Compute Engine g1a-Serie, AMD, kein Overprovisioning)
 
-| Environment | Node-Typ | vCPU | RAM | Anzahl |
-|-------------|----------|------|-----|--------|
-| DEV + TEST (shared) | g1a.4d | 4 | 16 GB | 1 |
-| PROD (dedicated) | g1a.4d | 4 | 16 GB | 2 (bei Bedarf 3) |
+| Environment | Node-Typ | vCPU | RAM | Anzahl | Pool |
+|-------------|----------|------|-----|--------|------|
+| DEV + TEST | g1a.4d | 4 | 16 GB | 2 (1 pro Env) | `devtest` |
+| PROD (dedicated) | g1a.4d | 4 | 16 GB | 2 (bei Bedarf 3) | eigener Cluster |
 
+**DEV+TEST allokierbare Kapazität (2× g1a.4d):** ~7 CPU / ~31 GB RAM — je ~3.5 CPU / ~15 GB pro Env
 **PROD allokierbare Kapazität (2× g1a.4d):** ~7 CPU / ~31 GB RAM
 **PROD geschätzte Auslastung:** CPU ~70–80%, RAM ausreichend
+
+> **Entscheidung (ADR-004):** Eigene Nodes pro Umgebung statt geteilter Node.
+> Begründung: CPU-Isolation, Ausfallsicherheit, Enterprise-Standard.
 
 ---
 
@@ -117,14 +121,15 @@
 | Aspekt | DEV | TEST | PROD |
 |--------|-----|------|------|
 | Namespace | `onyx-dev` | `onyx-test` | `onyx-prod` |
-| Worker Nodes | shared mit TEST | shared mit DEV | 2× g1a.4d dedicated |
-| PostgreSQL | Flex 2.4 Single | Flex 2.4 Single | Flex 4.8 Replica (3 Nodes HA) |
+| Cluster | shared (`vob-chatbot`) | shared (`vob-chatbot`) | **eigener Cluster** (ADR-004) |
+| Worker Nodes | eigener Node (g1a.4d) | eigener Node (g1a.4d) | 2× g1a.4d dedicated |
+| PostgreSQL | Flex 2.4 Single (`vob-dev`) | Flex 2.4 Single (`vob-test`) | Flex 4.8 Replica (3 Nodes HA) |
 | Object Storage | `vob-dev` | `vob-test` | `vob-prod` |
 | Vespa | In-Cluster (1 Replica) | In-Cluster (1 Replica) | In-Cluster (1–2 Replicas) |
 | Redis | In-Cluster Pod | In-Cluster Pod | In-Cluster Pod |
-| LLM | Mistral via AI Serving | gleich | gleich + Monitoring |
+| LLM | StackIT AI Serving | gleich | gleich + Monitoring |
 | Backups | PG PITR (auto) | PG PITR (auto) | PG PITR + ObjStore Versioning |
-| Resource Quotas | Entfernt (DEV) | CPU: 2, RAM: 8 GB | CPU: 8, RAM: 24 GB |
+| Resource Quotas | Entfernt (DEV) | Entfernt (TEST) | CPU: 8, RAM: 24 GB |
 | Network Policy | Namespace-isoliert | Namespace-isoliert | Namespace-isoliert + Egress-Rules |
 
 ---

@@ -35,7 +35,7 @@
   - ⏳ TLS/HTTPS (nach DNS-Setup)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
   - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert
-  - 📋 Scope: **Nur DEV-Umgebung.** TEST/PROD folgt nach stabilem DEV.
+  - 📋 Scope: DEV live, TEST in Vorbereitung (ADR-004 + Terraform + Helm erstellt).
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
   - 4a: ✅ Extension Framework Basis (Config, Feature Flags, Router, Health Endpoint, Docker)
@@ -43,7 +43,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. Embedding-Modell konfigurieren → 2. DNS + TLS → 3. Branding (ohne EE) → 4. TEST-Umgebung.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. `terraform apply` (Node Pool + TEST PG/Bucket) → 2. GitHub Secrets + Namespace → 3. Erster TEST Deploy → 4. Embedding-Modell → 5. DNS + TLS.** Plan: `docs/referenz/stackit-implementierungsplan.md`, Phase 7
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

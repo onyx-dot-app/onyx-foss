@@ -86,6 +86,10 @@ resource "stackit_postgresflex_instance" "main" {
     class = var.pg_storage_class
     size  = var.pg_storage_size
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Applikations-User (Passwort wird automatisch generiert)

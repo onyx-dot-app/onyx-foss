@@ -2,11 +2,12 @@
 # DEV Environment — VÖB Service Chatbot
 # ===========================================================
 # Provisioniert:
-#   - 1× SKE Cluster (1 Node: g1a.4d, 4 vCPU, 16 GB)
+#   - 1× SKE Cluster (2 Nodes: g1a.4d, je 4 vCPU, 16 GB)
 #   - 1× PostgreSQL Flex 2.4 Single (2 CPU, 4 GB)
 #   - 1× Object Storage Bucket (vob-dev)
 #
-# Geschätzte Kosten: ~250 EUR/Monat
+# Node Pool "devtest" bedient DEV + TEST (ADR-004).
+# Geschätzte Kosten DEV-Anteil: ~250 EUR/Monat
 # ===========================================================
 
 module "stackit" {
@@ -14,6 +15,9 @@ module "stackit" {
 
   project_id  = var.project_id
   region      = "eu01"
+  # WICHTIG: Muss "dev" bleiben, weil environment den PG-Instanznamen bestimmt
+  # (vob-dev). Änderung auf "devtest" würde PG-Instanz löschen + neu erstellen!
+  # Der Node Pool heißt bereits "devtest" (im Modul hardcoded).
   environment = "dev"
 
   # SKE Cluster
@@ -21,10 +25,13 @@ module "stackit" {
   kubernetes_version = "1.32"
   availability_zones = ["eu01-3"]
 
+  # Node Pool "devtest" — 2 Nodes für DEV + TEST (ADR-004)
+  # Vorher: min=1, max=1 (nur DEV)
+  # Jetzt:  min=2, max=2 (je 1 Node für DEV und TEST)
   node_pool = {
     machine_type = "g1a.4d"
-    minimum      = 1
-    maximum      = 1
+    minimum      = 2
+    maximum      = 2
     volume_size  = 50
     volume_type  = "storage_premium_perf2"
   }

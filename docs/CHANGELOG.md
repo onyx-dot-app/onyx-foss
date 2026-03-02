@@ -9,6 +9,15 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [Infra] **TEST-Umgebung vorbereitet** (2026-03-02)
+  - ADR-004: Umgebungstrennung DEV/TEST/PROD (Architekturentscheidung dokumentiert)
+  - Terraform: Node Pool `devtest` auf 2 Nodes skaliert (1 pro Environment)
+  - Terraform: Neues Modul `stackit-data` (PG + Bucket ohne Cluster) für TEST
+  - Terraform: `environments/test/` mit eigener PG Flex Instanz + Bucket `vob-test`
+  - Helm: `values-test.yaml` (analog DEV, eigene Credentials/Bucket)
+  - CI/CD: Smoke Test für `deploy-test` Job ergänzt
+  - Implementierungsplan: Phase 7 (TEST-Umgebung) mit 9 Schritten + Validierungstabelle
+  - Infrastruktur-Referenz: Environments-Tabelle + Node Pool aktualisiert
 - [Infra] **CI/CD Pipeline aktiviert** (2026-03-02)
   - GitHub Secrets konfiguriert (3 global + 4 per DEV Environment)
   - Container Registry Robot Account `github-ci` für CI/CD erstellt

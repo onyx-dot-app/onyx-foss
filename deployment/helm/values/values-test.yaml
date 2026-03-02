@@ -1,0 +1,199 @@
+# ===========================================================
+# VÖB Service Chatbot — TEST Environment Helm Values
+# ===========================================================
+# Analog zu DEV: 1 Replica pro Service, Lightweight Worker.
+# Eigener Node im shared Cluster (ADR-004).
+#
+# Eigene PostgreSQL Flex Instanz (vob-test) und
+# eigener Object Storage Bucket (vob-test).
+#
+# PostgreSQL + Object Storage Credentials werden als
+# K8s Secrets bereitgestellt (GitHub Secrets → CI/CD).
+# ===========================================================
+
+global:
+  version: "latest"
+
+# --- Externe PostgreSQL (StackIT Flex 2.4 Single — TEST-Instanz) ---
+# Host/Port kommen aus terraform output (environments/test/).
+auth:
+  postgresql:
+    enabled: true
+    secretName: "onyx-postgresql"
+    values:
+      username: "onyx_app"
+      password: ""  # → GitHub Secret POSTGRES_PASSWORD (Environment: test)
+  redis:
+    enabled: true
+    secretName: "onyx-redis"
+    values:
+      redis_password: ""  # → GitHub Secret REDIS_PASSWORD (Environment: test)
+  objectstorage:
+    enabled: true
+    secretName: "onyx-objectstorage"
+    values:
+      s3_aws_access_key_id: ""       # → GitHub Secret S3_ACCESS_KEY_ID
+      s3_aws_secret_access_key: ""   # → GitHub Secret S3_SECRET_ACCESS_KEY
+
+configMap:
+  # PostgreSQL (StackIT Managed Flex 2.4 — TEST-Instanz)
+  # ⚠️ PFLICHT VOR ERSTEM DEPLOY:
+  # 1. cd deployment/terraform/environments/test && terraform apply
+  # 2. terraform output -raw pg_host → hier eintragen
+  # 3. Committen + pushen, DANN erst deploy-test triggern
+  POSTGRES_HOST: "REPLACE_AFTER_TERRAFORM_APPLY"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "onyx"
+
+  # Redis: Release-Name = Service-Name bei OT Redis Operator
+  REDIS_HOST: "onyx-test"
+
+  # Read-Only DB User (per Terraform auf TEST PG Flex angelegt)
+  DB_READONLY_USER: "db_readonly_user"
+
+  # Object Storage (TEST-Bucket)
+  S3_ENDPOINT_URL: "https://object.storage.eu01.onstackit.cloud"
+  S3_FILE_STORE_BUCKET_NAME: "vob-test"
+
+  # ⚠️ PFLICHT VOR ERSTEM DEPLOY:
+  # 1. Namespace + Helm install ausführen (erster Deploy)
+  # 2. kubectl get svc -n onyx-test → EXTERNAL-IP notieren
+  # 3. Hier eintragen, committen, erneut deployen
+  # Ohne korrekte IP schlägt der CI/CD Smoke Test fehl!
+  DOMAIN: "REPLACE_AFTER_DEPLOY"
+  WEB_DOMAIN: "http://REPLACE_AFTER_DEPLOY"
+
+  # Auth: Basic Auth (Entra ID kommt in Phase 3)
+  AUTH_TYPE: "basic"
+  REQUIRE_EMAIL_VERIFICATION: "false"
+
+  # Logging
+  LOG_LEVEL: "INFO"
+
+  # Celery: Lightweight Mode (ein konsolidierter Worker statt 8 separate)
+  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
+
+# --- Celery Worker: Nur Beat + Primary, alle anderen auf 0 ---
+celery_beat:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+celery_worker_primary:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+celery_worker_heavy:
+  replicaCount: 0
+
+celery_worker_light:
+  replicaCount: 0
+
+celery_worker_docfetching:
+  replicaCount: 0
+
+celery_worker_docprocessing:
+  replicaCount: 0
+
+celery_worker_monitoring:
+  replicaCount: 0
+
+celery_worker_user_file_processing:
+  replicaCount: 0
+
+# --- TLS ---
+letsencrypt:
+  enabled: false  # TEST: Kein TLS bis DNS verfügbar
+
+# --- Backend API: 1 Replica ---
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# --- Frontend: 1 Replica ---
+webserver:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+# --- Vespa: 1 Replica ---
+vespa:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 1500m
+      memory: 4Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+
+# --- Redis: Minimal ---
+redis:
+  redisStandalone:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+# --- Model Server: 1 Replica ---
+# Recreate-Strategie beibehalten (identisch zu DEV).
+# Eigener Node hätte theoretisch Platz für RollingUpdate, aber Recreate
+# eliminiert Port-Konflikte und ist bei DEV hart debuggt worden.
+inferenceCapability:
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+indexCapability:
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
