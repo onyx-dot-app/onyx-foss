@@ -167,8 +167,12 @@ redis:
         memory: 256Mi
 
 # --- Model Server: 1 Replica, minimale Requests (DEV) ---
+# Recreate-Strategie: Alter Pod wird gestoppt bevor neuer startet.
+# Notwendig weil ein einzelner g1a.4d Node nicht genug CPU für alte + neue Pods hat.
 inferenceCapability:
   replicaCount: 1
+  strategy:
+    type: Recreate
   resources:
     requests:
       cpu: 250m
@@ -180,6 +184,8 @@ inferenceCapability:
 
 indexCapability:
   replicaCount: 1
+  strategy:
+    type: Recreate
   resources:
     requests:
       cpu: 250m

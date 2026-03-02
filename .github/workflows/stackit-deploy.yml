@@ -179,7 +179,29 @@ jobs:
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
             --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
-            --wait --timeout 10m
+            --timeout 10m
+
+      # DEV läuft auf einem einzelnen g1a.4d Node (4 vCPU). Helm's Default RollingUpdate
+      # startet neue Pods neben den alten — dafür reicht die CPU nicht (Pending).
+      # Fix: Recreate-Strategie per kubectl patch, dann rollout abwarten.
+      # Chart-Templates für api/webserver/celery haben keinen strategy-Block in Values.
+      - name: Patch deployment strategy and wait (single-node DEV)
+        run: |
+          NAMESPACE="onyx-dev"
+          DEPLOYMENTS="onyx-dev-api-server onyx-dev-celery-worker-primary onyx-dev-web-server onyx-dev-celery-beat"
+
+          for dep in $DEPLOYMENTS; do
+            kubectl patch deployment "$dep" -n "$NAMESPACE" \
+              --type='json' \
+              -p='[{"op":"replace","path":"/spec/strategy","value":{"type":"Recreate"}}]' \
+              2>/dev/null || true
+          done
+
+          echo "Waiting for all deployments to be ready..."
+          for dep in $DEPLOYMENTS onyx-dev-indexing-model onyx-dev-inference-model; do
+            echo "  Waiting for $dep..."
+            kubectl rollout status deployment/"$dep" -n "$NAMESPACE" --timeout=10m || true
+          done
 
       - name: Verify deployment
         run: |
