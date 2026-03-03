@@ -16,10 +16,11 @@
 | Parameter | Wert |
 |-----------|------|
 | Cluster | 1 (shared für alle Environments) |
+| Kubernetes-Version | v1.32.12 (SKE-zugewiesen) |
 | Namespaces | `onyx-dev`, `onyx-test`, `onyx-prod` |
 | Ingress Controller | NGINX via Essential Network Load Balancer (NLB-10) |
 | TLS | Let's Encrypt oder StackIT-bereitgestellt |
-| Network Policies | Namespace-isoliert; PROD zusätzlich Egress-Rules |
+| Network Policies | Noch nicht implementiert (SEC-03, P1 vor PROD). Geplant: Namespace-isoliert; PROD zusätzlich Egress-Rules |
 
 ### Worker Nodes (Compute Engine g1a-Serie, AMD, kein Overprovisioning)
 
@@ -82,14 +83,15 @@
 
 ## LLM / AI Model Serving (StackIT-hosted)
 
-| Modell-Tier | Modelle | Verwendung |
-|-------------|---------|------------|
-| LLM Plus | Mistral Large, Llama 3.1 70B | Chat-Antworten |
-| LLM Standard | Mistral Small, Llama 3.1 8B | Leichtere Tasks (optional) |
-| Embedding Plus | — | Vektor-Suche (Vespa / OpenSearch) |
-| Embedding Standard | — | Kostenoptimierte Alternative |
+| Modell | StackIT Model ID | Verwendung | Status |
+|--------|------------------|------------|--------|
+| GPT-OSS 120B | `openai/gpt-oss-120b` | Chat-Antworten (primär) | ✅ Verifiziert (DEV) |
+| Qwen3-VL 235B | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | Chat + Vision/OCR | ✅ Verifiziert (DEV) |
+| E5 Mistral 7B | `intfloat/e5-mistral-7b-instruct` | Embedding / Vektor-Suche | ⏳ Geplant |
 
-**Wichtig:** LLM läuft auf StackIT AI Model Serving — kein OpenAI, keine Daten verlassen Deutschland.
+**Weitere verfuegbare Modelle (Fallback):** Llama 3.3 70B, Gemma 3 27B, Mistral-Nemo 12B, Llama 3.1 8B
+
+**Wichtig:** LLM laeuft auf StackIT AI Model Serving (OpenAI-kompatible API, vLLM-Backend) — kein OpenAI, keine Daten verlassen Deutschland.
 
 ---
 
@@ -130,7 +132,7 @@
 | LLM | StackIT AI Serving | gleich | gleich + Monitoring |
 | Backups | PG PITR (auto) | PG PITR (auto) | PG PITR + ObjStore Versioning |
 | Resource Quotas | Entfernt (DEV) | Entfernt (TEST) | CPU: 8, RAM: 24 GB |
-| Network Policy | Namespace-isoliert | Namespace-isoliert | Namespace-isoliert + Egress-Rules |
+| Network Policy | Noch nicht implementiert (SEC-03) | Noch nicht implementiert (SEC-03) | Geplant: Namespace-isoliert + Egress-Rules |
 
 ---
 

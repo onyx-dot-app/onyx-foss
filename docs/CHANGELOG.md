@@ -23,8 +23,6 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Erreichbar unter `http://188.34.118.201`
   - Eigene IngressClass `nginx-test` (Conflict mit DEV vermieden)
   - Separate S3-Credentials für TEST erstellt (Enterprise-Trennung)
-
-### Added
 - [Infra] **TEST-Umgebung vorbereitet** (2026-03-02)
   - ADR-004: Umgebungstrennung DEV/TEST/PROD (Architekturentscheidung dokumentiert)
   - Terraform: Node Pool `devtest` auf 2 Nodes skaliert (1 pro Environment)
@@ -49,6 +47,11 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Runbook-Struktur `docs/runbooks/` mit Index + erstem Runbook (Projekt-Setup)
   - Implementierungsplan aktualisiert mit verifizierten Befehlen
   - Blockiert: SA benötigt `project.admin`-Rolle (wartet auf Org-Admin)
+- [Infra] **LLM-Konfiguration (StackIT AI Model Serving)** (2026-02-27)
+  - GPT-OSS 120B als primäres Chat-Modell konfiguriert und verifiziert
+  - Qwen3-VL 235B als zweites Chat-Modell konfiguriert und verifiziert
+  - OpenAI-kompatible API via StackIT (Daten bleiben in DE)
+  - Embedding-Modell (E5 Mistral 7B) geplant, noch nicht konfiguriert
 - [Feature] **Phase 4a: Extension Framework Basis**
   - `backend/ext/` Paketstruktur mit `__init__.py`, `config.py`, `routers/`
   - Feature Flag System: `EXT_ENABLED` Master-Switch + 6 Modul-Flags (AND-gated, alle default `false`)
@@ -214,7 +217,7 @@ Viele Abschnitte sind mit `[ENTWURF]` oder `[TBD]` gekennzeichnet. Diese werden 
 Dokumentation hängt ab von:
 - StackIT Account und Konfiguration
 - Entra ID Setup durch VÖB
-- LLM Provider Entscheidung (noch offen)
+- LLM Provider: StackIT AI Model Serving (GPT-OSS 120B + Qwen3-VL 235B konfiguriert)
 
 ---
 
@@ -222,27 +225,34 @@ Dokumentation hängt ab von:
 
 ### Dokumentations-Struktur
 ```
-/sessions/epic-nice-ritchie/docs/
+docs/
 ├── README.md                                    (Main Index)
-├── 01-technisches-feinkonzept/
-│   ├── README.md                              (Modulübersicht)
-│   └── template-modulspezifikation.md         (Template)
-├── 02-sicherheitskonzept/
-│   └── sicherheitskonzept.md                  (Security Concept)
-├── 03-testkonzept/
-│   └── testkonzept.md                         (Test Strategy)
-├── 04-adr/
-│   ├── README.md                              (ADR Index)
-│   ├── adr-001-onyx-foss-als-basis.md        (Platform Choice)
-│   ├── adr-002-extension-architektur.md       (Extension Architecture)
-│   └── adr-003-stackit-als-cloud-provider.md (Cloud Provider)
-├── 05-betriebskonzept/
-│   └── betriebskonzept.md                     (Operations Concept)
-├── 06-abnahme/
-│   ├── abnahmeprotokoll-template.md           (Acceptance Protocol)
-│   └── meilensteinplan.md                     (Milestone Plan)
-└── 07-changelog/
-    └── CHANGELOG.md                           (This File)
+├── CHANGELOG.md                                 (This File)
+├── sicherheitskonzept.md                        (Security Concept)
+├── testkonzept.md                               (Test Strategy)
+├── betriebskonzept.md                           (Operations Concept)
+├── entra-id-kundenfragen.md                     (Entra ID Fragenkatalog)
+├── technisches-feinkonzept/
+│   ├── template-modulspezifikation.md           (Template)
+│   └── ext-framework.md                         (Extension Framework Spec)
+├── adr/
+│   ├── adr-001-onyx-foss-als-basis.md           (Platform Choice)
+│   ├── adr-002-extension-architektur.md         (Extension Architecture)
+│   ├── adr-003-stackit-als-cloud-provider.md    (Cloud Provider)
+│   └── adr-004-umgebungstrennung-dev-test-prod.md (Environment Separation)
+├── abnahme/
+│   ├── abnahmeprotokoll-template.md             (Acceptance Protocol)
+│   └── meilensteinplan.md                       (Milestone Plan)
+├── runbooks/
+│   ├── README.md                                (Runbook Index)
+│   ├── stackit-projekt-setup.md                 (StackIT Setup)
+│   ├── stackit-postgresql.md                    (PostgreSQL Setup)
+│   ├── helm-deploy.md                           (Helm Deploy)
+│   └── ci-cd-pipeline.md                        (CI/CD Pipeline)
+└── referenz/
+    ├── stackit-implementierungsplan.md          (DEV+TEST Step-by-Step)
+    ├── stackit-infrastruktur.md                 (Infra Specs + Sizing)
+    └── stackit-container-registry.md            (Container Registry)
 ```
 
 ---
@@ -250,7 +260,7 @@ Dokumentation hängt ab von:
 ## Mitwirkende
 
 - **CCJ**: Projektleitung und Governance
-- **JNnovate**: Technische Umsetzung und Architektur
+- **JNnovate**: [Scope in Klärung]
 - **StackIT**: Cloud-Infrastruktur
 - **VÖB**: Anforderungen und Abnahme
 
@@ -269,8 +279,8 @@ Diese Dokumentation ist Teil des VÖB Service Chatbot Projekts.
 
 Bei Fragen zur Dokumentation:
 
-- **CCJ Projektleitung**: [E-Mail TBD]
-- **JNnovate Technical Lead**: [E-Mail TBD]
+- **CCJ Projektleitung**: [AUSSTEHEND]
+- **JNnovate Technical Lead**: [AUSSTEHEND]
 
 ---
 
@@ -278,10 +288,10 @@ Bei Fragen zur Dokumentation:
 
 | Version | Datum | Autor | Änderungen |
 |---------|-------|-------|-----------|
-| 0.1 | [TBD] | [Autor] | Initial Release |
+| 0.1 | [AUSSTEHEND] | [AUSSTEHEND] | Initial Release |
 
 ---
 
-**Letzte Aktualisierung**: [Datum TBD]
-**Wartete durch**: [Name/Team TBD]
-**Nächste Überprüfung**: [Datum TBD – 30 Tage]
+**Letzte Aktualisierung**: 2026-03-03
+**Wartete durch**: [AUSSTEHEND]
+**Nächste Überprüfung**: [AUSSTEHEND]

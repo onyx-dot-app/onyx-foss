@@ -496,7 +496,7 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 
 ## Phase 7: TEST-Umgebung aufsetzen
 
-> **Status**: ⏳ In Arbeit (2026-03-02). ADR-004 akzeptiert, Implementierung gestartet.
+> **Status**: ✅ TEST LIVE (2026-03-03). ADR-004 akzeptiert. 9 Pods Running, Health Check OK, UI unter `http://188.34.118.201`.
 > **Bezug**: [ADR-004: Umgebungstrennung](../adr/adr-004-umgebungstrennung-dev-test-prod.md)
 
 ### 7.1 Node Pool skalieren (1 → 2 Nodes)
@@ -645,13 +645,13 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 
 | Kriterium | Test | Status |
 |-----------|------|--------|
-| 2 Nodes im Cluster | `kubectl get nodes` → 2× Ready, g1a.4d | [ ] ⏳ |
-| TEST PostgreSQL erreichbar | DB `onyx` existiert auf TEST-Instanz | [ ] ⏳ |
-| Object Storage (vob-test) | Credentials aktiv, Bucket erreichbar | [ ] ⏳ |
-| Namespace onyx-test | `kubectl get ns onyx-test` → Active | [ ] ⏳ |
-| 10 Pods Running | `kubectl get pods -n onyx-test` → alle 1/1 | [ ] ⏳ |
-| API Health | `curl http://<TEST-IP>/api/health` → `{"success":true}` | [ ] ⏳ |
-| Onyx UI erreichbar | `http://<TEST-IP>/auth/login` → Login-Seite | [ ] ⏳ |
+| 2 Nodes im Cluster | `kubectl get nodes` → 2× Ready, g1a.4d | [x] ✅ (2026-03-03) |
+| TEST PostgreSQL erreichbar | DB `onyx` existiert auf TEST-Instanz | [x] ✅ (2026-03-03) |
+| Object Storage (vob-test) | Credentials aktiv, Bucket erreichbar | [x] ✅ (2026-03-03) |
+| Namespace onyx-test | `kubectl get ns onyx-test` → Active | [x] ✅ (2026-03-03) |
+| 9 Pods Running (+ redis-operator im default NS) | `kubectl get pods -n onyx-test` → 9/9 Running | [x] ✅ (2026-03-03) |
+| API Health | `curl http://188.34.118.201/api/health` → `{"success":true}` | [x] ✅ (2026-03-03) |
+| Onyx UI erreichbar | `http://188.34.118.201/auth/login` → Login-Seite | [x] ✅ (2026-03-03) |
 | LLM Chat-Modell | GPT-OSS 120B antwortet über TEST Chat | [ ] ⏳ |
 | CI/CD deploy-test | `workflow_dispatch` → Pods updated | [ ] ⏳ |
 | DEV unabhängig | DEV-Pods weiterhin Running nach TEST-Deploy | [ ] ⏳ |
@@ -662,7 +662,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 
 | Schritt | Wann | Was | Status |
 |---------|------|-----|--------|
-| TEST Environment | Nach DEV-Validierung | Phase 7: Node Pool skalieren, PG + Bucket + Namespace + Helm | ⏳ In Arbeit |
+| TEST Environment | Nach DEV-Validierung | Phase 7: Node Pool skalieren, PG + Bucket + Namespace + Helm | ✅ LIVE (2026-03-03) |
 | Embedding-Modell | Parallel zu TEST | E5 Mistral 7B in Admin UI konfigurieren | ⏳ Offen |
 | Branding | Nach TEST-Setup | Logo-Dateien ersetzen, ext/-Komponenten | ⏳ Offen |
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
@@ -692,11 +692,11 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 12 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |
 | 13 | CI/CD Pipeline Helm-Fixes | Niko | ✅ Erledigt (2026-03-02) — `f3a22017f` + `64c9c7aca` |
 | 14 | Upstream-Workflows deaktivieren | Niko | ✅ Erledigt (2026-03-02) — 21 Workflows disabled via API |
-| 15 | TEST: Node Pool 1→2 Nodes skalieren | Niko | ⏳ Phase 7.1 |
-| 16 | TEST: PG Flex + Object Storage provisionieren | Niko | ⏳ Phase 7.2 |
-| 17 | TEST: Namespace + Image Pull Secret | Niko | ⏳ Phase 7.3 |
-| 18 | TEST: values-test.yaml + GitHub Secrets | Niko | ⏳ Phase 7.4–7.5 |
-| 19 | TEST: Helm Deploy + Validierung | Niko | ⏳ Phase 7.7 |
+| 15 | TEST: Node Pool 1→2 Nodes skalieren | Niko | ✅ Erledigt (2026-03-03) |
+| 16 | TEST: PG Flex + Object Storage provisionieren | Niko | ✅ Erledigt (2026-03-03) |
+| 17 | TEST: Namespace + Image Pull Secret | Niko | ✅ Erledigt (2026-03-03) |
+| 18 | TEST: values-test.yaml + GitHub Secrets | Niko | ✅ Erledigt (2026-03-03) |
+| 19 | TEST: Helm Deploy + Validierung | Niko | ✅ Erledigt (2026-03-03) |
 | 20 | TEST: LLM-Konfiguration in Admin UI | Niko | ⏳ Phase 7.9 |
 | 21 | **SEC-01**: PostgreSQL ACL einschränken | Niko | ✅ Erledigt (2026-03-03) |
 | 22 | **SEC-02**: Node Affinity erzwingen | Niko | ⏳ P1 (vor PROD) |

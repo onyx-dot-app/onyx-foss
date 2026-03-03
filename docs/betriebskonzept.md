@@ -1,18 +1,19 @@
-# Betriebskonzept – VÖB Service Chatbot
+# Betriebskonzept -- VÖB Service Chatbot
 
-**Dokumentstatus**: Entwurf
-**Letzte Aktualisierung**: [Datum TBD]
-**Version**: 0.1
+**Dokumentstatus**: Entwurf (teilweise verifiziert)
+**Letzte Aktualisierung**: 2026-03-03
+**Version**: 0.2
 
 ---
 
 ## Einleitung und Geltungsbereich
 
-Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtlinien für den Betrieb des VÖB Service Chatbot in der Production-Umgebung und darüber hinaus.
+Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtlinien für den Betrieb des VÖB Service Chatbot. Es umfasst die aktuell aktiven Umgebungen (DEV, TEST) sowie die geplante Produktionsumgebung.
+
+**Basis-Software**: Enterprise-Fork von [Onyx](https://github.com/onyx-dot-app/onyx) (FOSS, MIT-Lizenz) mit Custom Extension Layer (`backend/ext/`, `web/src/ext/`).
 
 ### Zielgruppe
-- Operations / DevOps Team (StackIT + JNnovate)
-- Incident Management / On-Call Team
+- Operations / DevOps Team (CCJ / Coffee Studios)
 - Auftraggeber (VÖB Operations)
 - Stakeholder und Führungskräfte
 
@@ -22,331 +23,335 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 
 ### Architektur-Diagramm
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
-
 ```
-┌────────────────────────────────────────────────────────────────┐
-│ Internet / Benutzer                                            │
-└────────────────────────┬───────────────────────────────────────┘
-                         │
-                         ↓ HTTPS (TLS 1.2+)
+┌───────────────────────────────────────────────────────────────────┐
+│ Internet / Benutzer                                               │
+└───────────────────────────┬───────────────────────────────────────┘
+                            │
+                            ↓ HTTP (TLS geplant, aktuell noch nicht aktiv)
 
-┌────────────────────────────────────────────────────────────────┐
-│ StackIT Cloud – Frankfurt                                      │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │ Kubernetes Cluster (vob-chatbot-prod)                   │ │
-│  │                                                          │ │
-│  │  Ingress + TLS Termination                              │ │
-│  │  ├── Domain: chatbot.vob.example.com                    │ │
-│  │  └── Certificate: Let's Encrypt or CA                   │ │
-│  │                                                          │ │
-│  │  Pods (Frontend)                                        │ │
-│  │  ├── Replicas: 3 (HA)                                   │ │
-│  │  ├── Image: vob-chatbot-frontend:latest                │ │
-│  │  └── Port: 3000                                         │ │
-│  │                                                          │ │
-│  │  Pods (Backend)                                         │ │
-│  │  ├── Replicas: 3 (HA)                                   │ │
-│  │  ├── Image: vob-chatbot-backend:latest                 │ │
-│  │  └── Port: 8080                                         │ │
-│  │                                                          │ │
-│  │  Pods (Vespa Vector Store)                             │ │
-│  │  ├── Nodes: 3 (HA)                                      │ │
-│  │  ├── Storage: Persistent Volumes                        │ │
-│  │  └── Port: 8081                                         │ │
-│  │                                                          │ │
-│  │  Pods (Monitoring)                                      │ │
-│  │  ├── Prometheus (metrics scraping)                      │ │
-│  │  ├── ELK Stack (log aggregation)                        │ │
-│  │  └── AlertManager (alerts)                              │ │
-│  │                                                          │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│              ↓ Internal Networking                            │
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │ Managed PostgreSQL (RDS)                                 │ │
-│  │                                                          │ │
-│  │  Primary: db.standard.2 (HA, Multi-AZ)                 │ │
-│  │  Replicas: 1 Read Replica (Standby)                    │ │
-│  │  Storage: 500 GB (SSD)                                  │ │
-│  │  Backup: Daily snapshots (30 days retention)           │ │
-│  │  TLS: Encrypted connections (mandatory)                │ │
-│  │                                                          │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│              ↓                                                 │
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │ S3-Compatible Object Storage                            │ │
-│  │                                                          │ │
-│  │  Buckets:                                               │ │
-│  │  - vob-chatbot-backups (Database Backups)              │ │
-│  │  - vob-chatbot-assets (User Uploads, Logos, etc.)      │ │
-│  │  - vob-chatbot-logs-archive (Log Archival)             │ │
-│  │                                                          │ │
-│  │  Lifecycle: Auto-archive old objects to cold storage    │ │
-│  │  Encryption: AES-256 at rest                           │ │
-│  │                                                          │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│ StackIT Cloud -- Region EU01 (Frankfurt)                          │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ SKE Kubernetes Cluster "vob-chatbot"                        │ │
+│  │ Node Pool "devtest": 2× g1a.4d (4 vCPU, 16 GB RAM)        │ │
+│  │ Kubernetes 1.32, Flatcar OS                                 │ │
+│  │                                                             │ │
+│  │  ┌───────────────────────────────────────────────────────┐  │ │
+│  │  │ Namespace: onyx-dev (DEV)                             │  │ │
+│  │  │ IngressClass: nginx                                   │  │ │
+│  │  │ LoadBalancer IP: 188.34.74.187                        │  │ │
+│  │  │                                                       │  │ │
+│  │  │  Pods:                                                │  │ │
+│  │  │  ├── onyx-dev-web-server       (Frontend, 1 Replica)  │  │ │
+│  │  │  ├── onyx-dev-api-server       (Backend, 1 Replica)   │  │ │
+│  │  │  ├── onyx-dev-celery-beat      (Scheduler, 1 Replica) │  │ │
+│  │  │  ├── onyx-dev-celery-worker-primary (Worker, 1 Rep.)  │  │ │
+│  │  │  ├── onyx-dev-inference-model  (Model Server, 1 Rep.) │  │ │
+│  │  │  ├── onyx-dev-indexing-model   (Model Server, 1 Rep.) │  │ │
+│  │  │  ├── vespa                     (Vector Store, 1 Rep.) │  │ │
+│  │  │  └── redis                     (Cache, 1 Replica)     │  │ │
+│  │  └───────────────────────────────────────────────────────┘  │ │
+│  │                                                             │ │
+│  │  ┌───────────────────────────────────────────────────────┐  │ │
+│  │  │ Namespace: onyx-test (TEST)                           │  │ │
+│  │  │ IngressClass: nginx-test                              │  │ │
+│  │  │ LoadBalancer IP: 188.34.118.201                       │  │ │
+│  │  │                                                       │  │ │
+│  │  │  (Identische Pod-Struktur wie DEV)                    │  │ │
+│  │  └───────────────────────────────────────────────────────┘  │ │
+│  │                                                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│              ↓ Internal Networking                                │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ Managed PostgreSQL Flex (StackIT)                           │ │
+│  │                                                             │ │
+│  │  DEV: vob-dev (Flex 2.4 Single, 2 CPU, 4 GB, 20 GB SSD)  │ │
+│  │  TEST: vob-test (Flex 2.4 Single, 2 CPU, 4 GB, 20 GB SSD)│ │
+│  │  PostgreSQL Version: 16                                     │ │
+│  │  Backup: DEV täglich 02:00 UTC, TEST täglich 03:00 UTC (managed) │ │
+│  │  ACL: Cluster-Egress-IP 188.34.93.194/32 + Admin           │ │
+│  │  Users: onyx_app (RW), db_readonly_user (RO)               │ │
+│  │                                                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ StackIT Object Storage (S3-kompatibel)                     │ │
+│  │                                                             │ │
+│  │  Buckets:                                                   │ │
+│  │  - vob-dev (DEV File Store)                                │ │
+│  │  - vob-test (TEST File Store)                              │ │
+│  │  Endpoint: object.storage.eu01.onstackit.cloud             │ │
+│  │                                                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ StackIT AI Model Serving (LLM)                             │ │
+│  │                                                             │ │
+│  │  DEV: GPT-OSS 120B + Qwen3-VL 235B (konfiguriert)         │ │
+│  │  TEST: LLM-Konfiguration ausstehend                       │ │
+│  │  Embedding: E5 Mistral 7B (geplant, noch nicht aktiv)     │ │
+│  │                                                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ StackIT Container Registry                                 │ │
+│  │                                                             │ │
+│  │  Projekt: voeb-chatbot                                     │ │
+│  │  Images: onyx-backend, onyx-web-server                     │ │
+│  │  Registry: registry.onstackit.cloud                        │ │
+│  │                                                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ### Komponenten-Übersicht
 
-| Komponente | Technologie | Zweck | HA | Backup |
-|-----------|------------|-------|----|----|
-| Frontend | Next.js / React | Web UI | 3 Replicas | None |
-| Backend API | Node.js / Express | API Server | 3 Replicas | Git (Code) |
-| Vespa | Search Engine | RAG + Vector Store | 3 Nodes | Snapshots |
-| PostgreSQL | RDS Managed | Relational Data | Primary + Standby | Daily Snapshots |
-| Object Storage | S3-Compatible | Backups + Assets | Replicated | Versioning |
+| Komponente | Technologie | Zweck | Replicas (DEV/TEST) |
+|-----------|------------|-------|---------------------|
+| Frontend (Web Server) | Next.js 16, React 19, TypeScript | Web UI | 1 |
+| Backend (API Server) | Python 3.11, FastAPI 0.128, SQLAlchemy 2.0, Pydantic 2.11 | REST API | 1 |
+| Background Worker | Celery 5.5 (Lightweight Mode) | Async Tasks, Indexing | 1 (Primary) + 1 (Beat) |
+| Model Server | Onyx Model Server v2.9.8 (Docker Hub Upstream) | Embedding, Inference | 2 (Index + Inference) |
+| Vespa | Vespa 8.609.39 (In-Cluster) | RAG + Vector Store | 1 |
+| Redis | Redis 7.0.15 (In-Cluster, OT Operator) | Cache, Celery Broker | 1 |
+| PostgreSQL | StackIT Managed Flex 2.4 (Extern) | Relationale Daten | Managed (Single) |
+| Object Storage | StackIT S3-kompatibel (Extern) | File Store | Managed |
+| LLM | StackIT AI Model Serving | Chat, RAG | Managed |
+| Ingress | NGINX Ingress Controller | Load Balancing, Routing | 1 pro Namespace |
+
+### Umgebungen
+
+| Umgebung | Namespace | IP | IngressClass | Status |
+|----------|-----------|-----|-------------|--------|
+| DEV | `onyx-dev` | `188.34.74.187` | `nginx` | LIVE seit 2026-02-27 |
+| TEST | `onyx-test` | `188.34.118.201` | `nginx-test` | LIVE seit 2026-03-03 |
+| PROD | `onyx-prod` (geplant) | -- | -- | Geplant (eigener Cluster) |
+
+**Hinweis**: DEV und TEST teilen sich denselben SKE-Cluster mit einem Node Pool (`devtest`, 2 Nodes). PROD wird laut ADR-004 auf einem separaten Cluster betrieben.
+
+---
+
+## Tech-Stack
+
+### Backend
+- **Sprache**: Python 3.11
+- **Framework**: FastAPI 0.128
+- **ORM**: SQLAlchemy 2.0.15
+- **Migrations**: Alembic 1.10.4
+- **Validation**: Pydantic 2.11
+- **Task Queue**: Celery 5.5.1
+- **LLM Integration**: LiteLLM 1.81.6
+- **Dependency Management**: uv (Requirements exportiert nach `backend/requirements/`)
+
+### Frontend
+- **Framework**: Next.js 16.1.6
+- **UI Library**: React 19.2.4
+- **Sprache**: TypeScript 5.9
+- **Styling**: Tailwind CSS 3.4
+- **State Management**: Zustand 5.0, SWR 2.1
+- **Testing**: Jest 29, Playwright
+
+### Infrastructure as Code
+- **Terraform**: StackIT Provider ~> 0.80
+- **Helm**: v3.16.0 (Onyx Chart READ-ONLY + Value-Overlays)
+- **CI/CD**: GitHub Actions
 
 ---
 
 ## Deployment-Prozess
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
-
 ### CI/CD Pipeline
 
+Die Pipeline ist in `.github/workflows/stackit-deploy.yml` definiert und seit Run #5 produktionsreif verifiziert.
+
 ```
-Git Push (Feature Branch)
+Git Push auf "develop"
   ↓
-GitHub Actions Workflow
-  ├── Run Tests (Unit + Integration)
-  ├── Build Docker Images
-  │   ├── vob-chatbot-frontend:commit-hash
-  │   └── vob-chatbot-backend:commit-hash
-  ├── Push to Container Registry (StackIT)
-  └── Create PR (manual review required)
+GitHub Actions Workflow (automatisch)
+  ├── Prepare: Image Tag bestimmen (Git SHA)
+  ├── Build Backend (parallel, ~1 Min mit Cache)
+  │   └── Push: registry.onstackit.cloud/voeb-chatbot/onyx-backend:<sha>
+  ├── Build Frontend (parallel, ~1 Min mit Cache)
+  │   └── Push: registry.onstackit.cloud/voeb-chatbot/onyx-web-server:<sha>
+  └── Deploy DEV
+      ├── helm dependency build
+      ├── helm upgrade --install onyx-dev
+      │   -f values-common.yaml -f values-dev.yaml
+      │   --set Secrets (PG, Redis, S3, DB_READONLY)
+      ├── kubectl patch: Recreate-Strategie (Single-Node)
+      ├── kubectl rollout status (alle 6 Deployments)
+      └── Smoke Test: curl ${WEB_DOMAIN}/api/health
 
-PR Approved
-  ↓
-Merge to Main Branch
-  ↓
-GitHub Actions (Main)
-  ├── Run Full Test Suite
-  ├── Build Release Images
-  │   ├── vob-chatbot-frontend:v1.2.3
-  │   └── vob-chatbot-backend:v1.2.3
-  ├── Push to Container Registry
-  ├── Create GitHub Release
-  ├── Deploy to Staging (automatic)
-  └── Wait for Manual Approval
-
-Manual Approval to Production
-  ↓
-Deploy to Production
-  ├── Run Database Migrations
-  ├── Deploy new Pods (rolling update)
-  ├── Health Checks
-  └── Smoke Tests
-
-Production Live
-  ↓
-Monitor for Issues
+Manuell (workflow_dispatch):
+  ├── Environment wählbar: dev / test / prod
+  ├── TEST: --atomic (automatischer Rollback bei Fehler)
+  └── PROD: Required Reviewers in GitHub Environment
 ```
+
+**Wichtige Details**:
+- Model Server wird NICHT gebaut -- Upstream-Image `onyxdotapp/onyx-model-server:v2.9.8` von Docker Hub
+- Secrets werden per `--set` aus GitHub Environment Secrets injiziert (nie in Git)
+- Concurrency: Nur ein Deploy pro Environment gleichzeitig, laufende Builds werden bei neuem Push abgebrochen
+- DEV-Deploy patcht Deployments auf Recreate-Strategie (Single g1a.4d Node hat nicht genug CPU für RollingUpdate)
+- Alle GitHub Actions sind SHA-gepinnt (Supply-Chain-Sicherheit)
 
 ### Helm-basiertes Deployment
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
-
-```bash
-# Structure
-helm/
-├── vob-chatbot/
+```
+deployment/helm/
+├── charts/onyx/                   ← Onyx Helm Chart (READ-ONLY, nicht verändern!)
 │   ├── Chart.yaml
 │   ├── values.yaml
-│   ├── values-staging.yaml
-│   ├── values-prod.yaml
-│   ├── templates/
-│   │   ├── deployment-frontend.yaml
-│   │   ├── deployment-backend.yaml
-│   │   ├── service-frontend.yaml
-│   │   ├── service-backend.yaml
-│   │   ├── ingress.yaml
-│   │   ├── configmap.yaml
-│   │   ├── secret.yaml
-│   │   └── hpa.yaml (HorizontalPodAutoscaler)
-
-# Deployment Commands
-helm install vob-chatbot ./helm/vob-chatbot \
-  -n vob-chatbot-prod \
-  -f helm/vob-chatbot/values-prod.yaml
-
-# Upgrade
-helm upgrade vob-chatbot ./helm/vob-chatbot \
-  -n vob-chatbot-prod \
-  -f helm/vob-chatbot/values-prod.yaml
+│   └── templates/
+└── values/
+    ├── values-common.yaml         ← Gemeinsam: PG aus, MinIO aus, Vespa+Redis an
+    ├── values-dev.yaml            ← DEV: 1 Replica, Lightweight Worker, eigene PG+S3
+    └── values-test.yaml           ← TEST: Analog DEV, eigene PG+S3+IngressClass
 ```
+
+**Deployment-Kommandos** (manuell, falls nötig):
+
+```bash
+# DEV
+helm upgrade --install onyx-dev deployment/helm/charts/onyx \
+  --namespace onyx-dev \
+  -f deployment/helm/values/values-common.yaml \
+  -f deployment/helm/values/values-dev.yaml
+
+# TEST
+helm upgrade --install onyx-test deployment/helm/charts/onyx \
+  --namespace onyx-test \
+  -f deployment/helm/values/values-common.yaml \
+  -f deployment/helm/values/values-test.yaml
+```
+
+**Hinweis**: Vor jedem manuellen Helm-Deploy muss `helm dependency build deployment/helm/charts/onyx` ausgeführt werden. Die Subchart-`.tgz`-Dateien sind gitignored.
 
 ### Rollback-Strategie
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
-
 **Szenarien**:
 
-1. **Fehlerhafte Deployment (vor Health Check)**
-   - Automated Rollback via Kubernetes Deployment
-   - Original Replicas werden neu gestartet
-   - RTO: ~5 Minuten
+1. **Fehlerhaftes Deployment (TEST/PROD)**
+   - TEST-Deploys nutzen `--atomic`: Helm rollt bei Fehler automatisch zurück
+   - PROD-Deploys nutzen ebenfalls `--atomic` + Required Reviewers
+   - Manueller Rollback: `helm rollback onyx-{env} -n onyx-{env}`
 
-2. **Laufzeitfehler (nach Deployment)**
-   - Alerting erkennt Issue
-   - Manual Rollback via Helm
-   - `helm rollback vob-chatbot -n vob-chatbot-prod`
-   - RTO: ~10 Minuten
+2. **Fehlerhaftes Deployment (DEV)**
+   - DEV nutzt kein `--atomic` (bewusste Entscheidung für Debug-Möglichkeit)
+   - Manueller Rollback: `helm rollback onyx-dev -n onyx-dev`
+   - Helm History: Maximal 5 Revisionen (`--history-max 5`)
 
-3. **Datenbankmigrationen Problem**
-   - Pre-Migration Backup erstellen
-   - Migration testen in Staging
-   - Nur mit Approval in Prod deployen
-   - Reverse Migration vorbereitet
+3. **Datenbankmigrationen**
+   - Alembic-Migrationen werden vom API-Server beim Start ausgeführt
+   - Vor kritischen Migrationen: PG-Backup verifizieren (managed, DEV 02:00 UTC, TEST 03:00 UTC)
+   - Reverse-Migration: `alembic downgrade -1`
 
 ---
 
 ## Monitoring und Alerting
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+### Aktueller Stand
 
-### Health Checks
+**Aktuell ist kein dediziertes Monitoring-Stack (Prometheus/Grafana/AlertManager) im Einsatz.** Die Überwachung erfolgt über:
 
-#### Liveness Probe (Pod am Leben?)
-```yaml
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 8080
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-```
+1. **CI/CD Smoke Tests**: Jeder Deploy prüft `/api/health` (12 Versuche, je 10s Wartezeit)
+2. **Kubernetes-native Prüfungen**: `kubectl get pods`, `kubectl describe`, `kubectl logs`
+3. **Helm Status**: `helm status onyx-{env} -n onyx-{env}`
+4. **StackIT Console**: Managed-Service-Metriken für PostgreSQL und Object Storage
 
-#### Readiness Probe (Pod bereit für Traffic?)
-```yaml
-readinessProbe:
-  httpGet:
-    path: /ready
-    port: 8080
-  initialDelaySeconds: 10
-  periodSeconds: 5
-  timeoutSeconds: 2
-  failureThreshold: 2
-```
+### Health Checks (Kubernetes)
 
-### Metriken (Prometheus)
+Die Health Checks sind im Onyx Helm Chart definiert. Der API-Server exponiert:
 
-**Zu überwachen**:
+- **Health Endpoint**: `GET /api/health` -- geprüft durch CI/CD Smoke Test nach jedem Deploy
+- **Liveness/Readiness Probes**: Konfiguriert im Helm Chart (Templates, READ-ONLY)
+
+### Geplanter Monitoring-Ausbau
+
+[AUSSTEHEND -- Vor PROD-Go-Live zu implementieren]
+
+Der Monitoring-Ausbau ist für die PROD-Vorbereitung geplant und umfasst:
+
+| Thema | Geplante Lösung | Priorität |
+|-------|----------------|-----------|
+| Metriken | Prometheus + Grafana | Vor PROD |
+| Alerting | AlertManager oder StackIT-native Lösung | Vor PROD |
+| Log-Aggregation | Zu evaluieren (ELK, Loki, StackIT-nativ) | Vor PROD |
+| Uptime-Monitoring | Zu evaluieren | Vor PROD |
+
+**Empfohlene Metriken für PROD** (noch nicht implementiert):
 
 | Metrik | Schwellwert | Aktion |
 |--------|------------|--------|
-| API Response Time (p99) | > 1000ms | Warning Alert |
-| Pod Restart Count | > 0 in 5 Min | Critical Alert |
-| Memory Usage | > 80% | Scaling Trigger |
-| CPU Usage | > 70% | Scaling Trigger |
-| Request Error Rate | > 1% | Warning Alert |
-| Database Connections | > 80% of Pool | Warning Alert |
-| Disk Usage | > 85% | Warning Alert |
-| Vespa Index Size | > 100GB | Monitoring |
-
-### Dashboards
-
-**Prometheus/Grafana Dashboards**:
-- System Overview (CPU, Memory, Disk)
-- API Performance (Latency, Throughput, Errors)
-- Database Health (Connections, Replication, Backups)
-- LLM Integration (Token Usage, Model Performance)
-- User Activity (MAU, Daily Users, Feature Usage)
-
-### Alerting Rules
-
-```yaml
-# Example Alert Rule (Prometheus)
-groups:
-  - name: vob-chatbot-alerts
-    rules:
-      - alert: HighErrorRate
-        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.01
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High error rate detected"
-
-      - alert: PodRestartingTooOften
-        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
-        for: 5m
-        labels:
-          severity: warning
-```
+| Pod Restart Count | > 0 in 5 Min | Alert |
+| Memory/CPU Usage | > 80% | Investigate |
+| API Error Rate | > 1% | Alert |
+| Database Connections | Pool-Limit nahend | Alert |
+| Disk Usage | > 85% | Alert |
 
 ---
 
 ## Backup und Recovery
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+### Backup-Strategie
 
-### Backup-Strategie (3-2-1 Rule)
+#### PostgreSQL (Managed)
+- **Anbieter**: StackIT Managed PostgreSQL Flex
+- **Automatische Backups**:
+  - DEV: Täglich um 02:00 UTC (konfiguriert per Terraform: `pg_backup_schedule = "0 2 * * *"`)
+  - TEST: Täglich um 03:00 UTC (1h nach DEV, kein Overlap: `pg_backup_schedule = "0 3 * * *"`)
+- **Retention**: Managed durch StackIT (Details in StackIT-Dokumentation)
+- **PITR (Point-in-Time Recovery)**: Abhängig vom StackIT Flex Tier
+- **Lifecycle Protection**: `prevent_destroy = true` in Terraform
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ 3 Kopien der Daten                                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│ 1. Produktiv-Datenbank (Frankfurt RDS)                         │
-│    └─ RTO: <1 Min (Failover zu Read Replica)                  │
-│    └─ RPO: ~30 Sekunden (replication lag)                     │
-│                                                                 │
-│ 2. Automated Snapshots (StackIT S3)                            │
-│    ├─ Tägliche Snapshots (30 days retention)                   │
-│    ├─ Wöchentliche Snapshots (12 weeks retention)             │
-│    └─ Monatliche Snapshots (1 Jahr retention)                 │
-│    └─ RTO: ~2 Stunden (Restore aus Snapshot)                 │
-│    └─ RPO: ~24 Stunden                                        │
-│                                                                 │
-│ 3. Offsite Backup (Cold Storage)                               │
-│    ├─ Monatliche Backups zu StackIT Cold Storage              │
-│    ├─ Archiviert für 7 Jahre (Compliance)                     │
-│    └─ RTO: >24 Stunden (Restore-Prozess komplex)             │
-│    └─ RPO: ~1 Monat                                           │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+#### Object Storage
+- **Anbieter**: StackIT Object Storage (S3-kompatibel)
+- **Replikation**: Managed durch StackIT
+- **Buckets**: `vob-dev`, `vob-test` (jeweils für File Store)
+
+#### Applikation
+- **Code**: Git Repository (GitHub)
+- **Konfiguration**: Helm Values in Git, Secrets in GitHub Environments
+- **Infrastruktur**: Terraform State (lokal, Remote-Backend vorbereitet)
+- **Vespa-Daten**: Persistent Volumes (20 GB pro Umgebung), kein separates Backup
+
+#### Redis
+- **Kein Backup**: Redis dient als Cache und Celery Broker. Datenverlust hat keine Auswirkung auf persistente Daten.
 
 ### RTO/RPO Targets
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+[AUSSTEHEND -- Klärung mit VÖB für PROD-SLAs]
 
-| Szenario | RTO (Recovery Time) | RPO (Data Loss) |
-|----------|-----------------|--------|
-| Einzelner Pod Fehler | 1-2 Min | 0 (stateless) |
-| Datenbank-Failover | <1 Min | ~30 Sec |
-| Region-Ausfall | TBD | TBD |
-| Kompletter Datenverlust | 2-4 Stunden | 24 Stunden |
+| Szenario | RTO (Recovery Time) | RPO (Data Loss) | Anmerkung |
+|----------|---------------------|------------------|-----------|
+| Einzelner Pod Fehler | 1-2 Min | 0 (stateless) | Kubernetes Restart |
+| Helm Rollback | ~5 Min | 0 | `helm rollback` |
+| PostgreSQL Restore | Abhängig von StackIT | Bis letztes Backup | Managed Service |
+| Cluster-Neuaufbau | Stunden | Bis letztes PG-Backup | Terraform + Helm |
 
 ### Disaster Recovery Prozess
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
-
-1. **Detection**: Automated Alerting erkennt Ausfall
-2. **Incident Response**: On-Call Team wird aufgefordert
-3. **Assessment**: Bestandsaufnahme des Schadens
-4. **Recovery Plan**: Entscheidung über Recovery-Strategie
-5. **Execution**: Restore aus Backup durchführen
-6. **Validation**: Daten-Integrität prüfen
-7. **Notification**: VÖB informieren über Status
-8. **Post-Incident**: Root Cause Analysis
+1. **Detection**: CI/CD Smoke Test schlägt fehl / manuelle Meldung
+2. **Assessment**: `kubectl get pods`, `helm status`, StackIT Console prüfen
+3. **Recovery**:
+   - Pod-Fehler: Kubernetes-Restart oder `kubectl delete pod`
+   - Deployment-Fehler: `helm rollback`
+   - Datenbank-Fehler: StackIT Support kontaktieren (Managed Restore)
+   - Cluster-Fehler: Terraform + Helm Re-Deploy (Runbooks folgen)
+4. **Validation**: Health Check, funktionale Prüfung
+5. **Notification**: VÖB informieren
+6. **Post-Incident**: Root Cause Analysis dokumentieren
 
 ---
 
 ## Update-Prozess
 
 ### Upstream Merges (Onyx Updates)
-
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
 
 **Frequenz**: Jeden Quarter oder bei kritischen Security Updates
 
@@ -357,129 +362,105 @@ groups:
    git fetch upstream main
 
 2. Create Branch
-   git checkout -b feature/upstream-merge-v2.1.0
+   git checkout -b feature/upstream-merge-vX.Y.Z
 
 3. Merge
    git merge upstream/main
 
 4. Resolve Conflicts
-   - Nur in Core-Files möglich (7 Files)
-   - Extensions sollten keine Konflikte haben
+   - Konflikte NUR in 7 Core-Dateien erwartet
+   - Upstream übernehmen, dann Patches aus _core_originals/ neu anwenden
+   - Andere Konflikte = Fork-Regeln wurden verletzt
 
-5. Test in Staging
-   - Run Full Test Suite
-   - Deploy to Staging Environment
-   - Smoke Tests
+5. Test
+   - Full Test Suite lokal
+   - Deploy auf TEST
+   - Funktionale Prüfung
 
 6. Deploy to Production
-   - Scheduled Maintenance Window
-   - Rolling Update (3 Replicas staggered)
-   - Monitor für Issues
-
-7. Merge PR
-   git merge --squash feature/upstream-merge-v2.1.0
+   - workflow_dispatch mit environment=prod
+   - Required Reviewers Approval
 ```
+
+**Warum "Extend, don't modify" funktioniert**: Max. 7 vorhersagbare Merge-Konflikte. Der `ext/`-Code existiert nicht in Upstream und erzeugt keine Konflikte.
 
 ### Extension Updates
 
-**Häufigkeit**: Bei neuen Features, Bug Fixes, Security Patches
-
 **Prozess**: Standard Git Workflow
-1. Feature Branch
-2. PR mit Tests
-3. Code Review + Approval
-4. CI/CD Testing
-5. Deploy to Staging
-6. Deploy to Production (if approved)
+1. Feature Branch (`feature/{modulname}`)
+2. Implementierung in `backend/ext/` und/oder `web/src/ext/`
+3. Tests + Code Review
+4. Merge auf `develop`
+5. Automatischer Deploy auf DEV (Push-Trigger)
+6. Manueller Deploy auf TEST (workflow_dispatch)
+7. Manueller Deploy auf PROD (workflow_dispatch + Approval)
 
 ### Database Migrations
 
-**Strategie**: Zero-Downtime Migrations
+**Strategie**: Alembic-Migrationen werden beim API-Server-Start automatisch ausgeführt.
 
-1. **Backward Compatible**: New Schema muss mit alte App-Version funktionieren
-2. **Deploy Application**: Update App-Version zuerst
-3. **Run Migrations**: Dann DB-Migrations durchführen
-4. **Verify**: Schema ist konsistent
-
-**Rollback**: Reverse Migrations vorbereitet
+- **Onyx-Migrationen**: `backend/alembic/` (READ-ONLY, kommen mit Upstream-Merges)
+- **Extension-Migrationen**: `backend/ext/migrations/` (eigener Alembic-Branch)
+- **Managed-PG-Einschränkung**: StackIT Flex erlaubt kein `CREATEROLE` -- spezielle User (z.B. `db_readonly_user`) werden per Terraform angelegt
 
 ---
 
 ## Skalierung
 
-### Horizontal Scaling (mehr Pods)
+### Aktuelle Konfiguration (DEV/TEST)
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+| Komponente | Requests | Limits |
+|-----------|----------|--------|
+| API Server | 250m CPU, 512Mi RAM | 500m CPU, 1Gi RAM |
+| Web Server | 100m CPU, 256Mi RAM | 250m CPU, 512Mi RAM |
+| Celery Primary | 250m CPU, 512Mi RAM | 500m CPU, 1Gi RAM |
+| Celery Beat | 100m CPU, 256Mi RAM | 250m CPU, 512Mi RAM |
+| Model Server (je) | 250m CPU, 768Mi RAM | 1000m CPU, 2Gi RAM |
+| Vespa | 500m CPU, 2Gi RAM | 1500m CPU, 4Gi RAM |
+| Redis | 100m CPU, 128Mi RAM | 250m CPU, 256Mi RAM |
 
-```yaml
-# HorizontalPodAutoscaler for Frontend
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: chatbot-frontend-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: chatbot-frontend
-  minReplicas: 3
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-```
+### Skalierungsstrategie
 
-**Triggerbedingungen**:
-- CPU > 70%: Scale up (max +2 Pods per minute)
-- Memory > 80%: Scale up
-- Traffic > 1000 req/sec: Scale up
+**DEV/TEST**: Keine Autoskalierung. 1 Replica pro Service. Lightweight Celery Mode (ein konsolidierter Worker statt 8 separate).
 
-**Limits**:
-- Frontend: Min 3, Max 10 Pods
-- Backend: Min 3, Max 15 Pods
-- Vespa: Min 3, Max 7 Nodes (fixed, nur vertical scaling)
+**PROD (geplant)**:
 
-### Vertical Scaling (größere Instanzen)
+[AUSSTEHEND -- PROD-Sizing nach Lastprofil]
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+- Eigener SKE-Cluster (ADR-004)
+- Mehrere Replicas für API Server und Web Server
+- Separate Celery Worker (kein Lightweight Mode)
+- Größere Node Types oder mehr Nodes
+- HPA (HorizontalPodAutoscaler) nach Bedarf
 
-**Wenn Horizontal-Scaling nicht ausreicht**:
-- PostgreSQL: Upgrade Node Size (db.standard.2 → db.standard.4)
-- Vespa: Mehr Memory pro Node (wenn HPA maxed out)
-- Kubernetes Nodes: Größere Instance Types
+### Vertikale Skalierung
 
-**RTO**: ~30 Min (Rolling Update mit Blue-Green Deployment)
+- **Kubernetes Nodes**: g1a.4d (4 vCPU, 16 GB) ist aktuelles Minimum. Upgrade auf g1a.8d bei Bedarf.
+- **PostgreSQL**: Flex 2.4 (2 CPU, 4 GB). Upgrade auf größeres Flavor oder HA (3 Replicas) per Terraform.
 
 ---
 
 ## Wartungsfenster
 
+### Kubernetes Cluster Maintenance (Managed)
+
+Das SKE-Cluster hat ein automatisches Wartungsfenster (konfiguriert per Terraform):
+
+```
+Zeitfenster: 02:00-04:00 UTC (täglich, managed durch StackIT)
+Inhalt: Kubernetes-Version-Updates, Machine-Image-Updates
+```
+
 ### Geplante Wartungen
 
-| Zeitfenster | Frequenz | Dauer | Aktivitäten |
-|---|---|---|---|
-| Mittwoch 02:00-04:00 CEST | Wöchentlich | 2 Stunden | Patch Management, Security Updates |
-| Zweiter Samstag, 22:00-06:00 | Monatlich | 8 Stunden | Major Updates, Kernel Patches |
+[AUSSTEHEND -- Klärung mit VÖB]
 
-**Benachrichtigungen**:
-- 2 Wochen vorher: Ankündigung an Stakeholder
-- 1 Tag vorher: Reminder
-- 30 Min vorher: Kurz vor Wartung-Start
+| Zeitfenster | Frequenz | Aktivitäten |
+|---|---|---|
+| [Zu vereinbaren] | Wöchentlich | Patch Management, Security Updates |
+| [Zu vereinbaren] | Monatlich | Major Updates, Upstream Merges |
 
-**User Communication**:
-- Statusseite: chatbot-status.vob.example.com
-- Email an Admins
-- In-App Banner (wenn möglich)
+**Benachrichtigungsprozess**: [AUSSTEHEND -- Klärung mit VÖB]
 
 ---
 
@@ -489,100 +470,120 @@ spec:
 
 | Level | Auswirkung | Response Time | Resolution Target |
 |-------|-----------|---|---|
-| P1 (Critical) | Produktionssystem down | 15 Minuten | 2 Stunden |
-| P2 (High) | Funktionalität beeinträchtigt | 1 Stunde | 4 Stunden |
-| P3 (Medium) | Gering Impact, Workaround existiert | 4 Stunden | 1 Tag |
-| P4 (Low) | Cosmetic issue, kein Impact | 24 Stunden | 1 Woche |
+| P1 (Critical) | Produktionssystem down | [AUSSTEHEND -- Klärung mit VÖB] | [AUSSTEHEND -- Klärung mit VÖB] |
+| P2 (High) | Funktionalität beeinträchtigt | [AUSSTEHEND -- Klärung mit VÖB] | [AUSSTEHEND -- Klärung mit VÖB] |
+| P3 (Medium) | Geringer Impact, Workaround existiert | [AUSSTEHEND -- Klärung mit VÖB] | [AUSSTEHEND -- Klärung mit VÖB] |
+| P4 (Low) | Kosmetisches Problem, kein Impact | [AUSSTEHEND -- Klärung mit VÖB] | [AUSSTEHEND -- Klärung mit VÖB] |
 
 ### Eskalationspfade
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+[AUSSTEHEND -- Klärung mit VÖB]
 
 ```
-Incident Detection
+Incident Detection (Smoke Test fehlgeschlagen / manuelle Meldung)
   ↓
-Automated Alert (Slack/Email)
+Tech Lead (CCJ) informiert
   ↓
-On-Call Engineer Page
+Assessment + Fix
   ↓
-5 Min keine Response?
-  ├─→ Escalate to Team Lead
-  │   5 Min keine Response?
-  │   └─→ Escalate to Manager
-  │       5 Min keine Response?
-  │       └─→ Escalate to Director + VÖB Notify
-  └─→ Parallel: Incident Commander + War Room (Slack)
+Bei P1/P2: VÖB Operations informieren
+  ↓
+Post-Incident: Root Cause Analysis
 ```
 
 ### Incident Log Template
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
-
 ```markdown
-# Incident: [Title]
+# Incident: [Titel]
 
 ## Timeline
-- **2024-01-15 14:30 UTC**: Alert fired (API Error Rate > 5%)
-- **2024-01-15 14:35 UTC**: On-Call Engineer acknowledged
-- **2024-01-15 14:45 UTC**: Root Cause Identified (Memory Leak in Frontend)
-- **2024-01-15 14:55 UTC**: Rollback deployed
-- **2024-01-15 15:00 UTC**: Service recovered, P1 resolved
+- **YYYY-MM-DD HH:MM UTC**: Incident erkannt
+- **YYYY-MM-DD HH:MM UTC**: Assessment begonnen
+- **YYYY-MM-DD HH:MM UTC**: Root Cause identifiziert
+- **YYYY-MM-DD HH:MM UTC**: Fix deployt
+- **YYYY-MM-DD HH:MM UTC**: Service wiederhergestellt
 
 ## Root Cause
-[Analysis]
+[Analyse]
 
 ## Mitigation
-[What was done]
+[Was wurde getan]
 
 ## Prevention
-[What will prevent recurrence]
-
-## Post-Mortem
-[Scheduled for 24 hours later]
+[Was verhindert Wiederholung]
 ```
 
 ---
 
 ## SLA-Definitionen
 
-[ENTWURF — Abhängig von Vereinbarung mit VÖB – TBD]
+[AUSSTEHEND -- Abhängig von Vereinbarung mit VÖB]
 
-### Vorgeschlagene SLAs
+SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werden. Folgende Punkte sind zu klären:
 
-| Metrik | Zielwert | Bemerkung |
-|--------|---------|----------|
-| **Verfügbarkeit** | 99.9% (43 Min Downtime/Monat) | Außer geplante Wartung |
-| **API Response Time (p99)** | < 500ms | 99% aller Requests |
-| **API Success Rate** | > 99.5% | Weniger als 0.5% Fehler |
-| **Data Loss** | RPO 24 Stunden | Mit Backups Recovery möglich |
-| **Incident Response** | P1: 15 Min, P2: 1 Hr | Vom Alert bis On-Call |
-| **Patch Management** | 30 Tage für Non-Critical | 24 Stunden für Critical |
+- Verfügbarkeitsziel (z.B. 99.5%, 99.9%)
+- Response Times pro Severity Level
+- Geplante vs. ungeplante Downtime
+- Ausnahmen (Wartungsfenster, externe Abhängigkeiten)
+- Berichtspflichten
 
-### Ausnahmen von SLA
+### Externe Abhängigkeiten (nicht unter unserer Kontrolle)
 
-- Geplante Wartungsfenster
-- DDoS Attacken (außerhalb normaler Lasten)
-- Externe Dependencies (LLM Provider, Entra ID)
-- Major Version Upgrades
+| Abhängigkeit | Anbieter | Auswirkung bei Ausfall |
+|-------------|----------|----------------------|
+| PostgreSQL Flex | StackIT Managed | Kein DB-Zugriff |
+| Object Storage | StackIT Managed | Kein File-Upload/-Download |
+| SKE Cluster | StackIT Managed | Kein Betrieb |
+| AI Model Serving | StackIT Managed | Keine LLM-Antworten |
+| Container Registry | StackIT | Kein Image Pull (laufende Pods nicht betroffen) |
+| Microsoft Entra ID | Microsoft (geplant, Phase 3) | Kein Login |
 
 ---
 
 ## Kontaktliste
 
-[ENTWURF — Zu ergänzen mit echten Kontakten]
+[AUSSTEHEND -- Klärung mit VÖB]
 
-| Rolle | Name | Email | Phone | Notizen |
-|-------|------|-------|-------|---------|
-| **Projektleiter (CCJ)** | [TBD] | [TBD] | [TBD] | Geschäftszeiten |
-| **Tech Lead (JNnovate)** | [TBD] | [TBD] | [TBD] | 24/7 on-call |
-| **DevOps Lead** | [TBD] | [TBD] | [TBD] | 24/7 on-call |
-| **StackIT Support** | [Contact] | [TBD] | [TBD] | Offizielle Eskalation |
-| **VÖB Operations Lead** | [TBD] | [TBD] | [TBD] | Für Notifications |
-| **VÖB CISO** | [TBD] | [TBD] | [TBD] | Für Security Incidents |
+| Rolle | Name | Kontakt | Notizen |
+|-------|------|---------|---------|
+| **Tech Lead (CCJ)** | Nikolaj Ivanov | [AUSSTEHEND -- Klärung mit VÖB] | Geschäftszeiten |
+| **StackIT Support** | -- | [AUSSTEHEND -- Klärung mit VÖB] | Managed Services |
+| **VÖB Operations Lead** | [AUSSTEHEND -- Klärung mit VÖB] | [AUSSTEHEND -- Klärung mit VÖB] | |
+| **VÖB CISO** | [AUSSTEHEND -- Klärung mit VÖB] | [AUSSTEHEND -- Klärung mit VÖB] | Security Incidents |
 
 ---
 
-## Dokumentation & Runbooks
+## Sicherheitsrelevante Betriebsaspekte
+
+### Netzwerk-ACLs
+
+| Ressource | ACL | Status |
+|-----------|-----|--------|
+| PostgreSQL Flex (DEV + TEST) | Cluster-Egress-IP `188.34.93.194/32` + Admin | SEC-01 umgesetzt |
+| SKE Cluster API | Offen (`0.0.0.0/0`) | SEC-02 geplant (vor PROD) |
+
+### Secrets Management
+
+- **GitHub Environments**: `dev` und `test` mit je 5 Secrets (POSTGRES_PASSWORD, REDIS_PASSWORD, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, DB_READONLY_PASSWORD)
+- **Globale Secrets**: STACKIT_REGISTRY_USER, STACKIT_REGISTRY_PASSWORD, STACKIT_KUBECONFIG
+- **Kubeconfig-Ablauf**: 2026-05-28 -- Erneuerung einplanen
+- **Kubernetes Secrets**: `onyx-postgresql`, `onyx-redis`, `onyx-objectstorage` (pro Namespace)
+
+### Ausstehende Security-Massnahmen
+
+| ID | Massnahme | Priorität | Status |
+|----|----------|-----------|--------|
+| SEC-01 | PG ACL auf Cluster-Egress-IP einschränken | P0 | Umgesetzt |
+| SEC-02 | Cluster API ACL einschränken | P1 | Vor PROD |
+| SEC-03 | TLS/HTTPS aktivieren | P1 | Nach DNS-Setup |
+| SEC-04 | Network Policies (Namespace-Isolation) | P1 | Vor PROD |
+| SEC-05 | Pod Security Standards | P1 | Vor PROD |
+| SEC-06 | Image Scanning | P2 | Vor Abnahme |
+| SEC-07 | Audit Logging | P2 | Vor Abnahme |
+
+---
+
+## Dokumentation und Runbooks
 
 Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständiges, verifiziertes Step-by-Step-Dokument.
 
@@ -590,34 +591,34 @@ Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständi
 
 ### Vorhandene Runbooks
 
-| Runbook | Status |
-|---------|--------|
-| [StackIT Projekt-Setup](./runbooks/stackit-projekt-setup.md) | Verifiziert |
-| StackIT Terraform Deploy | Ausstehend |
-| K8s Namespace Setup | Ausstehend |
-| Helm Deploy | Ausstehend |
-| CI/CD Pipeline | Ausstehend |
-| Troubleshooting | Ausstehend |
+| # | Runbook | Status | Beschreibung |
+|---|---------|--------|--------------|
+| 1 | [StackIT Projekt-Setup](./runbooks/stackit-projekt-setup.md) | Verifiziert | StackIT CLI, Service Account, Container Registry |
+| 2 | [StackIT PostgreSQL](./runbooks/stackit-postgresql.md) | Verifiziert | DB anlegen, Readonly-User, Managed PG Einschränkungen |
+| 3 | [Helm Deploy](./runbooks/helm-deploy.md) | Verifiziert | Helm Install/Upgrade, Secrets, Redis, Troubleshooting |
+| 4 | [CI/CD Pipeline](./runbooks/ci-cd-pipeline.md) | Verifiziert | Deploy, Rollback, Secrets, Troubleshooting |
 
-### Geplante Runbooks (nach Go-Live)
+### Geplante Runbooks (vor PROD)
 
-1. **Incident Response Runbooks**
-   - P1 Incident Response
-   - Database Corruption Recovery
-   - Data Breach Response
+1. **Incident Response** -- P1/P2 Prozeduren
+2. **Monitoring Setup** -- Prometheus/Grafana Installation
+3. **TLS/DNS Setup** -- Certificate Management, DNS-Konfiguration
+4. **PROD Provisioning** -- Terraform + Helm für Produktionsumgebung
+5. **Upstream Merge** -- Schritt-für-Schritt Onyx-Update-Prozess
 
-2. **Maintenance Runbook**
-   - Patch Management Prozess
-   - Database Maintenance (Vacuuming, Reindexing)
-   - Log Archival
+### Weitere Referenzdokumentation
 
-3. **Scaling Runbook**
-   - Wann zu skalieren ist
-   - Wie HPA manuell zu justieren ist
-   - Kapazitätsplanung
+| Dokument | Pfad | Inhalt |
+|----------|------|--------|
+| Implementierungsplan | `docs/referenz/stackit-implementierungsplan.md` | Schritt-für-Schritt DEV+TEST Setup |
+| Infrastruktur-Referenz | `docs/referenz/stackit-infrastruktur.md` | Architekturentscheidungen, Specs |
+| ADR-004 | `docs/adr/adr-004-umgebungstrennung-dev-test-prod.md` | Umgebungstrennung |
+| Sicherheitskonzept | `docs/sicherheitskonzept.md` | DSGVO, BAIT, BSI-Grundschutz |
+| Testkonzept | `docs/testkonzept.md` | Teststrategie, Abnahmekriterien |
+| Changelog | `docs/CHANGELOG.md` | Versionshistorie |
 
 ---
 
-**Dokumentstatus**: Entwurf
-**Letzte Aktualisierung**: [Datum TBD]
-**Version**: 0.1
+**Dokumentstatus**: Entwurf (teilweise verifiziert)
+**Letzte Aktualisierung**: 2026-03-03
+**Version**: 0.2

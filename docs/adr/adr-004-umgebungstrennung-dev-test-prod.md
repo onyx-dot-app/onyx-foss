@@ -1,7 +1,7 @@
 # ADR-004: Umgebungstrennung DEV / TEST / PROD
 
-**Status**: Vorgeschlagen
-**Aktualisiert**: 2026-03-02
+**Status**: Akzeptiert
+**Aktualisiert**: 2026-03-03
 **Author**: CCJ / Coffee Studios (Nikolaj Ivanov)
 
 ---
@@ -307,6 +307,6 @@ Secrets: POSTGRES_PASSWORD, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
 
 ---
 
-**ADR Status**: Vorgeschlagen
-**Letzte Aktualisierung**: 2026-03-02
+**ADR Status**: Akzeptiert
+**Letzte Aktualisierung**: 2026-03-03
 **Version**: 1.0
