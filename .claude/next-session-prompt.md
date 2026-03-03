@@ -1,71 +1,74 @@
-# Nächste Session — TEST LIVE, Aufräumen + Weiter
+# Nächste Session — Post-Audit + Post-Upstream-Merge
 
 ## Wo wir stehen (2026-03-03)
 
-**TEST ist LIVE unter `http://188.34.118.201`.** 9 Pods Running (redis-operator läuft im default Namespace), Health Check OK.
+**DEV + TEST LIVE, Upstream gemerged (415 Commits), Doku-Audit komplett.**
 
-## Ausstehender Commit
+## Was heute erledigt wurde (Session 2026-03-03)
 
-**Noch NICHT committed/gepusht.** Geänderte Dateien:
-- `deployment/helm/values/values-test.yaml` — PG-Host eingetragen, DOMAIN/WEB_DOMAIN auf 188.34.118.201, nginx-test IngressClass
-- `.claude/rules/voeb-projekt-status.md` — TEST LIVE Status
-- `docs/CHANGELOG.md` — TEST LIVE Eintrag
+1. ✅ values-test.yaml committed + gepusht
+2. ✅ CI/CD workflow_dispatch TEST — grün
+3. ✅ LLM in TEST konfiguriert (GPT-OSS 120B + Qwen3-VL 235B)
+4. ✅ Enterprise-Doku-Audit durchgeführt (4 kritische, 7 wichtige Findings)
+5. ✅ Betriebskonzept komplett überarbeitet (Node.js → Python/FastAPI)
+6. ✅ Sicherheitskonzept komplett überarbeitet (SEC-01–07, Secrets, Auth)
+7. ✅ Meilensteinplan komplett überarbeitet (M1 an DEV/TEST-Realität)
+8. ✅ Testkonzept überarbeitet (JS/Jest → Python/pytest)
+9. ✅ ADR-001, ADR-003, ADR-004, README, CHANGELOG, Implementierungsplan, Infrastruktur-Referenz gefixt
+10. ✅ DNS/TLS-Runbook erstellt (docs/runbooks/dns-tls-setup.md)
+11. ✅ Abnahmeprotokoll-Template Links repariert
+12. ✅ Upstream-Merge: 415 Commits, 4 triviale Konflikte, 0 Core-Konflikte
+13. ✅ CI/CD Fix: Helm Repo python-sandbox ergänzt
+14. ✅ DEV Deploy nach Merge: grün (Smoke Test + Verify OK)
+15. ✅ Fork-Management Doku komplett überarbeitet (8-Schritte-Anleitung)
+16. ✅ Core-Patches aktualisiert (main.py.original + .patch)
+17. ✅ entra-id-kundenfragen.md + terraform.lock.hcl committed
 
-Commit-Text:
-```
-chore(stackit-infra): TEST-Umgebung live — PG-Host, Domain, IngressClass
+## Commits heute (6 Stück, chronologisch)
 
-- values-test.yaml: POSTGRES_HOST eingetragen (d371f38d-...onstackit.cloud)
-- values-test.yaml: DOMAIN/WEB_DOMAIN auf 188.34.118.201 (LoadBalancer)
-- values-test.yaml: Eigene IngressClass nginx-test (Conflict mit DEV vermieden)
-- Projektstatus + CHANGELOG: TEST LIVE dokumentiert
-```
-
-## Was in dieser Session erledigt wurde
-
-1. ✅ Commit + Push: TEST-Vorbereitung (Terraform, Helm, ADR-004)
-2. ✅ Terraform Auth: `~/.stackit/credentials.json` Wrapper → SA Key, chmod 600
-3. ✅ SEC-01: PG ACL auf 188.34.93.194/32 + 109.41.112.160/32 eingeschränkt
-4. ✅ terraform apply DEV: Node Pool 1→2, PG ACL live
-5. ✅ terraform apply TEST: PG Flex `vob-test` + Bucket `vob-test`
-6. ✅ Namespace `onyx-test` + Image Pull Secret + DB `onyx`
-7. ✅ GitHub Environment `test` + 5 Secrets (PG, Redis, S3)
-8. ✅ S3-Credentials für TEST separat erstellt (Enterprise-Trennung)
-9. ✅ Erster Helm Deploy: `onyx-test` mit eigener IngressClass `nginx-test`
-10. ✅ Health Check OK: `http://188.34.118.201/api/health` → 200
+1. `c62d47b54` — chore(stackit-infra): TEST-Umgebung live — PG-Host, Domain, IngressClass
+2. `600e192d6` — docs(audit): Enterprise-Dokumentation überarbeiten — Faktencheck + Korrekturen
+3. `c599fe3db` — docs(audit): Testkonzept, ADRs, DNS/TLS-Runbook, Abnahme-Links korrigieren
+4. `a35f54978` — chore(upstream): Merge upstream/main — 415 Commits, 4 triviale Konflikte (Merge-Commit)
+5. `5a54be1f8` — fix(ci): Helm Repo python-sandbox hinzufügen (Upstream-Dependency nach Merge)
+6. `9f63308e1` — docs(upstream): Fork-Management aktualisieren + untracked Files aufräumen
 
 ## Nächste Schritte
 
-### Sofort (nächste Session)
-1. **Commit + Push** der values-test.yaml + Status-Änderungen
-2. **Helm Upgrade** mit korrekter DOMAIN (aktuell noch Platzhalter im Live-Cluster)
-3. **CI/CD verifizieren**: `workflow_dispatch` für TEST ausführen
-4. **LLM konfigurieren**: GPT-OSS 120B + Qwen3-VL in TEST Admin UI
-5. **Login testen**: `http://188.34.118.201` im Browser öffnen
+### Sofort machbar (keine Blocker)
+1. **Embedding-Modell** (E5 Mistral 7B) in DEV + TEST konfigurieren — Browser, Admin UI, Modellname: `intfloat/e5-mistral-7b-instruct`
+2. **M1-Abnahmeprotokoll** ausfüllen (Template steht, DEV+TEST-Ergebnisse eintragen)
+3. **SEC-02: Node Affinity** — `nodeSelector` in Helm Values
+4. **SEC-03: NetworkPolicies** — Namespace-Isolation
+5. **SEC-04: Terraform Remote State** — von lokal auf Remote
+6. **K8s Upgrade** — 1.32.12 deprecated → 1.33+
 
-### Danach
-- Embedding-Modell (E5 Mistral 7B) konfigurieren
-- DNS + TLS (wenn VÖB DNS-Einträge liefert)
-- SEC-02 bis SEC-07 vor PROD
+### Wartet auf Kunde/Externe
+7. **DNS** — Domains mit VÖB klären (Runbook steht bereit: docs/runbooks/dns-tls-setup.md)
+8. **TLS/HTTPS** — cert-manager + Helm Values (nach DNS)
+9. **Entra ID (Phase 3)** — VÖB IT liefert Zugangsdaten
+
+### Noch offene Doku
+10. **DSGVO-Dokumente** (DSFA, AVV) — juristische Abstimmung mit VÖB
+11. **Monitoring-Konzept** — vor PROD
+12. **Notfall-/Notbetriebsplan** — vor PROD
 
 ## Wichtige Details
 
-### Cluster-Egress-IP
-- `188.34.93.194` — fest für Cluster-Lifecycle (StackIT NAT Gateway)
+### Upstream-Merge Erkenntnisse
+- Fork-Architektur "Extend, don't modify" validiert
+- Neue Helm-Dependencies nach Merge prüfen (python-sandbox war der Fall)
+- Core-Patches nach jedem Merge aktualisieren
+- DEV zuerst deployen, dann TEST
 
-### TEST-Infrastruktur
-- PG Host: `d371f38d-2ad5-458c-af27-c84f3004f1ba.postgresql.eu01.onstackit.cloud`
-- PG Port: 5432
-- Bucket: `vob-test`
-- LoadBalancer: `188.34.118.201`
-- Namespace: `onyx-test`
-- IngressClass: `nginx-test`
-- S3 Access Key ID: `EDDVRCB1NPDTFG88JAOS`
+### LLM Modellnamen (für Admin UI)
+- Chat: `openai/gpt-oss-120b` (Provider: `openai`)
+- Vision: `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8`
+- Embedding: `intfloat/e5-mistral-7b-instruct`
+- API Base: `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1`
 
-### K8s-Warnung
-- `FreeDiskSpaceFailed` auf Node 1 — Disk fast voll, garbage collection findet nichts
-- Kubernetes 1.32.12 deprecated — Update planen (1.33+)
-
-### StackIT CLI
-- Authentifiziert als SA `voeb-terraform-ys1hb4i8@sa.stackit.cloud`
-- Kann `stackit auth login` für persönlichen Zugang nutzen
+### LoadBalancer IPs (stabil, nicht reserviert)
+- DEV: `188.34.74.187`
+- TEST: `188.34.118.201`
+- Stabil solange Ingress Controller Services existieren
+- Für DNS: A-Records direkt darauf setzen (DEV/TEST ausreichend)

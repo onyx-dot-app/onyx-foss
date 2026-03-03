@@ -49,8 +49,11 @@
   - ✅ CI/CD workflow_dispatch TEST verifiziert — Build + Deploy grün (2026-03-03)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B in TEST konfiguriert (2026-03-03)
   - ✅ Enterprise-Dokumentation überarbeitet: Betriebskonzept, Sicherheitskonzept, Meilensteinplan, ADR-004, README, CHANGELOG (2026-03-03)
+  - ✅ Upstream-Merge: 415 Commits von onyx-foss, 0 Core-Konflikte, DEV grün (2026-03-03)
+  - ✅ DNS/TLS-Runbook erstellt (docs/runbooks/dns-tls-setup.md)
+  - ✅ Fork-Management Doku überarbeitet (8-Schritte-Anleitung)
   - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert (DEV + TEST)
-  - ⏳ DNS + TLS
+  - ⏳ DNS + TLS (Runbook bereit, wartet auf Domain-Entscheidung mit VÖB)
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
   - 4a: ✅ Extension Framework Basis (Config, Feature Flags, Router, Health Endpoint, Docker)
@@ -58,7 +61,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. DNS/TLS-Runbook erstellen → 2. Domains mit VÖB klären → 3. Embedding-Modell (E5 Mistral 7B) → 4. Testkonzept + ADRs überarbeiten → 5. M1-Abnahmeprotokoll vorbereiten.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. Embedding-Modell (E5 Mistral 7B, DEV+TEST) → 2. M1-Abnahmeprotokoll ausfüllen → 3. Domains mit VÖB klären → 4. SEC-02 bis SEC-04 (vor PROD) → 5. K8s Upgrade 1.33+.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
