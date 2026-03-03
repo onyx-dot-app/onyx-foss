@@ -3,68 +3,46 @@ import React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@opal/utils";
 import type { WithoutStyles } from "@opal/types";
+import {
+  sizeVariants,
+  type SizeVariant,
+  widthVariants,
+  type WidthVariant,
+} from "@opal/shared";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+type InteractiveBaseVariantTypes = "default" | "action" | "danger";
+type InteractiveBaseProminenceTypes =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "internal";
 type InteractiveBaseSelectVariantProps = {
   variant?: "select";
-  subvariant?: "light" | "heavy";
+  prominence?: "light" | "heavy";
   selected?: boolean;
 };
 
 /**
- * Discriminated union tying `variant` to `subvariant`.
+ * Discriminated union tying `variant` to `prominence`.
  *
- * - `"none"` accepts no subvariant (`subvariant` must not be provided)
- * - `"select"` accepts an optional subvariant (defaults to `"light"`) and
+ * - `"none"` accepts no prominence (`prominence` must not be provided)
+ * - `"select"` accepts an optional prominence (defaults to `"light"`) and
  *   an optional `selected` boolean that switches foreground to action-link colours
- * - `"default"`, `"action"`, and `"danger"` accept an optional subvariant
+ * - `"default"`, `"action"`, and `"danger"` accept an optional prominence
+ *   (defaults to `"primary"`)
  */
 type InteractiveBaseVariantProps =
-  | { variant?: "none"; subvariant?: never; selected?: never }
+  | { variant?: "none"; prominence?: never; selected?: never }
   | InteractiveBaseSelectVariantProps
   | {
-      variant?: "default" | "action" | "danger";
-      subvariant?: "primary" | "secondary" | "ghost";
+      variant?: InteractiveBaseVariantTypes;
+      prominence?: InteractiveBaseProminenceTypes;
       selected?: never;
     };
-
-/**
- * Height presets for `Interactive.Container`.
- *
- * - `"default"` — Default height of 2.25rem (36px), suitable for most buttons/items
- * - `"compact"` — Reduced height of 1.75rem (28px), for denser UIs or inline elements
- * - `"fit"` — Shrink-wraps to content height (`h-fit`), for variable-height layouts
- */
-type InteractiveContainerHeightVariant =
-  keyof typeof interactiveContainerHeightVariants;
-const interactiveContainerHeightVariants = {
-  default: "h-[2.25rem]",
-  compact: "h-[1.75rem]",
-  fit: "h-fit",
-} as const;
-const interactiveContainerMinWidthVariants = {
-  default: "min-w-[2.25rem]",
-  compact: "min-w-[1.75rem]",
-  fit: "",
-} as const;
-
-/**
- * Padding presets for `Interactive.Container`.
- *
- * - `"default"` — Default padding of 0.5rem (8px) on all sides
- * - `"thin"` — Reduced padding of 0.25rem (4px), for tighter layouts
- * - `"none"` — No padding, when the child handles its own spacing
- */
-type InteractiveContainerPaddingVariant =
-  keyof typeof interactiveContainerPaddingVariants;
-const interactiveContainerPaddingVariants = {
-  default: "p-2",
-  thin: "p-1",
-  none: "p-0",
-} as const;
 
 /**
  * Border-radius presets for `Interactive.Container`.
@@ -77,6 +55,7 @@ type InteractiveContainerRoundingVariant =
 const interactiveContainerRoundingVariants = {
   default: "rounded-12",
   compact: "rounded-08",
+  mini: "rounded-04",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -84,7 +63,7 @@ const interactiveContainerRoundingVariants = {
 // ---------------------------------------------------------------------------
 
 /**
- * Base props for {@link InteractiveBase} (without variant/subvariant).
+ * Base props for {@link InteractiveBase} (without variant/prominence).
  *
  * Extends standard HTML element attributes (minus `className` and `style`,
  * which are controlled by the design system).
@@ -117,21 +96,6 @@ interface InteractiveBasePropsBase
   group?: string;
 
   /**
-   * When `true`, disables all hover and active visual feedback.
-   *
-   * The element still renders with its base variant color and remains
-   * interactive (clicks still fire), but the CSS `:hover` and `:active`
-   * state changes are suppressed via `data-static` attribute.
-   *
-   * Use this for elements that need the interactive styling structure but
-   * shouldn't visually respond to pointer events (e.g., a card that handles
-   * clicks internally but shouldn't highlight on hover).
-   *
-   * @default false
-   */
-  static?: boolean;
-
-  /**
    * When `true`, forces the transient (hover) visual state regardless of
    * actual pointer state.
    *
@@ -159,9 +123,9 @@ interface InteractiveBasePropsBase
   /**
    * URL to navigate to when clicked.
    *
-   * When provided, renders an `<a>` wrapper element instead of using Radix Slot.
-   * The `<a>` receives all interactive styling (hover/active/transient states)
-   * and children are rendered inside it.
+   * Passed through Slot to the child element (typically `Interactive.Container`),
+   * which renders an `<a>` tag when `href` is present. This keeps all styling
+   * (backgrounds, rounding, overflow) on a single element.
    *
    * @example
    * ```tsx
@@ -173,17 +137,22 @@ interface InteractiveBasePropsBase
    * ```
    */
   href?: string;
+
+  /**
+   * Link target (e.g. `"_blank"`). Only used when `href` is provided.
+   */
+  target?: string;
 }
 
 /**
  * Props for {@link InteractiveBase}.
  *
  * Intersects the base props with the {@link InteractiveBaseVariantProps}
- * discriminated union so that `variant` and `subvariant` are correlated:
+ * discriminated union so that `variant` and `prominence` are correlated:
  *
- * - `"none"` — `subvariant` must not be provided
- * - `"select"` — `subvariant` is optional (defaults to `"light"`); `selected` switches foreground to action-link colours
- * - `"default"` / `"action"` / `"danger"` — `subvariant` is optional (defaults to `"primary"`)
+ * - `"none"` — `prominence` must not be provided
+ * - `"select"` — `prominence` is optional (defaults to `"light"`); `selected` switches foreground to action-link colours
+ * - `"default"` / `"action"` / `"danger"` — `prominence` is optional (defaults to `"primary"`)
  */
 type InteractiveBaseProps = InteractiveBasePropsBase &
   InteractiveBaseVariantProps;
@@ -195,12 +164,11 @@ type InteractiveBaseProps = InteractiveBasePropsBase &
  * element in the design system. It applies:
  *
  * 1. The `.interactive` CSS class (flex layout, pointer cursor, color transitions)
- * 2. `data-interactive-base-variant` and `data-interactive-base-subvariant`
+ * 2. `data-interactive-base-variant` and `data-interactive-base-prominence`
  *    attributes for variant-specific background colors (both omitted for `"none"`;
- *    subvariant omitted when not provided)
- * 3. `data-static` attribute when hover feedback is disabled
- * 4. `data-transient` attribute for forced transient (hover) state
- * 5. `data-disabled` attribute for disabled styling
+ *    prominence omitted when not provided)
+ * 3. `data-transient` attribute for forced transient (hover) state
+ * 4. `data-disabled` attribute for disabled styling
  *
  * All props are merged onto the single child element via Radix `Slot`, meaning
  * the child element *becomes* the interactive surface (no wrapper div).
@@ -208,7 +176,7 @@ type InteractiveBaseProps = InteractiveBasePropsBase &
  * @example
  * ```tsx
  * // Basic usage with a container
- * <Interactive.Base variant="default" subvariant="primary">
+ * <Interactive.Base variant="default" prominence="primary">
  *   <Interactive.Container border>
  *     <span>Click me</span>
  *   </Interactive.Container>
@@ -227,11 +195,6 @@ type InteractiveBaseProps = InteractiveBasePropsBase &
  *   </div>
  * </Interactive.Base>
  *
- * // Static (no hover feedback)
- * <Interactive.Base static>
- *   <Card>Content that doesn't highlight on hover</Card>
- * </Interactive.Base>
- *
  * // As a link
  * <Interactive.Base href="/settings">
  *   <Interactive.Container border>
@@ -245,17 +208,17 @@ type InteractiveBaseProps = InteractiveBasePropsBase &
 function InteractiveBase({
   ref,
   variant = "default",
-  subvariant,
+  prominence,
   selected,
   group,
-  static: isStatic,
   transient,
   disabled,
   href,
+  target,
   ...props
 }: InteractiveBaseProps) {
-  const effectiveSubvariant =
-    subvariant ?? (variant === "select" ? "light" : "primary");
+  const effectiveProminence =
+    prominence ?? (variant === "select" ? "light" : "primary");
   const classes = cn(
     "interactive",
     !props.onClick && !href && "!cursor-default !select-auto",
@@ -264,41 +227,40 @@ function InteractiveBase({
 
   const dataAttrs = {
     "data-interactive-base-variant": variant !== "none" ? variant : undefined,
-    "data-interactive-base-subvariant":
-      variant !== "none" ? effectiveSubvariant : undefined,
-    "data-static": isStatic ? "true" : undefined,
+    "data-interactive-base-prominence":
+      variant !== "none" ? effectiveProminence : undefined,
     "data-transient": transient ? "true" : undefined,
     "data-selected": selected ? "true" : undefined,
     "data-disabled": disabled ? "true" : undefined,
     "aria-disabled": disabled || undefined,
   };
 
-  if (href) {
-    const { children, onClick, ...rest } = props;
-    return (
-      <a
-        ref={ref as React.Ref<HTMLAnchorElement>}
-        href={disabled ? undefined : href}
-        className={classes}
-        {...dataAttrs}
-        {...rest}
-        onClick={
-          disabled ? (e: React.MouseEvent) => e.preventDefault() : onClick
-        }
-      >
-        {children}
-      </a>
-    );
-  }
-
   const { onClick, ...slotProps } = props;
+
+  // href, target, and rel are passed through Slot to the child element
+  // (typically Interactive.Container), which renders an <a> when href is present.
+  const linkAttrs = href
+    ? {
+        href: disabled ? undefined : href,
+        target,
+        rel: target === "_blank" ? "noopener noreferrer" : undefined,
+      }
+    : {};
+
   return (
     <Slot
       ref={ref}
       className={classes}
       {...dataAttrs}
+      {...linkAttrs}
       {...slotProps}
-      onClick={disabled ? undefined : onClick}
+      onClick={
+        disabled && href
+          ? (e: React.MouseEvent) => e.preventDefault()
+          : disabled
+            ? undefined
+            : onClick
+      }
     />
   );
 }
@@ -315,9 +277,29 @@ function InteractiveBase({
 interface InteractiveContainerProps
   extends WithoutStyles<React.HTMLAttributes<HTMLDivElement>> {
   /**
-   * Ref forwarded to the underlying `<div>` element.
+   * Ref forwarded to the underlying element.
    */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLElement>;
+
+  /**
+   * HTML button type (e.g. `"submit"`, `"button"`, `"reset"`).
+   *
+   * When provided, renders a `<button>` element instead of a `<div>`.
+   * This keeps all styling (background, rounding, height) on a single
+   * element — unlike a wrapper approach which would split them.
+   *
+   * Mutually exclusive with `href`.
+   *
+   * @example
+   * ```tsx
+   * <Interactive.Base>
+   *   <Interactive.Container type="submit">
+   *     <span>Submit</span>
+   *   </Interactive.Container>
+   * </Interactive.Base>
+   * ```
+   */
+  type?: "submit" | "button" | "reset";
 
   /**
    * When `true`, applies a 1px border using the theme's border color.
@@ -340,26 +322,23 @@ interface InteractiveContainerProps
   roundingVariant?: InteractiveContainerRoundingVariant;
 
   /**
-   * Padding preset controlling inner spacing.
+   * Size preset controlling the container's height, min-width, and padding.
+   * Uses the shared `SizeVariant` scale from `@opal/shared`.
    *
-   * - `"default"` — 0.5rem (8px) padding on all sides
-   * - `"thin"` — 0.25rem (4px) padding for tighter layouts
-   * - `"none"` — No padding; child content controls its own spacing
-   *
-   * @default "default"
+   * @default "lg"
+   * @see {@link SizeVariant} for the full list of presets.
    */
-  paddingVariant?: InteractiveContainerPaddingVariant;
+  heightVariant?: SizeVariant;
 
   /**
-   * Height preset controlling the container's vertical size.
+   * Width preset controlling the container's horizontal size.
    *
-   * - `"default"` — Fixed 2.25rem (36px), typical button/item height
-   * - `"compact"` — Fixed 1.75rem (28px), for denser UIs
-   * - `"full"` — Fills parent height (`h-full`)
+   * - `"auto"` — Shrink-wraps to content width
+   * - `"full"` — Stretches to fill the parent's width (`w-full`)
    *
-   * @default "default"
+   * @default "auto"
    */
-  heightVariant?: InteractiveContainerHeightVariant;
+  widthVariant?: WidthVariant;
 }
 
 /**
@@ -378,17 +357,13 @@ interface InteractiveContainerProps
  * // Standard card-like container
  * <Interactive.Base>
  *   <Interactive.Container border>
- *     <LineItemLayout icon={SvgIcon} title="Option" />
+ *     <Content icon={SvgIcon} title="Option" />
  *   </Interactive.Container>
  * </Interactive.Base>
  *
  * // Compact, borderless container with no padding
- * <Interactive.Base variant="default" subvariant="ghost">
- *   <Interactive.Container
- *     heightVariant="compact"
- *     roundingVariant="compact"
- *     paddingVariant="none"
- *   >
+ * <Interactive.Base variant="default" prominence="tertiary">
+ *   <Interactive.Container heightVariant="md" roundingVariant="compact">
  *     <span>Inline item</span>
  *   </Interactive.Container>
  * </Interactive.Base>
@@ -398,38 +373,77 @@ interface InteractiveContainerProps
  */
 function InteractiveContainer({
   ref,
+  type,
   border,
   roundingVariant = "default",
-  paddingVariant = "default",
-  heightVariant = "default",
+  heightVariant = "lg",
+  widthVariant = "auto",
   ...props
 }: InteractiveContainerProps) {
-  // Radix Slot injects className and style at runtime (bypassing WithoutStyles),
-  // so we extract and merge them to preserve the Slot-injected values.
+  // Radix Slot injects className, style, href, target, rel, and other
+  // attributes at runtime (bypassing WithoutStyles), so we extract and
+  // merge them to preserve the Slot-injected values.
   const {
     className: slotClassName,
     style: slotStyle,
+    href,
+    target,
+    rel,
     ...rest
   } = props as typeof props & {
     className?: string;
     style?: React.CSSProperties;
+    href?: string;
+    target?: string;
+    rel?: string;
   };
-  return (
-    <div
-      ref={ref}
-      {...rest}
-      className={cn(
-        "interactive-container",
-        interactiveContainerRoundingVariants[roundingVariant],
-        interactiveContainerPaddingVariants[paddingVariant],
-        interactiveContainerHeightVariants[heightVariant],
-        interactiveContainerMinWidthVariants[heightVariant],
-        slotClassName
-      )}
-      data-border={border ? "true" : undefined}
-      style={slotStyle}
-    />
-  );
+  const { height, minWidth, padding } = sizeVariants[heightVariant];
+  const sharedProps = {
+    ...rest,
+    className: cn(
+      "interactive-container",
+      interactiveContainerRoundingVariants[roundingVariant],
+      height,
+      minWidth,
+      padding,
+      widthVariants[widthVariant],
+      slotClassName
+    ),
+    "data-border": border ? ("true" as const) : undefined,
+    style: slotStyle,
+  };
+
+  // When href is provided (via Slot from Interactive.Base), render an <a>
+  // so all styling (backgrounds, rounding, overflow) lives on one element.
+  if (href) {
+    return (
+      <a
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        target={target}
+        rel={rel}
+        {...(sharedProps as React.HTMLAttributes<HTMLAnchorElement>)}
+      />
+    );
+  }
+
+  if (type) {
+    // When Interactive.Base is disabled it injects aria-disabled via Slot.
+    // Map that to the native disabled attribute so a <button type="submit">
+    // cannot trigger form submission in the disabled state.
+    const ariaDisabled = (rest as Record<string, unknown>)["aria-disabled"];
+    const nativeDisabled =
+      ariaDisabled === true || ariaDisabled === "true" || undefined;
+    return (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type={type}
+        disabled={nativeDisabled}
+        {...(sharedProps as React.HTMLAttributes<HTMLButtonElement>)}
+      />
+    );
+  }
+  return <div ref={ref as React.Ref<HTMLDivElement>} {...sharedProps} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -451,7 +465,7 @@ function InteractiveContainer({
  * ```tsx
  * import { Interactive } from "@opal/core";
  *
- * <Interactive.Base variant="default" subvariant="ghost" onClick={handleClick}>
+ * <Interactive.Base variant="default" prominence="tertiary" onClick={handleClick}>
  *   <Interactive.Container border>
  *     <span>Clickable card</span>
  *   </Interactive.Container>
@@ -469,7 +483,5 @@ export {
   type InteractiveBaseVariantProps,
   type InteractiveBaseSelectVariantProps,
   type InteractiveContainerProps,
-  type InteractiveContainerHeightVariant,
-  type InteractiveContainerPaddingVariant,
   type InteractiveContainerRoundingVariant,
 };

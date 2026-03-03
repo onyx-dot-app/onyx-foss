@@ -1,13 +1,13 @@
 "use client";
 
-import { NotebookIcon } from "@/components/icons/icons";
 import { CCPairIndexingStatusTable } from "./CCPairIndexingStatusTable";
 import { SearchAndFilterControls } from "./SearchAndFilterControls";
-import { AdminPageTitle } from "@/components/admin/Title";
+import * as SettingsLayouts from "@/layouts/settings-layouts";
 import Link from "next/link";
+import { ADMIN_ROUTE_CONFIG, ADMIN_PATHS } from "@/lib/admin-routes";
 import Text from "@/components/ui/text";
 import { useConnectorIndexingStatusWithPagination } from "@/lib/hooks";
-import { usePopupFromQuery } from "@/components/popup/PopupFromQuery";
+import { useToastFromQuery } from "@/hooks/useToast";
 import Button from "@/refresh-components/buttons/Button";
 import { useState, useRef, useMemo, RefObject } from "react";
 import { FilterOptions } from "./FilterComponent";
@@ -201,7 +201,9 @@ function Main() {
 }
 
 export default function Status() {
-  const { popup } = usePopupFromQuery({
+  const route = ADMIN_ROUTE_CONFIG[ADMIN_PATHS.INDEXING_STATUS]!;
+
+  useToastFromQuery({
     "connector-created": {
       message: "Connector created successfully",
       type: "success",
@@ -213,17 +215,18 @@ export default function Status() {
   });
 
   return (
-    <>
-      {popup}
-      <AdminPageTitle
-        icon={<NotebookIcon size={32} />}
-        title="Existing Connectors"
-        farRightElement={
+    <SettingsLayouts.Root width="full">
+      <SettingsLayouts.Header
+        icon={route.icon}
+        title={route.title}
+        rightChildren={
           <Button href="/admin/add-connector">Add Connector</Button>
         }
+        separator
       />
-
-      <Main />
-    </>
+      <SettingsLayouts.Body>
+        <Main />
+      </SettingsLayouts.Body>
+    </SettingsLayouts.Root>
   );
 }

@@ -19,6 +19,7 @@ class ApplicationStatus(str, Enum):
     PAYMENT_REMINDER = "payment_reminder"
     GRACE_PERIOD = "grace_period"
     GATED_ACCESS = "gated_access"
+    SEAT_LIMIT_EXCEEDED = "seat_limit_exceeded"
 
 
 class Notification(BaseModel):
@@ -55,7 +56,9 @@ class Settings(BaseModel):
     gpu_enabled: bool | None = None
     application_status: ApplicationStatus = ApplicationStatus.ACTIVE
     anonymous_user_enabled: bool | None = None
+    invite_only_enabled: bool = False
     deep_research_enabled: bool | None = None
+    search_ui_enabled: bool | None = None
 
     # Enterprise features flag - set by license enforcement at runtime
     # When LICENSE_ENFORCEMENT_ENABLED=true, this reflects license status
@@ -80,6 +83,13 @@ class Settings(BaseModel):
     # Default Assistant settings
     disable_default_assistant: bool | None = False
 
+    # Seat usage - populated by license enforcement when seat limit is exceeded
+    seat_count: int | None = None
+    used_seats: int | None = None
+
+    # OpenSearch migration
+    opensearch_indexing_enabled: bool = False
+
 
 class UserSettings(Settings):
     notifications: list[Notification]
@@ -87,3 +97,7 @@ class UserSettings(Settings):
     tenant_id: str = POSTGRES_DEFAULT_SCHEMA
     # Feature flag for Onyx Craft (Build Mode) - used for server-side redirects
     onyx_craft_enabled: bool = False
+    # True when a vector database (Vespa/OpenSearch) is available.
+    # False when DISABLE_VECTOR_DB is set — connectors, RAG search, and
+    # document sets are unavailable.
+    vector_db_enabled: bool = True

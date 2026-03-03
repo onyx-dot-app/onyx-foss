@@ -8,7 +8,7 @@ import Separator from "@/refresh-components/Separator";
 import {
   ModelConfiguration,
   WellKnownLLMProviderDescriptor,
-} from "@/app/admin/configuration/llm/interfaces";
+} from "@/interfaces/llm";
 import {
   OnboardingFormWrapper,
   OnboardingFormChildProps,
@@ -94,7 +94,7 @@ function OpenAIFormFields(props: OnboardingFormChildProps<OpenAIFormValues>) {
         )}
       />
 
-      <Separator className="my-0" />
+      <Separator className="py-0" />
 
       <FormikField<string>
         name={FIELD_DEFAULT_MODEL_NAME}

@@ -5,17 +5,14 @@ import { ErrorCallout } from "@/components/ErrorCallout";
 import { refreshDocumentSets, useDocumentSets } from "../hooks";
 import { useConnectorStatus, useUserGroups } from "@/lib/hooks";
 import { ThreeDotsLoader } from "@/components/Loading";
-import { AdminPageTitle } from "@/components/admin/Title";
-import { BookmarkIcon } from "@/components/icons/icons";
-import BackButton from "@/refresh-components/buttons/BackButton";
+import * as SettingsLayouts from "@/layouts/settings-layouts";
+import { ADMIN_ROUTE_CONFIG, ADMIN_PATHS } from "@/lib/admin-routes";
 import CardSection from "@/components/admin/CardSection";
 import { DocumentSetCreationForm } from "../DocumentSetCreationForm";
 import { useRouter } from "next/navigation";
-import { usePopup } from "@/components/admin/connectors/Popup";
 
 function Main({ documentSetId }: { documentSetId: number }) {
   const router = useRouter();
-  const { popup, setPopup } = usePopup();
 
   const {
     data: documentSets,
@@ -71,27 +68,17 @@ function Main({ documentSetId }: { documentSetId: number }) {
   }
 
   return (
-    <div>
-      {popup}
-
-      <AdminPageTitle
-        icon={<BookmarkIcon size={32} />}
-        title={documentSet.name}
+    <CardSection>
+      <DocumentSetCreationForm
+        ccPairs={ccPairs}
+        userGroups={userGroups}
+        onClose={() => {
+          refreshDocumentSets();
+          router.push("/admin/documents/sets");
+        }}
+        existingDocumentSet={documentSet}
       />
-
-      <CardSection>
-        <DocumentSetCreationForm
-          ccPairs={ccPairs}
-          userGroups={userGroups}
-          onClose={() => {
-            refreshDocumentSets();
-            router.push("/admin/documents/sets");
-          }}
-          setPopup={setPopup}
-          existingDocumentSet={documentSet}
-        />
-      </CardSection>
-    </div>
+    </CardSection>
   );
 }
 
@@ -100,12 +87,19 @@ export default function Page(props: {
 }) {
   const params = use(props.params);
   const documentSetId = parseInt(params.documentSetId);
+  const route = ADMIN_ROUTE_CONFIG[ADMIN_PATHS.DOCUMENT_SETS]!;
 
   return (
-    <>
-      <BackButton />
-
-      <Main documentSetId={documentSetId} />
-    </>
+    <SettingsLayouts.Root>
+      <SettingsLayouts.Header
+        icon={route.icon}
+        title="Edit Document Set"
+        separator
+        backButton
+      />
+      <SettingsLayouts.Body>
+        <Main documentSetId={documentSetId} />
+      </SettingsLayouts.Body>
+    </SettingsLayouts.Root>
   );
 }

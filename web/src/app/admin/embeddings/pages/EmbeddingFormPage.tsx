@@ -1,7 +1,7 @@
 "use client";
 
-import { usePopup } from "@/components/admin/connectors/Popup";
-import { HealthCheckBanner } from "@/components/health/healthcheck";
+import { toast } from "@/hooks/useToast";
+
 import EmbeddingModelSelection from "../EmbeddingModelSelectionForm";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Text from "@/refresh-components/texts/Text";
@@ -41,7 +41,6 @@ import SimpleTooltip from "@/refresh-components/SimpleTooltip";
 import { SvgAlertTriangle, SvgArrowLeft, SvgArrowRight } from "@opal/icons";
 export default function EmbeddingForm() {
   const { formStep, nextFormStep, prevFormStep } = useEmbeddingFormContext();
-  const { popup, setPopup } = usePopup();
   const router = useRouter();
 
   const [advancedEmbeddingDetails, setAdvancedEmbeddingDetails] =
@@ -207,10 +206,7 @@ export default function EmbeddingForm() {
     if (response.ok) {
       return true;
     } else {
-      setPopup({
-        message: "Failed to update search settings",
-        type: "error",
-      });
+      toast.error("Failed to update search settings");
       return false;
     }
   }, [
@@ -218,7 +214,6 @@ export default function EmbeddingForm() {
     advancedEmbeddingDetails,
     rerankingDetails,
     switchoverType,
-    setPopup,
   ]);
 
   const handleValidationChange = useCallback(
@@ -478,7 +473,7 @@ export default function EmbeddingForm() {
     if (response.ok) {
       navigateToEmbeddingPage("embedding model");
     } else {
-      setPopup({ message: "Failed to update embedding model", type: "error" });
+      toast.error("Failed to update embedding model");
 
       alert(`Failed to update embedding model - ${await response.text()}`);
     }
@@ -486,11 +481,6 @@ export default function EmbeddingForm() {
 
   return (
     <div className="mx-auto mb-8 w-full">
-      {popup}
-
-      <div className="mb-4">
-        <HealthCheckBanner />
-      </div>
       <div className="mx-auto max-w-4xl">
         {formStep == 0 && (
           <>

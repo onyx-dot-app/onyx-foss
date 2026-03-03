@@ -1,19 +1,16 @@
 "use client";
 
-import { AdminPageTitle } from "@/components/admin/Title";
-import { BookmarkIcon } from "@/components/icons/icons";
+import * as SettingsLayouts from "@/layouts/settings-layouts";
+import { ADMIN_ROUTE_CONFIG, ADMIN_PATHS } from "@/lib/admin-routes";
 import { DocumentSetCreationForm } from "../DocumentSetCreationForm";
 import { useConnectorStatus, useUserGroups } from "@/lib/hooks";
 import { ThreeDotsLoader } from "@/components/Loading";
-import { usePopup } from "@/components/admin/connectors/Popup";
-import BackButton from "@/refresh-components/buttons/BackButton";
 import { ErrorCallout } from "@/components/ErrorCallout";
 import { useRouter } from "next/navigation";
 import { refreshDocumentSets } from "../hooks";
 import CardSection from "@/components/admin/CardSection";
 
 function Main() {
-  const { popup, setPopup } = usePopup();
   const router = useRouter();
 
   const {
@@ -44,8 +41,6 @@ function Main() {
 
   return (
     <>
-      {popup}
-
       <CardSection>
         <DocumentSetCreationForm
           ccPairs={ccPairs}
@@ -54,26 +49,26 @@ function Main() {
             refreshDocumentSets();
             router.push("/admin/documents/sets");
           }}
-          setPopup={setPopup}
         />
       </CardSection>
     </>
   );
 }
 
-const Page = () => {
+export default function Page() {
+  const route = ADMIN_ROUTE_CONFIG[ADMIN_PATHS.DOCUMENT_SETS]!;
+
   return (
-    <>
-      <BackButton />
-
-      <AdminPageTitle
-        icon={<BookmarkIcon size={32} />}
+    <SettingsLayouts.Root>
+      <SettingsLayouts.Header
+        icon={route.icon}
         title="New Document Set"
+        separator
+        backButton
       />
-
-      <Main />
-    </>
+      <SettingsLayouts.Body>
+        <Main />
+      </SettingsLayouts.Body>
+    </SettingsLayouts.Root>
   );
-};
-
-export default Page;
+}

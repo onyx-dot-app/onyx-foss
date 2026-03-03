@@ -15,7 +15,7 @@ import { Section, SectionProps } from "@/layouts/general-layouts";
 import { IconProps } from "@opal/types";
 import { SvgChevronLeft, SvgChevronRight } from "@opal/icons";
 import Text from "./texts/Text";
-import IconButton from "./buttons/IconButton";
+import { Button } from "@opal/components";
 
 /* =============================================================================
    CONTEXT
@@ -39,9 +39,9 @@ const useTabsContext = () => {
  *
  * Contained (default):
  * ┌─────────────────────────────────────────────────┐
- * │ ┌──────────┐ ╔══════════╗ ┌──────────┐         │
- * │ │   Tab 1  │ ║  Tab 2   ║ │   Tab 3  │         │  ← gray background
- * │ └──────────┘ ╚══════════╝ └──────────┘         │
+ * │ ┌──────────┐ ╔══════════╗ ┌──────────┐          │
+ * │ │   Tab 1  │ ║  Tab 2   ║ │   Tab 3  │          │  ← gray background
+ * │ └──────────┘ ╚══════════╝ └──────────┘          │
  * └─────────────────────────────────────────────────┘
  *                 ↑ active tab (white bg, shadow)
  *
@@ -49,7 +49,7 @@ const useTabsContext = () => {
  *    Tab 1      Tab 2      Tab 3          [Action]
  *              ╔═════╗
  *              ║     ║                        ↑ optional rightContent
- * ────────────╨═════╨─────────────────────────────
+ * ─────────────╨═════╨─────────────────────────────
  *              ↑ sliding indicator under active tab
  *
  * @example
@@ -503,17 +503,17 @@ const TabsList = React.forwardRef<
               ref={scrollArrowsRef}
               className="flex items-center gap-1 pl-2 flex-shrink-0"
             >
-              <IconButton
-                main
-                internal
+              <Button
+                prominence="tertiary"
+                size="sm"
                 icon={SvgChevronLeft}
                 onClick={handleScrollLeft}
                 disabled={!canScrollLeft}
                 tooltip="Scroll tabs left"
               />
-              <IconButton
-                main
-                internal
+              <Button
+                prominence="tertiary"
+                size="sm"
                 icon={SvgChevronRight}
                 onClick={handleScrollRight}
                 disabled={!canScrollRight}
@@ -615,7 +615,13 @@ const TabsTrigger = React.forwardRef<
             <Icon size={14} className={cn(iconVariants[variant])} />
           </div>
         )}
-        {typeof children === "string" ? <Text>{children}</Text> : children}
+        {typeof children === "string" ? (
+          <div className="px-0.5">
+            <Text>{children}</Text>
+          </div>
+        ) : (
+          children
+        )}
         {isLoading && (
           <span
             className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin ml-1"

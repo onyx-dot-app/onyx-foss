@@ -1,53 +1,97 @@
 import "@opal/components/buttons/Button/styles.css";
 import "@opal/components/tooltip.css";
 import { Interactive, type InteractiveBaseProps } from "@opal/core";
-import type { SizeVariant, TooltipSide } from "@opal/components";
+import type { SizeVariant, WidthVariant } from "@opal/shared";
+import type { TooltipSide } from "@opal/components";
 import type { IconFunctionComponent } from "@opal/types";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { cn } from "@opal/utils";
+
+const iconVariants = {
+  lg: { padding: "p-0.5", size: 1 },
+  md: { padding: "p-0.5", size: 1 },
+  sm: { padding: "p-0", size: 1 },
+  xs: { padding: "p-0.5", size: 0.75 },
+  "2xs": { padding: "p-0", size: 0.75 },
+  fit: { padding: "p-0.5", size: 1 },
+} as const;
+
+function iconWrapper(
+  Icon: IconFunctionComponent | undefined,
+  size: SizeVariant,
+  includeSpacer: boolean
+) {
+  const { padding: p, size: s } = iconVariants[size];
+
+  return Icon ? (
+    <div className={cn("interactive-foreground-icon", p)}>
+      <Icon
+        className="shrink-0"
+        style={{
+          height: `${s}rem`,
+          width: `${s}rem`,
+        }}
+      />
+    </div>
+  ) : includeSpacer ? (
+    <div />
+  ) : null;
+}
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type ButtonProps = InteractiveBaseProps & {
-  /** Left icon component (renders at 1rem x 1rem). */
-  icon?: IconFunctionComponent;
+/**
+ * Content props — a discriminated union on `foldable` that enforces:
+ *
+ * - `foldable: true`  → `icon` and `children` are required (icon stays visible,
+ *                        label + rightIcon fold away)
+ * - `foldable?: false` → at least one of `icon` or `children` must be provided
+ */
+type ButtonContentProps =
+  | {
+      foldable: true;
+      icon: IconFunctionComponent;
+      children: string;
+      rightIcon?: IconFunctionComponent;
+      responsiveHideText?: never;
+    }
+  | {
+      foldable?: false;
+      icon?: IconFunctionComponent;
+      children: string;
+      rightIcon?: IconFunctionComponent;
+      responsiveHideText?: never;
+    }
+  | {
+      foldable?: false;
+      icon: IconFunctionComponent;
+      children?: string;
+      rightIcon?: IconFunctionComponent;
+      responsiveHideText?: boolean;
+    };
 
-  /** Button label text. Omit for icon-only buttons. */
-  children?: string;
+type ButtonProps = InteractiveBaseProps &
+  ButtonContentProps & {
+    /**
+     * Size preset — controls gap, text size, and Container height/rounding.
+     * Uses the shared `SizeVariant` scale from `@opal/shared`.
+     */
+    size?: SizeVariant;
 
-  /** Right icon component (renders at 1rem x 1rem). */
-  rightIcon?: IconFunctionComponent;
+    /** HTML button type. When provided, Container renders a `<button>` element. */
+    type?: "submit" | "button" | "reset";
 
-  /** Size preset — controls gap, text size, and Container height/rounding. */
-  size?: SizeVariant;
+    /** Tooltip text shown on hover. */
+    tooltip?: string;
 
-  /** Tooltip text shown on hover. */
-  tooltip?: string;
+    /** Width preset. `"auto"` shrink-wraps, `"full"` stretches to parent width. */
+    width?: WidthVariant;
 
-  /** Which side the tooltip appears on. */
-  tooltipSide?: TooltipSide;
-};
-
-function iconWrapper(
-  Icon: IconFunctionComponent | undefined,
-  isCompact: boolean
-) {
-  return Icon ? (
-    <div className="p-0.5">
-      <Icon
-        className={cn(
-          "shrink-0",
-          isCompact ? "h-[0.75rem] w-[0.75rem]" : "h-[1rem] w-[1rem]"
-        )}
-        size={isCompact ? 12 : 16}
-      />
-    </div>
-  ) : (
-    <div className="w-[0.125rem]" />
-  );
-}
+    /** Which side the tooltip appears on. */
+    tooltipSide?: TooltipSide;
+  };
 
 // ---------------------------------------------------------------------------
 // Button
@@ -57,40 +101,85 @@ function Button({
   icon: Icon,
   children,
   rightIcon: RightIcon,
-  size = "default",
+  size = "lg",
+  foldable,
+  type = "button",
+  width,
   tooltip,
   tooltipSide = "top",
+  responsiveHideText = false,
   ...interactiveBaseProps
 }: ButtonProps) {
-  const isCompact = size === "compact";
+  const isLarge = size === "lg";
+
+  const labelEl = children ? (
+    <span
+      className={cn(
+        "opal-button-label",
+        isLarge ? "font-main-ui-body " : "font-secondary-body",
+        responsiveHideText && "hidden md:inline"
+      )}
+    >
+      {children}
+    </span>
+  ) : null;
 
   const button = (
     <Interactive.Base {...interactiveBaseProps}>
       <Interactive.Container
-        border={interactiveBaseProps.subvariant === "secondary"}
-        heightVariant={isCompact ? "compact" : "default"}
-        roundingVariant={isCompact ? "compact" : "default"}
-        paddingVariant={isCompact ? "thin" : "default"}
+        type={type}
+        border={interactiveBaseProps.prominence === "secondary"}
+        heightVariant={size}
+        widthVariant={width}
+        roundingVariant={
+          isLarge ? "default" : size === "2xs" ? "mini" : "compact"
+        }
       >
-        <div className="opal-button interactive-foreground">
-          {iconWrapper(Icon, isCompact)}
-          {children && (
-            <span
-              className={cn(
-                "opal-button-label",
-                isCompact ? "font-secondary-action" : "font-main-ui-action"
-              )}
-            >
-              {children}
-            </span>
+        <div
+          className={cn(
+            "opal-button interactive-foreground",
+            foldable && "opal-button--foldable"
           )}
-          {iconWrapper(RightIcon, isCompact)}
+        >
+          {iconWrapper(Icon, size, !foldable && !!children)}
+
+          {foldable ? (
+            <div className="opal-button-foldable">
+              <div className="opal-button-foldable-inner">
+                {labelEl}
+                {responsiveHideText ? (
+                  <span className="hidden md:inline-flex">
+                    {iconWrapper(RightIcon, size, !!children)}
+                  </span>
+                ) : (
+                  iconWrapper(RightIcon, size, !!children)
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {labelEl}
+              {responsiveHideText ? (
+                <span className="hidden md:inline-flex">
+                  {iconWrapper(RightIcon, size, !!children)}
+                </span>
+              ) : (
+                iconWrapper(RightIcon, size, !!children)
+              )}
+            </>
+          )}
         </div>
       </Interactive.Container>
     </Interactive.Base>
   );
 
-  if (!tooltip) return button;
+  const resolvedTooltip =
+    tooltip ??
+    (foldable && interactiveBaseProps.disabled && children
+      ? children
+      : undefined);
+
+  if (!resolvedTooltip) return button;
 
   return (
     <TooltipPrimitive.Root>
@@ -101,7 +190,7 @@ function Button({
           side={tooltipSide}
           sideOffset={4}
         >
-          {tooltip}
+          {resolvedTooltip}
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>

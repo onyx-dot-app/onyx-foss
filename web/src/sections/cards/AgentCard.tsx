@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
-import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
+import { useMemo, useCallback } from "react";
+import { MinimalPersonaSnapshot } from "@/app/admin/agents/interfaces";
 import AgentAvatar from "@/refresh-components/avatars/AgentAvatar";
 import Button from "@/refresh-components/buttons/Button";
 import { useAppRouter } from "@/hooks/appNavigation";
@@ -11,7 +11,11 @@ import { cn, noProp } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { usePaidEnterpriseFeaturesEnabled } from "@/components/settings/usePaidEnterpriseFeaturesEnabled";
-import { checkUserOwnsAssistant, updateAgentSharedStatus } from "@/lib/agents";
+import {
+  checkUserOwnsAgent,
+  updateAgentSharedStatus,
+  updateAgentFeaturedStatus,
+} from "@/lib/agents";
 import { useUser } from "@/providers/UserProvider";
 import {
   SvgActions,
@@ -25,8 +29,10 @@ import {
 } from "@opal/icons";
 import { useCreateModal } from "@/refresh-components/contexts/ModalContext";
 import ShareAgentModal from "@/sections/modals/ShareAgentModal";
-import { usePopup } from "@/components/admin/connectors/Popup";
-import { LineItemLayout, CardItemLayout } from "@/layouts/general-layouts";
+import AgentViewerModal from "@/sections/modals/AgentViewerModal";
+import { toast } from "@/hooks/useToast";
+import { CardItemLayout } from "@/layouts/general-layouts";
+import { Content } from "@opal/layouts";
 import { Interactive } from "@opal/core";
 import { Card } from "@/refresh-components/cards";
 
@@ -42,13 +48,13 @@ export default function AgentCard({ agent }: AgentCardProps) {
     () => pinnedAgents.some((pinnedAgent) => pinnedAgent.id === agent.id),
     [agent.id, pinnedAgents]
   );
-  const { user } = useUser();
+  const { user, isAdmin, isCurator } = useUser();
   const isPaidEnterpriseFeaturesEnabled = usePaidEnterpriseFeaturesEnabled();
-  const isOwnedByUser = checkUserOwnsAssistant(user, agent);
-  const [hovered, setHovered] = React.useState(false);
+  const canUpdateFeaturedStatus = isAdmin || isCurator;
+  const isOwnedByUser = checkUserOwnsAgent(user, agent);
   const shareAgentModal = useCreateModal();
+  const agentViewerModal = useCreateModal();
   const { agent: fullAgent, refresh: refreshAgent } = useAgent(agent.id);
-  const { popup, setPopup } = usePopup();
 
   // Start chat and auto-pin unpinned agents to the sidebar
   const handleStartChat = useCallback(() => {
@@ -58,54 +64,80 @@ export default function AgentCard({ agent }: AgentCardProps) {
     route({ agentId: agent.id });
   }, [pinned, togglePinnedAgent, agent, route]);
 
-  // Handle sharing agent
   const handleShare = useCallback(
-    async (userIds: string[], groupIds: number[], isPublic: boolean) => {
-      const error = await updateAgentSharedStatus(
+    async (
+      userIds: string[],
+      groupIds: number[],
+      isPublic: boolean,
+      isFeatured: boolean,
+      labelIds: number[]
+    ) => {
+      const shareError = await updateAgentSharedStatus(
         agent.id,
         userIds,
         groupIds,
         isPublic,
-        isPaidEnterpriseFeaturesEnabled
+        isPaidEnterpriseFeaturesEnabled,
+        labelIds
       );
 
-      if (error) {
-        setPopup({
-          type: "error",
-          message: `Failed to share agent: ${error}`,
-        });
-      } else {
-        // Revalidate the agent data to reflect the changes
-        refreshAgent();
-        shareAgentModal.toggle(false);
+      if (shareError) {
+        toast.error(`Failed to share agent: ${shareError}`);
+        return;
       }
+
+      if (canUpdateFeaturedStatus) {
+        const featuredError = await updateAgentFeaturedStatus(
+          agent.id,
+          isFeatured
+        );
+        if (featuredError) {
+          toast.error(`Failed to update featured status: ${featuredError}`);
+          refreshAgent();
+          return;
+        }
+      }
+
+      refreshAgent();
+      shareAgentModal.toggle(false);
     },
-    [agent.id, isPaidEnterpriseFeaturesEnabled, refreshAgent, setPopup]
+    [
+      agent.id,
+      canUpdateFeaturedStatus,
+      isPaidEnterpriseFeaturesEnabled,
+      refreshAgent,
+    ]
   );
 
   return (
     <>
-      {popup}
-
       <shareAgentModal.Provider>
         <ShareAgentModal
           agentId={agent.id}
           userIds={fullAgent?.users?.map((u) => u.id) ?? []}
           groupIds={fullAgent?.groups ?? []}
           isPublic={fullAgent?.is_public ?? false}
+          isFeatured={fullAgent?.featured ?? false}
+          labelIds={fullAgent?.labels?.map((l) => l.id) ?? []}
           onShare={handleShare}
         />
       </shareAgentModal.Provider>
 
+      <agentViewerModal.Provider>
+        {fullAgent && <AgentViewerModal agent={fullAgent} />}
+      </agentViewerModal.Provider>
+
       <Interactive.Base
-        onClick={handleStartChat}
+        onClick={() => agentViewerModal.toggle(true)}
         group="group/AgentCard"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         variant="none"
-        static
       >
-        <Card padding={0} gap={0} height="full">
+        <Card
+          padding={0}
+          gap={0}
+          height="full"
+          className="radial-00 hover:shadow-00"
+        >
           <div className="flex self-stretch h-[6rem]">
             <CardItemLayout
               icon={(props) => <AgentAvatar agent={agent} {...props} />}
@@ -118,7 +150,7 @@ export default function AgentCard({ agent }: AgentCardProps) {
                       icon={SvgBarChart}
                       tertiary
                       onClick={noProp(() =>
-                        router.push(`/ee/assistants/stats/${agent.id}` as Route)
+                        router.push(`/ee/agents/stats/${agent.id}` as Route)
                       )}
                       tooltip="View Agent Stats"
                       className="hidden group-hover/AgentCard:flex"
@@ -149,7 +181,6 @@ export default function AgentCard({ agent }: AgentCardProps) {
                     tertiary
                     onClick={noProp(() => togglePinnedAgent(agent, !pinned))}
                     tooltip={pinned ? "Unpin from Sidebar" : "Pin to Sidebar"}
-                    transient={hovered && pinned}
                     className={cn(
                       !pinned && "hidden group-hover/AgentCard:flex"
                     )}
@@ -163,12 +194,14 @@ export default function AgentCard({ agent }: AgentCardProps) {
           <div className="bg-background-tint-01 p-1 flex flex-row items-end justify-between w-full">
             {/* Left side - creator and actions */}
             <div className="flex flex-col gap-1 py-1 px-2">
-              <LineItemLayout
+              <Content
                 icon={SvgUser}
                 title={agent.owner?.email || "Onyx"}
-                variant="mini"
+                sizePreset="secondary"
+                variant="body"
+                prominence="muted"
               />
-              <LineItemLayout
+              <Content
                 icon={SvgActions}
                 title={
                   agent.tools.length > 0
@@ -177,7 +210,9 @@ export default function AgentCard({ agent }: AgentCardProps) {
                       }`
                     : "No Actions"
                 }
-                variant="mini"
+                sizePreset="secondary"
+                variant="body"
+                prominence="muted"
               />
             </div>
 
