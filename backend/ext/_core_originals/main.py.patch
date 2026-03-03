@@ -1,6 +1,6 @@
---- backend/ext/_core_originals/main.py.original	2026-02-12 12:58:23
-+++ backend/onyx/main.py	2026-02-12 12:59:31
-@@ -419,7 +419,19 @@
+--- backend/ext/_core_originals/main.py.original	2026-03-03 13:11:51
++++ backend/onyx/main.py	2026-03-03 13:08:58
+@@ -507,7 +507,19 @@
      include_router_with_global_prefix_prepended(application, mcp_admin_router)
  
      include_router_with_global_prefix_prepended(application, pat_router)

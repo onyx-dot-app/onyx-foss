@@ -185,6 +185,7 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
           helm repo add minio https://charts.min.io/
+          helm repo add python-sandbox https://onyx-dot-app.github.io/python-sandbox/
 
       - name: Build Helm dependencies
         run: helm dependency build ${{ env.HELM_CHART_PATH }}
@@ -304,6 +305,7 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
           helm repo add minio https://charts.min.io/
+          helm repo add python-sandbox https://onyx-dot-app.github.io/python-sandbox/
 
       - name: Build Helm dependencies
         run: helm dependency build ${{ env.HELM_CHART_PATH }}
@@ -394,6 +396,7 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
           helm repo add minio https://charts.min.io/
+          helm repo add python-sandbox https://onyx-dot-app.github.io/python-sandbox/
 
       - name: Build Helm dependencies
         run: helm dependency build ${{ env.HELM_CHART_PATH }}
