@@ -15,6 +15,16 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Terraform Credentials-Handling: `credentials.json` Wrapper, `chmod 600`, `.envrc` in `.gitignore`
 
 ### Added
+- [Infra] **TEST-Umgebung LIVE** (2026-03-03)
+  - Node Pool auf 2 Nodes skaliert (DEV + TEST im shared Cluster)
+  - PG Flex `vob-test` + Bucket `vob-test` provisioniert
+  - Namespace `onyx-test`, GitHub Environment `test` + 5 Secrets
+  - Helm Release `onyx-test`: 9 Pods Running, Health Check OK
+  - Erreichbar unter `http://188.34.118.201`
+  - Eigene IngressClass `nginx-test` (Conflict mit DEV vermieden)
+  - Separate S3-Credentials für TEST erstellt (Enterprise-Trennung)
+
+### Added
 - [Infra] **TEST-Umgebung vorbereitet** (2026-03-02)
   - ADR-004: Umgebungstrennung DEV/TEST/PROD (Architekturentscheidung dokumentiert)
   - Terraform: Node Pool `devtest` auf 2 Nodes skaliert (1 pro Environment)

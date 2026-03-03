@@ -41,7 +41,7 @@ configMap:
   # 1. cd deployment/terraform/environments/test && terraform apply
   # 2. terraform output -raw pg_host → hier eintragen
   # 3. Committen + pushen, DANN erst deploy-test triggern
-  POSTGRES_HOST: "REPLACE_AFTER_TERRAFORM_APPLY"
+  POSTGRES_HOST: "d371f38d-2ad5-458c-af27-c84f3004f1ba.postgresql.eu01.onstackit.cloud"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "onyx"
 
@@ -60,8 +60,8 @@ configMap:
   # 2. kubectl get svc -n onyx-test → EXTERNAL-IP notieren
   # 3. Hier eintragen, committen, erneut deployen
   # Ohne korrekte IP schlägt der CI/CD Smoke Test fehl!
-  DOMAIN: "REPLACE_AFTER_DEPLOY"
-  WEB_DOMAIN: "http://REPLACE_AFTER_DEPLOY"
+  DOMAIN: "188.34.118.201"
+  WEB_DOMAIN: "http://188.34.118.201"
 
   # Auth: Basic Auth (Entra ID kommt in Phase 3)
   AUTH_TYPE: "basic"
@@ -111,6 +111,19 @@ celery_worker_monitoring:
 
 celery_worker_user_file_processing:
   replicaCount: 0
+
+# --- Nginx: Eigene IngressClass für TEST (Cluster-globale Ressource) ---
+# DEV besitzt IngressClass "nginx". TEST braucht eine eigene,
+# da zwei Helm Releases nicht dieselbe Cluster-Ressource ownen können.
+nginx:
+  enabled: true
+  controller:
+    ingressClassResource:
+      name: "nginx-test"
+      controllerValue: "k8s.io/ingress-nginx-test"
+    ingressClass: "nginx-test"
+    service:
+      type: LoadBalancer
 
 # --- TLS ---
 letsencrypt:

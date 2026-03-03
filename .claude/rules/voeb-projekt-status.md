@@ -35,7 +35,20 @@
   - ⏳ TLS/HTTPS (nach DNS-Setup)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
   - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert
-  - 📋 Scope: DEV live, TEST in Vorbereitung (ADR-004 + Terraform + Helm erstellt).
+  - 📋 Scope: DEV live, TEST live.
+- **Phase 2 TEST:** ✅ **TEST LIVE** (2026-03-03)
+  - ✅ SEC-01: PG ACL eingeschränkt (188.34.93.194/32 + Admin)
+  - ✅ Node Pool auf 2 Nodes skaliert (DEV + TEST)
+  - ✅ Terraform apply TEST: PG Flex `vob-test` + Bucket `vob-test`
+  - ✅ Namespace `onyx-test` + Image Pull Secret + DB `onyx` angelegt
+  - ✅ GitHub Environment `test` + 5 Secrets (PG, Redis, S3)
+  - ✅ Helm Release `onyx-test`: 9 Pods Running (+ redis-operator im default NS), Health Check OK
+  - ✅ TEST erreichbar unter `http://188.34.118.201`
+  - ✅ Eigene IngressClass `nginx-test` (Conflict mit DEV vermieden)
+  - ⏳ values-test.yaml Commit + Push (DOMAIN/WEB_DOMAIN eingetragen)
+  - ⏳ CI/CD workflow_dispatch für TEST verifizieren
+  - ⏳ LLM-Konfiguration in TEST Admin UI
+  - ⏳ DNS + TLS
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
   - 4a: ✅ Extension Framework Basis (Config, Feature Flags, Router, Health Endpoint, Docker)
@@ -43,7 +56,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. `terraform apply` (Node Pool + TEST PG/Bucket) → 2. GitHub Secrets + Namespace → 3. Erster TEST Deploy → 4. Embedding-Modell → 5. DNS + TLS.** Plan: `docs/referenz/stackit-implementierungsplan.md`, Phase 7
+**1. Commit + Push (values-test.yaml + Projektstatus) → 2. CI/CD workflow_dispatch TEST verifizieren → 3. LLM in TEST Admin UI → 4. Embedding-Modell → 5. DNS + TLS.** Plan: `docs/referenz/stackit-implementierungsplan.md`, Phase 7
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
