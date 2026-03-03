@@ -64,8 +64,8 @@
 
 ### Referenzmaterialien
 
-- [Link zu Technisches Feinkonzept](../01-technisches-feinkonzept/README.md)
-- [Link zu Testkonzept](../03-testkonzept/testkonzept.md)
+- [Link zu Technisches Feinkonzept](../technisches-feinkonzept/ext-framework.md)
+- [Link zu Testkonzept](../testkonzept.md)
 - [Link zu Meilensteinplan](./meilensteinplan.md)
 - Test Report: [Datei TBD]
 - Build Artifacts: [Location TBD]

@@ -1,7 +1,7 @@
 # ADR-003: StackIT als Cloud Provider
 
 **Status**: Akzeptiert
-**Aktualisiert**: [Datum TBD]
+**Aktualisiert**: 2026-02-22
 **Author**: Infrastruktur-Team (StackIT + JNnovate)
 
 ---
@@ -320,20 +320,7 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 
 ### Kostenschätzung
 
-[ENTWURF — Details nach StackIT Angebot ergänzen]
-
-Beispielhafte monatliche Kosten (für Referenz):
-- **Kubernetes Cluster** (3 nodes, 4 CPU, 8 GB RAM): €300-500
-- **PostgreSQL RDS** (db.standard.2, HA): €200-300
-- **Vespa Cluster** (3 nodes, Search): €400-600
-- **Object Storage**: €50-100 (backups)
-- **Network/Data Transfer**: €100-200
-- **Monitoring/Observability**: €50-100
-- **Support** (optional): €100-200
-
-**Geschätzt gesamt**: €1,200 - €2,000 / Monat (Production)
-
-**Staging**: ~50% des Production-Costs
+Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`, Abschnitt Kosten. DEV+TEST: ~426 EUR/Monat.
 
 ### Sicherheits-Konfiguration
 
@@ -343,7 +330,7 @@ Beispielhafte monatliche Kosten (für Referenz):
 2. **TLS/SSL**: Certificates für alle APIs (Let's Encrypt or CA)
 3. **Secrets Management**: HashiCorp Vault oder Kubernetes Secrets
 4. **IAM**: StackIT IAM für Benutzer-Zugriff (Bastion, K8s API)
-5. **Audit Logging**: Alle AWS/StackIT API-Calls geloggt
+5. **Audit Logging**: Alle StackIT API-Calls geloggt
 6. **DDoS Protection**: StackIT-bereitgestellter WAF/DDoS-Schutz
 7. **Backup-Encryption**: S3 Object Storage mit Encryption at rest
 
@@ -364,12 +351,12 @@ Beispielhafte monatliche Kosten (für Referenz):
 |-------|------|-------|----------|
 | Infrastructure Lead (StackIT/JNnovate) | [TBD] | [TBD] | __ |
 | Cloud Architect | [TBD] | [TBD] | __ |
-| Projektleiter (CCJ) | [TBD] | [TBD] | __ |
+| Projektleiter (CCJ) | Nikolaj Ivanov | 2026-02-22 | __ |
 | Auftraggeber (VÖB) | [TBD] | [TBD] | __ |
 | Compliance Officer | [TBD] | [TBD] | __ |
 
 ---
 
 **ADR Status**: Akzeptiert
-**Letzte Aktualisierung**: [Datum TBD]
+**Letzte Aktualisierung**: 2026-02-22
 **Version**: 1.0

@@ -45,9 +45,11 @@
   - ✅ Helm Release `onyx-test`: 9 Pods Running (+ redis-operator im default NS), Health Check OK
   - ✅ TEST erreichbar unter `http://188.34.118.201`
   - ✅ Eigene IngressClass `nginx-test` (Conflict mit DEV vermieden)
-  - ⏳ values-test.yaml Commit + Push (DOMAIN/WEB_DOMAIN eingetragen)
-  - ⏳ CI/CD workflow_dispatch für TEST verifizieren
-  - ⏳ LLM-Konfiguration in TEST Admin UI
+  - ✅ values-test.yaml Commit + Push (2026-03-03)
+  - ✅ CI/CD workflow_dispatch TEST verifiziert — Build + Deploy grün (2026-03-03)
+  - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B in TEST konfiguriert (2026-03-03)
+  - ✅ Enterprise-Dokumentation überarbeitet: Betriebskonzept, Sicherheitskonzept, Meilensteinplan, ADR-004, README, CHANGELOG (2026-03-03)
+  - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert (DEV + TEST)
   - ⏳ DNS + TLS
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
@@ -56,7 +58,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. Commit + Push (values-test.yaml + Projektstatus) → 2. CI/CD workflow_dispatch TEST verifizieren → 3. LLM in TEST Admin UI → 4. Embedding-Modell → 5. DNS + TLS.** Plan: `docs/referenz/stackit-implementierungsplan.md`, Phase 7
+**1. DNS/TLS-Runbook erstellen → 2. Domains mit VÖB klären → 3. Embedding-Modell (E5 Mistral 7B) → 4. Testkonzept + ADRs überarbeiten → 5. M1-Abnahmeprotokoll vorbereiten.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

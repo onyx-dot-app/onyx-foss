@@ -1,7 +1,7 @@
 # ADR-001: Onyx FOSS als Basis-Plattform
 
 **Status**: Akzeptiert
-**Aktualisiert**: [Datum TBD]
+**Aktualisiert**: 2026-02-12
 **Author**: Architektur-Team (CCJ + JNnovate)
 
 ---
@@ -245,8 +245,8 @@ git fetch upstream
 git merge upstream/main  # Regelmäßig (jeden Quarter)
 
 # Custom Code
-src/extensions/          # Custom Modules
-src/migrations/          # DB Migrations
+backend/ext/             # Custom Modules
+backend/ext/migrations/  # DB Migrations
 docker/                  # Custom Docker Configs
 kubernetes/             # K8s Manifests (StackIT)
 ```
@@ -273,12 +273,12 @@ kubernetes/             # K8s Manifests (StackIT)
 | Rolle | Name | Datum | Signatur |
 |-------|------|-------|----------|
 | Technischer Leiter (JNnovate) | [TBD] | [TBD] | __ |
-| Projektleiter (CCJ) | [TBD] | [TBD] | __ |
+| Projektleiter (CCJ) | Nikolaj Ivanov | 2026-02-12 | __ |
 | Auftraggeber (VÖB) | [TBD] | [TBD] | __ |
 | Architektur-Review | [TBD] | [TBD] | __ |
 
 ---
 
 **ADR Status**: Akzeptiert
-**Letzte Aktualisierung**: [Datum TBD]
+**Letzte Aktualisierung**: 2026-02-12
 **Version**: 1.0
