@@ -77,3 +77,6 @@ deployment/terraform/environments/**/*.auto.tfvars
 
 # Helm Secrets (Passwörter, API Keys)
 deployment/helm/values/*-secrets.yaml
+
+# direnv (lokale Env-Vars, nie committen)
+.envrc

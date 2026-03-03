@@ -63,9 +63,10 @@ variable "pg_storage_class" {
 }
 
 variable "pg_acl" {
-  description = "PostgreSQL ACL — allowed CIDRs"
+  description = "PostgreSQL ACL — allowed CIDRs (kein Default = erzwingt explizite Angabe)"
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  # KEIN Default: Jedes Environment MUSS seine erlaubten CIDRs explizit angeben.
+  # "0.0.0.0/0" als Default wäre ein Sicherheitsrisiko (SEC-01).
 }
 
 variable "pg_backup_schedule" {

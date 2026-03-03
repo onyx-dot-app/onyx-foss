@@ -26,7 +26,12 @@ module "stackit_data" {
   pg_replicas        = 1
   pg_storage_size    = 20
   pg_backup_schedule = "0 3 * * *" # 03:00 UTC (1h nach DEV, kein Overlap)
-  pg_acl             = ["0.0.0.0/0"]
+  # SEC-01: PG ACL auf Cluster-Egress-IP + Admin eingeschränkt (2026-03-03)
+  # Gleicher Cluster wie DEV (ADR-004) → gleiche Egress-IP
+  pg_acl = [
+    "188.34.93.194/32",  # SKE Cluster Egress (alle Pods)
+    "109.41.112.160/32", # Admin (Nikolaj Ivanov)
+  ]
 
   # Object Storage
   bucket_name = "vob-test"

@@ -44,7 +44,14 @@ module "stackit" {
   pg_replicas        = 1
   pg_storage_size    = 20
   pg_backup_schedule = "0 2 * * *"
-  pg_acl             = ["0.0.0.0/0"]
+  # SEC-01: PG ACL auf Cluster-Egress-IP + Admin eingeschränkt (2026-03-03)
+  # Cluster-Egress-IP: 188.34.93.194 (NAT Gateway, fest für Cluster-Lifecycle)
+  # Admin-IP: 109.41.112.160 (Niko, für direkten DB-Zugriff bei Debugging)
+  # ACHTUNG: Admin-IP kann sich bei ISP-Wechsel ändern → dann hier aktualisieren
+  pg_acl = [
+    "188.34.93.194/32",  # SKE Cluster Egress (alle Pods)
+    "109.41.112.160/32", # Admin (Nikolaj Ivanov)
+  ]
 
   # Object Storage
   bucket_name = "vob-dev"

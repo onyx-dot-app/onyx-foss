@@ -8,6 +8,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security
+- [Infra] **SEC-01: PostgreSQL ACL eingeschränkt** (2026-03-03)
+  - PG ACL von `0.0.0.0/0` auf Cluster-Egress-IP `188.34.93.194/32` + Admin-IP eingeschränkt
+  - Default `pg_acl` in beiden Terraform-Modulen entfernt → erzwingt explizite Angabe pro Environment
+  - Terraform Credentials-Handling: `credentials.json` Wrapper, `chmod 600`, `.envrc` in `.gitignore`
+
 ### Added
 - [Infra] **TEST-Umgebung vorbereitet** (2026-03-02)
   - ADR-004: Umgebungstrennung DEV/TEST/PROD (Architekturentscheidung dokumentiert)

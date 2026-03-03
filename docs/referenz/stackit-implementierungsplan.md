@@ -667,7 +667,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Branding | Nach TEST-Setup | Logo-Dateien ersetzen, ext/-Komponenten | ⏳ Offen |
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
 | DNS + TLS | Nach DNS-Setup | Let's Encrypt oder StackIT-CA | Blockiert (VÖB IT) |
-| Security-Härtung P0 | Vor TEST-Deploy | SEC-01: PG ACL einschränken (30 Min) | ⏳ Offen |
+| Security-Härtung P0 | Vor TEST-Deploy | SEC-01: PG ACL einschränken (30 Min) | ✅ Erledigt (2026-03-03) |
 | Security-Härtung P1 | Nach TEST, vor PROD | SEC-02 bis SEC-05: Node Affinity, NetworkPolicies, Remote State, Kubeconfigs (~2 Tage) | ⏳ Geplant |
 | PROD Cluster | Vor Go-Live | Eigener SKE-Cluster + 2× g1a.4d + PG 4.8 HA (ADR-004) | Geplant |
 | Monitoring | Phase M5 | Prometheus/Grafana Stack | Geplant |
@@ -698,7 +698,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 18 | TEST: values-test.yaml + GitHub Secrets | Niko | ⏳ Phase 7.4–7.5 |
 | 19 | TEST: Helm Deploy + Validierung | Niko | ⏳ Phase 7.7 |
 | 20 | TEST: LLM-Konfiguration in Admin UI | Niko | ⏳ Phase 7.9 |
-| 21 | **SEC-01**: PostgreSQL ACL einschränken | Niko | ⏳ P0 (vor TEST-Deploy) |
+| 21 | **SEC-01**: PostgreSQL ACL einschränken | Niko | ✅ Erledigt (2026-03-03) |
 | 22 | **SEC-02**: Node Affinity erzwingen | Niko | ⏳ P1 (vor PROD) |
 | 23 | **SEC-03**: Kubernetes NetworkPolicies | Niko | ⏳ P1 (vor PROD) |
 | 24 | **SEC-04**: Terraform Remote State | Niko | ⏳ P1 (vor PROD) |
@@ -743,6 +743,13 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 
 **Aufwand**: 30 Minuten (+ CIDR-Ermittlung)
 **Risiko bei Nicht-Umsetzung**: Audit-Failure, potentieller Datenzugriff durch Dritte.
+
+**Umsetzung (2026-03-03)**:
+- Cluster-Egress-IP ermittelt: `188.34.93.194` (NAT Gateway, fest für Cluster-Lifecycle, bestätigt via StackIT Docs)
+- Admin-IP: `109.41.112.160` (Nikolaj Ivanov, für direkten DB-Zugriff bei Debugging)
+- `pg_acl` Default in beiden Modulen (`stackit`, `stackit-data`) von `["0.0.0.0/0"]` auf **kein Default** geändert → erzwingt explizite Angabe pro Environment
+- DEV + TEST: `pg_acl = ["188.34.93.194/32", "109.41.112.160/32"]`
+- Credentials-Handling: `~/.stackit/credentials.json` (Wrapper → SA Key), `chmod 600`, `.envrc` in `.gitignore`
 
 ### SEC-02: Node Affinity erzwingen (P1 — vor PROD)
 
