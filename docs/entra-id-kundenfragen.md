@@ -26,7 +26,12 @@
 
 ## 2. Redirect URI / Domain
 
-**Frage:** Wie lautet die finale Domain fuer den Chatbot? (z.B. `chatbot.voeb.de`)
+**Frage:** Wie lautet die finale Domain fuer den Chatbot?
+
+**Entschieden:** `voeb-service.de` (Cloudflare Pro), Subdomain `chatbot`. URLs:
+- DEV: `https://dev.chatbot.voeb-service.de`
+- TEST: `https://test.chatbot.voeb-service.de`
+- PROD: `https://chatbot.voeb-service.de`
 
 **Was in Entra ID hinterlegt werden muss:**
 
@@ -89,7 +94,7 @@ Der Entra-ID-Weg ist sauberer, weil unberechtigte User gar nicht erst bis zu uns
 **Warum:** Der Login-Flow hat zwei Teile:
 
 1. Der User wird im Browser zu Microsoft weitergeleitet — das passiert ueber das Netzwerk des Users.
-2. Unser Backend tauscht den Login-Code gegen ein Token bei Microsoft ein — das passiert von unserer StackIT-IP `188.34.74.187` aus.
+2. Unser Backend tauscht den Login-Code gegen ein Token bei Microsoft ein — das passiert von unserer StackIT Cluster-Egress-IP `188.34.93.194` aus (NAT Gateway, fest fuer den Cluster-Lifecycle).
 
 Wenn VÖB Conditional Access Policies hat, die nur bestimmte IPs zulassen (z.B. nur VPN/Buero-Netzwerk), dann muss unsere Server-IP freigeschaltet werden, sonst schlaegt Schritt 2 fehl.
 
@@ -107,7 +112,7 @@ Wenn VÖB Conditional Access Policies hat, die nur bestimmte IPs zulassen (z.B. 
 DNS -> TLS-Zertifikat -> HTTPS -> OIDC funktioniert
 ```
 
-**Zustaendig:** Haengt davon ab, wem die Domain gehoert. Wenn `voeb.de`: VÖB IT muss den DNS-Eintrag setzen. Wenn wir eine eigene Domain nutzen: wir.
+**Zustaendig:** Die Domain `voeb-service.de` liegt auf Cloudflare Pro. VÖB IT (Leif Rasch) richtet die A-Records ein (DNS-only, graue Wolke). Wir konfigurieren cert-manager + Let's Encrypt fuer TLS.
 
 ---
 
@@ -120,7 +125,7 @@ DNS -> TLS-Zertifikat -> HTTPS -> OIDC funktioniert
 | Redirect URI eintragen | Ja (in Entra ID) | Ja (in Helm Config) |
 | User Assignment / Gruppen | Ja | — |
 | Conditional Access pruefen | Ja | IP mitteilen |
-| DNS-Eintrag | Ja (wenn voeb.de) | TLS-Zertifikat einrichten |
+| DNS-Eintrag | Ja (voeb-service.de auf Cloudflare) | TLS-Zertifikat einrichten |
 | Session Policy entscheiden | Ja | Konfigurieren |
 | Onyx OIDC konfigurieren | — | Ja (5 Env-Variablen) |
 | Testen | Gemeinsam | Gemeinsam |

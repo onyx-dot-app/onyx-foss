@@ -471,7 +471,7 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Testfall** | Quota erfolgreich abrufen für authentifizierten Benutzer |
 | **Modul** | Token Limits Management |
 | **Vorbedingung** | - Benutzer ist authentifiziert (gültiger JWT-Token)<br>- Benutzer hat eine Quota in ext_limits_quota |
-| **Testschritte** | 1. GET /api/vob/limits/quota mit user_id anfordern<br>2. Response auswerten |
+| **Testschritte** | 1. GET /api/ext/limits/quota mit user_id anfordern<br>2. Response auswerten |
 | **Erwartetes Ergebnis** | HTTP 200<br>Response enthält: monthly_limit_tokens, current_month_tokens, remaining_tokens<br>Status = "success" |
 | **Tatsächliches Ergebnis** | [TBD – wird während Test ausgefüllt] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -486,7 +486,7 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Testfall** | Request ohne gültigen Token sollte fehlschlagen |
 | **Modul** | Token Limits Management |
 | **Vorbedingung** | - Benutzer nicht authentifiziert |
-| **Testschritte** | 1. GET /api/vob/limits/quota ohne Token anfordern<br>2. Response auswerten |
+| **Testschritte** | 1. GET /api/ext/limits/quota ohne Token anfordern<br>2. Response auswerten |
 | **Erwartetes Ergebnis** | HTTP 401<br>Response: { status: "error", code: "UNAUTHORIZED" } |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -515,8 +515,8 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Test ID** | TC-TL-004 |
 | **Testfall** | Token-Verbrauch wird am reset_date zurückgesetzt |
 | **Modul** | Token Limits Management |
-| **Vorbedingung** | - Benutzer hat reset_date = 2024-02-01<br>- Heute ist 2024-02-01<br>- Benutzer hat current_month_tokens = 50000 |
-| **Testschritte** | 1. Scheduler läuft in der Nacht vom 31.01 auf 01.02<br>2. Database wird aktualisiert<br>3. GET /api/vob/limits/quota aufrufen |
+| **Vorbedingung** | - Benutzer hat reset_date = 2026-02-01<br>- Heute ist 2026-02-01<br>- Benutzer hat current_month_tokens = 50000 |
+| **Testschritte** | 1. Scheduler läuft in der Nacht vom 31.01 auf 01.02<br>2. Database wird aktualisiert<br>3. GET /api/ext/limits/quota aufrufen |
 | **Erwartetes Ergebnis** | current_month_tokens = 0<br>Benutzer kann wieder Messages senden |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -530,8 +530,8 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Test ID** | TC-TL-005 |
 | **Testfall** | Alert wird erstellt wenn Benutzer 80% der Quota nutzt |
 | **Modul** | Token Limits Management |
-| **Vorbedingung** | - Benutzer hat monthly_limit_tokens = 100000<br>- VOB_LIMITS_ALERT_THRESHOLD_PERCENT = 80<br>- Benutzer hat gerade 80000 Tokens verwendet |
-| **Testschritte** | 1. Service prüft Token-Nutzung<br>2. Service berechnet Prozentsatz (80%)<br>3. Service erstellt Alert<br>4. GET /api/vob/limits/alerts aufrufen |
+| **Vorbedingung** | - Benutzer hat monthly_limit_tokens = 100000<br>- EXT_LIMITS_ALERT_THRESHOLD_PERCENT = 80<br>- Benutzer hat gerade 80000 Tokens verwendet |
+| **Testschritte** | 1. Service prüft Token-Nutzung<br>2. Service berechnet Prozentsatz (80%)<br>3. Service erstellt Alert<br>4. GET /api/ext/limits/alerts aufrufen |
 | **Erwartetes Ergebnis** | Alert wird in ext_limits_alerts erstellt<br>Alert hat level = "warning"<br>Benutzer wird benachrichtigt (Email/UI) |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -546,7 +546,7 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Testfall** | Token-Zählung works für Streaming-Responses (SSE) |
 | **Modul** | Token Limits Management |
 | **Vorbedingung** | - Benutzer sendet Chat-Request mit stream=true |
-| **Testschritte** | 1. POST /api/chat/message mit stream=true<br>2. Server streamt Response via SSE<br>3. Token werden während Streaming gezählt<br>4. Nach Abschluss: GET /api/vob/limits/quota |
+| **Testschritte** | 1. POST /api/chat/message mit stream=true<br>2. Server streamt Response via SSE<br>3. Token werden während Streaming gezählt<br>4. Nach Abschluss: GET /api/ext/limits/quota |
 | **Erwartetes Ergebnis** | Streaming-Tokens werden zu current_month_tokens addiert<br>Finale Quota-Nutzung korrekt |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -565,7 +565,7 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Testfall** | Admin kann neue User-Gruppe erstellen und Benutzer zuweisen |
 | **Modul** | RBAC & User Groups |
 | **Vorbedingung** | - Admin-Benutzer ist authentifiziert<br>- Admin hat org_admin oder vob_admin Rolle |
-| **Testschritte** | 1. POST /api/vob/auth/groups mit group_name="banking_team"<br>2. POST /api/vob/auth/groups/banking_team/members mit user_id<br>3. Verifiziere dass user in ext_user_groups exists |
+| **Testschritte** | 1. POST /api/ext/auth/groups mit group_name="banking_team"<br>2. POST /api/ext/auth/groups/banking_team/members mit user_id<br>3. Verifiziere dass user in ext_user_groups exists |
 | **Erwartetes Ergebnis** | HTTP 200/201<br>Gruppe wird erstellt<br>User wird der Gruppe zugeordnet<br>ext_user_groups hat neuen Record |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -579,8 +579,8 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Test ID** | TC-RBAC-002 |
 | **Testfall** | Benutzer mit role=user kann keine Quotas für andere ändern |
 | **Modul** | RBAC & User Groups |
-| **Vorbedingung** | - Benutzer hat JWT Token mit role="user"<br>- Benutzer versucht PUT /api/vob/limits/quota/user-456 |
-| **Testschritte** | 1. User-Token erzeugen (role=user)<br>2. PUT /api/vob/limits/quota/user-456 mit neuer Quota<br>3. Response auswerten |
+| **Vorbedingung** | - Benutzer hat JWT Token mit role="user"<br>- Benutzer versucht PUT /api/ext/limits/quota/user-456 |
+| **Testschritte** | 1. User-Token erzeugen (role=user)<br>2. PUT /api/ext/limits/quota/user-456 mit neuer Quota<br>3. Response auswerten |
 | **Erwartetes Ergebnis** | HTTP 403 Forbidden<br>Response: { code: "INSUFFICIENT_PERMISSIONS" }<br>Quota wird nicht geändert |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -595,7 +595,7 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Testfall** | Org-Admin kann nur Benutzer seiner Organisation verwalten |
 | **Modul** | RBAC & User Groups |
 | **Vorbedingung** | - Admin von Org-A versucht Benutzer von Org-B zu verwalten |
-| **Testschritte** | 1. Org-A Admin Token erzeugen (org_id=org-a)<br>2. PUT /api/vob/limits/quota/user-from-org-b<br>3. Response auswerten |
+| **Testschritte** | 1. Org-A Admin Token erzeugen (org_id=org-a)<br>2. PUT /api/ext/limits/quota/user-from-org-b<br>3. Response auswerten |
 | **Erwartetes Ergebnis** | HTTP 403 Forbidden<br>Response: { code: "CROSS_ORG_DENIED" }<br>Org-B Quota wird nicht geändert |
 | **Tatsächliches Ergebnis** | [TBD] |
 | **Status** | [ ] Passed | [ ] Failed | [ ] Blocked |
@@ -624,7 +624,7 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | **Test ID** | TC-RBAC-005 |
 | **Testfall** | User verliert Gruppe-Permission wenn expires_at überschritten |
 | **Modul** | RBAC & User Groups |
-| **Vorbedingung** | - ext_user_groups hat Record mit expires_at=2024-01-15 (in der Vergangenheit)<br>- Heute ist 2024-02-15 |
+| **Vorbedingung** | - ext_user_groups hat Record mit expires_at=2026-01-15 (in der Vergangenheit)<br>- Heute ist 2026-02-15 |
 | **Testschritte** | 1. Benutzer authentifiziert sich<br>2. JWT Token wird erzeugt<br>3. Permission-Check prüft expires_at |
 | **Erwartetes Ergebnis** | JWT Token enthält nicht die abgelaufene Gruppe<br>Benutzer verliert entsprechende Permissions |
 | **Tatsächliches Ergebnis** | [TBD] |
@@ -813,7 +813,7 @@ Die formale Abnahme durch VÖB erfolgt auf Basis folgender Kriterien:
 - TC-TL-003: Quota-Überschreitung – ❌ Failed
   - **Grund**: System gibt HTTP 500 statt 429 zurück
   - **Severity**: Critical
-  - **Owner**: JNnovate
+  - **Owner**: CCJ
   - **Fix-Termin**: [TBD]
 
 **Blockiert**:
@@ -823,8 +823,8 @@ Die formale Abnahme durch VÖB erfolgt auf Basis folgender Kriterien:
 
 | ID | Beschreibung | Severity | Reproduzierbar | Fix-Termin | Status |
 |----|-------------|----------|--------|----------|--------|
-| BUG-001 | Quota-Überschreitung gibt falsch HTTP-Status | Critical | Ja | 2024-02-10 | Offen |
-| BUG-002 | Alert wird nicht für Streaming-Responses erstellt | High | Ja | 2024-02-17 | Offen |
+| BUG-001 | Quota-Überschreitung gibt falsch HTTP-Status | Critical | Ja | 2026-02-10 | Offen |
+| BUG-002 | Alert wird nicht für Streaming-Responses erstellt | High | Ja | 2026-02-17 | Offen |
 
 ### Empfehlungen
 

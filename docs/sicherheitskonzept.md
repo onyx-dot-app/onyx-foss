@@ -38,8 +38,8 @@ Dieses Konzept gilt für:
 
 | Umgebung | Status | URL | Auth |
 |----------|--------|-----|------|
-| DEV | LIVE seit 2026-02-27 | `http://188.34.74.187` | Basic Auth |
-| TEST | LIVE seit 2026-03-03 | `http://188.34.118.201` | Basic Auth |
+| DEV | LIVE seit 2026-02-27 | `http://188.34.74.187` | Onyx-interne E-Mail/Passwort-Authentifizierung (`AUTH_TYPE: basic`), kein HTTP Basic Auth |
+| TEST | LIVE seit 2026-03-03 | `http://188.34.118.201` | Onyx-interne E-Mail/Passwort-Authentifizierung (`AUTH_TYPE: basic`), kein HTTP Basic Auth |
 | PROD | Geplant | -- | Entra ID (OIDC) |
 
 > **Hinweis:** Dieses Dokument trennt klar zwischen **IMPLEMENTIERT** (verifiziert in DEV/TEST) und **GEPLANT** (offen, für PROD). Abschnitte die mangels Informationen von VÖB nicht finalisiert werden können, sind mit `[AUSSTEHEND -- Klärung mit VÖB]` markiert.
@@ -92,11 +92,11 @@ Die Sicherheitsarchitektur folgt den klassischen Schutzzielen:
 
 ## Authentifizierung und Autorisierung
 
-### Aktueller Stand: Basic Auth (DEV/TEST)
+### Aktueller Stand: Onyx-interne E-Mail/Passwort-Authentifizierung (DEV/TEST)
 
 **IMPLEMENTIERT** in DEV und TEST:
 
-Die Authentifizierung ist über die Umgebungsvariable `AUTH_TYPE` konfiguriert. Aktuell:
+Die Authentifizierung ist über die Umgebungsvariable `AUTH_TYPE` konfiguriert. `AUTH_TYPE: "basic"` bezeichnet Onyx-eigene E-Mail/Passwort-Authentifizierung (Session-Cookie-basiert), **nicht** HTTP Basic Auth nach RFC 7617. Aktuell:
 
 ```yaml
 # values-dev.yaml / values-test.yaml
@@ -198,7 +198,7 @@ letsencrypt:
   enabled: false  # Kein TLS bis DNS verfügbar
 ```
 
-**Abhängigkeit**: DNS-Zone (`*.chatbot.voeb-service.de`) muss von VÖB IT eingerichtet werden. Ohne DNS kein TLS-Zertifikat (Let's Encrypt braucht eine Domain).
+**Abhängigkeit**: Spezifische A-Records (`dev.chatbot.voeb-service.de`, `test.chatbot.voeb-service.de`, `chatbot.voeb-service.de`) müssen von VÖB IT auf Cloudflare eingerichtet werden (DNS-only, keine Wildcard). Ohne DNS kein TLS-Zertifikat (Let's Encrypt braucht eine Domain).
 
 #### Interne Kommunikation (Cluster-intern)
 
@@ -351,7 +351,7 @@ pg_acl = [
 - TLS: **Nicht aktiv** (`letsencrypt.enabled: false`)
 
 **Geplant (nach DNS-Setup)**:
-- cert-manager mit Let's Encrypt oder StackIT-CA
+- cert-manager mit Let's Encrypt via Cloudflare DNS-01 Challenge (BSI TR-02102-2: ECDSA P-384 Pflicht, RSA 2048 von LE Standard erfüllt BSI nicht). Details: `docs/runbooks/dns-tls-setup.md`
 - HSTS-Header
 - SSL-Redirect
 
@@ -500,7 +500,7 @@ azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415     # v4
 
 ### LLM-Provider: StackIT AI Model Serving
 
-**IMPLEMENTIERT (DEV)**:
+**IMPLEMENTIERT (DEV + TEST seit 2026-03-03)**:
 
 | Aspekt | Details |
 |--------|---------|
@@ -799,6 +799,8 @@ configMap:
 - Technische Referenz: `docs/referenz/stackit-infrastruktur.md`
 - ADR-004 (Umgebungstrennung): `docs/adr/adr-004-umgebungstrennung-dev-test-prod.md`
 - CI/CD Runbook: `docs/runbooks/ci-cd-pipeline.md`
+- DNS/TLS-Runbook: `docs/runbooks/dns-tls-setup.md`
+- LLM-Konfiguration Runbook: `docs/runbooks/llm-konfiguration.md`
 - Entra ID Fragenkatalog: `docs/entra-id-kundenfragen.md`
 
 ---

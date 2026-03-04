@@ -2,7 +2,7 @@
 
 **Status**: Akzeptiert
 **Aktualisiert**: 2026-02-12 (Pfade und Core-Dateien nach Phase 4a korrigiert)
-**Author**: Architektur-Team (CCJ + JNnovate)
+**Author**: CCJ / Coffee Studios
 
 ---
 
@@ -393,9 +393,9 @@ voeb-chatbot/
 │
 ├── web/
 │   ├── src/
-│   │   ├── app/layout.tsx       (CORE #5 – Nav Items)
-│   │   ├── components/header/   (CORE #6 – Branding)
-│   │   ├── lib/constants.ts     (CORE #7 – CSS Variables)
+│   │   ├── app/layout.tsx       (CORE #4 – Nav Items)
+│   │   ├── components/header/   (CORE #5 – Branding)
+│   │   ├── lib/constants.ts     (CORE #6 – CSS Variables)
 │   │   └── ext/                 (NEW – Frontend Extensions)
 │   │       ├── components/
 │   │       ├── pages/
@@ -457,7 +457,7 @@ voeb-chatbot/
 
 | Rolle | Name | Datum | Signatur |
 |-------|------|-------|----------|
-| Architektur Lead (JNnovate) | [TBD] | [TBD] | __ |
+| Architektur Lead (CCJ) | Nikolaj Ivanov | 2026-02-12 | __ |
 | Projektleiter (CCJ) | [TBD] | [TBD] | __ |
 | Auftraggeber (VÖB) | [TBD] | [TBD] | __ |
 

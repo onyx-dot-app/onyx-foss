@@ -200,7 +200,7 @@ Beim Wechsel eines Embedding-Modells:
 2. **Model ID pruefen:** Exakte Schreibweise inkl. Prefix (z.B. `openai/gpt-oss-120b`)
 3. **Logs pruefen:**
    ```bash
-   kubectl logs -n onyx-dev deployment/onyx-api-server --tail=50 | grep -i llm
+   kubectl logs -n onyx-dev deployment/onyx-dev-api-server --tail=50 | grep -i llm
    ```
 4. **Direkt testen:**
    ```bash

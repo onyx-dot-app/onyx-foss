@@ -5,7 +5,7 @@
 **Bezug**: [Technische Referenz](stackit-infrastruktur.md) | [Meilensteinplan](../abnahme/meilensteinplan.md)
 
 > **Scope dieses Plans: DEV + TEST Environments.**
-> Phase 1–6: DEV (abgeschlossen). Phase 7: TEST (in Arbeit).
+> Phase 1–6: DEV (abgeschlossen). Phase 7: TEST (abgeschlossen, LIVE seit 2026-03-03).
 > PROD-Spezifikationen sind in der [Technischen Referenz](stackit-infrastruktur.md) dokumentiert.
 > Architekturentscheidung zur Umgebungstrennung: [ADR-004](../adr/adr-004-umgebungstrennung-dev-test-prod.md)
 
@@ -186,7 +186,7 @@ terraform apply tfplan
 Das Modul in `deployment/terraform/modules/stackit/main.tf` provisioniert:
 
 **SKE Cluster** (`vob-chatbot`):
-- 1 Node Pool `devtest` mit 1× g1a.4d
+- 1 Node Pool `devtest` mit 2× g1a.4d (min=2, max=2)
 - Kubernetes v1.32.12 (SKE weist nächst-verfügbare Version zu)
 - Flatcar OS
 - Maintenance-Window: 02:00–04:00 UTC
@@ -455,7 +455,7 @@ Separater Custom LLM Provider in der Admin UI:
 
 ### 6.3 Embedding-Modell konfigurieren
 
-> ⏳ Noch nicht konfiguriert.
+> ⚠️ Blockiert durch Upstream (PR #7541). Fallback: nomic-embed-text-v1 aktiv.
 
 Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Eintrag in der Admin UI.
 
@@ -609,7 +609,7 @@ helm upgrade --install onyx-test \
   --atomic --timeout 10m
 
 # Verifizieren
-kubectl get pods -n onyx-test          # → 10 Pods Running
+kubectl get pods -n onyx-test          # → 9 Pods Running (+ redis-operator im default NS)
 curl -s http://<TEST-IP>/api/health    # → {"success":true}
 ```
 
@@ -652,9 +652,9 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 9 Pods Running (+ redis-operator im default NS) | `kubectl get pods -n onyx-test` → 9/9 Running | [x] ✅ (2026-03-03) |
 | API Health | `curl http://188.34.118.201/api/health` → `{"success":true}` | [x] ✅ (2026-03-03) |
 | Onyx UI erreichbar | `http://188.34.118.201/auth/login` → Login-Seite | [x] ✅ (2026-03-03) |
-| LLM Chat-Modell | GPT-OSS 120B antwortet über TEST Chat | [ ] ⏳ |
-| CI/CD deploy-test | `workflow_dispatch` → Pods updated | [ ] ⏳ |
-| DEV unabhängig | DEV-Pods weiterhin Running nach TEST-Deploy | [ ] ⏳ |
+| LLM Chat-Modell | GPT-OSS 120B antwortet über TEST Chat | [x] ✅ (2026-03-03) |
+| CI/CD deploy-test | `workflow_dispatch` → Pods updated | [x] ✅ (2026-03-03) |
+| DEV unabhängig | DEV-Pods weiterhin Running nach TEST-Deploy | [x] ✅ (2026-03-03) |
 
 ---
 
@@ -697,7 +697,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 17 | TEST: Namespace + Image Pull Secret | Niko | ✅ Erledigt (2026-03-03) |
 | 18 | TEST: values-test.yaml + GitHub Secrets | Niko | ✅ Erledigt (2026-03-03) |
 | 19 | TEST: Helm Deploy + Validierung | Niko | ✅ Erledigt (2026-03-03) |
-| 20 | TEST: LLM-Konfiguration in Admin UI | Niko | ⏳ Phase 7.9 |
+| 20 | TEST: LLM-Konfiguration in Admin UI | Niko | ✅ Erledigt (2026-03-03) |
 | 21 | **SEC-01**: PostgreSQL ACL einschränken | Niko | ✅ Erledigt (2026-03-03) |
 | 22 | **SEC-02**: Node Affinity erzwingen | Niko | ⏳ P1 (vor PROD) |
 | 23 | **SEC-03**: Kubernetes NetworkPolicies | Niko | ⏳ P1 (vor PROD) |

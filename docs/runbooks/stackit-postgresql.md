@@ -115,5 +115,5 @@ kubectl delete pod pg-client -n onyx-dev
 |---------|---------|--------|
 | `database "onyx" does not exist` | DB nicht angelegt nach Terraform | DB manuell anlegen (siehe oben) |
 | `permission denied to create role` | Managed PG hat kein CREATEROLE | User per Terraform anlegen |
-| `Connection refused` | PG Flex ACL blockiert | ACL in `variables.tf` prüfen (aktuell `0.0.0.0/0` für DEV) |
+| `Connection refused` | PG Flex ACL blockiert | ACL in `environments/dev/main.tf` prüfen (SEC-01: eingeschränkt auf Cluster-Egress `188.34.93.194/32` + Admin-IP) |
 | `password authentication failed` | Falsches Passwort | `terraform output -raw pg_password` prüfen |

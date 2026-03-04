@@ -39,6 +39,8 @@ Enterprise-AI-Chatbot basierend auf Onyx FOSS mit Custom Extension Layer für de
 | [stackit-postgresql.md](./runbooks/stackit-postgresql.md) | Verifiziert | PostgreSQL Flex Setup, User-Verwaltung, DB anlegen |
 | [helm-deploy.md](./runbooks/helm-deploy.md) | Verifiziert | Helm Values, Deploy, Troubleshooting |
 | [ci-cd-pipeline.md](./runbooks/ci-cd-pipeline.md) | Verifiziert | CI/CD Pipeline Setup, Secrets, Debugging |
+| [dns-tls-setup.md](./runbooks/dns-tls-setup.md) | Bereit zur Umsetzung | DNS/TLS Setup — cert-manager, Let's Encrypt, Cloudflare |
+| [llm-konfiguration.md](./runbooks/llm-konfiguration.md) | Verifiziert | LLM-Konfiguration — Chat + Embedding Modelle |
 
 ## Referenzdokumente
 

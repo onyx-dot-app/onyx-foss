@@ -13,6 +13,17 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - PG ACL von `0.0.0.0/0` auf Cluster-Egress-IP `188.34.93.194/32` + Admin-IP eingeschränkt
   - Default `pg_acl` in beiden Terraform-Modulen entfernt → erzwingt explizite Angabe pro Environment
   - Terraform Credentials-Handling: `credentials.json` Wrapper, `chmod 600`, `.envrc` in `.gitignore`
+- [Security] **GitHub Actions SHA-Pinning** (2026-03-02)
+  - Alle 6 Actions auf Commit-SHA fixiert statt Major-Version-Tags (Supply-Chain-Schutz)
+  - `actions/checkout`, `docker/login-action`, `docker/setup-buildx-action`, `docker/build-push-action`, `azure/setup-helm`, `azure/setup-kubectl`
+- [Security] **Least-Privilege Permissions** (2026-03-02)
+  - `permissions: contents: read` — Workflow hat nur Lesezugriff auf Repo
+- [Security] **Redis-Passwort aus Git entfernt** (2026-03-02)
+  - War hardcoded in `values-dev.yaml` → jetzt über GitHub Secret `REDIS_PASSWORD`
+- [Security] **Concurrency Control** (2026-03-02)
+  - Max 1 Deploy pro Environment gleichzeitig, verhindert Race Conditions
+- [Security] **Model Server Version gepinnt** (2026-03-02)
+  - `v2.9.8` statt `:latest` — reproduzierbare Deployments
 
 ### Added
 - [Infra] **TEST-Umgebung LIVE** (2026-03-03)
@@ -72,6 +83,16 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - [Documentation] Alle Dokumente in Deutsch verfasst (Banking-Standard)
+- [Infra] **CI/CD Pipeline auf Enterprise-Niveau gehärtet** (2026-03-02)
+  - Backend + Frontend Build parallel (~8 Min statt ~38 Min sequentiell)
+  - Model Server Build entfernt (nutzt Upstream Docker Hub Image)
+  - Smoke Test nach Deploy (`/api/health` mit 120s Timeout)
+  - `--atomic` für TEST/PROD (automatischer Rollback bei Fehler)
+  - `--history-max 5` (Helm Release-Cleanup)
+  - Fehlerbehandlung: `|| true` entfernt, echtes Error-Reporting mit `kubectl describe` + Logs
+  - Verify-Steps mit `if: always()` (Pod-Status auch bei Fehler sichtbar)
+  - Kubeconfig-Ablauf im Header dokumentiert (2026-05-28)
+  - Runbook: `docs/runbooks/ci-cd-pipeline.md`
 
 ### Fixed
 - [Bugfix] Core-Datei-Pfade in `.claude/rules/` und `.claude/hooks/` korrigiert (4 von 7 Pfade waren falsch)
@@ -92,31 +113,6 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [Bugfix] **Recreate-Strategie für Single-Node DEV** (2026-03-02)
   - RollingUpdate scheiterte auf g1a.4d (4 vCPU) — nicht genug CPU für alte + neue Pods gleichzeitig
   - Fix: kubectl-Patch auf Recreate-Strategie nach Helm Deploy
-
-### Security
-- [Security] **GitHub Actions SHA-Pinning** (2026-03-02)
-  - Alle 6 Actions auf Commit-SHA fixiert statt Major-Version-Tags (Supply-Chain-Schutz)
-  - `actions/checkout`, `docker/login-action`, `docker/setup-buildx-action`, `docker/build-push-action`, `azure/setup-helm`, `azure/setup-kubectl`
-- [Security] **Least-Privilege Permissions** (2026-03-02)
-  - `permissions: contents: read` — Workflow hat nur Lesezugriff auf Repo
-- [Security] **Redis-Passwort aus Git entfernt** (2026-03-02)
-  - War hardcoded in `values-dev.yaml` → jetzt über GitHub Secret `REDIS_PASSWORD`
-- [Security] **Concurrency Control** (2026-03-02)
-  - Max 1 Deploy pro Environment gleichzeitig, verhindert Race Conditions
-- [Security] **Model Server Version gepinnt** (2026-03-02)
-  - `v2.9.8` statt `:latest` — reproduzierbare Deployments
-
-### Changed
-- [Infra] **CI/CD Pipeline auf Enterprise-Niveau gehärtet** (2026-03-02)
-  - Backend + Frontend Build parallel (~8 Min statt ~38 Min sequentiell)
-  - Model Server Build entfernt (nutzt Upstream Docker Hub Image)
-  - Smoke Test nach Deploy (`/api/health` mit 120s Timeout)
-  - `--atomic` für TEST/PROD (automatischer Rollback bei Fehler)
-  - `--history-max 5` (Helm Release-Cleanup)
-  - Fehlerbehandlung: `|| true` entfernt, echtes Error-Reporting mit `kubectl describe` + Logs
-  - Verify-Steps mit `if: always()` (Pod-Status auch bei Fehler sichtbar)
-  - Kubeconfig-Ablauf im Header dokumentiert (2026-05-28)
-  - Runbook: `docs/runbooks/ci-cd-pipeline.md`
 
 ---
 
@@ -162,7 +158,7 @@ Beispiel: `1.2.3`
 - [ ] Dokumentation finalisieren nach Feedback
 
 ### Phase 2 – Infrastruktur (M1)
-- [ ] Infrastruktur Go-Live
+- [x] Infrastruktur Go-Live (DEV 2026-02-27, TEST 2026-03-03)
 - [ ] Abnahmeprotokoll unterzeichnet
 - [ ] Release Notes v1.0.0-infra
 
@@ -208,7 +204,7 @@ Beispiel: `1.2.3`
 
 Viele Abschnitte sind mit `[ENTWURF]` oder `[TBD]` gekennzeichnet. Diese werden nach finaler Konfiguration der Infrastruktur ergänzt:
 
-- Sicherheitskonzept: Infrastruktur-Details (Vaults, WAF, etc.)
+- Sicherheitskonzept: Infrastruktur-Details (Secrets-Management, WAF, etc.)
 - Betriebskonzept: StackIT-spezifische Konfiguration
 - Testkonzept: Testumgebungen nach Setup
 
@@ -248,7 +244,9 @@ docs/
 │   ├── stackit-projekt-setup.md                 (StackIT Setup)
 │   ├── stackit-postgresql.md                    (PostgreSQL Setup)
 │   ├── helm-deploy.md                           (Helm Deploy)
-│   └── ci-cd-pipeline.md                        (CI/CD Pipeline)
+│   ├── ci-cd-pipeline.md                        (CI/CD Pipeline)
+│   ├── dns-tls-setup.md                         (DNS/TLS Setup)
+│   └── llm-konfiguration.md                     (LLM-Konfiguration)
 └── referenz/
     ├── stackit-implementierungsplan.md          (DEV+TEST Step-by-Step)
     ├── stackit-infrastruktur.md                 (Infra Specs + Sizing)
@@ -280,7 +278,7 @@ Diese Dokumentation ist Teil des VÖB Service Chatbot Projekts.
 Bei Fragen zur Dokumentation:
 
 - **CCJ Projektleitung**: [AUSSTEHEND]
-- **JNnovate Technical Lead**: [AUSSTEHEND]
+- **CCJ Technical Lead**: Nikolaj Ivanov
 
 ---
 

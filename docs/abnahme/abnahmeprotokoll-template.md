@@ -23,8 +23,8 @@
 | Rolle | Name | Organisation | Unterschrift |
 |-------|------|-------------|-------------|
 | Projektleiter | [TBD] | CCJ | ____________ |
-| Technischer Leiter | [TBD] | JNnovate | ____________ |
-| QA-Verantwortlicher | [TBD] | JNnovate | ____________ |
+| Technischer Leiter | [TBD] | CCJ / Coffee Studios | ____________ |
+| QA-Verantwortlicher | [TBD] | CCJ / Coffee Studios | ____________ |
 
 ### Auftraggeber (VÖB)
 
@@ -87,9 +87,9 @@ Nachfolgend sind die Abnahmekriterien für diesen Meilenstein aufgelistet. Der S
 
 | Nr. | Kriterium | Soll-Zustand | Ist-Zustand | Erfüllt? | Bemerkung |
 |-----|-----------|-------------|--------|---------|----------|
-| F-1 | Kubernetes Cluster deployed | Cluster läuft mit 3 nodes | [TBD] | [ ] Ja [ ] Nein | [TBD] |
+| F-1 | Kubernetes Cluster deployed | Cluster läuft mit 2 nodes | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 | F-2 | PostgreSQL erreichbar | DB Connection erfolgreich | [TBD] | [ ] Ja [ ] Nein | [TBD] |
-| F-3 | Vespa läuft | 3 Vespa Nodes, Index erstellt | [TBD] | [ ] Ja [ ] Nein | [TBD] |
+| F-3 | Vespa läuft | 1 Vespa Pod (in-cluster), Index erstellt | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 | F-4 | Object Storage funktioniert | Bucket erstellt, Files upload/download | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 | F-5 | CI/CD Pipeline funktioniert | Git Push triggert Build | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 
@@ -122,7 +122,7 @@ Nachfolgend sind die Abnahmekriterien für diesen Meilenstein aufgelistet. Der S
 | Nr. | Kriterium | Soll-Zustand | Ist-Zustand | Erfüllt? | Bemerkung |
 |-----|-----------|-------------|--------|---------|----------|
 | S-1 | TLS/HTTPS aktiviert | Alle API-Endpoints über HTTPS | [TBD] | [ ] Ja [ ] Nein | [TBD] |
-| S-2 | Secrets verschlüsselt | API Keys in Vault verwaltet | [TBD] | [ ] Ja [ ] Nein | [TBD] |
+| S-2 | Secrets verschlüsselt | API Keys in GitHub Actions Secrets + Kubernetes Secrets verwaltet | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 | S-3 | Datenverschlüsselung | DB Encryption at Rest aktiviert | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 | S-4 | Audit Logging | Alle Zugriffe werden protokolliert | [TBD] | [ ] Ja [ ] Nein | [TBD] |
 | S-5 | Datensouveränität | Keine Daten außerhalb Deutschlands | [TBD] | [ ] Ja [ ] Nein | [TBD] |
@@ -144,9 +144,9 @@ Falls während der Abnahme Mängel / Defekte / Abweichungen gefunden werden, wer
 
 | ID | Beschreibung | Schwere | Frist | Status | Verantwortlicher |
 |----|-------------|--------|-------|--------|-----------------|
-| M-001 | PostgreSQL Performance: Queries brauchen 2s statt <100ms | Kritisch | 7 Tage | Offen | JNnovate DBA |
+| M-001 | PostgreSQL Performance: Queries brauchen 2s statt <100ms | Kritisch | 7 Tage | Offen | CCJ DBA |
 | M-002 | Vespa Index konnte nicht vollständig geladen werden | Blocker | 3 Tage | In Bearbeitung | StackIT Support |
-| M-003 | Dokumentation für Runbooks unvollständig | Normal | 14 Tage | Offen | JNnovate Techwriter |
+| M-003 | Dokumentation für Runbooks unvollständig | Normal | 14 Tage | Offen | CCJ Techwriter |
 
 ### Nachbearbeitung von Mängeln
 
@@ -192,7 +192,7 @@ Basierend auf den oben genannten Kriterien und festgestellten Mängeln, wird die
 [Begründung hier eintragen, falls Abnahme nicht ohne Mängel erfolgt]
 
 **Beispiel**:
-> Abnahme mit Auflagen erfolgt. PostgreSQL Performance-Issue (M-001) ist kritisch, aber JNnovate hat Optimierungs-Plan vorgelegt. Frist: 7 Tage. Vespa Index-Problem (M-002) ist Blocker im Umfang, aber StackIT arbeitet aktiv daran. Frist: 3 Tage. Nach Behebung dieser Blocker werden wir ein Abnahme-Bestätigungs-Meeting durchführen.
+> Abnahme mit Auflagen erfolgt. PostgreSQL Performance-Issue (M-001) ist kritisch, aber CCJ hat Optimierungs-Plan vorgelegt. Frist: 7 Tage. Vespa Index-Problem (M-002) ist Blocker im Umfang, aber StackIT arbeitet aktiv daran. Frist: 3 Tage. Nach Behebung dieser Blocker werden wir ein Abnahme-Bestätigungs-Meeting durchführen.
 
 ---
 
@@ -203,7 +203,7 @@ Die unterzeichnenden Parteien bestätigen, dass die Abnahme gemäß diesem Proto
 ### Auftragnehmer
 
 **Name, Titel**: [TBD]
-**Organisation**: CCJ / JNnovate
+**Organisation**: CCJ / Coffee Studios
 **Unterschrift**: _________________________ **Datum**: __________
 
 ### Auftraggeber

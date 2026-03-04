@@ -1,8 +1,8 @@
 # ADR-003: StackIT als Cloud Provider
 
 **Status**: Akzeptiert
-**Aktualisiert**: 2026-02-22
-**Author**: Infrastruktur-Team (StackIT + JNnovate)
+**Aktualisiert**: 2026-03-04
+**Author**: CCJ / Coffee Studios
 
 ---
 
@@ -47,7 +47,7 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 - Google Cloud (US-basiert, aber hat EU-Regionen)
 
 **Deutsche/EU Provider**:
-- **StackIT** (Deutsche Telekom, 100% German Cloud)
+- **StackIT** (Schwarz Digits / Schwarz-Gruppe, 100% German Cloud)
 - Hetzner (Deutsche Server, aber weniger Enterprise-Features)
 - OVH (Französisch)
 - Ionos (Deutsch)
@@ -60,10 +60,10 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 
 ### StackIT – Überblick
 
-**Unternehmen**: StackIT GmbH (Tochter der Deutschen Telekom)
-**Sitz**: Deutschland
-**Rechenzentren**: Deutschland (Frankfurt, München, Berlin geplant)
-**Service**: Managed Kubernetes, DBaaS, Object Storage, etc.
+**Unternehmen**: StackIT GmbH & Co. KG (Tochter der Schwarz Digits / Schwarz-Gruppe)
+**Sitz**: Neckarsulm, Deutschland
+**Rechenzentren**: Frankfurt DC10 (primär), München (via LEW TelNet), Ellhofen DC08 (seit 2017), Österreich (operativ), Berlin (geplant), Lübbenau (im Bau)
+**Service**: Managed Kubernetes (SKE), PostgreSQL Flex, Object Storage, AI Model Serving, etc.
 
 ### Infrastruktur-Architektur auf StackIT
 
@@ -75,24 +75,25 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │ Kubernetes Cluster (managed by StackIT)                   │ │
 │  │                                                            │ │
-│  │  Namespace: vob-chatbot-prod                              │ │
-│  │  ├── Pods: chatbot-frontend (replicas: 3)                │ │
-│  │  ├── Pods: chatbot-backend (replicas: 3)                 │ │
-│  │  ├── Pods: vespa-cluster (nodes: 3)                      │ │
+│  │  Namespace: onyx-dev                                      │ │
+│  │  ├── Pods: 10 (backend, web-server, background,         │ │
+│  │  │         model-server x2, vespa, nginx-ingress,        │ │
+│  │  │         redis-master, redis-replicas)                  │ │
+│  │  ├── Replicas: 1 (DEV/TEST)                              │ │
 │  │  ├── Services: LoadBalancer, Internal                     │ │
 │  │  ├── Ingress: TLS, SSL Termination                        │ │
 │  │  └── Network Policies: Egress/Ingress Rules              │ │
 │  │                                                            │ │
-│  │  Namespace: vob-chatbot-staging                           │ │
-│  │  └── [identisch zu prod, für Testing]                    │ │
+│  │  Namespace: onyx-test                                     │ │
+│  │  └── [identisch zu dev, eigene IngressClass]             │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │ Managed Services                                           │ │
 │  │                                                            │ │
-│  │  PostgreSQL RDS (managed)                                 │ │
-│  │  ├── vob-chatbot-prod (instance: db.standard.2)          │ │
-│  │  ├── vob-chatbot-staging (instance: db.standard.1)       │ │
+│  │  PostgreSQL Flex (managed)                                │ │
+│  │  ├── vob-dev (Flavor: Flex 2.4 Single, 2 CPU/4 GB)     │ │
+│  │  ├── vob-test (Flavor: Flex 2.4 Single, 2 CPU/4 GB)    │ │
 │  │  ├── Automated Backups (daily, 30 days retention)        │ │
 │  │  └── SSL/TLS Encrypted Connections                       │ │
 │  │                                                            │ │
@@ -102,22 +103,22 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 │  │  ├── Lifecycle Policies (archive old data)                │ │
 │  │  └── Encryption at rest (AES-256)                         │ │
 │  │                                                            │ │
-│  │  Observability & Monitoring                               │ │
-│  │  ├── Prometheus (metrics)                                 │ │
-│  │  ├── ELK Stack or similar (logs)                          │ │
-│  │  └── Alerting (PagerDuty integration)                     │ │
+│  │  Observability & Monitoring (geplant)                     │ │
+│  │  ├── Prometheus (geplant)                                 │ │
+│  │  ├── Log-Aggregation (geplant)                            │ │
+│  │  └── Alerting (geplant)                                   │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │ Network & Security                                         │ │
 │  │                                                            │ │
-│  │  VPC / Private Network                                    │ │
-│  │  ├── Kubernetes Nodes in Private Subnet                   │ │
-│  │  ├── RDS in Private Subnet                                │ │
-│  │  └── Bastion Host for SSH Access                          │ │
+│  │  StackIT Network (OpenStack-basiert)                     │ │
+│  │  ├── Kubernetes Nodes in SKE Cluster                      │ │
+│  │  ├── PostgreSQL Flex ACL (IP-Allowlisting)               │ │
+│  │  └── kubectl via kubeconfig (kein Bastion Host)           │ │
 │  │                                                            │
-│  │  WAF / DDoS Protection (StackIT-provided)                │ │
-│  │  TLS/SSL Certificates (Let's Encrypt or CA)              │ │
+│  │  Cloudflare DNS-only (kein StackIT-WAF/DDoS)            │ │
+│  │  TLS/SSL Certificates (Let's Encrypt + cert-manager)     │ │
 │  │  API Gateway (optional, for rate limiting)                │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
@@ -127,13 +128,19 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 
 ┌──────────────────────────────────────────────────────────────────┐
 │ Endbenutzer / VÖB-Mitglieder                                     │
-│ (Browser: chatbot.vob.example.com)                               │
+│ (Browser: dev.chatbot.voeb-service.de)                           │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ### Warum StackIT?
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+- **Datensouveränität**: 100% deutscher Betreiber (Schwarz-Gruppe), kein US-Zugriff (CLOUD Act)
+- **BSI C5 / ISO 27001**: Zertifizierungen vorhanden, BAIT-konform
+- **Managed Kubernetes (SKE)**: Produktionsreif, Terraform-provisionierbar
+- **PostgreSQL Flex**: Managed DB mit ACL, Backups, SSL
+- **AI Model Serving**: LLM-Hosting direkt auf StackIT (GPT-OSS 120B, Qwen3-VL 235B)
+- **Region EU01 Frankfurt**: Geringe Latenz fuer deutsche Nutzer
+- **Kosten**: DEV+TEST ~426 EUR/Monat (transparent, keine versteckten Gebuehren)
 
 ---
 
@@ -143,12 +150,14 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 
 #### 1. Datenhoheit & Datensouveränität ⭐
 
-- **Rechenzentren**: 100% in Deutschland
-  - Frankfurt (primary)
-  - München, Berlin (geplant)
+- **Rechenzentren**: 100% in Deutschland/Österreich
+  - Frankfurt DC10 (primär, operativ)
+  - München (operativ, via LEW TelNet)
+  - Ellhofen DC08 (operativ seit 2017)
+  - Österreich (operativ), Berlin (geplant), Lübbenau (im Bau)
 - **Kein Datenabfluss**: Keine US-basierte Infrastruktur
 - **DSGVO-konform**: Vollständig, ohne Legal Workarounds
-- **Vertrauen**: Deutsche Telekom als Mutterkonzern → Vertrauen in Banking-Sektor
+- **Vertrauen**: Schwarz-Gruppe (Schwarz Digits) als Mutterkonzern → deutsches Unternehmen
 
 #### 2. Compliance & Regulierung ⭐
 
@@ -160,10 +169,11 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 #### 3. Technische Qualität
 
 - **Kubernetes**: Managed K8s, zuverlässig und skalierbar
-- **Databases**: PostgreSQL managed service mit Backups, HA
+- **Databases**: PostgreSQL Flex mit Backups, SSL, ACL
 - **Storage**: S3-compatible Object Storage
-- **Networking**: VPC, Private Subnets, Security Groups
-- **Observability**: Prometheus, ELK Stack (oder ähnlich)
+- **Networking**: StackIT Network (OpenStack-basiert), PG ACL (IP-Allowlisting)
+- **AI Model Serving**: LLM-Hosting (GPT-OSS 120B, Qwen3-VL 235B)
+- **Observability**: Geplant (Prometheus, Log-Aggregation)
 
 #### 4. Kosten
 
@@ -291,8 +301,8 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 
 ### Negative Auswirkungen / Mitigation
 
-1. **Größere Cloud als AWS/Azure**
-   - Mitigation: Für dieses Projekt großer als nötig, Redundanz ist gut
+1. **Kleinere Cloud als AWS/Azure**
+   - Mitigation: Für dieses Projekt ausreichend (nicht Google-Scale), stabile Plattform
    - Impact: Minimal
 
 2. **Weniger Third-Party Integrationen**
@@ -309,14 +319,14 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 
 ### StackIT Account Setup
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+Infrastruktur ist fuer DEV und TEST live. Details siehe `docs/referenz/stackit-implementierungsplan.md`.
 
-1. **Phase 1**: StackIT Account erstellen, Billing-Setup
-2. **Phase 2**: Kubernetes Cluster bereitstellen (Frankfurt)
-3. **Phase 3**: PostgreSQL RDS instanzieren, Object Storage buckets
-4. **Phase 4**: Networking (VPC, Security Groups), TLS Certificates
-5. **Phase 5**: Monitoring & Observability Stack (Prometheus, ELK)
-6. **Phase 6**: CI/CD Pipeline Integration (GitHub Actions → StackIT)
+1. **Phase 1**: StackIT Account + Service Account + Container Registry -- erledigt
+2. **Phase 2**: SKE Cluster (Flavor g1a.4d, Region EU01 Frankfurt) via Terraform -- erledigt
+3. **Phase 3**: PostgreSQL Flex (Flavor Flex 2.4 Single), Object Storage Buckets via Terraform -- erledigt
+4. **Phase 4**: Namespace-Setup, Ingress (nginx), PG ACL (IP-Allowlisting) -- erledigt
+5. **Phase 5**: Monitoring & Observability -- geplant (wird vor PROD-Deployment ergaenzt)
+6. **Phase 6**: CI/CD Pipeline (GitHub Actions -> StackIT Registry -> Helm Deploy) -- erledigt
 
 ### Kostenschätzung
 
@@ -324,15 +334,16 @@ Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`,
 
 ### Sicherheits-Konfiguration
 
-[ENTWURF — Details nach Infrastruktur-Setup ergänzen]
+Aktueller Stand: SEC-01 umgesetzt (PG ACL). SEC-02 bis SEC-07 geplant vor PROD. Details siehe `docs/sicherheitskonzept.md`.
 
-1. **Network Policies**: Kubernetes Network Policies für Pod-Segmentierung
-2. **TLS/SSL**: Certificates für alle APIs (Let's Encrypt or CA)
-3. **Secrets Management**: HashiCorp Vault oder Kubernetes Secrets
-4. **IAM**: StackIT IAM für Benutzer-Zugriff (Bastion, K8s API)
-5. **Audit Logging**: Alle StackIT API-Calls geloggt
-6. **DDoS Protection**: StackIT-bereitgestellter WAF/DDoS-Schutz
+1. **Network Policies**: Kubernetes Network Policies fuer Pod-Segmentierung -- geplant (SEC-03)
+2. **TLS/SSL**: cert-manager + Let's Encrypt (Cloudflare DNS-01), ECDSA P-384 (BSI TR-02102-2) -- in Umsetzung
+3. **Secrets Management**: Kubernetes Secrets (Sealed Secrets vor PROD geplant)
+4. **IAM**: StackIT Service Account + kubeconfig (kein Bastion Host)
+5. **Audit Logging**: Geplant
+6. **DDoS/WAF**: Kein StackIT-WAF verfuegbar; Cloudflare steht als DNS-only bereit, IP-Allowlisting fuer DEV/TEST empfohlen
 7. **Backup-Encryption**: S3 Object Storage mit Encryption at rest
+8. **PG ACL**: IP-Allowlisting auf Cluster-Egress + Admin-IP (SEC-01, umgesetzt)
 
 ---
 
@@ -349,7 +360,7 @@ Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`,
 
 | Rolle | Name | Datum | Signatur |
 |-------|------|-------|----------|
-| Infrastructure Lead (StackIT/JNnovate) | [TBD] | [TBD] | __ |
+| Infrastructure Lead (CCJ) | Nikolaj Ivanov | 2026-02-22 | __ |
 | Cloud Architect | [TBD] | [TBD] | __ |
 | Projektleiter (CCJ) | Nikolaj Ivanov | 2026-02-22 | __ |
 | Auftraggeber (VÖB) | [TBD] | [TBD] | __ |
@@ -358,5 +369,5 @@ Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`,
 ---
 
 **ADR Status**: Akzeptiert
-**Letzte Aktualisierung**: 2026-02-22
-**Version**: 1.0
+**Letzte Aktualisierung**: 2026-03-04
+**Version**: 1.1

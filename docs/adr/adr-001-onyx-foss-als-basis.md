@@ -2,7 +2,7 @@
 
 **Status**: Akzeptiert
 **Aktualisiert**: 2026-02-12
-**Author**: Architektur-Team (CCJ + JNnovate)
+**Author**: CCJ / Coffee Studios
 
 ---
 
@@ -19,7 +19,7 @@ Die VÖB benötigt einen **Enterprise-AI-Chatbot** für die deutsche Bankenwirts
 
 ### Technische Anforderungen
 - Open Source oder proprietary
-- Modern Stack (Node.js, Python, Kubernetes)
+- Modern Stack (Python/FastAPI Backend, Next.js/React Frontend, Kubernetes)
 - Gut dokumentiert und wartbar
 - Community-Support oder kommerzieller Support
 - RAG + Vector Search Capabilities
@@ -74,8 +74,8 @@ Die folgenden Optionen waren zur Diskussion:
 - **Kern-Features**:
   - RAG mit Vespa Vektorspeicher
   - Multi-Conversation Support
-  - Benutzer- und Organistationsverwaltung
-  - Erweiterbar Architektur
+  - Benutzer- und Organisationsverwaltung
+  - Erweiterbare Architektur
 - **Datenspeicherung**: PostgreSQL (Datenbank), Vespa (Vector Store)
 - **Deployment**: Container-ready (Docker), Kubernetes-fähig
 - **Community**: Aktive Entwicklung, regelmäßige Updates
@@ -84,7 +84,7 @@ Die folgenden Optionen waren zur Diskussion:
 
 - **Onyx FOSS**: MIT License (Erlaubt kommerzielle Nutzung, Modifikationen, Redistributions)
 - **Enterprise Extensions**: Können proprietär entwickelt werden
-- **IP-Schutz**: Custom Code bleibt bei Auftragnehmer (CCJ/JNnovate) oder VÖB
+- **IP-Schutz**: Custom Code bleibt bei Auftragnehmer (CCJ / Coffee Studios) oder VÖB
 - **Upstream Contributions**: Optional, aber erwünscht (gibt Community zurück)
 
 ---
@@ -128,7 +128,7 @@ Die folgenden Optionen waren zur Diskussion:
    - Token Limits, RBAC, Branding, System Prompts sind nicht im Core
    - Aber: Architektur ist dafür ausgelegt
 3. **Community statt kommerziellem Support**:
-   - Mitigiert durch: In-House Expertise (JNnovate), Open Source Community, Optional: Onyx-Kommerzieller Support
+   - Mitigiert durch: In-House Expertise (CCJ / Coffee Studios), Open Source Community, Optional: Onyx-Kommerzieller Support
 4. **Performance-Tuning nötig**:
    - Vespa, PostgreSQL, Caching müssen optimiert werden
    - Standard-Setup möglicherweise nicht für große Lasten ausgelegt
@@ -240,15 +240,16 @@ Die folgenden Optionen waren zur Diskussion:
 
 ```bash
 # Upstream Tracking
-git remote add upstream https://github.com/onyx-platform/onyx.git
+git remote add upstream https://github.com/onyx-dot-app/onyx-foss.git
 git fetch upstream
 git merge upstream/main  # Regelmäßig (jeden Quarter)
 
 # Custom Code
-backend/ext/             # Custom Modules
-backend/ext/migrations/  # DB Migrations
-docker/                  # Custom Docker Configs
-kubernetes/             # K8s Manifests (StackIT)
+backend/ext/                    # Custom Backend-Module
+web/src/ext/                    # Custom Frontend-Module
+deployment/terraform/           # IaC (StackIT Provider)
+deployment/helm/values/         # Helm Value-Overlays
+deployment/docker_compose/      # Docker Compose (Local Dev)
 ```
 
 ### Versionierung
@@ -272,7 +273,7 @@ kubernetes/             # K8s Manifests (StackIT)
 
 | Rolle | Name | Datum | Signatur |
 |-------|------|-------|----------|
-| Technischer Leiter (JNnovate) | [TBD] | [TBD] | __ |
+| Technischer Leiter (CCJ) | Nikolaj Ivanov | 2026-02-12 | __ |
 | Projektleiter (CCJ) | Nikolaj Ivanov | 2026-02-12 | __ |
 | Auftraggeber (VÖB) | [TBD] | [TBD] | __ |
 | Architektur-Review | [TBD] | [TBD] | __ |

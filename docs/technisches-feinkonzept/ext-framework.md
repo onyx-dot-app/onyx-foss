@@ -61,6 +61,8 @@ Die Regeln in `.claude/rules/core-dateien.md` und `.claude/rules/codebase-orient
 | CORE #7 | `backend/onyx/chat/prompt_builder.py` | **`backend/onyx/chat/prompt_utils.py`** | System Prompts |
 
 > **ADR-Empfehlung:** Die Regel-Dateien sollten nach Freigabe aktualisiert werden, um die korrekten Pfade zu reflektieren.
+>
+> (Historisch -- Pfade in `.claude/rules/core-dateien.md` sind seit 2026-03-03 korrekt)
 
 ---
 
@@ -97,7 +99,7 @@ web/src/ext/
 
 ### Kritisches Detail: `check_router_auth()`
 
-In `backend/onyx/main.py:558` wird `check_router_auth(application)` aufgerufen. Diese Funktion prüft, dass JEDE registrierte Route ein Auth-Dependency hat (z.B. `current_user`, `current_admin_user`, etc.) oder explizit als public deklariert ist.
+In `backend/onyx/main.py:667` wird `check_router_auth(application)` aufgerufen. Diese Funktion prüft, dass JEDE registrierte Route ein Auth-Dependency hat (z.B. `current_user`, `current_admin_user`, etc.) oder explizit als public deklariert ist.
 
 **Konsequenz für ext-Routen:**
 - Jeder ext-Endpoint MUSS ein Auth-Dependency haben
@@ -110,7 +112,7 @@ In `backend/onyx/main.py:558` wird `check_router_auth(application)` aufgerufen. 
 
 ### CORE #1: `backend/onyx/main.py`
 
-**Änderung:** 7 Zeilen nach der letzten Router-Registrierung (Zeile ~421), VOR `check_router_auth()` (Zeile ~558):
+**Änderung:** 7 Zeilen nach der letzten Router-Registrierung (Zeile ~509), VOR `check_router_auth()` (Zeile ~667):
 
 ```python
 # === VÖB Extension Framework Hook ===
@@ -127,7 +129,7 @@ except ImportError:
 **Import-Pfad:** `from ext.xxx` (top-level, analog zu `from onyx.xxx` und `from ee.xxx`).
 PYTHONPATH ist `/app` in Docker; `backend/ext/` wird als `/app/ext/` gemounted.
 
-**Platzierung:** Nach Zeile 421 (`include_router_with_global_prefix_prepended(application, pat_router)`), vor dem Auth-Type-Block (Zeile 423).
+**Platzierung:** Nach Zeile 509 (`include_router_with_global_prefix_prepended(application, pat_router)`), vor dem Auth-Type-Block (Zeile 523).
 
 **Backup:**
 ```bash

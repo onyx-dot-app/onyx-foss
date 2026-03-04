@@ -167,7 +167,7 @@ curl -s -o /dev/null -w "%{http_code}" http://<EXTERNAL_IP>/auth/login
 Onyx setzt `cookie_secure` basierend auf `WEB_DOMAIN`:
 
 ```python
-# backend/onyx/auth/users.py:915
+# backend/onyx/auth/users.py:991
 cookie_secure=WEB_DOMAIN.startswith("https")
 ```
 

@@ -10,7 +10,7 @@
 
 ### Ausgangslage
 
-Mit der erfolgreichen Inbetriebnahme der DEV-Umgebung (Phase 2, 2026-02-27) und der produktionsreifen CI/CD-Pipeline (Run #6, 2026-03-02) steht der nächste Schritt an: **Eine TEST-Umgebung für den Kunden (VÖB) bereitstellen**, damit dieser die Lösung eigenständig evaluieren kann.
+Mit der erfolgreichen Inbetriebnahme der DEV-Umgebung (Phase 2, 2026-02-27) und der produktionsreifen CI/CD-Pipeline (Run #5, 2026-03-02) steht der nächste Schritt an: **Eine TEST-Umgebung für den Kunden (VÖB) bereitstellen**, damit dieser die Lösung eigenständig evaluieren kann.
 
 ### Anforderungen
 
@@ -47,7 +47,7 @@ Mit der erfolgreichen Inbetriebnahme der DEV-Umgebung (Phase 2, 2026-02-27) und 
 │  ┌─────────────────────┐  ┌─────────────────────────┐  │
 │  │ Node 1              │  │ Node 2                  │  │
 │  │ Namespace: onyx-dev │  │ Namespace: onyx-test    │  │
-│  │ 10 Pods             │  │ 10 Pods                 │  │
+│  │ 10 Pods             │  │ 9 Pods                  │  │
 │  │ ~1850m CPU Req.     │  │ ~1850m CPU Req.         │  │
 │  │ ~5.2 Gi RAM Req.    │  │ ~5.2 Gi RAM Req.        │  │
 │  └─────────────────────┘  └─────────────────────────┘  │

@@ -16,7 +16,7 @@
 | **Modulname** | [PLACEHOLDER: z. B. "Token Limits Management"] |
 | **Modul-ID** | `ext_[PLACEHOLDER]` (z. B. `ext_limits`) |
 | **Version** | [PLACEHOLDER: z. B. "1.0.0"] |
-| **Autor** | [PLACEHOLDER: z. B. "JNnovate Development Team"] |
+| **Autor** | [PLACEHOLDER: z. B. "CCJ / Coffee Studios"] |
 | **Datum** | [PLACEHOLDER: Erstellungsdatum] |
 | **Status** | [ ] Entwurf | [ ] Review | [ ] Freigegeben |
 | **Priorität** | [ ] Kritisch | [ ] Hoch | [ ] Normal | [ ] Niedrig |
@@ -70,9 +70,9 @@ Beispiel für Token Limits:
                   ↓
 ┌─────────────────────────────────────────────────┐
 │  Token Limits API                               │
-│  - GET /api/vob/limits/quota                    │
-│  - POST /api/vob/limits/reset                   │
-│  - GET /api/vob/limits/usage                    │
+│  - GET /api/ext/limits/quota                    │
+│  - POST /api/ext/limits/reset                   │
+│  - GET /api/ext/limits/usage                    │
 └─────────────────┬───────────────────────────────┘
                   │
                   ↓
@@ -175,7 +175,7 @@ CREATE INDEX idx_ext_limits_usage_log_user_created
 
 #### Endpoint 1: `[PLACEHOLDER: HTTP Method + Path]`
 
-[PLACEHOLDER: Ersetzen Sie mit tatsächlichem Endpoint. Beispiel: `GET /api/vob/limits/quota`]
+[PLACEHOLDER: Ersetzen Sie mit tatsächlichem Endpoint. Beispiel: `GET /api/ext/limits/quota`]
 
 **Beschreibung**: [PLACEHOLDER: Was macht dieser Endpoint?]
 
@@ -189,8 +189,8 @@ CREATE INDEX idx_ext_limits_usage_log_user_created
 [PLACEHOLDER: Beispiel-Request]
 
 Beispiel:
-GET /api/vob/limits/quota?user_id=550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: chatbot.vob.example.com
+GET /api/ext/limits/quota?user_id=550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
+Host: dev.chatbot.voeb-service.de
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
 ```
@@ -278,9 +278,9 @@ Content-Type: application/json
 
 ### Komponente 1: `[PLACEHOLDER: ComponentName]`
 
-**Technologie**: [React / Vue / Web Component]
+**Technologie**: React (Next.js / TypeScript)
 
-**Location**: `src/extensions/[modul]/components/[ComponentName].jsx`
+**Location**: `web/src/ext/[modul]/components/[ComponentName].tsx`
 
 **Beschreibung**: [PLACEHOLDER: Was macht diese Komponente?]
 
@@ -332,17 +332,14 @@ interface ComponentProps {
 
 | Service | Zweck | API/Library | Version |
 |---------|-------|-----------|---------|
-| [PLACEHOLDER: OpenAI API] | [Token-Zählung] | openai-node | ^3.0.0 |
+| [PLACEHOLDER: OpenAI API] | [Token-Zählung] | openai | >=1.0.0 |
 
-### Node.js / Python Dependencies
+### Python Dependencies
 
-```json
-{
-  "dependencies": {
-    "[PLACEHOLDER: package1]": "^1.0.0",
-    "[PLACEHOLDER: package2]": "~2.5.0"
-  }
-}
+```txt
+# backend/ext/requirements.txt
+[PLACEHOLDER: package1]>=1.0.0
+[PLACEHOLDER: package2]>=2.5.0,<3.0.0
 ```
 
 ---
@@ -355,28 +352,29 @@ interface ComponentProps {
 
 | Variable | Wert-Typ | Pflichtfeld | Standard | Beschreibung |
 |----------|----------|-----------|---------|-------------|
-| `VOB_[MODUL]_ENABLED` | boolean | Nein | `true` | Feature-Flag zum Aktivieren/Deaktivieren |
+| `EXT_[MODUL]_ENABLED` | boolean | Nein | `true` | Feature-Flag zum Aktivieren/Deaktivieren |
 | `[PLACEHOLDER: VAR2]` | [type] | Ja/Nein | [default] | [Beschreibung] |
 
 **Beispiel für Token Limits**:
 
 | Variable | Wert-Typ | Pflichtfeld | Standard | Beschreibung |
 |----------|----------|-----------|---------|-------------|
-| `VOB_LIMITS_ENABLED` | boolean | Nein | `true` | Token Limits aktivieren |
-| `VOB_LIMITS_DEFAULT_MONTHLY_TOKENS` | integer | Ja | `100000` | Standard monatliche Token pro Benutzer |
-| `VOB_LIMITS_ALERT_THRESHOLD_PERCENT` | integer | Nein | `80` | Schwelle (%) für Warnungen |
-| `VOB_LIMITS_LLM_TOKEN_MULTIPLIER` | float | Nein | `1.0` | Multiplikator für Token-Schätzung |
+| `EXT_LIMITS_ENABLED` | boolean | Nein | `true` | Token Limits aktivieren |
+| `EXT_LIMITS_DEFAULT_MONTHLY_TOKENS` | integer | Ja | `100000` | Standard monatliche Token pro Benutzer |
+| `EXT_LIMITS_ALERT_THRESHOLD_PERCENT` | integer | Nein | `80` | Schwelle (%) für Warnungen |
+| `EXT_LIMITS_LLM_TOKEN_MULTIPLIER` | float | Nein | `1.0` | Multiplikator für Token-Schätzung |
 
 ### Feature Flags
 
 [PLACEHOLDER: Beschreiben Sie dynamische Feature Flags für A/B Testing, Rollouts]
 
-```javascript
-// Beispiel: Neues Quota-Reset-Verfahren
-const isNewResetLogicEnabled = await FeatureFlagService.isEnabled(
-  'vob_limits_new_reset_logic',
-  userId
-);
+```python
+# Beispiel: Neues Quota-Reset-Verfahren
+from ext.config import EXT_LIMITS_NEW_RESET_LOGIC
+
+if EXT_LIMITS_NEW_RESET_LOGIC:
+    # Neue Reset-Logik verwenden
+    ...
 ```
 
 ---
@@ -407,26 +405,38 @@ const isNewResetLogicEnabled = await FeatureFlagService.isEnabled(
 
 **Beispiel Logging**:
 
-```javascript
-logger.info('Token quota check', {
-  userId: user.id,
-  currentTokens: 45230,
-  limitTokens: 100000,
-  percentUsed: 45.23,
-  timestamp: new Date().toISOString()
-});
+```python
+import logging
 
-logger.warn('Token limit approaching', {
-  userId: user.id,
-  percentUsed: 85,
-  daysUntilReset: 16
-});
+logger = logging.getLogger("ext.limits")
 
-logger.error('Quota update failed', {
-  userId: user.id,
-  error: error.message,
-  stack: error.stack
-});
+logger.info(
+    "Token quota check",
+    extra={
+        "user_id": user.id,
+        "current_tokens": 45230,
+        "limit_tokens": 100000,
+        "percent_used": 45.23,
+    },
+)
+
+logger.warning(
+    "Token limit approaching",
+    extra={
+        "user_id": user.id,
+        "percent_used": 85,
+        "days_until_reset": 16,
+    },
+)
+
+logger.error(
+    "Quota update failed",
+    extra={
+        "user_id": user.id,
+        "error": str(e),
+    },
+    exc_info=True,
+)
 ```
 
 ### Structured Logging
@@ -457,7 +467,7 @@ logger.error('Quota update failed', {
 
 | Anforderung | Zielwert | Priorität |
 |------------|---------|-----------|
-| Quota-Abfrage (GET /api/vob/limits/quota) | < 100 ms | Kritisch |
+| Quota-Abfrage (GET /api/ext/limits/quota) | < 100 ms | Kritisch |
 | Quota-Update | < 500 ms | Kritisch |
 | Token-Zählung pro Request | < 50 ms | Hoch |
 | Verfügbarkeit (Uptime) | 99.9% | Kritisch |
@@ -495,7 +505,7 @@ logger.error('Quota update failed', {
 **Beispiel für Token Limits**:
 
 - [ ] **[OPEN-1]** Wie wird Token-Zählung für Streaming-Responses gehandhabt?
-  - **Verantwortlicher**: JNnovate Technical Lead
+  - **Verantwortlicher**: CCJ Technical Lead
   - **Fälligkeitsdatum**: 2024-01-31
   - **Kontext**: Streaming-Responses verbrauchen Tokens incrementell, müssen aber vor Abschluss bekannt sein.
 

@@ -1,8 +1,8 @@
 # Betriebskonzept -- VÖB Service Chatbot
 
 **Dokumentstatus**: Entwurf (teilweise verifiziert)
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-04
+**Version**: 0.3
 
 ---
 
@@ -92,8 +92,9 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 │  │ StackIT AI Model Serving (LLM)                             │ │
 │  │                                                             │ │
 │  │  DEV: GPT-OSS 120B + Qwen3-VL 235B (konfiguriert)         │ │
-│  │  TEST: LLM-Konfiguration ausstehend                       │ │
-│  │  Embedding: Qwen3-VL-Embedding 8B (geplant, noch nicht aktiv) │ │
+│  │  TEST: GPT-OSS 120B + Qwen3-VL 235B (konfiguriert seit 2026-03-03) │ │
+│  │  Embedding: nomic-embed-text-v1 (self-hosted, aktiv).         │ │
+│  │    Ziel: Qwen3-VL-Embedding 8B (blockiert, Upstream PR #7541)│ │
 │  │                                                             │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                                                   │
@@ -114,7 +115,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 | Komponente | Technologie | Zweck | Replicas (DEV/TEST) |
 |-----------|------------|-------|---------------------|
 | Frontend (Web Server) | Next.js 16, React 19, TypeScript | Web UI | 1 |
-| Backend (API Server) | Python 3.11, FastAPI 0.128, SQLAlchemy 2.0, Pydantic 2.11 | REST API | 1 |
+| Backend (API Server) | Python 3.11, FastAPI 0.133.1, SQLAlchemy 2.0, Pydantic 2.11 | REST API | 1 |
 | Background Worker | Celery 5.5 (Lightweight Mode) | Async Tasks, Indexing | 1 (Primary) + 1 (Beat) |
 | Model Server | Onyx Model Server v2.9.8 (Docker Hub Upstream) | Embedding, Inference | 2 (Index + Inference) |
 | Vespa | Vespa 8.609.39 (In-Cluster) | RAG + Vector Store | 1 |
@@ -140,7 +141,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 
 ### Backend
 - **Sprache**: Python 3.11
-- **Framework**: FastAPI 0.128
+- **Framework**: FastAPI 0.133.1
 - **ORM**: SQLAlchemy 2.0.15
 - **Migrations**: Alembic 1.10.4
 - **Validation**: Pydantic 2.11
@@ -560,7 +561,7 @@ SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werde
 | Ressource | ACL | Status |
 |-----------|-----|--------|
 | PostgreSQL Flex (DEV + TEST) | Cluster-Egress-IP `188.34.93.194/32` + Admin | SEC-01 umgesetzt |
-| SKE Cluster API | Offen (`0.0.0.0/0`) | SEC-02 geplant (vor PROD) |
+| SKE Cluster API | Offen (`0.0.0.0/0`) | OPS-01 geplant (vor PROD) |
 
 ### Secrets Management
 
@@ -569,17 +570,30 @@ SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werde
 - **Kubeconfig-Ablauf**: 2026-05-28 -- Erneuerung einplanen
 - **Kubernetes Secrets**: `onyx-postgresql`, `onyx-redis`, `onyx-objectstorage` (pro Namespace)
 
-### Ausstehende Security-Massnahmen
+### Security-Audit Findings (SEC-01 bis SEC-07)
 
-| ID | Massnahme | Priorität | Status |
+> Autoritative Quelle: `docs/sicherheitskonzept.md`. Priorisierung: P0 = vor TEST, P1 = vor PROD, P2 = vor VÖB-Abnahme.
+
+| ID | Finding | Priorität | Status |
+|----|---------|-----------|--------|
+| SEC-01 | PostgreSQL ACL auf Cluster-Egress-IP einschränken | P0 | Umgesetzt |
+| SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | P1 | Vor PROD |
+| SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | Vor PROD |
+| SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | P1 | Vor PROD |
+| SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | P1 | Vor PROD |
+| SEC-06 | Container SecurityContext (runAsNonRoot etc.) | P2 | Vor Abnahme |
+| SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | Vor Abnahme |
+
+### Betriebsmaßnahmen (OPS)
+
+> Eigenständige Betriebsmaßnahmen, die nicht als SEC-Finding klassifiziert sind.
+
+| ID | Maßnahme | Priorität | Status |
 |----|----------|-----------|--------|
-| SEC-01 | PG ACL auf Cluster-Egress-IP einschränken | P0 | Umgesetzt |
-| SEC-02 | Cluster API ACL einschränken | P1 | Vor PROD |
-| SEC-03 | TLS/HTTPS aktivieren | P1 | Nach DNS-Setup |
-| SEC-04 | Network Policies (Namespace-Isolation) | P1 | Vor PROD |
-| SEC-05 | Pod Security Standards | P1 | Vor PROD |
-| SEC-06 | Image Scanning | P2 | Vor Abnahme |
-| SEC-07 | Audit Logging | P2 | Vor Abnahme |
+| OPS-01 | Cluster API ACL einschränken | P1 | Vor PROD |
+| OPS-02 | TLS/HTTPS aktivieren | P1 | Nach DNS-Setup |
+| OPS-03 | Image Scanning (Trivy/Snyk in CI/CD) | P2 | Vor Abnahme |
+| OPS-04 | Audit Logging (zentralisiert) | P2 | Vor Abnahme |
 
 ---
 
@@ -597,14 +611,15 @@ Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständi
 | 2 | [StackIT PostgreSQL](./runbooks/stackit-postgresql.md) | Verifiziert | DB anlegen, Readonly-User, Managed PG Einschränkungen |
 | 3 | [Helm Deploy](./runbooks/helm-deploy.md) | Verifiziert | Helm Install/Upgrade, Secrets, Redis, Troubleshooting |
 | 4 | [CI/CD Pipeline](./runbooks/ci-cd-pipeline.md) | Verifiziert | Deploy, Rollback, Secrets, Troubleshooting |
+| 5 | [DNS/TLS Setup](./runbooks/dns-tls-setup.md) | Bereit zur Umsetzung | cert-manager, Let's Encrypt, Cloudflare DNS-01, BSI-konform |
+| 6 | [LLM-Konfiguration](./runbooks/llm-konfiguration.md) | Verifiziert | StackIT AI Model Serving, Embedding, Admin UI Setup |
 
 ### Geplante Runbooks (vor PROD)
 
 1. **Incident Response** -- P1/P2 Prozeduren
 2. **Monitoring Setup** -- Prometheus/Grafana Installation
-3. **TLS/DNS Setup** -- Certificate Management, DNS-Konfiguration
-4. **PROD Provisioning** -- Terraform + Helm für Produktionsumgebung
-5. **Upstream Merge** -- Schritt-für-Schritt Onyx-Update-Prozess
+3. **PROD Provisioning** -- Terraform + Helm für Produktionsumgebung
+4. **Upstream Merge** -- Schritt-für-Schritt Onyx-Update-Prozess
 
 ### Weitere Referenzdokumentation
 
@@ -620,5 +635,5 @@ Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständi
 ---
 
 **Dokumentstatus**: Entwurf (teilweise verifiziert)
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-04
+**Version**: 0.3

@@ -13,8 +13,8 @@ paths:
 ## 1. `backend/onyx/main.py` — Router registrieren
 - ERLAUBT: `from ext.config import EXT_ENABLED` + `register_ext_routers(app)` hinter Feature Flag + try/except ImportError
 - VERBOTEN: Bestehende Router/Middleware/Startup-Events verändern
-- MERGE: 5 Zeilen wieder einfügen (nach letztem Router, vor Auth-Block)
-- HINWEIS: Funktion `get_application()` ab Zeile 337, Router-Registrierung Zeilen 365-421
+- MERGE: 7 Zeilen wieder einfügen (nach letztem Router, vor Auth-Block)
+- HINWEIS: Funktion `get_application()` ab Zeile 419, Router-Registrierung Zeilen 447-509
 
 ## 2. `backend/onyx/llm/multi_llm.py` — Token Hook
 - ERLAUBT: Nach LLM-Response Hook einfügen: `ext_token_counter.log_usage(...)` hinter Flag + Try/Except

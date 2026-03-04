@@ -17,7 +17,7 @@
 |-----------|------|
 | Cluster | 1 (shared für alle Environments) |
 | Kubernetes-Version | v1.32.12 (SKE-zugewiesen) |
-| Namespaces | `onyx-dev`, `onyx-test`, `onyx-prod` |
+| Namespaces | `onyx-dev`, `onyx-test` (PROD: geplant eigener Cluster, ADR-004) |
 | Ingress Controller | NGINX via Essential Network Load Balancer (NLB-10) |
 | TLS | Let's Encrypt oder StackIT-bereitgestellt |
 | Network Policies | Noch nicht implementiert (SEC-03, P1 vor PROD). Geplant: Namespace-isoliert; PROD zusätzlich Egress-Rules |
@@ -63,7 +63,7 @@
 | Typ | Zweck | Technologie |
 |-----|-------|-------------|
 | Object Storage | Dokumente, Uploads, Connector-Daten, Backups | S3-kompatibel |
-| Block Storage SSD | K8s PersistentVolumeClaims, Vespa-Indizes | Capacity-Klasse |
+| Block Storage SSD | K8s PersistentVolumeClaims, Vespa-Indizes | Premium Performance Tier 2 (`premium-perf2-stackit`) |
 
 **Buckets (Object Storage):** `vob-dev`, `vob-test`, `vob-prod`
 **PROD Backups:** PG PITR + Object Store Versioning
@@ -85,9 +85,10 @@
 
 | Modell | StackIT Model ID | Verwendung | Status |
 |--------|------------------|------------|--------|
-| GPT-OSS 120B | `openai/gpt-oss-120b` | Chat-Antworten (primär) | ✅ Verifiziert (DEV) |
-| Qwen3-VL 235B | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | Chat + Vision/OCR | ✅ Verifiziert (DEV) |
-| Qwen3-VL-Embedding 8B | `Qwen/Qwen3-VL-Embedding-8B` | Embedding / Vektor-Suche (multilingual, 32k Context) | ⏳ Geplant |
+| GPT-OSS 120B | `openai/gpt-oss-120b` | Chat-Antworten (primär) | ✅ Verifiziert (DEV + TEST) |
+| Qwen3-VL 235B | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | Chat + Vision/OCR | ✅ Verifiziert (DEV + TEST) |
+| nomic-embed-text-v1 | `nomic-ai/nomic-embed-text-v1` | Embedding / Vektor-Suche (aktiver Fallback, self-hosted auf Model Server) | ✅ Aktiv |
+| Qwen3-VL-Embedding 8B | `Qwen/Qwen3-VL-Embedding-8B` | Embedding / Vektor-Suche (multilingual, 32k Context) | ⏳ Geplant (blockiert, Upstream PR #7541) |
 
 **Weitere verfuegbare Modelle (Fallback):** Llama 3.3 70B, Gemma 3 27B, Mistral-Nemo 12B, Llama 3.1 8B
 
@@ -122,7 +123,7 @@
 
 | Aspekt | DEV | TEST | PROD |
 |--------|-----|------|------|
-| Namespace | `onyx-dev` | `onyx-test` | `onyx-prod` |
+| Namespace | `onyx-dev` | `onyx-test` | `onyx-prod` (geplant: eigener Cluster, ADR-004) |
 | Cluster | shared (`vob-chatbot`) | shared (`vob-chatbot`) | **eigener Cluster** (ADR-004) |
 | Worker Nodes | eigener Node (g1a.4d) | eigener Node (g1a.4d) | 2× g1a.4d dedicated |
 | PostgreSQL | Flex 2.4 Single (`vob-dev`) | Flex 2.4 Single (`vob-test`) | Flex 4.8 Replica (3 Nodes HA) |

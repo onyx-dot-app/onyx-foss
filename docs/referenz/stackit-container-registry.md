@@ -1,6 +1,6 @@
 # StackIT Container Registry — Konzepte & Authentifizierung
 
-**Stand**: Februar 2026
+**Stand**: März 2026
 **Bezug**: [Implementierungsplan](stackit-implementierungsplan.md) | [CI/CD Workflow](../../.github/workflows/stackit-deploy.yml)
 
 ---
@@ -28,8 +28,8 @@ StackIT Cloud
     └── Projekt: voeb-chatbot          ← EIGENES Projektsystem
         ├── Repository: onyx-backend
         ├── Repository: onyx-web-server
-        ├── Repository: onyx-model-server
         └── Robot Account: github-ci
+        (Model Server: Docker Hub onyxdotapp/onyx-model-server:v2.9.8, NICHT in eigener Registry)
 ```
 
 > **Wichtig:** Die Container Registry hat ein **eigenes Projektsystem**, unabhängig von der StackIT Project ID.
@@ -46,13 +46,14 @@ registry.onstackit.cloud / voeb-chatbot / onyx-backend : abc1234
 Registry-Host              Projekt-Name    Image-Name      Tag (Git SHA)
 ```
 
-Unsere 3 Images:
+Unsere 2 selbst gebauten Images:
 
 | Image | Dockerfile | Beschreibung |
 |-------|-----------|--------------|
 | `voeb-chatbot/onyx-backend` | `backend/Dockerfile` | API Server + Celery Worker |
 | `voeb-chatbot/onyx-web-server` | `web/Dockerfile` | Next.js Frontend |
-| `voeb-chatbot/onyx-model-server` | `backend/Dockerfile.model_server` | Embedding/Inference Model Server |
+
+> **Model Server:** Wird NICHT selbst gebaut. Upstream Docker Hub Image `docker.io/onyxdotapp/onyx-model-server:v2.9.8` wird direkt gepullt (gepinnte Version).
 
 ---
 
@@ -65,7 +66,7 @@ Für lokales `docker push/pull`:
 ```bash
 docker login registry.onstackit.cloud
 # Username: StackIT-Email (z.B. n.ivanov@coffeestudios.de)
-# Password: CLI Secret (Portal → User Profile → CLA Secret)
+# Password: CLI Secret (Portal → User Profile → CLI Secret)
 ```
 
 **Nicht** für CI/CD geeignet — an Person gebunden, Passwort kann rotieren.
