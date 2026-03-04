@@ -83,9 +83,17 @@ jobs:
 
       - name: Determine image tag
         id: tag
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
         run: |
-          if [ -n "${{ inputs.image_tag }}" ]; then
-            echo "value=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          if [ -n "${INPUT_TAG:-}" ]; then
+            # Docker Tag Spec: Start mit [a-zA-Z0-9_], dann [a-zA-Z0-9._-], max 128 Zeichen
+            if ! echo "$INPUT_TAG" | grep -qxE '[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}'; then
+              echo "::error::Invalid image tag '${INPUT_TAG}'. Must match Docker tag spec: [a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}"
+              exit 1
+            fi
+            echo "value=${INPUT_TAG}" >> $GITHUB_OUTPUT
           else
             echo "value=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           fi
@@ -215,7 +223,7 @@ jobs:
             --set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
-            --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
+            --set "auth.dbreadonly.values.db_readonly_password=${{ secrets.DB_READONLY_PASSWORD }}" \
             --timeout 10m
 
       # DEV läuft auf einem einzelnen g1a.4d Node (4 vCPU). Helm's Default RollingUpdate
@@ -335,7 +343,7 @@ jobs:
             --set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
-            --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
+            --set "auth.dbreadonly.values.db_readonly_password=${{ secrets.DB_READONLY_PASSWORD }}" \
             --atomic --timeout 10m
 
       - name: Smoke test
@@ -425,7 +433,7 @@ jobs:
             --set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}" \
             --set "auth.objectstorage.values.s3_aws_access_key_id=${{ secrets.S3_ACCESS_KEY_ID }}" \
             --set "auth.objectstorage.values.s3_aws_secret_access_key=${{ secrets.S3_SECRET_ACCESS_KEY }}" \
-            --set "configMap.DB_READONLY_PASSWORD=${{ secrets.DB_READONLY_PASSWORD }}" \
+            --set "auth.dbreadonly.values.db_readonly_password=${{ secrets.DB_READONLY_PASSWORD }}" \
             --atomic --timeout 15m
 
       - name: Verify PROD deployment

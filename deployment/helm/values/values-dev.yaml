@@ -32,6 +32,12 @@ auth:
     values:
       s3_aws_access_key_id: ""       # → values-dev-secrets.yaml
       s3_aws_secret_access_key: ""   # → values-dev-secrets.yaml
+  dbreadonly:
+    enabled: true
+    secretName: "onyx-dbreadonly"
+    values:
+      db_readonly_user: "db_readonly_user"
+      db_readonly_password: ""  # → GitHub Secret per --set im Workflow
 
 configMap:
   # PostgreSQL (StackIT Managed Flex 2.4)
@@ -42,10 +48,6 @@ configMap:
   # Redis: Chart generiert "onyx-dev-master" (Bitnami), aber OT Redis Operator
   # erstellt Service als "onyx-dev". Muss explizit überschrieben werden.
   REDIS_HOST: "onyx-dev"
-
-  # Read-Only DB User (wird von Alembic-Migration für Knowledge Graph benötigt).
-  # User wird per Terraform auf PG Flex angelegt, da Managed PG kein CREATEROLE erlaubt.
-  DB_READONLY_USER: "db_readonly_user"
 
   # Object Storage
   S3_ENDPOINT_URL: "https://object.storage.eu01.onstackit.cloud"

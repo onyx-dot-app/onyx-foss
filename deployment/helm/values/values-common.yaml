@@ -48,6 +48,16 @@ redis:
 nginx:
   enabled: true
   controller:
+    config:
+      http-snippet: |
+        # Security Headers (BSI TR-02102 / VÖB Enterprise)
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+        # Onyx custom config
+        include /etc/nginx/custom-snippets/upstreams.conf;
+        include /etc/nginx/custom-snippets/server.conf;
     service:
       type: LoadBalancer
 
