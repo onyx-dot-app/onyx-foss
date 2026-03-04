@@ -31,10 +31,10 @@
   - ✅ Upstream-Workflows: 21 Onyx-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
   - ✅ CI/CD Run #5 (ea70a11): 10 Min, alle 10 Pods Running, Health Check OK
   - ✅ EE-Crash gelöst: `LICENSE_ENFORCEMENT_ENABLED: "false"` in values-common.yaml
-  - ⏳ DNS: `dev.chatbot.voeb.example.com` → `188.34.74.187`
+  - ⏳ DNS: `dev.chatbot.voeb-service.de` → `188.34.74.187`
   - ⏳ TLS/HTTPS (nach DNS-Setup)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
-  - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert
+  - ⚠️ LLM: Embedding-Wechsel auf Qwen3-VL-Embedding 8B blockiert durch Upstream (PR #7541, OpenSearch-Migration). Fallback: nomic-embed-text-v1 (self-hosted) aktiv und funktional.
   - 📋 Scope: DEV live, TEST live.
 - **Phase 2 TEST:** ✅ **TEST LIVE** (2026-03-03)
   - ✅ SEC-01: PG ACL eingeschränkt (188.34.93.194/32 + Admin)
@@ -52,7 +52,7 @@
   - ✅ Upstream-Merge: 415 Commits von onyx-foss, 0 Core-Konflikte, DEV grün (2026-03-03)
   - ✅ DNS/TLS-Runbook erstellt (docs/runbooks/dns-tls-setup.md)
   - ✅ Fork-Management Doku überarbeitet (8-Schritte-Anleitung)
-  - ⏳ LLM: Embedding-Modell (E5 Mistral 7B) noch nicht konfiguriert (DEV + TEST)
+  - ⚠️ LLM: Embedding-Wechsel auf Qwen3-VL blockiert (Upstream PR #7541). nomic-embed-text-v1 aktiv als Fallback.
   - ⏳ DNS + TLS (Runbook bereit, wartet auf Domain-Entscheidung mit VÖB)
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
@@ -61,7 +61,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. Embedding-Modell (E5 Mistral 7B, DEV+TEST) → 2. M1-Abnahmeprotokoll ausfüllen → 3. Domains mit VÖB klären → 4. SEC-02 bis SEC-04 (vor PROD) → 5. K8s Upgrade 1.33+.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. DNS/TLS aktivieren (wartet auf Leif) → 2. M1-Abnahmeprotokoll ausfüllen → 3. Entra ID (Termin 06.03) → 4. Embedding auf Qwen3-VL (nach Upstream-Fix) → 5. SEC-02 bis SEC-04 (vor PROD).** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

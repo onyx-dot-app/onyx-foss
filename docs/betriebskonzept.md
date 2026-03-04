@@ -93,7 +93,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 │  │                                                             │ │
 │  │  DEV: GPT-OSS 120B + Qwen3-VL 235B (konfiguriert)         │ │
 │  │  TEST: LLM-Konfiguration ausstehend                       │ │
-│  │  Embedding: E5 Mistral 7B (geplant, noch nicht aktiv)     │ │
+│  │  Embedding: Qwen3-VL-Embedding 8B (geplant, noch nicht aktiv) │ │
 │  │                                                             │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                                                   │

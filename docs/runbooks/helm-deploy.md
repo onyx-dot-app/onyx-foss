@@ -183,8 +183,8 @@ Bei `WEB_DOMAIN: "https://..."` wird ein `Secure`-Cookie gesetzt, das der Browse
 **Nach DNS/TLS-Setup** auf FQDN + HTTPS umstellen:
 
 ```yaml
-DOMAIN: "dev.chatbot.voeb.example.com"
-WEB_DOMAIN: "https://dev.chatbot.voeb.example.com"
+DOMAIN: "dev.chatbot.voeb-service.de"
+WEB_DOMAIN: "https://dev.chatbot.voeb-service.de"
 ```
 
 ---

@@ -1,115 +1,183 @@
-# Runbook: DNS und TLS Setup
+# Runbook: DNS + HTTPS Setup (Cloudflare DNS-01)
 
-**Status:** Entwurf (noch nicht durchgefuehrt)
-**Erstellt:** 2026-03-03
-**Erstellt von:** Nikolaj Ivanov
+**Status:** Bereit zur Umsetzung
+**Erstellt:** 2026-03-03 | **Aktualisiert:** 2026-03-04
+**Erstellt von:** Nikolaj Ivanov (CCJ / Coffee Studios)
 
 ---
 
 ## Uebersicht
 
-### Aktuelle Situation
-
-Beide Environments laufen aktuell ueber unverschluesseltes HTTP auf nackten IPs:
+### Aktueller Stand
 
 | Environment | Zugriff | Status |
 |-------------|---------|--------|
 | DEV | `http://188.34.74.187` | HTTP-only, IP-basiert |
 | TEST | `http://188.34.118.201` | HTTP-only, IP-basiert |
-| PROD | Noch nicht provisioniert | -- |
+| PROD | Noch nicht provisioniert | — |
 
-### Ziel
+### Zielzustand
 
-HTTPS mit eigener Domain fuer alle Environments. Let's Encrypt Zertifikate via cert-manager.
+| Environment | Zugriff | Status |
+|-------------|---------|--------|
+| DEV | `https://dev.chatbot.voeb-service.de` | HTTPS, Let's Encrypt |
+| TEST | `https://test.chatbot.voeb-service.de` | HTTPS, Let's Encrypt |
+| PROD | `https://chatbot.voeb-service.de` | HTTPS, Let's Encrypt |
 
-### Abhaengigkeitskette
+> **Subdomain-Name:** `chatbot` (festgelegt durch VoeB, Mail von Leif Rasch, 2026-03-04).
+> PROD-URL: `https://chatbot.voeb-service.de`
+
+### Ansatz: cert-manager + Let's Encrypt + Cloudflare DNS-01
 
 ```
-Domain-Entscheidung (VoeB)
-  -> DNS A-Records (VoeB IT)
-    -> cert-manager Installation (CCJ)
-      -> Let's Encrypt Zertifikate (automatisch)
-        -> HTTPS funktioniert
-          -> OIDC Redirect URI (Entra ID, Phase 3)
+VoeB: Subdomain festlegen + A-Records + Cloudflare API Token
+  -> CCJ: cert-manager installieren
+    -> CCJ: ClusterIssuer (Cloudflare DNS-01) erstellen
+      -> CCJ: Helm Values anpassen + Deploy
+        -> Let's Encrypt stellt Zertifikat automatisch aus
+          -> HTTPS funktioniert
+            -> Entra ID App-Registrierung moeglich (Phase 3)
 ```
 
-**Wichtig:** Microsoft Entra ID erlaubt in Produktion keine `http://`-Redirect-URIs. Ohne HTTPS ist Phase 3 (Authentifizierung) blockiert. Quelle: `docs/entra-id-kundenfragen.md`, Abschnitt 7.
+### Warum DNS-01 statt HTTP-01?
+
+| Kriterium | HTTP-01 | DNS-01 (Cloudflare) |
+|-----------|---------|---------------------|
+| Validierung | Let's Encrypt ruft Port 80 auf | Let's Encrypt prueft DNS TXT-Record |
+| IngressClass-Problem | Ja — Onyx Chart hardcoded `class: nginx`, bricht TEST (`nginx-test`) | Nein — validiert ueber DNS, kein Ingress involviert |
+| Cloudflare Proxy | Kann HTTP-01 blockieren wenn Proxy aktiv | Funktioniert immer (DNS-Ebene) |
+| Port 80 noetig? | Ja, muss von aussen erreichbar sein | Nein |
+| Wildcard-Zertifikate | Nicht moeglich | Moeglich (falls spaeter benoetigt) |
+| Setup-Aufwand | Weniger (kein API Token noetig) | Etwas mehr (Cloudflare API Token) |
+| **Empfehlung fuer VoeB** | | **<-- Empfohlen** |
+
+**Entscheidend:** Die Domain `voeb-service.de` liegt auf Cloudflare (Pro Account). DNS-01 nutzt die Cloudflare API direkt — das ist der sauberste Weg. cert-manager hat native Cloudflare-Unterstuetzung (kein Webhook/Plugin noetig).
+
+### BSI TR-02102-2 Compliance (Pflicht fuer Bankenumfeld)
+
+Die BSI Technical Guideline TR-02102-2 (Version 2026-01) verlangt:
+
+| Algorithmus | Minimum | BSI-Anforderung seit |
+|-------------|---------|----------------------|
+| RSA | **3.072 Bit** | Januar 2024 |
+| ECDSA | **P-384** (oder P-256 minimum) | Januar 2024 |
+
+**Problem:** Let's Encrypt RSA-Intermediates nutzen nur 2.048-Bit-Keys — das erfuellt BSI TR-02102-2 **NICHT**.
+
+**Loesung:** Zertifikate explizit als **ECDSA P-384** anfordern. cert-manager unterstuetzt das ueber die `privateKey`-Konfiguration auf Certificate-Ressourcen. Let's Encrypt signiert dann ueber die ECDSA P-384 Intermediate Chain (E5-E9), die BSI-konform ist.
+
+> **Auswirkung auf dieses Runbook:** Wir erstellen explizite Certificate-Ressourcen mit `privateKey.algorithm: ECDSA` und `privateKey.size: 384` (Schritt 3c), statt uns auf die automatische Erstellung durch Ingress-Annotations zu verlassen.
+
+### Datensouveraenitaet
+
+- **Cloudflare Proxy (orange Cloud) wird NICHT verwendet** — kein Traffic ueber Cloudflare
+- A-Records werden auf **DNS-only (graue Cloud)** gesetzt
+- Cloudflare API wird nur fuer Zertifikats-Validierung genutzt (TXT-Record setzen/loeschen)
+- Gesamter Nutzer-Traffic geht direkt zu StackIT (Frankfurt, EU01)
+- Kein DSGVO-Risiko durch US-Infrastruktur
+
+### Sicherheitshinweis: DEV/TEST-Zugriff einschraenken
+
+Gemaess BAIT und ISO 27002 (Control 8.31) muessen Entwicklungs-, Test- und Produktionsumgebungen getrennt sein. DEV/TEST sollten **nicht** uneingeschraenkt oeffentlich erreichbar sein.
+
+**Empfehlung (Minimum):** IP-Allowlisting auf Ingress-Ebene:
+- VoeB Buero-IPs
+- CCJ Entwickler-IPs
+- StackIT Cluster-Egress-IP (fuer interne Kommunikation)
+
+> Dies kann ueber NGINX Ingress Annotations (`nginx.ingress.kubernetes.io/whitelist-source-range`) oder Kubernetes NetworkPolicies umgesetzt werden. Details werden in einem separaten Schritt nach dem TLS-Setup konfiguriert.
+
+### PROD-Zertifikat: Diskussionspunkt mit VoeB
+
+Fuer **DEV/TEST** ist Let's Encrypt mit ECDSA P-384 vollkommen ausreichend.
+
+Fuer **PROD** (kundensichtbar) sollte mit VoeB diskutiert werden:
+
+| Option | Pro | Contra |
+|--------|-----|--------|
+| Let's Encrypt (ECDSA P-384) | Kostenlos, automatisiert, BSI-konform | Kein OV/EV, kein SLA, keine Warranty |
+| Bezahlte CA (z.B. DigiCert) | OV/EV moeglich, SLA, Warranty, Auditor-freundlich | Kosten (mehrere hundert EUR/Jahr) |
+
+> Beide Optionen koennen mit cert-manager automatisiert werden (DigiCert unterstuetzt ACME). Die Entscheidung betrifft nur PROD und kann spaeter getroffen werden — DEV/TEST starten mit Let's Encrypt.
 
 ---
 
-## Voraussetzungen
+## Teil A: Was VoeB tun muss
 
-### Domain-Entscheidung (VoeB)
+> Dieser Abschnitt kann als Grundlage fuer die Mail an Leif/Pascal dienen.
 
-VoeB muss entscheiden, welche Domain verwendet wird. Vorschlaege:
+### A1. Subdomain-Name — ERLEDIGT
 
-| Variante | DEV | TEST | PROD |
-|----------|-----|------|------|
-| Subdomain von `voeb.de` | `dev.chatbot.voeb.de` | `test.chatbot.voeb.de` | `chatbot.voeb.de` |
-| Eigene Domain | `dev.chatbot.<domain>` | `test.chatbot.<domain>` | `chatbot.<domain>` |
+**Festgelegt:** `chatbot` (Mail von Leif Rasch, 2026-03-04)
 
-> **[AUSSTEHEND -- Klaerung mit VoeB]** Welche Domain wird verwendet? Liegt die DNS-Verwaltung bei VoeB IT?
+| Environment | URL |
+|-------------|-----|
+| DEV | `https://dev.chatbot.voeb-service.de` |
+| TEST | `https://test.chatbot.voeb-service.de` |
+| PROD | `https://chatbot.voeb-service.de` |
 
-### Verantwortlichkeiten
+### A2. DNS A-Records in Cloudflare anlegen (Leif)
 
-| Aufgabe | Wer |
-|---------|-----|
-| Domain-Entscheidung | VoeB |
-| DNS A-Records anlegen | VoeB IT |
-| cert-manager installieren | CCJ (Niko) |
-| Helm Values anpassen | CCJ (Niko) |
-| Let's Encrypt Zertifikate | Automatisch (cert-manager) |
-| Verifikation | Gemeinsam |
+In Cloudflare Dashboard → DNS → Records:
+
+| Type | Name | Content (IPv4) | Proxy | TTL |
+|------|------|-----------------|-------|-----|
+| A | `dev.chatbot` | `188.34.74.187` | **DNS only** (graue Wolke) | 300 |
+| A | `test.chatbot` | `188.34.118.201` | **DNS only** (graue Wolke) | 300 |
+
+> **WICHTIG: Proxy-Status MANUELL auf "DNS only" (graue Wolke) umstellen!**
+> Cloudflare setzt neue A-Records standardmaessig auf **"Proxied" (orange Wolke)**.
+> Das muss aktiv auf "DNS only" (graue Wolke) umgestellt werden — Cloud-Icon anklicken bis es grau ist.
+> Grund: Der Traffic soll direkt zu StackIT gehen, nicht ueber Cloudflare geroutet werden.
+> Mit "Proxied" wuerde Cloudflare TLS terminieren und unser cert-manager Setup waere wirkungslos.
+
+> **TTL 300** (5 Minuten) fuer die Anfangsphase. Nach Verifikation auf 3600 (1 Stunde) erhoehen.
+
+> PROD A-Record kommt spaeter, wenn der PROD-Cluster provisioniert ist.
+
+### A3. Cloudflare API Token erstellen (Leif)
+
+cert-manager benoetigt einen Cloudflare API Token um DNS-TXT-Records fuer die Zertifikats-Validierung automatisch zu setzen und zu loeschen.
+
+**Schritt-fuer-Schritt:**
+
+1. Cloudflare Dashboard → Profil (oben rechts) → **API Tokens**
+2. **"Create Token"** klicken
+3. Template **"Edit zone DNS"** auswaehlen, dann **manuell erweitern**:
+
+| Einstellung | Wert |
+|-------------|------|
+| Token name | `cert-manager-voeb-chatbot` |
+| Permissions | **Zone : DNS : Edit** (vom Template) |
+| | **Zone : Zone : Read** (MANUELL HINZUFUEGEN — "Add more" klicken!) |
+| Zone Resources | Include → Specific zone → `voeb-service.de` |
+| Client IP Address Filtering | Keine (cert-manager laeuft im Cluster) |
+| TTL | Kein Ablaufdatum (oder z.B. 1 Jahr) |
+
+> **Hinweis:** Das Template "Edit zone DNS" vergibt nur `Zone:DNS:Edit`. cert-manager benoetigt zusaetzlich `Zone:Zone:Read` um die Zone-ID aufzuloesen. Ohne diese Permission schlaegt die Zertifikatsausstellung mit einem Permission-Error fehl.
+
+4. **"Continue to summary"** → **"Create Token"**
+5. **Token kopieren und sicher an CCJ (Niko) uebermitteln**
+
+> Der Token wird als Kubernetes Secret im Cluster gespeichert. Er hat ausschliesslich Lese-/Schreibzugriff auf DNS-Records der Zone `voeb-service.de` — kein Zugriff auf andere Cloudflare-Einstellungen, Firewall, Proxy, etc.
+
+### Zusammenfassung fuer VoeB
+
+| # | Aufgabe | Wer | Status |
+|---|---------|-----|--------|
+| 1 | Subdomain-Name festlegen | Pascal/Leif | **ERLEDIGT** — `chatbot` |
+| 2 | 2x DNS A-Record anlegen (DNS-only!) | Leif | Ausstehend |
+| 3 | Cloudflare API Token erstellen | Leif | Ausstehend |
+
+**Sobald wir diese 3 Dinge haben, koennen wir HTTPS innerhalb von ~30 Minuten aktivieren.**
 
 ---
 
-## Schritt 1: DNS-Konfiguration (VoeB IT)
+## Teil B: Was CCJ tut (nach Zulieferung von VoeB)
 
-### A-Records anlegen
+### Schritt 1: cert-manager installieren
 
-VoeB IT muss folgende DNS A-Records erstellen:
-
-```
-dev.chatbot.<domain>     A    188.34.74.187
-test.chatbot.<domain>    A    188.34.118.201
-chatbot.<domain>         A    [AUSSTEHEND -- PROD LoadBalancer IP]
-```
-
-**TTL-Empfehlung:** 300 Sekunden (5 Minuten). Niedriger TTL erlaubt schnelle Korrekturen bei Fehlkonfiguration. Nach Stabilisierung auf 3600 (1 Stunde) erhoehen.
-
-> **Hinweis:** Die IPs `188.34.74.187` (DEV) und `188.34.118.201` (TEST) sind StackIT LoadBalancer IPs. Diese sind stabil, solange die Kubernetes Services vom Typ `LoadBalancer` existieren. Bei einem Cluster-Neubau aendern sich die IPs.
-
-### DNS-Verifikation
-
-Nach Anlage der A-Records (Propagation kann bis zu 48 Stunden dauern, typischerweise 5-30 Minuten):
-
-```bash
-# DEV pruefen
-dig +short dev.chatbot.<domain>
-# Erwartete Ausgabe: 188.34.74.187
-
-nslookup dev.chatbot.<domain>
-# Erwartete Ausgabe: Address: 188.34.74.187
-
-# TEST pruefen
-dig +short test.chatbot.<domain>
-# Erwartete Ausgabe: 188.34.118.201
-
-# HTTP-Zugriff testen (sollte vor TLS-Setup bereits funktionieren)
-curl -s http://dev.chatbot.<domain>/api/health
-# Erwartete Ausgabe: {"success":true,"message":"ok","data":null}
-
-curl -s http://test.chatbot.<domain>/api/health
-# Erwartete Ausgabe: {"success":true,"message":"ok","data":null}
-```
-
-> **Erst weitermachen wenn DNS aufloest.** cert-manager kann keine Zertifikate ausstellen, wenn die Domain nicht auf die richtige IP zeigt. Let's Encrypt prueft die Domain per HTTP-01 Challenge -- der Request muss beim richtigen Ingress Controller ankommen.
-
----
-
-## Schritt 2: cert-manager installieren (CCJ)
-
-### 2.1 cert-manager per Helm installieren
+> Einmalig pro Cluster. cert-manager verwaltet Zertifikate automatisch (Ausstellung + Renewal).
 
 ```bash
 # Namespace erstellen
@@ -119,7 +187,7 @@ kubectl create namespace cert-manager
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 
-# cert-manager installieren (CRDs mitinstallieren)
+# cert-manager installieren (inkl. CRDs)
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --set crds.enabled=true \
@@ -127,76 +195,120 @@ helm install cert-manager jetstack/cert-manager \
   --version v1.17.1
 ```
 
-> **Hinweis:** Die `--version` auf die zum Zeitpunkt der Ausfuehrung aktuelle stabile Version anpassen. CRDs (`crds.enabled=true`) muessen mitinstalliert werden, da der Onyx Helm Chart `ClusterIssuer` und `Certificate` CRDs nutzt.
-
-### 2.2 Installation verifizieren
+**Verifikation:**
 
 ```bash
-# Alle Pods muessen Running sein
+# Alle 3 Pods muessen Running sein
 kubectl get pods -n cert-manager
-# Erwartete Ausgabe: 3 Pods (cert-manager, cert-manager-cainjector, cert-manager-webhook)
+# Erwartete Ausgabe:
+# cert-manager-...              1/1   Running
+# cert-manager-cainjector-...   1/1   Running
+# cert-manager-webhook-...      1/1   Running
 
 # CRDs pruefen
 kubectl get crds | grep cert-manager
-# Erwartete Ausgabe: clusterissuers.cert-manager.io, certificates.cert-manager.io, ...
+# Erwartete Ausgabe: clusterissuers, certificates, challenges, ...
 ```
 
-### 2.3 Let's Encrypt Staging ClusterIssuer (optional, empfohlen)
+> **Version:** Zum Zeitpunkt der Ausfuehrung aktuelle stabile Version verwenden.
+> Check: https://cert-manager.io/docs/releases/
 
-Let's Encrypt hat strikte Rate Limits (50 Zertifikate/Domain/Woche). Fuer den ersten Test empfiehlt sich der Staging-Server:
+### Schritt 2: Cloudflare API Token als Kubernetes Secret
+
+```bash
+# Secret in cert-manager Namespace erstellen
+# (Token von Leif erhalten, siehe Teil A, Schritt A3)
+kubectl create secret generic cloudflare-api-token \
+  --namespace cert-manager \
+  --from-literal=api-token="<CLOUDFLARE_API_TOKEN>"
+```
+
+> **Sicherheit:** Der Token liegt nur als K8s Secret im Cluster. Nicht in Git, nicht in Helm Values.
+
+### Schritt 3: ClusterIssuers erstellen (DNS-01 + Cloudflare)
+
+Wir erstellen **zwei ClusterIssuers** — einen pro Environment. Die Namen muessen exakt mit dem uebereinstimmen, was die Onyx Helm Chart Ingress-Templates erwarten:
+- DEV: `onyx-dev-letsencrypt` (Ingress-Annotation referenziert `{{ fullname }}-letsencrypt`)
+- TEST: `onyx-test-letsencrypt`
+
+> **Warum nicht den Chart-eigenen ClusterIssuer?**
+> Der Onyx Chart (`lets-encrypt.yaml`) erstellt einen ClusterIssuer mit HTTP-01 und hardcoded `class: nginx`. Das funktioniert nicht mit DNS-01 und nicht mit TEST (`nginx-test`). Daher: `letsencrypt.enabled: false` im Chart, eigene ClusterIssuers mit DNS-01.
+
+#### 3a. Staging ClusterIssuers (Empfohlen fuer ersten Test)
+
+Let's Encrypt Staging hat keine Rate Limits. Zertifikate sind nicht browser-trusted, aber beweisen dass der Flow funktioniert.
 
 ```bash
 cat <<'EOF' | kubectl apply -f -
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: letsencrypt-staging
+  name: onyx-dev-letsencrypt
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: nikolaj.ivanov@coffee-studios.de
     privateKeySecretRef:
-      name: letsencrypt-staging
+      name: onyx-dev-letsencrypt-account
     solvers:
-      - http01:
-          ingress:
-            class: nginx
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: onyx-test-letsencrypt
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: nikolaj.ivanov@coffee-studios.de
+    privateKeySecretRef:
+      name: onyx-test-letsencrypt-account
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
 EOF
 ```
 
-> **[AUSSTEHEND -- Klaerung mit VoeB]** Welche E-Mail-Adresse soll fuer die ACME-Registrierung verwendet werden? Let's Encrypt sendet Ablauf-Warnungen an diese Adresse. Empfehlung: Eine Team-Adresse, keine persoenliche.
+**Verifikation:**
 
----
-
-## Schritt 3: Helm Values anpassen
-
-### 3.1 Onyx Helm Chart: Eingebaute Let's Encrypt Unterstuetzung
-
-Der Onyx Helm Chart bringt **bereits alles mit**:
-
-- **`templates/lets-encrypt.yaml`**: Erstellt einen `ClusterIssuer` fuer Let's Encrypt Production, gesteuert durch `letsencrypt.enabled`.
-- **`templates/ingress-api.yaml`** und **`templates/ingress-webserver.yaml`**: Haben `cert-manager.io/cluster-issuer` Annotation und TLS-Bloecke bereits fest eingebaut.
-- **`templates/ingress-webserver.yaml`**: Hat zusaetzlich `kubernetes.io/tls-acme: "true"`.
-
-Das Onyx Ingress wird **nur** deployed wenn `ingress.enabled: true` gesetzt ist. Aktuell nutzen DEV und TEST das Ingress **nicht** explizit -- der NGINX Ingress Controller aus dem Subchart routet direkt. Fuer TLS muss das Onyx Ingress aktiviert werden.
-
-### 3.2 Bekanntes Problem: IngressClass im ClusterIssuer
-
-Das Template `lets-encrypt.yaml` (Zeile 19) hat die Ingress-Klasse **hardcoded**:
-
-```yaml
-solvers:
-  - http01:
-      ingress:
-        class: nginx
+```bash
+kubectl get clusterissuer
+# Erwartete Ausgabe:
+# NAME                      READY   AGE
+# onyx-dev-letsencrypt      True    ...
+# onyx-test-letsencrypt     True    ...
 ```
 
-Fuer **DEV** (IngressClass `nginx`) funktioniert das. Fuer **TEST** (IngressClass `nginx-test`) funktioniert das **nicht**, weil die HTTP-01 Challenge an den falschen Ingress Controller geht.
+> Falls READY = False: `kubectl describe clusterissuer onyx-dev-letsencrypt` — meistens liegt es am API Token (falsch, abgelaufen, falsche Permissions).
 
-**Loesung fuer TEST:** Eigenen ClusterIssuer per kubectl erstellen (nicht ueber den Chart):
+#### 3b. Auf Production umschalten (nach erfolgreichem Staging-Test)
 
 ```bash
 cat <<'EOF' | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: onyx-dev-letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: nikolaj.ivanov@coffee-studios.de
+    privateKeySecretRef:
+      name: onyx-dev-letsencrypt-account
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -206,128 +318,272 @@ spec:
     server: https://acme-v02.api.letsencrypt.org/directory
     email: nikolaj.ivanov@coffee-studios.de
     privateKeySecretRef:
-      name: onyx-test-letsencrypt
+      name: onyx-test-letsencrypt-account
     solvers:
-      - http01:
-          ingress:
-            class: nginx-test
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
 EOF
 ```
 
-Und in `values-test.yaml` den Chart-eigenen ClusterIssuer deaktiviert lassen (`letsencrypt.enabled: false`), aber die Ingress-Annotations manuell setzen. Alternativ: `letsencrypt.enabled: true` in TEST und den ClusterIssuer-Namen in den Ingress-Annotations per `--set` ueberschreiben.
+> **Unterschied:** `server:` zeigt auf `acme-v02` statt `acme-staging-v02`.
+> Nach dem Wechsel muessen die alten Staging-Zertifikate geloescht werden, damit cert-manager neue (browser-trusted) Zertifikate ausstellt:
 
-> **Hinweis:** Dies ist eine Einschraenkung des Onyx Helm Charts (READ-ONLY, nicht veraenderbar). Falls der Chart in Zukunft die Ingress-Klasse im ClusterIssuer konfigurierbar macht, entfaellt dieser Workaround.
+```bash
+# Nur die spezifischen Certificates loeschen (NICHT --all!)
+kubectl delete certificate onyx-dev-ingress-webserver-tls onyx-dev-ingress-api-tls -n onyx-dev
+kubectl delete certificate onyx-test-ingress-webserver-tls onyx-test-ingress-api-tls -n onyx-test
+# Dann Schritt 3c wiederholen (Certificate-Ressourcen neu erstellen)
+# cert-manager stellt automatisch neue Zertifikate ueber den Production-Issuer aus (1-2 Min)
+```
 
-### 3.3 values-dev.yaml -- Aenderungen
+> **Rate-Limit-Warnung:** Let's Encrypt Production erlaubt max. **5 identische Zertifikate pro Domain pro Woche**. Bei Debugging immer ZUERST den Staging-Issuer verwenden (Schritt 3a). Nur auf Production wechseln wenn Staging erfolgreich war. Staging hat KEINE Rate Limits.
 
-**Vorher:**
+### Schritt 3c: Explizite Certificate-Ressourcen (ECDSA P-384, BSI-konform)
+
+> **Warum explizite Certificates?** Die Onyx Ingress-Templates enthalten hardcoded Annotations (`cert-manager.io/cluster-issuer` + `kubernetes.io/tls-acme: "true"`), die cert-manager veranlassen wuerden, automatisch Certificate-Ressourcen zu erstellen — allerdings mit dem Default **RSA 2048**, was BSI TR-02102-2 **nicht erfuellt**. Durch explizite Certificate-Ressourcen erzwingen wir ECDSA P-384.
+>
+> **KRITISCH — Reihenfolge beachten:**
+> Diese Certificates **MUESSEN VOR dem Helm Deploy** (Schritt 5) erstellt werden und **READY = True** sein.
+> cert-manager's Ingress-Shim prueft beim Ingress-Deploy: Existiert bereits ein Certificate fuer diesen secretName? Wenn ja (und es hat keinen ownerReference auf den Ingress), wird es **NICHT ueberschrieben**.
+> Wenn die Certificates NICHT existieren, erstellt der Ingress-Shim automatisch RSA-2048-Certificates — BSI-Verstoss!
+>
+> **Bekannte Einschraenkung (Chart READ-ONLY):** Die `tls-acme` und `cluster-issuer` Annotations koennen nicht entfernt werden, da der Onyx Helm Chart nicht veraenderbar ist. Der Workaround (explizite Certificates VOR Deploy) ist stabil, solange die Reihenfolge eingehalten wird. Falls jemand die Certificates manuell loescht (z.B. beim Debugging), wuerde der Ingress-Shim sofort RSA-2048-Replacements erstellen. In dem Fall: Explicit Certificates neu erstellen und die auto-erstellten loeschen.
+
+> **Subdomain-Name steht fest: `chatbot`.** Die folgenden YAML-Manifeste verwenden die finalen Domainnamen.
+
+#### DEV Certificates
+
+```bash
+cat <<'EOF' | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: onyx-dev-ingress-webserver-tls
+  namespace: onyx-dev
+spec:
+  secretName: onyx-dev-ingress-webserver-tls
+  issuerRef:
+    name: onyx-dev-letsencrypt
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  dnsNames:
+    - dev.chatbot.voeb-service.de
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: onyx-dev-ingress-api-tls
+  namespace: onyx-dev
+spec:
+  secretName: onyx-dev-ingress-api-tls
+  issuerRef:
+    name: onyx-dev-letsencrypt
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  dnsNames:
+    - dev.chatbot.voeb-service.de
+EOF
+```
+
+#### TEST Certificates
+
+```bash
+cat <<'EOF' | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: onyx-test-ingress-webserver-tls
+  namespace: onyx-test
+spec:
+  secretName: onyx-test-ingress-webserver-tls
+  issuerRef:
+    name: onyx-test-letsencrypt
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  dnsNames:
+    - test.chatbot.voeb-service.de
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: onyx-test-ingress-api-tls
+  namespace: onyx-test
+spec:
+  secretName: onyx-test-ingress-api-tls
+  issuerRef:
+    name: onyx-test-letsencrypt
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  dnsNames:
+    - test.chatbot.voeb-service.de
+EOF
+```
+
+**Verifikation:**
+
+```bash
+# Zertifikate muessen nach 1-2 Minuten READY = True sein
+kubectl get certificate -n onyx-dev
+kubectl get certificate -n onyx-test
+
+# Schluesseltyp pruefen (nach Ausstellung)
+kubectl get secret onyx-dev-ingress-webserver-tls -n onyx-dev -o jsonpath='{.data.tls\.crt}' | \
+  base64 -d | openssl x509 -noout -text | grep "Public Key Algorithm"
+# Erwartete Ausgabe: id-ecPublicKey (= ECDSA)
+
+kubectl get secret onyx-dev-ingress-webserver-tls -n onyx-dev -o jsonpath='{.data.tls\.crt}' | \
+  base64 -d | openssl x509 -noout -text | grep "ASN1 OID"
+# Erwartete Ausgabe: secp384r1 (= P-384)
+```
+
+### Schritt 4: Helm Values anpassen
+
+#### 4.1 values-dev.yaml — Aenderungen
 
 ```yaml
+# VORHER:
 configMap:
   DOMAIN: "188.34.74.187"
   WEB_DOMAIN: "http://188.34.74.187"
 
 letsencrypt:
   enabled: false
-```
 
-**Nachher:**
-
-```yaml
+# NACHHER:
 configMap:
-  DOMAIN: "dev.chatbot.<domain>"
-  WEB_DOMAIN: "https://dev.chatbot.<domain>"
+  DOMAIN: "dev.chatbot.voeb-service.de"
+  WEB_DOMAIN: "https://dev.chatbot.voeb-service.de"
 
 letsencrypt:
-  enabled: true
-  email: "nikolaj.ivanov@coffee-studios.de"
+  enabled: false  # Wir nutzen eigenen ClusterIssuer (DNS-01), nicht den Chart-eigenen (HTTP-01)
 
 ingress:
   enabled: true
   className: "nginx"
   api:
-    host: "dev.chatbot.<domain>"
+    host: "dev.chatbot.voeb-service.de"
   webserver:
-    host: "dev.chatbot.<domain>"
+    host: "dev.chatbot.voeb-service.de"
 ```
 
-> **WICHTIG:** `WEB_DOMAIN` muss mit `https://` beginnen. Onyx setzt `cookie_secure` basierend auf diesem Prefix (Quelle: `backend/onyx/auth/users.py:915`). Wenn `WEB_DOMAIN` auf `https://` steht aber kein TLS konfiguriert ist, entsteht ein Login-Loop (403 auf `/me`). Daher: **Erst TLS konfigurieren, dann `WEB_DOMAIN` umstellen.**
-
-### 3.4 values-test.yaml -- Aenderungen
-
-**Vorher:**
+#### 4.2 values-test.yaml — Aenderungen
 
 ```yaml
+# VORHER:
 configMap:
   DOMAIN: "188.34.118.201"
   WEB_DOMAIN: "http://188.34.118.201"
 
 letsencrypt:
   enabled: false
-```
 
-**Nachher:**
-
-```yaml
+# NACHHER:
 configMap:
-  DOMAIN: "test.chatbot.<domain>"
-  WEB_DOMAIN: "https://test.chatbot.<domain>"
+  DOMAIN: "test.chatbot.voeb-service.de"
+  WEB_DOMAIN: "https://test.chatbot.voeb-service.de"
 
 letsencrypt:
-  enabled: false  # TEST: Eigener ClusterIssuer (s. Schritt 3.2)
+  enabled: false  # Eigener ClusterIssuer (DNS-01)
 
 ingress:
   enabled: true
   className: "nginx-test"
   api:
-    host: "test.chatbot.<domain>"
+    host: "test.chatbot.voeb-service.de"
   webserver:
-    host: "test.chatbot.<domain>"
+    host: "test.chatbot.voeb-service.de"
 ```
 
-Zusaetzlich muessen die Ingress-Templates den richtigen ClusterIssuer referenzieren. Da der Chart den ClusterIssuer-Namen aus dem Release-Namen generiert (`<release>-letsencrypt`), und wir den ClusterIssuer manuell als `onyx-test-letsencrypt` erstellt haben, passt das -- der Release-Name ist `onyx-test`, also wird `onyx-test-letsencrypt` referenziert.
+#### 4.3 Wichtige Hinweise
 
-### 3.5 CI/CD Workflow
+> **`WEB_DOMAIN` mit `https://`:** Onyx setzt `cookie_secure` basierend auf diesem Prefix (Quelle: `backend/onyx/auth/users.py`, Funktion `cookie_secure`). Wenn `WEB_DOMAIN` auf `https://` steht aber kein TLS aktiv ist, entsteht ein Login-Loop (403 auf `/me`).
+>
+> **Reihenfolge beachten:**
+> 1. DNS muss aufloesen (A-Records gesetzt)
+> 2. ClusterIssuers muessen READY sein
+> 3. ERST DANN Helm Values umstellen + deployen
+>
+> **`letsencrypt.enabled` bleibt `false`:** Der Chart-eigene ClusterIssuer (HTTP-01, hardcoded `class: nginx`) wird NICHT genutzt. Unsere manuell erstellten ClusterIssuers (DNS-01, Cloudflare) uebernehmen.
 
-Der CI/CD Workflow (`stackit-deploy.yml`) liest `WEB_DOMAIN` aus der ConfigMap fuer den Smoke Test:
+#### 4.4 CI/CD Smoke Test
+
+Der Smoke Test in `.github/workflows/stackit-deploy.yml` liest `WEB_DOMAIN` aus der ConfigMap:
 
 ```yaml
 DOMAIN=$(kubectl get configmap env-configmap -n onyx-dev -o jsonpath='{.data.WEB_DOMAIN}')
 curl --silent --fail --max-time 5 "${DOMAIN}/api/health"
 ```
 
-Nach der Umstellung auf HTTPS muss der Smoke Test HTTPS unterstuetzen. `curl` folgt standardmaessig HTTPS. Falls das Zertifikat noch nicht bereit ist (cert-manager braucht 1-2 Minuten), koennte der Smoke Test initial fehlschlagen.
+Nach der Umstellung auf HTTPS kann der erste Deploy fehlschlagen, weil cert-manager 1-2 Minuten fuer die Zertifikatsausstellung braucht. Beim ersten TLS-Deploy empfohlen:
 
-**Empfehlung:** Beim ersten Deploy nach TLS-Umstellung den Smoke Test manuell ausfuehren oder `--insecure` temporaer hinzufuegen.
+```yaml
+# Temporaer: --retry hinzufuegen oder manuell deployen
+curl --silent --fail --max-time 10 --retry 3 --retry-delay 15 "${DOMAIN}/api/health"
+```
 
----
+Alternativ: Ersten Deploy nach TLS-Umstellung manuell per `helm upgrade` ausfuehren (nicht ueber CI/CD), und erst danach CI/CD nutzen.
 
-## Schritt 4: Deploy ausfuehren
+### Schritt 5: Deploy ausfuehren
 
-### 4.1 Reihenfolge (kritisch)
+#### Reihenfolge (kritisch!)
 
-1. DNS A-Records muessen aufloesen (Schritt 1 verifiziert)
-2. cert-manager muss installiert sein (Schritt 2 verifiziert)
-3. Fuer TEST: Manueller ClusterIssuer muss existieren (Schritt 3.2)
-4. Helm Values committen und deployen
+1. DNS A-Records muessen aufloesen (**VoeB**, Schritt A2)
+2. cert-manager muss installiert sein (Schritt 1)
+3. Cloudflare API Token Secret muss existieren (Schritt 2)
+4. ClusterIssuers muessen READY sein (Schritt 3a/3b)
+5. Certificate-Ressourcen muessen existieren + READY sein (Schritt 3c)
+6. **Erst jetzt:** Helm Values committen und deployen
 
-### 4.2 DEV Deploy
+#### Gate-Check vor Deploy (PFLICHT)
 
 ```bash
-# Option A: CI/CD (empfohlen)
-# values-dev.yaml committen + pushen auf develop
-# Pipeline deployt automatisch
+# ALLE Voraussetzungen pruefen bevor Helm Deploy gestartet wird:
 
-# Option B: Manuell
+# 1. DNS
+dig +short dev.chatbot.voeb-service.de | grep -q "188.34.74.187" && echo "DNS DEV: OK" || echo "STOP: DNS DEV nicht aufgeloest!"
+
+# 2. ClusterIssuers
+kubectl get clusterissuer onyx-dev-letsencrypt -o jsonpath='{.status.conditions[0].status}' | grep -q "True" && echo "Issuer DEV: OK" || echo "STOP: ClusterIssuer DEV nicht ready!"
+kubectl get clusterissuer onyx-test-letsencrypt -o jsonpath='{.status.conditions[0].status}' | grep -q "True" && echo "Issuer TEST: OK" || echo "STOP: ClusterIssuer TEST nicht ready!"
+
+# 3. Certificates (KRITISCH — ohne diese erstellt Ingress-Shim RSA-2048-Certs!)
+kubectl get certificate onyx-dev-ingress-webserver-tls -n onyx-dev -o jsonpath='{.status.conditions[0].status}' | grep -q "True" && echo "Cert DEV Web: OK" || echo "STOP: Certificate DEV Web nicht ready!"
+kubectl get certificate onyx-dev-ingress-api-tls -n onyx-dev -o jsonpath='{.status.conditions[0].status}' | grep -q "True" && echo "Cert DEV API: OK" || echo "STOP: Certificate DEV API nicht ready!"
+kubectl get certificate onyx-test-ingress-webserver-tls -n onyx-test -o jsonpath='{.status.conditions[0].status}' | grep -q "True" && echo "Cert TEST Web: OK" || echo "STOP: Certificate TEST Web nicht ready!"
+kubectl get certificate onyx-test-ingress-api-tls -n onyx-test -o jsonpath='{.status.conditions[0].status}' | grep -q "True" && echo "Cert TEST API: OK" || echo "STOP: Certificate TEST API nicht ready!"
+
+# Nur weitermachen wenn ALLE Checks "OK" zeigen!
+```
+
+#### DEV Deploy
+
+```bash
+# Option A: CI/CD (empfohlen nach erstem erfolgreichen TLS-Deploy)
+# values-dev.yaml committen + pushen auf main
+# Pipeline deployt automatisch (oder workflow_dispatch)
+
+# Option B: Manuell (empfohlen fuer ersten TLS-Deploy)
 helm upgrade --install onyx-dev \
   deployment/helm/charts/onyx \
   --namespace onyx-dev \
   -f deployment/helm/values/values-common.yaml \
   -f deployment/helm/values/values-dev.yaml \
-  -f deployment/helm/values/values-dev-secrets.yaml
+  -f deployment/helm/values/values-dev-secrets.yaml \
+  --atomic --timeout 10m
 ```
 
-### 4.3 TEST Deploy
+#### TEST Deploy
 
 ```bash
 # Option A: CI/CD (workflow_dispatch, Environment: test)
@@ -346,104 +602,135 @@ helm upgrade --install onyx-test \
   --atomic --timeout 10m
 ```
 
----
+### Schritt 6: Verifikation
 
-## Schritt 5: Verifikation
-
-### 5.1 cert-manager Status pruefen
+#### 6.1 DNS pruefen
 
 ```bash
-# ClusterIssuer-Status (DEV)
+dig +short dev.chatbot.voeb-service.de
+# Erwartete Ausgabe: 188.34.74.187
+
+dig +short test.chatbot.voeb-service.de
+# Erwartete Ausgabe: 188.34.118.201
+```
+
+#### 6.2 cert-manager Status pruefen
+
+```bash
+# ClusterIssuers
 kubectl get clusterissuer
-# Erwartete Ausgabe: onyx-dev-letsencrypt   True   ...
+# Erwartete Ausgabe: onyx-dev-letsencrypt True, onyx-test-letsencrypt True
 
-# Zertifikat-Status (DEV)
+# Zertifikate DEV
 kubectl get certificate -n onyx-dev
-# Erwartete Ausgabe: onyx-dev-ingress-api-tls       True   ...
-#                    onyx-dev-ingress-webserver-tls  True   ...
+# Erwartete Ausgabe:
+# onyx-dev-ingress-api-tls         True   ...
+# onyx-dev-ingress-webserver-tls   True   ...
 
-# Zertifikat-Status (TEST)
+# Zertifikate TEST
 kubectl get certificate -n onyx-test
-# Erwartete Ausgabe: onyx-test-ingress-api-tls       True   ...
-#                    onyx-test-ingress-webserver-tls  True   ...
+# Erwartete Ausgabe:
+# onyx-test-ingress-api-tls         True   ...
+# onyx-test-ingress-webserver-tls   True   ...
 
-# Bei Problemen: Challenge-Status pruefen
+# Falls Certificate NICHT True:
+kubectl describe certificate onyx-dev-ingress-webserver-tls -n onyx-dev
 kubectl get challenges --all-namespaces
-# Sollte leer sein (= alle Challenges abgeschlossen)
-# Falls Challenges haengen:
 kubectl describe challenge <name> -n <namespace>
 ```
 
-### 5.2 Ingress pruefen
+#### 6.3 Ingress pruefen
 
 ```bash
-# DEV
 kubectl get ingress -n onyx-dev
-# Erwartete Ausgabe: Ingress mit HOST = dev.chatbot.<domain>, TLS-Secret zugewiesen
+# HOST = dev.chatbot.voeb-service.de, TLS-Secret zugewiesen
 
-# TEST
 kubectl get ingress -n onyx-test
-# Erwartete Ausgabe: Ingress mit HOST = test.chatbot.<domain>, TLS-Secret zugewiesen
+# HOST = test.chatbot.voeb-service.de, TLS-Secret zugewiesen
 ```
 
-### 5.3 HTTPS-Zugriff testen
+#### 6.4 HTTPS testen
 
 ```bash
 # DEV
-curl -v https://dev.chatbot.<domain>/api/health
+curl -v https://dev.chatbot.voeb-service.de/api/health
 # Erwartete Ausgabe:
-# * SSL connection using TLS...
-# * Server certificate: CN=dev.chatbot.<domain>
+# * SSL connection using TLSv1.3
+# * Server certificate: CN=dev.chatbot.voeb-service.de
 # * issuer: C=US; O=Let's Encrypt; CN=...
 # {"success":true,"message":"ok","data":null}
 
 # TEST
-curl -v https://test.chatbot.<domain>/api/health
+curl -v https://test.chatbot.voeb-service.de/api/health
 
-# Zertifikat-Details pruefen
-echo | openssl s_client -connect dev.chatbot.<domain>:443 -servername dev.chatbot.<domain> 2>/dev/null | openssl x509 -noout -dates -subject
-# Erwartete Ausgabe:
-# notBefore=...
-# notAfter=... (90 Tage nach Ausstellung)
-# subject=CN=dev.chatbot.<domain>
-
-# HTTP -> HTTPS Redirect pruefen (falls NGINX so konfiguriert)
-curl -s -o /dev/null -w "%{http_code}" http://dev.chatbot.<domain>/api/health
-# Erwartete Ausgabe: 308 (Permanent Redirect) oder 301
+# Zertifikat-Details
+echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
+  -servername dev.chatbot.voeb-service.de 2>/dev/null | \
+  openssl x509 -noout -dates -subject -issuer
 ```
 
-### 5.4 Login testen
+#### 6.5 BSI-Konformitaet pruefen (ECDSA P-384)
 
 ```bash
-# Browser: https://dev.chatbot.<domain> oeffnen
-# Login-Seite muss laden, Login muss funktionieren
-# Cookies muessen "Secure" Flag haben (weil WEB_DOMAIN mit https:// beginnt)
+# Schluesseltyp pruefen (muss ECDSA/secp384r1 sein, NICHT RSA 2048)
+echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
+  -servername dev.chatbot.voeb-service.de 2>/dev/null | \
+  openssl x509 -noout -text | grep -A2 "Public Key Algorithm"
+# Erwartete Ausgabe:
+# Public Key Algorithm: id-ecPublicKey
+#   Public-Key: (384 bit)
+#   ASN1 OID: secp384r1
 
-# Cookie-Check per curl
-curl -c - https://dev.chatbot.<domain>/auth/login 2>/dev/null | grep -i secure
+# Intermediate-Chain pruefen (muss ECDSA sein, nicht RSA 2048)
+echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
+  -servername dev.chatbot.voeb-service.de -showcerts 2>/dev/null | \
+  openssl x509 -noout -issuer
+# Erwartete Ausgabe: issuer= ... O=Let's Encrypt, CN=E5 (oder E6-E9)
+# E5-E9 = ECDSA P-384 Intermediates (BSI-konform)
+# R10-R14 = RSA 2048 Intermediates (NICHT BSI-konform)
 ```
 
-### 5.5 Checkliste
+> **Falls RSA statt ECDSA:** Certificate-Ressource loeschen und neu erstellen (Schritt 3c). cert-manager erstellt dann ein neues Zertifikat mit dem richtigen Schluesseltyp.
+
+#### 6.6 HTTP → HTTPS Redirect pruefen
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://dev.chatbot.voeb-service.de/api/health
+# Erwartete Ausgabe: 308 (Permanent Redirect)
+```
+
+#### 6.7 Login testen
+
+```bash
+# Browser: https://dev.chatbot.voeb-service.de oeffnen
+# Login-Seite muss laden, Login muss funktionieren
+# Bei Basic Auth: Normaler Login
+# Cookies muessen "Secure" Flag haben (weil WEB_DOMAIN mit https:// beginnt)
+```
+
+#### 6.8 Checkliste
 
 - [ ] DNS loest auf (DEV + TEST)
-- [ ] cert-manager Pods Running
-- [ ] ClusterIssuer Ready
+- [ ] cert-manager 3 Pods Running
+- [ ] ClusterIssuers Ready = True
 - [ ] Zertifikate ausgestellt (Certificate Ready = True)
-- [ ] HTTPS antwortet mit gueltigem Zertifikat
-- [ ] HTTP redirectet auf HTTPS
+- [ ] Zertifikat ist ECDSA P-384 (BSI TR-02102-2 konform)
+- [ ] Intermediate Chain ist ECDSA (E5-E9, nicht R10-R14)
+- [ ] HTTPS antwortet mit gueltigem Zertifikat (nicht Staging!)
+- [ ] HTTP redirectet auf HTTPS (308)
 - [ ] API Health Check OK ueber HTTPS
 - [ ] Login funktioniert im Browser
 - [ ] CI/CD Smoke Test funktioniert mit HTTPS
 
 ---
 
-## Schritt 6: Rollback auf HTTP-only
+## Rollback auf HTTP-only
 
-Falls cert-manager nicht funktioniert oder die Zertifikate nicht ausgestellt werden koennen:
+Falls etwas schiefgeht:
 
-### 6.1 Helm Values zuruecksetzen
+### Helm Values zuruecksetzen
 
-`values-dev.yaml` zurueck auf:
+**values-dev.yaml:**
 
 ```yaml
 configMap:
@@ -453,11 +740,12 @@ configMap:
 letsencrypt:
   enabled: false
 
+# ingress: Block komplett entfernen oder:
 ingress:
   enabled: false
 ```
 
-`values-test.yaml` zurueck auf:
+**values-test.yaml:**
 
 ```yaml
 configMap:
@@ -471,74 +759,142 @@ ingress:
   enabled: false
 ```
 
-### 6.2 Re-Deploy
+### Certificate-Ressourcen entfernen
 
 ```bash
-# DEV
-helm upgrade onyx-dev \
-  deployment/helm/charts/onyx \
+kubectl delete certificate onyx-dev-ingress-webserver-tls onyx-dev-ingress-api-tls -n onyx-dev
+kubectl delete certificate onyx-test-ingress-webserver-tls onyx-test-ingress-api-tls -n onyx-test
+```
+
+### Re-Deploy
+
+```bash
+helm upgrade onyx-dev deployment/helm/charts/onyx \
   --namespace onyx-dev \
   -f deployment/helm/values/values-common.yaml \
   -f deployment/helm/values/values-dev.yaml \
-  -f deployment/helm/values/values-dev-secrets.yaml
+  -f deployment/helm/values/values-dev-secrets.yaml \
+  --atomic --timeout 10m
 
-# TEST (analog)
+# TEST analog (mit --set fuer Secrets)
 ```
 
-### 6.3 cert-manager kann installiert bleiben
-
-cert-manager verbraucht minimal Ressourcen und stoert nicht, wenn keine ClusterIssuer/Certificates existieren. Deinstallation nur bei Bedarf:
+### Aufraeum-Optionen
 
 ```bash
+# ClusterIssuers entfernen (optional, stoeren nicht)
+kubectl delete clusterissuer onyx-dev-letsencrypt onyx-test-letsencrypt
+
+# cert-manager kann installiert bleiben (minimal Ressourcen)
+# Deinstallation nur bei Bedarf:
 helm uninstall cert-manager -n cert-manager
 kubectl delete namespace cert-manager
-# CRDs manuell entfernen (Helm loescht CRDs nicht automatisch)
 kubectl delete crd certificaterequests.cert-manager.io certificates.cert-manager.io \
-  challenges.acme.cert-manager.io clusterissuers.cert-manager.io issuers.cert-manager.io \
-  orders.acme.cert-manager.io
-```
-
-### 6.4 Manuell erstellten ClusterIssuer (TEST) entfernen
-
-```bash
-kubectl delete clusterissuer onyx-test-letsencrypt
+  challenges.acme.cert-manager.io clusterissuers.cert-manager.io \
+  issuers.cert-manager.io orders.acme.cert-manager.io
 ```
 
 ---
+
+## Zertifikat-Erneuerung (Auto-Renewal)
+
+cert-manager erneuert Zertifikate **automatisch** — kein manuelles Eingreifen noetig.
+
+| Parameter | Wert |
+|-----------|------|
+| Let's Encrypt Zertifikatslaufzeit | 90 Tage (geplant: 45 Tage ab 2028) |
+| cert-manager Renewal-Zeitpunkt | 2/3 der Laufzeit (= ca. Tag 60 bei 90 Tagen) |
+| Retry bei Fehler | Automatisch mit exponentiellem Backoff |
+| ACME-Email-Benachrichtigung | 14, 7, 1 Tag vor Ablauf (falls Renewal fehlschlaegt) |
+
+**Pruefen ob Renewal funktioniert:**
+
+```bash
+kubectl get certificate --all-namespaces -o wide
+# READY = True, NOT AFTER zeigt das Ablaufdatum
+# RENEWAL zeigt wann cert-manager erneuern wird
+
+# Events pruefen bei Problemen:
+kubectl describe certificate onyx-dev-ingress-webserver-tls -n onyx-dev
+```
+
+> **ACME-Email:** Let's Encrypt sendet Ablauf-Warnungen an die in den ClusterIssuers konfigurierte Email-Adresse. Empfehlung: Team-Mailbox statt persoenliche Adresse (z.B. `infra@coffee-studios.de`), damit Warnungen nicht untergehen.
+
+## Cloudflare API Token Rotation
+
+Falls Leif den Cloudflare API Token erneuert (z.B. Sicherheitsrotation):
+
+```bash
+# Altes Secret loeschen und neues erstellen
+kubectl delete secret cloudflare-api-token -n cert-manager
+kubectl create secret generic cloudflare-api-token \
+  --namespace cert-manager \
+  --from-literal=api-token="<NEUER_TOKEN_VON_LEIF>"
+
+# Verifikation: ClusterIssuers pruefen (muessen READY bleiben)
+kubectl get clusterissuer
+# Falls Status sich auf False aendert: Token-Permissions pruefen (Zone:Zone:Read + Zone:DNS:Edit)
+```
+
+> Token-Rotation hat keinen Einfluss auf bestehende Zertifikate — nur auf zukuenftige Ausstellungen und Renewals. Idealerweise Token rotieren, wenn die naechste Renewal noch >30 Tage entfernt ist.
 
 ## Troubleshooting
 
 | Problem | Ursache | Loesung |
 |---------|---------|---------|
-| Challenge haengt auf `Pending` | DNS loest nicht auf die richtige IP auf | `dig +short <domain>` pruefen, A-Record korrigieren |
-| Challenge haengt auf `Invalid` | HTTP-01 Challenge nicht erreichbar | Ingress-Klasse pruefen, Port 80 muss offen sein |
-| Certificate `False` / nicht Ready | ClusterIssuer nicht Ready oder Challenge fehlgeschlagen | `kubectl describe clusterissuer` + `kubectl describe certificate` |
-| Login-Loop (403 auf `/me`) | `WEB_DOMAIN` ist HTTPS aber kein TLS | Rollback auf `http://` oder TLS fixen |
-| Browser zeigt "unsicheres Zertifikat" | Let's Encrypt Staging benutzt (Fake-CA) | Auf Production-Issuer wechseln |
-| Rate Limit erreicht | Zu viele Zertifikats-Anfragen | 1 Stunde warten, Staging fuer Tests nutzen |
-| cert-manager Pod CrashLoop | Fehlende CRDs oder RBAC | `helm install` mit `--set crds.enabled=true` wiederholen |
-| TEST: Challenge geht an falschen Ingress | ClusterIssuer hat `class: nginx` statt `nginx-test` | Manuellen ClusterIssuer mit `class: nginx-test` erstellen (Schritt 3.2) |
+| ClusterIssuer READY = False | Cloudflare API Token falsch oder abgelaufen | `kubectl describe clusterissuer` — Token pruefen, Secret neu erstellen |
+| Challenge haengt auf `Pending` | DNS propagiert noch nicht | `dig +short <domain>` pruefen, 5-30 Min warten |
+| Challenge `Failed` / `Invalid` | Cloudflare API Token hat falsche Permissions | Token braucht Zone:Zone:Read + Zone:DNS:Edit fuer `voeb-service.de` |
+| Certificate nicht True nach 5 Min | Challenge fehlgeschlagen | `kubectl describe challenge <name>` — Details pruefen |
+| Browser: "Unsicheres Zertifikat" | Staging-Issuer statt Production | Auf Production umschalten (Schritt 3b), Zertifikate loeschen |
+| Login-Loop (403 auf `/me`) | `WEB_DOMAIN` ist HTTPS aber kein TLS aktiv | Rollback auf `http://` oder TLS fixen |
+| Ingress 404 | `ingress.enabled: false` oder Host stimmt nicht | Helm Values pruefen: `ingress.enabled: true`, Hosts korrekt |
+| Kein Redirect HTTP→HTTPS | NGINX Config fehlt | NGINX default-ssl-redirect steht normalerweise auf true |
+| CI/CD Smoke Test schlaegt fehl | Zertifikat noch nicht bereit beim ersten Deploy | Manuell deployen oder `--retry` im curl |
+| `Forbidden` beim DNS-01 Challenge | Cloudflare Token auf falsche Zone eingeschraenkt | Token muss Zone `voeb-service.de` einschliessen |
+| A-Record zeigt auf orange Wolke | Cloudflare Proxy aktiv statt DNS-only | In Cloudflare auf graue Wolke (DNS-only) umstellen |
+| Zertifikat ist RSA 2048 statt ECDSA P-384 | Ingress-Shim hat auto-erstellt (Schritt 3c uebersprungen oder Cert geloescht) | Explicit Certificates aus Schritt 3c neu erstellen, auto-erstellte loeschen |
+| Renewal schlaegt fehl | Cloudflare API Token abgelaufen oder rotiert | Token im K8s Secret aktualisieren (siehe "Token Rotation" oben) |
+| `Zone not found` Fehler bei Challenge | Cloudflare Token hat kein `Zone:Zone:Read` | Token mit korrekten Permissions neu erstellen (Schritt A3) |
 
 ---
 
 ## Offene Punkte
 
-| Nr. | Thema | Status |
-|-----|-------|--------|
-| 1 | Domain-Entscheidung durch VoeB | [AUSSTEHEND -- Klaerung mit VoeB] |
-| 2 | DNS A-Records durch VoeB IT | [AUSSTEHEND -- nach Domain-Entscheidung] |
-| 3 | ACME-Email-Adresse festlegen | [AUSSTEHEND -- Team-Adresse empfohlen] |
-| 4 | PROD LoadBalancer IP | [AUSSTEHEND -- PROD noch nicht provisioniert] |
-| 5 | Ingress-Verhalten ohne TLS pruefen | Vor Umstellung testen ob `ingress.enabled: true` auch ohne TLS funktioniert |
-| 6 | CI/CD Smoke Test HTTPS-Kompatibilitaet | `curl` sollte HTTPS unterstuetzen, ggf. erster Run nach Umstellung manuell |
+| Nr. | Thema | Status | Wer |
+|-----|-------|--------|-----|
+| 1 | Subdomain-Name festlegen | **ERLEDIGT** — `chatbot` (2026-03-04) | Pascal/Leif (VoeB) |
+| 2 | DNS A-Records in Cloudflare anlegen | Ausstehend (nach #1) | Leif (VoeB) |
+| 3 | Cloudflare API Token erstellen + uebermitteln | Ausstehend (nach #1) | Leif (VoeB) |
+| 4 | ACME-Email-Adresse — Team-Adresse statt persoenliche? | Empfehlung: Team-Adresse | CCJ + VoeB |
+| 5 | PROD: LoadBalancer IP + A-Record | Spaeter (PROD nicht provisioniert) | CCJ + VoeB |
+| 6 | Let's Encrypt Zertifikat-Renewal verifizieren | Nach 60 Tagen pruefen (auto-renew) | CCJ |
+
+---
+
+## Zeitplan
+
+| Schritt | Dauer | Abhaengigkeit |
+|---------|-------|---------------|
+| VoeB: Subdomain + A-Records + Token | 1-3 Tage | Pascal + Leif |
+| CCJ: cert-manager + ClusterIssuers | ~15 Min | Token von Leif |
+| CCJ: Helm Values + Deploy DEV | ~15 Min | DNS muss aufloesen |
+| CCJ: Verifikation DEV | ~10 Min | Deploy abgeschlossen |
+| CCJ: Deploy + Verifikation TEST | ~15 Min | DEV erfolgreich |
+| **Gesamt CCJ-Aufwand** | **~1 Stunde** | |
 
 ---
 
 ## Referenzen
 
-- [Helm Deploy Runbook](./helm-deploy.md) -- Domain/Cookie-Konfiguration, WEB_DOMAIN-Details
-- [Entra ID Kundenfragen](../entra-id-kundenfragen.md) -- DNS-Abhaengigkeit fuer OIDC (Abschnitt 7)
-- [StackIT Implementierungsplan](../referenz/stackit-implementierungsplan.md) -- Aktuelle IPs, Infrastruktur-Status
-- [cert-manager Dokumentation](https://cert-manager.io/docs/) -- Offizielle Docs
-- [Let's Encrypt Rate Limits](https://letsencrypt.org/docs/rate-limits/) -- 50 Zertifikate/Domain/Woche
+- [cert-manager Cloudflare DNS-01 Docs](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/)
+- [cert-manager Certificate privateKey Config](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificatePrivateKey)
+- [Cloudflare API Tokens erstellen](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/)
+- [Let's Encrypt Challenge Types](https://letsencrypt.org/docs/challenge-types/) — DNS-01 vs HTTP-01
+- [Let's Encrypt Rate Limits](https://letsencrypt.org/docs/rate-limits/) — 50 Zertifikate/Domain/Woche
+- [Let's Encrypt Generation Y Hierarchy](https://letsencrypt.org/2025/11/24/gen-y-hierarchy) — ECDSA P-384 Intermediates
+- [BSI TR-02102-2 TLS-Richtlinie (2026-01)](https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TG02102/BSI-TR-02102-2.html) — RSA 3072 / ECDSA P-384 Minimum
+- [Helm Deploy Runbook](./helm-deploy.md) — Domain/Cookie-Konfiguration
+- [Entra ID Kundenfragen](../entra-id-kundenfragen.md) — HTTPS-Abhaengigkeit fuer OIDC (Abschnitt 7)
+- [StackIT Implementierungsplan](../referenz/stackit-implementierungsplan.md) — IPs, Infrastruktur
 - Onyx Helm Chart Templates: `deployment/helm/charts/onyx/templates/lets-encrypt.yaml`, `ingress-api.yaml`, `ingress-webserver.yaml`

@@ -1,74 +1,89 @@
-# Nächste Session — Post-Audit + Post-Upstream-Merge
+# Naechste Session — Entra ID Vorbereitung + M1-Abnahme + Doku-Fixes
 
-## Wo wir stehen (2026-03-03)
+## Wo wir stehen (2026-03-04)
 
-**DEV + TEST LIVE, Upstream gemerged (415 Commits), Doku-Audit komplett.**
+**Warten auf Leif (DNS + CF Token). Termin Freitag 06.03, 11:00 (Entra ID).**
 
-## Was heute erledigt wurde (Session 2026-03-03)
+### Was heute passiert ist
+- Tiefenanalyse aller offenen Tasks (64 Tasks identifiziert, priorisiert)
+- Embedding-Modell: E5 Mistral 7B → Qwen3-VL-Embedding 8B (bessere Deutsch-Unterstuetzung)
+- Embedding-Wechsel via UI **blockiert** durch Upstream (PR #7541, OpenSearch-Migration)
+- Fallback `nomic-embed-text-v1` (self-hosted) ist aktiv — RAG funktioniert
+- 18 Doku-Dateien aktualisiert (Modell, Domain, Status)
+- Neues Runbook: `docs/runbooks/llm-konfiguration.md` (Chat + Embedding Anleitung)
+- Alle `voeb.example.com` → `voeb-service.de` korrigiert (0 veraltete Referenzen)
+- Uncommitted Changes: 13+ Dateien (Doku-Updates, neues Runbook)
 
-1. ✅ values-test.yaml committed + gepusht
-2. ✅ CI/CD workflow_dispatch TEST — grün
-3. ✅ LLM in TEST konfiguriert (GPT-OSS 120B + Qwen3-VL 235B)
-4. ✅ Enterprise-Doku-Audit durchgeführt (4 kritische, 7 wichtige Findings)
-5. ✅ Betriebskonzept komplett überarbeitet (Node.js → Python/FastAPI)
-6. ✅ Sicherheitskonzept komplett überarbeitet (SEC-01–07, Secrets, Auth)
-7. ✅ Meilensteinplan komplett überarbeitet (M1 an DEV/TEST-Realität)
-8. ✅ Testkonzept überarbeitet (JS/Jest → Python/pytest)
-9. ✅ ADR-001, ADR-003, ADR-004, README, CHANGELOG, Implementierungsplan, Infrastruktur-Referenz gefixt
-10. ✅ DNS/TLS-Runbook erstellt (docs/runbooks/dns-tls-setup.md)
-11. ✅ Abnahmeprotokoll-Template Links repariert
-12. ✅ Upstream-Merge: 415 Commits, 4 triviale Konflikte, 0 Core-Konflikte
-13. ✅ CI/CD Fix: Helm Repo python-sandbox ergänzt
-14. ✅ DEV Deploy nach Merge: grün (Smoke Test + Verify OK)
-15. ✅ Fork-Management Doku komplett überarbeitet (8-Schritte-Anleitung)
-16. ✅ Core-Patches aktualisiert (main.py.original + .patch)
-17. ✅ entra-id-kundenfragen.md + terraform.lock.hcl committed
+---
 
-## Commits heute (6 Stück, chronologisch)
+## Prioritaeten fuer naechste Session
 
-1. `c62d47b54` — chore(stackit-infra): TEST-Umgebung live — PG-Host, Domain, IngressClass
-2. `600e192d6` — docs(audit): Enterprise-Dokumentation überarbeiten — Faktencheck + Korrekturen
-3. `c599fe3db` — docs(audit): Testkonzept, ADRs, DNS/TLS-Runbook, Abnahme-Links korrigieren
-4. `a35f54978` — chore(upstream): Merge upstream/main — 415 Commits, 4 triviale Konflikte (Merge-Commit)
-5. `5a54be1f8` — fix(ci): Helm Repo python-sandbox hinzufügen (Upstream-Dependency nach Merge)
-6. `9f63308e1` — docs(upstream): Fork-Management aktualisieren + untracked Files aufräumen
+### 1. Uncommitted Changes committen (nach Nikos Review)
+Viele Doku-Aenderungen aus dieser Session. Dateien:
+- `docs/betriebskonzept.md`, `docs/sicherheitskonzept.md`, `docs/CHANGELOG.md`
+- `docs/referenz/stackit-infrastruktur.md`, `docs/referenz/stackit-implementierungsplan.md`
+- `docs/abnahme/meilensteinplan.md`
+- `docs/runbooks/llm-konfiguration.md` (NEU), `docs/runbooks/README.md`, `docs/runbooks/helm-deploy.md`
+- `.claude/rules/voeb-projekt-status.md`, `.claude/next-session-prompt.md`
 
-## Nächste Schritte
+### 2. Entra ID vorbereiten (Termin Fr 06.03, 11:00)
+- Helm Values Template fuer OIDC vorbereiten (AUTH_TYPE, OAUTH_CLIENT_ID, etc.)
+- Redirect URIs dokumentieren: `https://dev.chatbot.voeb-service.de/auth/oidc/callback`
+- Checkliste fuer den Termin mit Leif erstellen
+- Onyx OIDC-Code pruefen: welche Env-Vars/Config werden gebraucht?
+- **Voraussetzung:** HTTPS muss laufen! Falls Leif bis Freitag DNS + Token liefert, erst TLS aktivieren.
 
-### Sofort machbar (keine Blocker)
-1. **Embedding-Modell** (E5 Mistral 7B) in DEV + TEST konfigurieren — Browser, Admin UI, Modellname: `intfloat/e5-mistral-7b-instruct`
-2. **M1-Abnahmeprotokoll** ausfüllen (Template steht, DEV+TEST-Ergebnisse eintragen)
-3. **SEC-02: Node Affinity** — `nodeSelector` in Helm Values
-4. **SEC-03: NetworkPolicies** — Namespace-Isolation
-5. **SEC-04: Terraform Remote State** — von lokal auf Remote
-6. **K8s Upgrade** — 1.32.12 deprecated → 1.33+
+### 3. Falls Leif vorher liefert — HTTPS aktivieren (~30 Min)
+Runbook: `docs/runbooks/dns-tls-setup.md` (komplett, alle Befehle drin)
 
-### Wartet auf Kunde/Externe
-7. **DNS** — Domains mit VÖB klären (Runbook steht bereit: docs/runbooks/dns-tls-setup.md)
-8. **TLS/HTTPS** — cert-manager + Helm Values (nach DNS)
-9. **Entra ID (Phase 3)** — VÖB IT liefert Zugangsdaten
+### 4. M1-Abnahmeprotokoll erstellen
+- Template: `docs/abnahme/abnahmeprotokoll-template.md`
+- Ist-Zustand befuellen (was funktioniert, was blockiert)
+- VoEB-Termin fuer Abnahme-Meeting ansetzen
 
-### Noch offene Doku
-10. **DSGVO-Dokumente** (DSFA, AVV) — juristische Abstimmung mit VÖB
-11. **Monitoring-Konzept** — vor PROD
-12. **Notfall-/Notbetriebsplan** — vor PROD
+### 5. Weitere Quick-Wins (ohne Blocker)
+- `values-prod.yaml` Grundgeruest erstellen (CI/CD referenziert die Datei, existiert aber nicht!)
+- PROD Deploy-Job fixen (fehlender Smoke Test + `--create-namespace`)
+- `upstream-check.yml` SHA-pinning (actions/checkout@v4 → SHA)
+- ADR-003 ENTWURF-Abschnitte ausfuellen (Infra ist live, Details bekannt)
+- IP-Allowlisting fuer DEV/TEST vorbereiten (Nginx Ingress Annotations, BAIT)
 
-## Wichtige Details
+---
 
-### Upstream-Merge Erkenntnisse
-- Fork-Architektur "Extend, don't modify" validiert
-- Neue Helm-Dependencies nach Merge prüfen (python-sandbox war der Fall)
-- Core-Patches nach jedem Merge aktualisieren
-- DEV zuerst deployen, dann TEST
+## Finale URLs
 
-### LLM Modellnamen (für Admin UI)
-- Chat: `openai/gpt-oss-120b` (Provider: `openai`)
-- Vision: `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8`
-- Embedding: `intfloat/e5-mistral-7b-instruct`
-- API Base: `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1`
+| Environment | URL | IP |
+|---|---|---|
+| DEV | `https://dev.chatbot.voeb-service.de` | `188.34.74.187` |
+| TEST | `https://test.chatbot.voeb-service.de` | `188.34.118.201` |
+| PROD | `https://chatbot.voeb-service.de` | noch nicht provisioniert |
 
-### LoadBalancer IPs (stabil, nicht reserviert)
-- DEV: `188.34.74.187`
-- TEST: `188.34.118.201`
-- Stabil solange Ingress Controller Services existieren
-- Für DNS: A-Records direkt darauf setzen (DEV/TEST ausreichend)
+## Blocker
+
+| Was | Wer | Status |
+|-----|-----|--------|
+| 2x DNS A-Records (DNS-only!) | Leif | Mail raus, ausstehend |
+| Cloudflare API Token | Leif | Mail raus, ausstehend |
+| Entra ID App-Registrierung | Leif + Niko | Termin Fr 06.03, 11:00 |
+| Embedding-Modell-Wechsel (Qwen3-VL) | Onyx Upstream (PR #7541) | Warten auf Re-Enablement |
+
+## Embedding-Status (wichtig!)
+
+- **Aktuell aktiv:** `nomic-ai/nomic-embed-text-v1` (self-hosted auf Model Server, 768 Dim)
+- **Ziel:** `Qwen/Qwen3-VL-Embedding-8B` (StackIT, 4096 Dim, multilingual, 32k Context)
+- **Blocker:** Onyx hat Embedding-Wechsel via Admin UI deaktiviert (PR #7541, OpenSearch-Migration)
+- **Impact:** RAG funktioniert mit nomic, aber nicht optimal fuer Deutsch
+- **Naechster Schritt:** Bei jedem Upstream-Merge pruefen ob Endpoint reaktiviert
+- **Runbook:** `docs/runbooks/llm-konfiguration.md` (komplett, inkl. Troubleshooting)
+- **Admin UI Pfad:** Search Settings → Embedding Model → Cloud-based → LiteLLM
+- **Kritisch:** Embedding API URL muss `/v1/embeddings` sein (nicht nur `/v1`)
+
+## Dateien
+
+- Runbook DNS/TLS: `docs/runbooks/dns-tls-setup.md`
+- Runbook LLM: `docs/runbooks/llm-konfiguration.md` (NEU)
+- Memory: `memory/MEMORY.md`
+- Zeitplanung: `memory/clickup-zeitplanung.md`
+- Helm DEV: `deployment/helm/values/values-dev.yaml` (noch HTTP/IP)
+- Helm TEST: `deployment/helm/values/values-test.yaml` (noch HTTP/IP)
+- Upstream-Blocker Code: `backend/onyx/server/manage/search_settings.py:50`

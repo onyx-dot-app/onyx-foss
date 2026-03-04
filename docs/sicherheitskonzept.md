@@ -198,7 +198,7 @@ letsencrypt:
   enabled: false  # Kein TLS bis DNS verfügbar
 ```
 
-**Abhängigkeit**: DNS-Zone (`*.chatbot.voeb.example.com`) muss von VÖB IT eingerichtet werden. Ohne DNS kein TLS-Zertifikat (Let's Encrypt braucht eine Domain).
+**Abhängigkeit**: DNS-Zone (`*.chatbot.voeb-service.de`) muss von VÖB IT eingerichtet werden. Ohne DNS kein TLS-Zertifikat (Let's Encrypt braucht eine Domain).
 
 #### Interne Kommunikation (Cluster-intern)
 
@@ -400,7 +400,7 @@ application.add_middleware(
 )
 ```
 
-> **Bekannte Einschränkung:** Die aktuelle CORS-Konfiguration ist permissiv (`allow_methods=["*"]`, `allow_headers=["*"]`, `allow_credentials=True`). Für PROD sollte evaluiert werden, ob `allow_methods` auf die tatsächlich genutzten HTTP-Methoden (GET, POST, PUT, DELETE, PATCH) und `allow_headers` auf die benötigten Header eingeschränkt werden können. Ebenso sollte `CORS_ALLOWED_ORIGIN` auf die tatsächliche Produktions-Domain beschränkt werden (z.B. `https://chatbot.voeb.example.com`).
+> **Bekannte Einschränkung:** Die aktuelle CORS-Konfiguration ist permissiv (`allow_methods=["*"]`, `allow_headers=["*"]`, `allow_credentials=True`). Für PROD sollte evaluiert werden, ob `allow_methods` auf die tatsächlich genutzten HTTP-Methoden (GET, POST, PUT, DELETE, PATCH) und `allow_headers` auf die benötigten Header eingeschränkt werden können. Ebenso sollte `CORS_ALLOWED_ORIGIN` auf die tatsächliche Produktions-Domain beschränkt werden (z.B. `https://chatbot.voeb-service.de`).
 
 ### Route-Auth-Prüfung
 
@@ -508,7 +508,7 @@ azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415     # v4
 | API-Protokoll | OpenAI-kompatible API über HTTPS |
 | Region | EU01 Frankfurt (Daten bleiben in Deutschland) |
 | Chat-Modelle | GPT-OSS 120B (131K Kontext), Qwen3-VL 235B (218K Kontext) |
-| Embedding-Modell | E5 Mistral 7B (geplant, noch nicht konfiguriert) |
+| Embedding-Modell | nomic-embed-text-v1 (self-hosted, aktiv). Ziel: Qwen3-VL-Embedding 8B (blockiert durch Upstream PR #7541) |
 | Auth | Token-basiert (StackIT AI Model Serving Token) |
 | Preise | 0,45 EUR / 1M Input-Tokens, 0,65 EUR / 1M Output-Tokens |
 

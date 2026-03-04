@@ -51,7 +51,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - GPT-OSS 120B als primäres Chat-Modell konfiguriert und verifiziert
   - Qwen3-VL 235B als zweites Chat-Modell konfiguriert und verifiziert
   - OpenAI-kompatible API via StackIT (Daten bleiben in DE)
-  - Embedding-Modell (E5 Mistral 7B) geplant, noch nicht konfiguriert
+  - Embedding-Modell: Wechsel auf Qwen3-VL-Embedding 8B blockiert (Upstream PR #7541). Fallback nomic-embed-text-v1 aktiv.
 - [Feature] **Phase 4a: Extension Framework Basis**
   - `backend/ext/` Paketstruktur mit `__init__.py`, `config.py`, `routers/`
   - Feature Flag System: `EXT_ENABLED` Master-Switch + 6 Modul-Flags (AND-gated, alle default `false`)

@@ -87,7 +87,7 @@
 |--------|------------------|------------|--------|
 | GPT-OSS 120B | `openai/gpt-oss-120b` | Chat-Antworten (primär) | ✅ Verifiziert (DEV) |
 | Qwen3-VL 235B | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | Chat + Vision/OCR | ✅ Verifiziert (DEV) |
-| E5 Mistral 7B | `intfloat/e5-mistral-7b-instruct` | Embedding / Vektor-Suche | ⏳ Geplant |
+| Qwen3-VL-Embedding 8B | `Qwen/Qwen3-VL-Embedding-8B` | Embedding / Vektor-Suche (multilingual, 32k Context) | ⏳ Geplant |
 
 **Weitere verfuegbare Modelle (Fallback):** Llama 3.3 70B, Gemma 3 27B, Mistral-Nemo 12B, Llama 3.1 8B
 

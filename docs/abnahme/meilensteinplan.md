@@ -63,7 +63,7 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 - **LLM-Integration (StackIT AI Model Serving)**
   - Chat-Modell: GPT-OSS 120B (131K Kontext) -- verifiziert 2026-02-27
   - Chat-Modell: Qwen3-VL 235B (218K Kontext) -- verifiziert 2026-02-27
-  - Embedding-Modell: E5 Mistral 7B -- noch nicht konfiguriert
+  - Embedding-Modell: nomic-embed-text-v1 aktiv (Fallback). Wechsel auf Qwen3-VL-Embedding 8B blockiert (Upstream PR #7541).
   - Konfiguration: OpenAI-kompatible API via LiteLLM, reine Admin-UI-Konfiguration
 
 - **CI/CD Pipeline (GitHub Actions)**
@@ -110,11 +110,11 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 | Nr. | Thema | Status |
 |-----|-------|--------|
-| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb.example.com` / `test.chatbot.voeb.example.com`) | Blockiert (VÖB IT) |
+| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | Blockiert (VÖB IT, Leif) |
 | M1-N2 | TLS/HTTPS (nach DNS-Setup) | Blockiert (DNS) |
-| M1-N3 | Embedding-Modell (E5 Mistral 7B) konfigurieren | Offen |
-| M1-N4 | LLM in TEST Admin UI konfigurieren | Offen |
-| M1-N5 | CI/CD `workflow_dispatch` fuer TEST verifizieren | Offen |
+| M1-N3 | Embedding-Modell (Qwen3-VL-Embedding 8B) konfigurieren | ⚠️ Blockiert (Upstream PR #7541). Fallback nomic-embed-text-v1 aktiv, RAG funktional. |
+| M1-N4 | LLM in TEST Admin UI konfigurieren | ✅ Erledigt (2026-03-03) |
+| M1-N5 | CI/CD `workflow_dispatch` fuer TEST verifizieren | ✅ Erledigt (2026-03-03) |
 
 ### Verantwortlichkeiten
 

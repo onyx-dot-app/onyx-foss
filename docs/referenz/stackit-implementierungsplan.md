@@ -465,10 +465,10 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 | Provider Name | `openai` |
 | API Key | Gleicher Auth Token |
 | API Base | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
-| Model Name | `intfloat/e5-mistral-7b-instruct` |
-| Default Model | `intfloat/e5-mistral-7b-instruct` |
+| Model Name | `Qwen/Qwen3-VL-Embedding-8B` |
+| Default Model | `Qwen/Qwen3-VL-Embedding-8B` |
 
-**Modell-Details E5 Mistral 7B:** 4096 Dimensionen, max 4096 Tokens, 0,02 EUR / 1M Tokens.
+**Modell-Details Qwen3-VL-Embedding 8B:** 4096 Dimensionen (flexibel 64–4096), max 32.768 Tokens, 30+ Sprachen inkl. Deutsch, multimodal (Text + Bilder). MTEB Multilingual #1 (Score 70.58). Ersetzt E5 Mistral 7B (nur Englisch empfohlen).
 
 ### 6.4 Weitere verfügbare Modelle (Fallback / Alternativen)
 
@@ -636,7 +636,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Onyx UI erreichbar | `http://188.34.74.187/auth/login` → Login-Seite | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
-| LLM Embedding-Modell | E5 Mistral 7B für Dokumenten-Suche | [ ] ⏳ |
+| LLM Embedding-Modell | Qwen3-VL-Embedding 8B fuer Dokumenten-Suche | [ ] ⚠️ Blockiert (Upstream PR #7541). Fallback: nomic-embed-text-v1 aktiv. |
 | CI/CD funktioniert | Push auf develop → Pods updated | [x] ✅ Run #5 (2026-03-02): 10 Min, 10/10 Pods, Health OK |
 
 ---
@@ -663,7 +663,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Schritt | Wann | Was | Status |
 |---------|------|-----|--------|
 | TEST Environment | Nach DEV-Validierung | Phase 7: Node Pool skalieren, PG + Bucket + Namespace + Helm | ✅ LIVE (2026-03-03) |
-| Embedding-Modell | Parallel zu TEST | E5 Mistral 7B in Admin UI konfigurieren | ⏳ Offen |
+| Embedding-Modell | Parallel zu TEST | Qwen3-VL-Embedding 8B in Admin UI konfigurieren | ⚠️ Blockiert (Upstream PR #7541, OpenSearch-Migration). nomic-embed-text-v1 als Fallback aktiv. |
 | Branding | Nach TEST-Setup | Logo-Dateien ersetzen, ext/-Komponenten | ⏳ Offen |
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
 | DNS + TLS | Nach DNS-Setup | Let's Encrypt oder StackIT-CA | Blockiert (VÖB IT) |
@@ -687,7 +687,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 7 | DB `onyx` + `db_readonly_user` anlegen | Niko | ✅ Erledigt (2026-02-27) |
 | 8 | Object Storage Credentials | Niko | ✅ Erledigt (2026-02-27) |
 | 9 | StackIT AI Model Serving (Chat-Modell konfiguriert) | Niko | ✅ Erledigt (2026-02-27) |
-| 10 | DNS-Zone (`dev.chatbot.voeb.example.com` → `188.34.74.187`) | VÖB IT | Offen |
+| 10 | DNS-Zone (`dev.chatbot.voeb-service.de` → `188.34.74.187`) | VÖB IT | Offen |
 | 11 | Entra ID Credentials | VÖB IT | Blockiert |
 | 12 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |
 | 13 | CI/CD Pipeline Helm-Fixes | Niko | ✅ Erledigt (2026-03-02) — `f3a22017f` + `64c9c7aca` |
