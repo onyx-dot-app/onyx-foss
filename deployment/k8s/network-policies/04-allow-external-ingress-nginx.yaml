@@ -5,8 +5,8 @@
 #
 # Ohne diese Policy: LoadBalancer-Traffic wird blockiert → 502/503 fuer alle Nutzer.
 #
-# Pod-Selektor: Standard ingress-nginx Chart Labels (verifiziert aus Chart v4.13.3)
-#   app.kubernetes.io/name: ingress-nginx
+# Pod-Selektor: Onyx Helm Chart nginx Labels (verifiziert per kubectl, 2026-03-05)
+#   app.kubernetes.io/name: nginx          (NICHT ingress-nginx!)
 #   app.kubernetes.io/component: controller
 #
 # Ingress: Uneingeschraenkt (nginx ist gehaertet fuer externen Traffic)
@@ -25,7 +25,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/name: nginx
       app.kubernetes.io/component: controller
   policyTypes:
     - Ingress

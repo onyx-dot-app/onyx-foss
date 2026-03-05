@@ -9,6 +9,13 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Security
+- [Infra] **C5/SEC-03: NetworkPolicies auf DEV + TEST applied** (2026-03-05)
+  - 5 Policies: default-deny, DNS-egress, intra-namespace, external-ingress-nginx, external-egress
+  - Zero-Trust Baseline: DEV ↔ TEST Cross-Namespace-Isolation verifiziert
+  - Fix: DNS-Port 8053 (StackIT/Gardener CoreDNS targetPort nach DNAT)
+  - Fix: nginx-Label `ingress-nginx` → `nginx` (Onyx Helm Chart)
+  - Audit-Dokumentation: `docs/audit/networkpolicy-analyse.md`
+  - Apply/Rollback-Skripte: `deployment/k8s/network-policies/`
 - [Infra] **C6: DB_READONLY_PASSWORD in K8s Secret verschoben** (2026-03-05)
   - Passwort war im Klartext in K8s ConfigMap — jetzt über `auth.dbreadonly` als K8s Secret (identisch zu postgresql/redis/objectstorage)
   - CI/CD Workflow in allen 3 Deploy-Jobs angepasst

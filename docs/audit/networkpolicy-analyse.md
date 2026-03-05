@@ -2,7 +2,7 @@
 
 > **Datum:** 2026-03-05
 > **Autor:** Nikolaj Ivanov (CCJ / Coffee Studios)
-> **Status:** Analyse abgeschlossen, Umsetzung ausstehend
+> **Status:** DEV angewendet (2026-03-05), TEST ausstehend
 > **Audit-Referenz:** C5 (CRITICAL) + SEC-03 (P1) aus `cloud-infrastruktur-audit-2026-03-04.md`
 > **Cluster:** StackIT SKE, K8s v1.32.12, Region EU01 Frankfurt
 
@@ -122,7 +122,7 @@ celery-worker-primary   → api-server                     8080    INTERNAL_URL
 | inference-/indexing-model-server | Evtl. externe Embedding API | 443 | HTTPS | Remote Embeddings (nomic) |
 | nginx Controller | K8s API (`kubernetes.default.svc`) | 443 | HTTPS | Ingress-Resource-Watch |
 | celery-beat | K8s API (`kubernetes.default.svc`) | 443 | HTTPS | Leader Election (Lease) |
-| Alle Pods | CoreDNS (`kube-system`) | 53 | UDP+TCP | DNS-Aufloesung |
+| Alle Pods | CoreDNS (`kube-system`) | 53 + 8053 | UDP+TCP | DNS-Aufloesung (Service:53, Pod:8053 nach DNAT) |
 
 ### 3.3 Eingehender Traffic (Ingress)
 
@@ -166,7 +166,7 @@ app: <component>                              # Deployment-spezifisch
 | **inference-model-server** | `app: inference-model-server` | **NUR `app`-Label, KEIN `app.kubernetes.io/name`!** Eigenes Key-Value-Template. |
 | **vespa** | `app: vespa`, `app.kubernetes.io/instance: onyx`, `app.kubernetes.io/name: vespa` | **Hardcoded Name `da-vespa`, `instance: onyx` (ohne `-dev`)** |
 | **redis** | `app: onyx-dev` | **Operator-generiert, Label = Release-Name** |
-| **nginx Controller** | `app.kubernetes.io/name: ingress-nginx`, `app.kubernetes.io/instance: onyx-dev`, `app.kubernetes.io/component: controller` | **Eigenes Chart (ingress-nginx-4.13.3)** |
+| **nginx Controller** | `app.kubernetes.io/name: nginx`, `app.kubernetes.io/instance: onyx-dev`, `app.kubernetes.io/component: controller` | **Eigenes Chart (nginx-4.13.3), NICHT `ingress-nginx`!** |
 
 ### 4.3 Auswirkung auf NetworkPolicy-Design
 
@@ -176,9 +176,11 @@ Der **einzige pod-spezifische Selektor** wird fuer die nginx-Ingress-Policy beno
 ```yaml
 podSelector:
   matchLabels:
-    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/name: nginx       # NICHT ingress-nginx!
     app.kubernetes.io/component: controller
 ```
+
+> **Lesson Learned (2026-03-05):** Das Onyx Helm Chart benennt den nginx-Chart als `nginx` (nicht `ingress-nginx`). Die Pod-Labels werden von `_helpers.tpl` des Sub-Charts generiert — immer mit `kubectl get pod --show-labels` verifizieren, nie aus der Chart-Doku annehmen.
 
 ---
 
@@ -219,6 +221,32 @@ Der K8s API Server (`kubernetes.default.svc:443`) hat eine **ClusterIP in privat
 
 **Vorteil:** Keine Duplikation, identische Policies fuer DEV und TEST.
 
+### 5.4 DNS-Egress: Port 53 + 8053 (StackIT/Gardener-spezifisch)
+
+**Entscheidung:** DNS-Egress erlaubt sowohl Port 53 als auch Port 8053, ohne `podSelector`/`namespaceSelector`.
+
+**Begruendung:**
+
+StackIT SKE (Gardener) betreibt CoreDNS auf **Port 8053** (nicht 53). Der kube-dns Service mapped `53 → 8053` per `targetPort`. Da Calico NetworkPolicies **nach DNAT** evaluiert werden, sieht die Policy den tatsaechlichen Ziel-Port (8053), nicht den Service-Port (53).
+
+| Ansatz | Problem |
+|--------|---------|
+| Nur Port 53 | Blockiert DNS — Calico sieht Port 8053 nach DNAT |
+| Port 53 + `namespaceSelector: kube-system` + `podSelector: k8s-app=kube-dns` | Blockiert DNS — ClusterIP wird per DNAT aufgeloest, Port 8053 matcht nicht |
+| Port 53 + 8053, ohne Selektor (gewaehlt) | Funktioniert — Port-basierte Filterung, robust gegen CNI-Verhalten |
+
+**Nachweis:**
+```
+# kube-dns Service: port 53 → targetPort 8053
+kubectl get endpoints -n kube-system kube-dns
+→ 100.64.1.21:8053, 100.64.1.8:8053
+
+# DNS-Aufloesung verifiziert nach Fix
+kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- python3 -c \
+  "import socket; print(socket.getaddrinfo('google.com', 443)[0][4])"
+→ ('142.250.186.78', 443)
+```
+
 ---
 
 ## 6. Policy-Uebersicht
@@ -228,7 +256,7 @@ Der K8s API Server (`kubernetes.default.svc:443`) hat eine **ClusterIP in privat
 | # | Datei | policyTypes | podSelector | Zweck |
 |---|-------|------------|-------------|-------|
 | 01 | `default-deny-all.yaml` | Ingress, Egress | `{}` (alle) | Zero-Trust Baseline |
-| 02 | `allow-dns-egress.yaml` | Egress | `{}` (alle) | DNS-Aufloesung (kube-system:53) |
+| 02 | `allow-dns-egress.yaml` | Egress | `{}` (alle) | DNS-Aufloesung (Port 53 + 8053, siehe 5.4) |
 | 03 | `allow-intra-namespace.yaml` | Ingress, Egress | `{}` (alle) | Intra-Namespace-Kommunikation |
 | 04 | `allow-external-ingress-nginx.yaml` | Ingress | nginx Controller | Externer Traffic → nginx |
 | 05 | `allow-external-egress.yaml` | Egress | `{}` (alle) | PG:5432 + HTTPS:443 |
@@ -240,7 +268,7 @@ ERLAUBT:
   ✅ Internet → nginx → api-server/web-server (via 04 + 03)
   ✅ api-server → redis, vespa, model-server (via 03)
   ✅ celery-* → redis, vespa, model-server, api-server (via 03)
-  ✅ Alle Pods → CoreDNS:53 (via 02)
+  ✅ Alle Pods → CoreDNS:53/8053 (via 02)
   ✅ Alle Pods → PG:5432, S3/LLM:443 (via 05)
   ✅ Alle Pods → K8s API:443 (via 05)
 
@@ -259,11 +287,13 @@ BLOCKIERT:
 | # | Test | Befehl | Erwartung |
 |---|------|--------|-----------|
 | 1 | Policies vorhanden | `kubectl get networkpolicy -n onyx-dev` | 5 Policies |
-| 2 | API Health (intra-NS) | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- curl -sf http://localhost:8080/api/health` | `{"status":"ok"}` |
-| 3 | Cross-NS blockiert | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- curl -sf --max-time 3 http://onyx-test-api-service.onyx-test:8080/api/health` | Timeout (blockiert) |
-| 4 | Externe Services | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- curl -sf --max-time 5 https://object.storage.eu01.onstackit.cloud` | Verbindung moeglich |
-| 5 | LoadBalancer | `curl -sf http://188.34.74.187/api/health` | Health OK |
-| 6 | DNS funktioniert | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- nslookup google.com` | Aufloesung erfolgreich |
+| 2 | API Health (intra-NS) | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- python3 -c "import urllib.request; r=urllib.request.urlopen('http://localhost:8080/health'); print(r.status)"` | `200` |
+| 3 | Cross-NS blockiert | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- python3 -c "import urllib.request; urllib.request.urlopen('http://onyx-test-api-server.onyx-test:8080/health', timeout=3)"` | Timeout (blockiert) |
+| 4 | DNS funktioniert | `kubectl exec -n onyx-dev deploy/onyx-dev-api-server -- python3 -c "import socket; print(socket.getaddrinfo('google.com', 443)[0][4])"` | IP-Adresse aufgeloest |
+| 5 | Intra-NS via nginx | `kubectl run test-curl --image=curlimages/curl --rm -it --restart=Never -n onyx-dev -- curl -s -o /dev/null -w '%{http_code}' http://onyx-dev-nginx-controller/health` | `200` oder `307` |
+| 6 | LoadBalancer | `curl -sf http://188.34.74.187/health` | `307` (Redirect zu Login) |
+
+> **Hinweis:** Die Onyx-Container enthalten weder `curl` noch `nslookup`. Fuer In-Pod-Tests `python3` verwenden. Fuer Cluster-interne HTTP-Tests: temporaeren `curlimages/curl`-Pod starten. Der Health-Endpoint ist `/health` (nicht `/api/health`).
 
 ### 7.2 Rollback-Kriterien
 
@@ -304,3 +334,4 @@ Sofortiger Rollback wenn:
 | Datum | Aenderung | Autor |
 |-------|----------|-------|
 | 2026-03-05 | Erstanalyse, Traffic-Matrix, Design-Entscheidungen | Nikolaj Ivanov (CCJ) |
+| 2026-03-05 | Fix: nginx-Label `ingress-nginx` → `nginx` (Policy 04), DNS-Port 8053 hinzugefuegt (Policy 02), Abschnitt 5.4 ergaenzt, DEV applied | Nikolaj Ivanov (CCJ) |
