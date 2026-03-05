@@ -64,6 +64,5 @@ Enterprise-AI-Chatbot basierend auf Onyx FOSS mit Custom Extension Layer für de
 | Technische Leitung | CCJ / Coffee Studios | Nikolaj Ivanov |
 | Projektmanagement | CCJ / Coffee Studios | Benito-Miguel Schwankhart |
 | Auftraggeber | VÖB | Luca Koenes |
-| Subunternehmer | JNnovate | Petrisor Pintea |
 
-Letzte Aktualisierung: 2026-03-03
+Letzte Aktualisierung: 2026-03-05

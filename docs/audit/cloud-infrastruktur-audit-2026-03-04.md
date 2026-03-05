@@ -99,21 +99,12 @@
 ### C5: Keine NetworkPolicies (DEV ↔ TEST nicht isoliert)
 - **Risiko:** Kompromittierter Pod in DEV kann TEST-DB erreichen (shared Cluster)
 - **Massnahme:**
-  - [ ] Default-Deny NetworkPolicy pro Namespace:
-    ```yaml
-    apiVersion: networking.k8s.io/v1
-    kind: NetworkPolicy
-    metadata:
-      name: default-deny-all
-      namespace: onyx-dev
-    spec:
-      podSelector: {}
-      policyTypes: [Ingress, Egress]
-    ```
-  - [ ] Whitelist-Policies fuer erlaubten Traffic (Ingress→Web, Web→API, API→PG/Redis/Vespa)
-  - [ ] Gleiches fuer `onyx-test`
-  - [ ] Testen: `kubectl exec` in Pod → Verbindung zu anderem Namespace schlaegt fehl
-- **Status:** [ ] Erledigt
+  - [x] Default-Deny NetworkPolicy pro Namespace (01-default-deny-all.yaml)
+  - [x] Whitelist-Policies fuer erlaubten Traffic (02-DNS, 03-Intra-NS, 04-Ingress-nginx, 05-Egress)
+  - [x] Gleiches fuer `onyx-test`
+  - [x] Testen: Cross-NS-Isolation verifiziert (DEV → TEST blockiert)
+- **Loesung:** 5 NetworkPolicies in `deployment/k8s/network-policies/`, Analyse in `docs/audit/networkpolicy-analyse.md`
+- **Status:** [x] Erledigt (2026-03-05)
 
 ---
 
@@ -702,7 +693,7 @@ gh workflow run stackit-deploy.yml -f environment=dev -f image_tag='"; echo PWNE
 
 **Container-Hardening (Woche 2-3):**
 10. **C4:** Non-Root Container + SecurityContext
-11. **C5:** NetworkPolicies (DEV + TEST Isolation)
+11. ~~**C5:** NetworkPolicies (DEV + TEST Isolation)~~ ✅ Erledigt (2026-03-05)
 12. **M3:** Resource Limits/Requests
 13. **M4:** Redis-Passwort
 

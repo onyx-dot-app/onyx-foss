@@ -11,9 +11,9 @@
 - Namespace `onyx-dev` existiert mit Image Pull Secret
 - PostgreSQL Flex: Datenbank `onyx` existiert (siehe [PostgreSQL Runbook](./stackit-postgresql.md))
 - Object Storage: Credentials erstellt (siehe unten)
-- Redis Operator installiert:
+- Redis Operator installiert (im `default` Namespace, verwaltet Redis-Pods in allen Namespaces):
   ```bash
-  helm install redis ot-helm/redis-operator --namespace onyx-dev
+  helm install redis ot-helm/redis-operator --namespace default
   ```
 
 ---

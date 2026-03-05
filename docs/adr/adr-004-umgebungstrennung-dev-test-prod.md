@@ -83,7 +83,7 @@ Mit der erfolgreichen Inbetriebnahme der DEV-Umgebung (Phase 2, 2026-02-27) und 
 ### Deployment-Pipeline: Kontrollierte Promotion
 
 ```
-develop Branch ──push──→ DEV (automatisch)
+main Branch ──push──→ DEV (automatisch)
                            │
                     workflow_dispatch
                            │
@@ -272,7 +272,7 @@ Secrets: POSTGRES_PASSWORD, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
 ### Schritt 4: Deploy + Validierung
 
 ```bash
-# Manueller workflow_dispatch auf develop → Environment: test
+# Manueller workflow_dispatch auf main → Environment: test
 # Validierung: kubectl get pods -n onyx-test, /api/health
 ```
 

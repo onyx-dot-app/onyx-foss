@@ -336,7 +336,7 @@ Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`,
 
 Aktueller Stand: SEC-01 umgesetzt (PG ACL). SEC-02 bis SEC-07 geplant vor PROD. Details siehe `docs/sicherheitskonzept.md`.
 
-1. **Network Policies**: Kubernetes Network Policies fuer Pod-Segmentierung -- geplant (SEC-03)
+1. **Network Policies**: Kubernetes Network Policies fuer Pod-Segmentierung -- implementiert (SEC-03, 2026-03-05)
 2. **TLS/SSL**: cert-manager + Let's Encrypt (Cloudflare DNS-01), ECDSA P-384 (BSI TR-02102-2) -- in Umsetzung
 3. **Secrets Management**: Kubernetes Secrets (Sealed Secrets vor PROD geplant)
 4. **IAM**: StackIT Service Account + kubeconfig (kein Bastion Host)

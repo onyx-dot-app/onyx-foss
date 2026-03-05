@@ -47,7 +47,7 @@ Zeige Niko die Modulspezifikation. Erst nach EXPLIZITER Freigabe wird Code gesch
 ## Schritt 5: Implementierung
 
 Erst jetzt Code schreiben — strikt nach Spec:
-- Feature-Branch: `feature/{modulname}` von develop
+- Feature-Branch: `feature/{modulname}` von main
 - Backend: `backend/ext/`
 - Frontend: `web/src/ext/`
 - Tests: `backend/tests/ext/` + `web/src/ext/__tests__/`

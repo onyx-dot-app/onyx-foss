@@ -42,7 +42,7 @@ Das Extension Framework bildet die technische Grundlage für alle VÖB-spezifisc
 
 ### Abhängige Module / Prerequisites
 - [x] Onyx Basis-Installation (vorhanden)
-- [x] Git Fork-Setup (vorhanden, Branch `develop`)
+- [x] Git Fork-Setup (vorhanden, Branch `main`)
 
 ---
 

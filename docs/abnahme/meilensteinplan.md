@@ -1,8 +1,8 @@
 # Meilensteinplan -- VÖB Service Chatbot
 
 **Dokumentstatus**: In Bearbeitung
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-05
+**Version**: 0.3
 
 ---
 
@@ -70,7 +70,7 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
   - Workflow: `.github/workflows/stackit-deploy.yml`
   - Parallel-Build Backend + Frontend (~10 Min gesamt)
   - Model Server: Docker Hub Upstream `v2.9.8` (gepinnt)
-  - DEV: automatisch bei `develop`-Push. TEST/PROD: manuell via `workflow_dispatch`
+  - DEV: automatisch bei `main`-Push. TEST/PROD: manuell via `workflow_dispatch`
   - SHA-gepinnte GitHub Actions (Supply-Chain-Schutz)
   - Concurrency Control, Least-Privilege Permissions
   - Smoke Test (`/api/health`, 120s Timeout) -- nur fuer DEV + TEST. PROD: `kubectl rollout status` Verify-Step
@@ -110,8 +110,8 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 | Nr. | Thema | Status |
 |-----|-------|--------|
-| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | Blockiert (VÖB IT, Leif) |
-| M1-N2 | TLS/HTTPS (nach DNS-Setup) | Blockiert (DNS) |
+| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | ✅ A-Records gesetzt (2026-03-05). ⚠️ Cloudflare Proxy→DNS-only ausstehend (Leif) |
+| M1-N2 | TLS/HTTPS (nach DNS-Setup) | Blockiert (Cloudflare Proxy-Umstellung) |
 | M1-N3 | Embedding-Modell (Qwen3-VL-Embedding 8B) konfigurieren | ⚠️ Blockiert (Upstream PR #7541). Fallback nomic-embed-text-v1 aktiv, RAG funktional. |
 | M1-N4 | LLM in TEST Admin UI konfigurieren | ✅ Erledigt (2026-03-03) |
 | M1-N5 | CI/CD `workflow_dispatch` fuer TEST verifizieren | ✅ Erledigt (2026-03-03) |
@@ -368,7 +368,7 @@ Vollstaendiges Testing durchgefuehrt. Security-Haertung abgeschlossen. System is
 
 - **Security-Haertung (P1 -- vor PROD)**
   - SEC-02: Node Affinity erzwingen (DEV/TEST auf eigene Nodes)
-  - SEC-03: Kubernetes NetworkPolicies (Namespace-Isolation auf Netzwerkebene)
+  - ~~SEC-03: Kubernetes NetworkPolicies~~ → **ERLEDIGT** (2026-03-05, vorgezogen aus M5)
   - SEC-04: Terraform Remote State (State-Bucket statt lokaler State)
   - SEC-05: Separate Kubeconfigs pro Environment (Least-Privilege CI/CD)
 
@@ -507,7 +507,6 @@ System ist produktiv deployed, validiert und an VÖB uebergeben.
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
 | Entra ID Zugangsdaten | VÖB IT | Blockiert M2 (Auth) |
-| JNnovate Scope | JNnovate | Aufgabenverteilung unklar |
 | DNS-Eintraege | VÖB IT | Blockiert TLS/HTTPS |
 
 ---
@@ -579,5 +578,5 @@ Falls Abnahme verweigert wird:
 ---
 
 **Dokumentstatus**: In Bearbeitung
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-05
+**Version**: 0.3

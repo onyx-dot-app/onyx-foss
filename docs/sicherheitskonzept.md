@@ -1,8 +1,8 @@
 # Sicherheitskonzept -- VÖB Service Chatbot
 
 **Dokumentstatus**: Entwurf (teilweise implementiert)
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-05
+**Version**: 0.3
 **Nächste Überprüfung**: 2026-04-03
 
 ---
@@ -13,6 +13,7 @@
 |---------|-------|-------|------------|
 | 0.1 | 2026-02 | Nikolaj Ivanov | Initialer Entwurf |
 | 0.2 | 2026-03-03 | Nikolaj Ivanov | Überarbeitung auf tatsächlichen Infrastruktur-Stand (DEV + TEST live), Security-Audit-Findings SEC-01 bis SEC-07 integriert, Code-Beispiele korrigiert (Python/FastAPI), Secrets Management aktualisiert |
+| 0.3 | 2026-03-05 | Nikolaj Ivanov | Cloud-Infrastruktur-Audit (2026-03-04) referenziert, SEC-03 als ERLEDIGT (NetworkPolicies DEV+TEST), 3 Quick Wins dokumentiert: C6 (DB_READONLY→K8s Secret), H8 (Security-Header), H11 (Script Injection Fix), Audit-Datum korrigiert |
 
 ---
 
@@ -198,7 +199,7 @@ letsencrypt:
   enabled: false  # Kein TLS bis DNS verfügbar
 ```
 
-**Abhängigkeit**: Spezifische A-Records (`dev.chatbot.voeb-service.de`, `test.chatbot.voeb-service.de`, `chatbot.voeb-service.de`) müssen von VÖB IT auf Cloudflare eingerichtet werden (DNS-only, keine Wildcard). Ohne DNS kein TLS-Zertifikat (Let's Encrypt braucht eine Domain).
+**DNS-Status (2026-03-05)**: A-Records gesetzt (`dev.chatbot.voeb-service.de` → `188.34.74.187`, `test.chatbot.voeb-service.de` → `188.34.118.201`). **Ausstehend:** Cloudflare Proxy muss auf DNS-only (graue Wolke) umgestellt werden — solange Proxy aktiv ist, terminiert Cloudflare TLS und cert-manager kann kein Zertifikat ausstellen.
 
 #### Interne Kommunikation (Cluster-intern)
 
@@ -251,6 +252,7 @@ Es wird **kein** HashiCorp Vault eingesetzt. Die Secrets-Verwaltung erfolgt übe
 2. **Kubernetes Secrets** (Runtime):
    - `onyx-postgresql` (DB-Credentials)
    - `onyx-redis` (Redis-Passwort)
+   - `onyx-dbreadonly` (DB Readonly-Passwort, seit C6-Fix 2026-03-05)
    - `onyx-objectstorage` (S3-Credentials)
    - `stackit-registry` (Image Pull Secret)
    - Secrets werden per Helm `--set` aus GitHub Actions injiziert (nicht in Git)
@@ -314,15 +316,16 @@ Externe Services (über Internet):
 
 ### Kubernetes Network Policies
 
-**Status: NICHT IMPLEMENTIERT (SEC-03)**
+**Status: IMPLEMENTIERT (SEC-03, 2026-03-05)**
 
-Aktuell existieren **keine** NetworkPolicy-Manifeste. Kubernetes isoliert Namespaces **nicht** auf Netzwerkebene -- Pods in `onyx-dev` können Pods in `onyx-test` direkt erreichen.
+5 NetworkPolicies auf DEV + TEST applied (Zero-Trust Baseline):
+- `01-default-deny-all`: Default-Deny für allen Ingress + Egress
+- `02-allow-dns-egress`: DNS-Egress Port 53 + 8053 (StackIT/Gardener CoreDNS)
+- `03-allow-intra-namespace`: Intra-Namespace-Kommunikation erlaubt
+- `04-allow-external-ingress-nginx`: Ingress nur über NGINX Controller
+- `05-allow-external-egress`: Egress für PostgreSQL (5432) und HTTPS (443)
 
-**Geplant (P1 -- vor PROD)**:
-- Default-Deny Policy pro Namespace
-- Allow-Rules für Intra-Namespace-Kommunikation
-- Explizite Egress-Rules für externe Services (PG Port 5432, S3/LLM Port 443)
-- Voraussetzung: Prüfung ob StackIT SKE einen NetworkPolicy-Controller (Calico) vorinstalliert hat
+Cross-Namespace-Isolation verifiziert (DEV ↔ TEST). Details: `docs/audit/networkpolicy-analyse.md`
 
 ### PostgreSQL Netzwerk-ACL
 
@@ -350,9 +353,16 @@ pg_acl = [
 - TEST: Eigene IngressClass `nginx-test`, LoadBalancer-IP `188.34.118.201` (Konflikt-Vermeidung im Shared Cluster)
 - TLS: **Nicht aktiv** (`letsencrypt.enabled: false`)
 
+**Implementierte Security-Header** (H8, 2026-03-05):
+- `X-Content-Type-Options: nosniff` — verhindert MIME-Type-Sniffing
+- `X-Frame-Options: DENY` — verhindert Clickjacking
+- `Referrer-Policy: strict-origin-when-cross-origin` — beschränkt Referrer-Informationen
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()` — deaktiviert unnötige Browser-APIs
+- Konfiguriert via `http-snippet` in `values-common.yaml`
+
 **Geplant (nach DNS-Setup)**:
 - cert-manager mit Let's Encrypt via Cloudflare DNS-01 Challenge (BSI TR-02102-2: ECDSA P-384 Pflicht, RSA 2048 von LE Standard erfüllt BSI nicht). Details: `docs/runbooks/dns-tls-setup.md`
-- HSTS-Header
+- HSTS-Header (benötigt aktives HTTPS)
 - SSL-Redirect
 
 ### WAF (Web Application Firewall)
@@ -468,13 +478,18 @@ azure/setup-helm@bf6a7d304bc2fdb57e0331155b7ebf2c504acf0a        # v4
 azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415     # v4
 ```
 
+**Input-Sanitierung** (H11, 2026-03-05):
+- `inputs.image_tag` wird als Environment-Variable übergeben (nicht direkt in Shell interpoliert)
+- Docker-Tag-Regex-Validierung: `[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}`
+- `set -euo pipefail` in allen Shell-Schritten
+
 ### Deploy-Verhalten pro Environment
 
 | Feature | DEV | TEST | PROD |
 |---------|-----|------|------|
-| Trigger | `develop`-Push oder manuell | Nur manuell (`workflow_dispatch`) | Nur manuell (`workflow_dispatch`) |
+| Trigger | `main`-Push oder manuell | Nur manuell (`workflow_dispatch`) | Nur manuell (`workflow_dispatch`) |
 | Helm Rollback | Manuell | `--atomic` (automatisch) | `--atomic` (automatisch) |
-| Smoke Test | `/api/health` (120s Timeout) | `/api/health` (120s Timeout) | Geplant |
+| Smoke Test | `/api/health` (120s Timeout) | `/api/health` (120s Timeout) | `/api/health` (180s Timeout, 18 Attempts) |
 | Required Reviewers | Nein | Nein | Ja (GitHub Settings) |
 
 ### Container Registry
@@ -564,7 +579,7 @@ Der VÖB Service Chatbot muss mit folgenden Regelwerken konform sein:
 | DSGVO | AVV (Auftragsverarbeitungsvertrag) | [AUSSTEHEND -- Klärung mit VÖB] |
 | BAIT | Verschlüsselung im Transit | OFFEN (kein TLS, siehe oben) |
 | BAIT | Zugangskontrolle | TEILWEISE (Basic Auth, Entra ID geplant) |
-| BAIT | Netzwerksegmentierung | OFFEN (SEC-03: keine NetworkPolicies) |
+| BAIT | Netzwerksegmentierung | ERFÜLLT (SEC-03: 5 NetworkPolicies, DEV+TEST, 2026-03-05) |
 | BSI-Grundschutz | Container-Härtung | OFFEN (SEC-06: keine SecurityContexts) |
 | BSI-Grundschutz | Verschlüsselung at-rest | OFFEN (SEC-07: nicht verifiziert) |
 
@@ -650,13 +665,13 @@ Kubernetes Pod-Logs werden standardmäßig bei Pod-Restart gelöscht. Ohne zentr
 
 ## Security-Audit Findings (SEC-01 bis SEC-07)
 
-> **Quelle**: Enterprise-Audit der Infrastruktur (2026-03-02). Priorisierung: P0 = vor TEST-Deploy, P1 = vor PROD, P2 = vor VÖB-Abnahme.
+> **Quelle**: Enterprise-Audit der Infrastruktur (2026-03-04). Priorisierung: P0 = vor TEST-Deploy, P1 = vor PROD, P2 = vor VÖB-Abnahme.
 
 | ID | Finding | Priorität | Status |
 |----|---------|-----------|--------|
 | SEC-01 | PostgreSQL ACL auf Cluster-Egress-IP einschränken | P0 | **ERLEDIGT** (2026-03-03) |
 | SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | P1 | OFFEN |
-| SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | OFFEN |
+| SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | **ERLEDIGT** (2026-03-05) |
 | SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | P1 | OFFEN |
 | SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | P1 | OFFEN |
 | SEC-06 | Container SecurityContext (runAsNonRoot etc.) | P2 | OFFEN |
@@ -810,29 +825,31 @@ configMap:
 ### Vor PROD-Deployment (P1)
 
 1. **SEC-02**: Node Affinity erzwingen (`nodeSelector` in Helm Values, damit DEV/TEST auf eigenen Nodes laufen)
-2. **SEC-03**: Kubernetes NetworkPolicies implementieren
+2. ~~**SEC-03**: Kubernetes NetworkPolicies implementieren~~ → **ERLEDIGT** (2026-03-05, siehe `docs/audit/networkpolicy-analyse.md`)
 3. **SEC-04**: Terraform Remote State migrieren
 4. **SEC-05**: Separate Kubeconfigs pro Environment
-5. **TLS**: DNS-Einträge von VÖB IT, dann Let's Encrypt aktivieren
-6. **Entra ID**: App Registration + Credentials von VÖB IT
+5. **M7**: Cluster-API-ACL (`cluster_acl`) von `0.0.0.0/0` auf Cluster-Egress-IP einschränken (analog SEC-01 für PG)
+6. **TLS**: DNS-Einträge von VÖB IT, dann Let's Encrypt aktivieren
+7. **Entra ID**: App Registration + Credentials von VÖB IT
 
 ### Vor VÖB-Abnahme (P2)
 
 7. **SEC-06**: Container SecurityContext (runAsNonRoot)
 8. **SEC-07**: Encryption-at-Rest bei StackIT verifizieren und dokumentieren
 9. **Penetration Test**: Externe Durchführung
-10. **DSGVO-Assessment**: Datenschutzerklärung, AVV, Löschkonzept
-11. **BAIT-Compliance-Check**: Vollständige Prüfung gegen BAIT-Anforderungen
+10. **DSGVO-Assessment (C5)**: Datenschutz-Folgenabschätzung (DSFA), Auftragsverarbeitungsvertrag (AVV), Löschkonzept erstellen
+11. **BAIT-Compliance-Check (M2)**: Vollständige Prüfung gegen BAIT-Anforderungen, Lücken im Sicherheitskonzept schließen
+12. **IP-Ownership (M3)**: In ADR-001 "CCJ oder VÖB" eindeutig klären
 
 ### Dokumentations-Finalisierung
 
-12. Incident Contact List vervollständigen
-13. Aufbewahrungsfristen mit VÖB definieren
-14. Dieses Dokument auf Version 1.0 bringen (nach Umsetzung aller P1-Items)
+13. Incident Contact List vervollständigen
+14. Aufbewahrungsfristen mit VÖB definieren
+15. Dieses Dokument auf Version 1.0 bringen (nach Umsetzung aller P1-Items)
 
 ---
 
 **Dokumentstatus**: Entwurf (teilweise implementiert)
-**Version**: 0.2
-**Letzte Aktualisierung**: 2026-03-03
+**Version**: 0.3
+**Letzte Aktualisierung**: 2026-03-05
 **Nächste Überprüfung**: 2026-04-03

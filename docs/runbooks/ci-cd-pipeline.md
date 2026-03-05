@@ -19,7 +19,7 @@
 ### Übersicht
 
 ```
-Push auf develop / workflow_dispatch
+Push auf main / workflow_dispatch
         │
     ┌───▼───┐
     │prepare│  (6s) Image Tag bestimmen (Git SHA oder manuell)
@@ -65,9 +65,9 @@ Der **Model Server** wird nicht gebaut. Er nutzt das offizielle Onyx-Image von D
 
 ### Automatisch (DEV)
 
-Push auf `develop` löst automatisch DEV-Deploy aus:
+Push auf `main` löst automatisch DEV-Deploy aus:
 ```bash
-git push origin develop
+git push origin main
 ```
 
 Ausnahme: Änderungen nur an `docs/**`, `*.md`, `.claude/**` lösen keinen Build aus.

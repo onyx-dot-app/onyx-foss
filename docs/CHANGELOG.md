@@ -207,7 +207,7 @@ Beispiel: `1.2.3`
 - Zielgruppe: Interne Review
 
 ### v0.5 – Stakeholder Review (geplant)
-- Feedback von VÖB, CCJ, JNnovate eingearbeitet
+- Feedback von VÖB und CCJ eingearbeitet
 - Status: In Überarbeitung
 
 ### v1.0 – Final Release (geplant)
@@ -276,7 +276,6 @@ docs/
 ## Mitwirkende
 
 - **CCJ**: Projektleitung und Governance
-- **JNnovate**: [Scope in Klärung]
 - **StackIT**: Cloud-Infrastruktur
 - **VÖB**: Anforderungen und Abnahme
 
@@ -308,6 +307,6 @@ Bei Fragen zur Dokumentation:
 
 ---
 
-**Letzte Aktualisierung**: 2026-03-03
+**Letzte Aktualisierung**: 2026-03-05
 **Wartete durch**: [AUSSTEHEND]
 **Nächste Überprüfung**: [AUSSTEHEND]

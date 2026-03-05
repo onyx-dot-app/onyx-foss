@@ -171,7 +171,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 Die Pipeline ist in `.github/workflows/stackit-deploy.yml` definiert und seit Run #5 produktionsreif verifiziert.
 
 ```
-Git Push auf "develop"
+Git Push auf "main"
   ↓
 GitHub Actions Workflow (automatisch)
   ├── Prepare: Image Tag bestimmen (Git SHA)
@@ -260,7 +260,7 @@ helm upgrade --install onyx-test deployment/helm/charts/onyx \
 
 **Aktuell ist kein dediziertes Monitoring-Stack (Prometheus/Grafana/AlertManager) im Einsatz.** Die Überwachung erfolgt über:
 
-1. **CI/CD Smoke Tests**: Jeder Deploy prüft `/api/health` (12 Versuche, je 10s Wartezeit)
+1. **CI/CD Smoke Tests**: Jeder Deploy prüft `/api/health` (DEV/TEST: 12 Versuche à 10s = 120s, PROD: 18 Versuche à 10s = 180s)
 2. **Kubernetes-native Prüfungen**: `kubectl get pods`, `kubectl describe`, `kubectl logs`
 3. **Helm Status**: `helm status onyx-{env} -n onyx-{env}`
 4. **StackIT Console**: Managed-Service-Metriken für PostgreSQL und Object Storage
@@ -391,7 +391,7 @@ Der Monitoring-Ausbau ist für die PROD-Vorbereitung geplant und umfasst:
 1. Feature Branch (`feature/{modulname}`)
 2. Implementierung in `backend/ext/` und/oder `web/src/ext/`
 3. Tests + Code Review
-4. Merge auf `develop`
+4. Merge auf `main`
 5. Automatischer Deploy auf DEV (Push-Trigger)
 6. Manueller Deploy auf TEST (workflow_dispatch)
 7. Manueller Deploy auf PROD (workflow_dispatch + Approval)
@@ -430,7 +430,7 @@ Der Monitoring-Ausbau ist für die PROD-Vorbereitung geplant und umfasst:
 
 - Eigener SKE-Cluster (ADR-004)
 - Mehrere Replicas für API Server und Web Server
-- Separate Celery Worker (kein Lightweight Mode)
+- Separate Celery Worker (kein Lightweight Mode) — **TODO (M9):** Entscheidung Lightweight vs Standard Mode für PROD treffen. Standard Mode bietet bessere Isolation und unabhängige Skalierung der Worker-Typen, braucht aber mehr Ressourcen.
 - Größere Node Types oder mehr Nodes
 - HPA (HorizontalPodAutoscaler) nach Bedarf
 
@@ -578,7 +578,7 @@ SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werde
 |----|---------|-----------|--------|
 | SEC-01 | PostgreSQL ACL auf Cluster-Egress-IP einschränken | P0 | Umgesetzt |
 | SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | P1 | Vor PROD |
-| SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | Vor PROD |
+| SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | **Umgesetzt** (2026-03-05) |
 | SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | P1 | Vor PROD |
 | SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | P1 | Vor PROD |
 | SEC-06 | Container SecurityContext (runAsNonRoot etc.) | P2 | Vor Abnahme |

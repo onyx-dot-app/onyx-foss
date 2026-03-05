@@ -1,7 +1,7 @@
 # Runbook: DNS + HTTPS Setup (Cloudflare DNS-01)
 
-**Status:** Bereit zur Umsetzung
-**Erstellt:** 2026-03-03 | **Aktualisiert:** 2026-03-04
+**Status:** Bereit zur Umsetzung — alle Voraussetzungen erfuellt
+**Erstellt:** 2026-03-03 | **Aktualisiert:** 2026-03-05
 **Erstellt von:** Nikolaj Ivanov (CCJ / Coffee Studios)
 
 ---
@@ -178,8 +178,8 @@ cert-manager benoetigt einen Cloudflare API Token um DNS-TXT-Records fuer die Ze
 | # | Aufgabe | Wer | Status |
 |---|---------|-----|--------|
 | 1 | Subdomain-Name festlegen | Pascal/Leif | **ERLEDIGT** — `chatbot` |
-| 2 | 2x DNS A-Record anlegen (DNS-only!) | Leif | Ausstehend |
-| 3 | Cloudflare API Token erstellen | Leif | Ausstehend |
+| 2 | 2x DNS A-Record anlegen (DNS-only!) | Leif | **ERLEDIGT** (2026-03-05) |
+| 3 | Cloudflare API Token erstellen | Leif | **ERLEDIGT** (2026-03-05) |
 
 **Sobald wir diese 3 Dinge haben, koennen wir HTTPS innerhalb von ~30 Minuten aktivieren.**
 
@@ -204,7 +204,7 @@ helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --set crds.enabled=true \
   --set crds.keep=true \
-  --version v1.18.2
+  --version v1.19.4
 ```
 
 **Verifikation:**
@@ -222,8 +222,9 @@ kubectl get crds | grep cert-manager
 # Erwartete Ausgabe: clusterissuers, certificates, challenges, ...
 ```
 
-> **Version:** v1.18.x empfohlen (v1.17.x ist seit Oktober 2025 End-of-Life).
-> v1.18.x unterstuetzt K8s 1.29-1.33 (unser Cluster: v1.32). Check: https://cert-manager.io/docs/releases/
+> **Version:** v1.19.4 empfohlen (behebt CVE-2026-24051 und CVE-2025-68121).
+> v1.19.x unterstuetzt K8s 1.29-1.33 (unser Cluster: v1.32). Check: https://cert-manager.io/docs/releases/
+> Vor Installation aktuelle Version pruefen: `helm search repo jetstack/cert-manager --versions | head -5`
 >
 > **StackIT-Kompatibilitaet (verifiziert 2026-03-05):** cert-manager ist offiziell auf SKE unterstuetzt.
 > StackIT bietet eigenes cert-manager Tutorial + Webhook (fuer StackIT DNS). Fuer Cloudflare DNS-01
@@ -699,8 +700,15 @@ echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
 #   ASN1 OID: secp384r1
 
 # Intermediate-Chain pruefen (muss ECDSA sein, nicht RSA 2048)
+# Hinweis: -showcerts | openssl x509 liest nur das Leaf-Cert.
+# Fuer die Intermediate muss das zweite Zertifikat extrahiert werden:
 echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
-  -servername dev.chatbot.voeb-service.de -showcerts 2>/dev/null | \
+  -servername dev.chatbot.voeb-service.de 2>&1 | grep -A1 "Certificate chain"
+# Erwartete Ausgabe: ... O=Let's Encrypt, CN=E7 (oder E8)
+
+# Alternative: Issuer des Leaf-Certs pruefen (zeigt die signierende Intermediate)
+echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
+  -servername dev.chatbot.voeb-service.de 2>/dev/null | \
   openssl x509 -noout -issuer
 # Erwartete Ausgabe: issuer= ... O=Let's Encrypt, CN=E7 (oder E8)
 # E7/E8 = aktive ECDSA P-384 Intermediates (BSI-konform, seit Juni 2024)
@@ -733,7 +741,7 @@ curl -s -o /dev/null -w "%{http_code}" http://dev.chatbot.voeb-service.de/api/he
 - [ ] ClusterIssuers Ready = True
 - [ ] Zertifikate ausgestellt (Certificate Ready = True)
 - [ ] Zertifikat ist ECDSA P-384 (BSI TR-02102-2 konform)
-- [ ] Intermediate Chain ist ECDSA (E5-E9, nicht R10-R14)
+- [ ] Intermediate Chain ist ECDSA (E7/E8 aktiv, nicht R10-R14)
 - [ ] HTTPS antwortet mit gueltigem Zertifikat (nicht Staging!)
 - [ ] HTTP redirectet auf HTTPS (308)
 - [ ] API Health Check OK ueber HTTPS
@@ -820,7 +828,7 @@ cert-manager erneuert Zertifikate **automatisch** — kein manuelles Eingreifen 
 
 | Parameter | Wert |
 |-----------|------|
-| Let's Encrypt Zertifikatslaufzeit | 90 Tage (geplant: 45 Tage ab 2028) |
+| Let's Encrypt Zertifikatslaufzeit | 90 Tage (64 Tage ab Feb 2027, 45 Tage ab Feb 2028) |
 | cert-manager Renewal-Zeitpunkt | 2/3 der Laufzeit (= ca. Tag 60 bei 90 Tagen) |
 | Retry bei Fehler | Automatisch mit exponentiellem Backoff |
 | ACME-Email-Benachrichtigung | 14, 7, 1 Tag vor Ablauf (falls Renewal fehlschlaegt) |
@@ -882,11 +890,12 @@ kubectl get clusterissuer
 | Nr. | Thema | Status | Wer |
 |-----|-------|--------|-----|
 | 1 | Subdomain-Name festlegen | **ERLEDIGT** — `chatbot` (2026-03-04) | Pascal/Leif (VoeB) |
-| 2 | DNS A-Records in Cloudflare anlegen | **ERLEDIGT** (2026-03-05) — ⚠️ Proxy auf DNS-only umstellen! | Leif (VoeB) |
+| 2 | DNS A-Records in Cloudflare anlegen (DNS-only) | **ERLEDIGT** (2026-03-05) — DNS-only verifiziert | Leif (VoeB) |
 | 3 | Cloudflare API Token erstellen + uebermitteln | **ERLEDIGT** (2026-03-05) | Leif (VoeB) |
 | 4 | ACME-Email-Adresse — Team-Adresse statt persoenliche? | Empfehlung: Team-Adresse | CCJ + VoeB |
 | 5 | PROD: LoadBalancer IP + A-Record | Spaeter (PROD nicht provisioniert) | CCJ + VoeB |
 | 6 | Let's Encrypt Zertifikat-Renewal verifizieren | Nach 60 Tagen pruefen (auto-renew) | CCJ |
+| 7 | Cloudflare API Token Backup | Token als GitHub Environment Secret hinterlegen (Disaster Recovery) | CCJ |
 
 ---
 

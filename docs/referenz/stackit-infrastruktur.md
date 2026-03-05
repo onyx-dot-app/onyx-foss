@@ -2,7 +2,7 @@
 
 **Stand**: März 2026
 **Region**: EU01 (Frankfurt)
-**Provider**: StackIT (Deutsche Telekom)
+**Provider**: StackIT (Schwarz Digits / Schwarz-Gruppe)
 
 > Dieses Dokument enthält ausschließlich technische Spezifikationen.
 > Preise und Kostenschätzungen liegen in separaten Dokumenten (nicht im Repository).
@@ -20,7 +20,7 @@
 | Namespaces | `onyx-dev`, `onyx-test` (PROD: geplant eigener Cluster, ADR-004) |
 | Ingress Controller | NGINX via Essential Network Load Balancer (NLB-10) |
 | TLS | Let's Encrypt oder StackIT-bereitgestellt |
-| Network Policies | Noch nicht implementiert (SEC-03, P1 vor PROD). Geplant: Namespace-isoliert; PROD zusätzlich Egress-Rules |
+| Network Policies | IMPLEMENTIERT (SEC-03, 2026-03-05): 5 Policies (Default-Deny, DNS, Intra-NS, Ingress, Egress) auf DEV+TEST. PROD: zusätzlich granulare per-Pod-Rules geplant |
 
 ### Worker Nodes (Compute Engine g1a-Serie, AMD, kein Overprovisioning)
 
@@ -133,7 +133,7 @@
 | LLM | StackIT AI Serving | gleich | gleich + Monitoring |
 | Backups | PG PITR (auto) | PG PITR (auto) | PG PITR + ObjStore Versioning |
 | Resource Quotas | Entfernt (DEV) | Entfernt (TEST) | CPU: 8, RAM: 24 GB |
-| Network Policy | Noch nicht implementiert (SEC-03) | Noch nicht implementiert (SEC-03) | Geplant: Namespace-isoliert + Egress-Rules |
+| Network Policy | Implementiert (SEC-03, 2026-03-05) | Implementiert (SEC-03, 2026-03-05) | Geplant: Namespace-isoliert + Egress-Rules |
 
 ---
 

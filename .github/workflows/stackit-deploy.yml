@@ -2,7 +2,7 @@
 # StackIT Build & Deploy Pipeline
 # ===========================================================
 # Triggers:
-#   - Push auf develop → Automatisch DEV deployen
+#   - Push auf main → Automatisch DEV deployen
 #   - Manuell → Environment wählbar (dev/test/prod)
 #
 # Build-Architektur:
@@ -31,7 +31,7 @@ name: StackIT Build & Deploy
 on:
   push:
     branches:
-      - develop
+      - main
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -159,12 +159,12 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.REGISTRY_PROJECT }}/onyx-web-server:latest
 
   # =========================================================
-  # DEPLOY DEV: Automatisch bei push auf develop
+  # DEPLOY DEV: Automatisch bei push auf main
   # =========================================================
   deploy-dev:
     needs: [prepare, build-backend, build-frontend]
     if: >
-      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
     runs-on: ubuntu-latest
     environment: dev

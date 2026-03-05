@@ -4,10 +4,46 @@
 - `origin` → unser Fork (CCJ-Development/voeb-chatbot)
 - `upstream` → Onyx FOSS (onyx-dot-app/onyx-foss)
 
-## Branches
-- `main` ← Tracked Upstream-Releases + unsere Arbeit
-- `feature/*` ← Feature-Branches von main
-- `release/*` ← Meilenstein-Releases
+## Branch-Strategie (Simplified GitLab Flow)
+
+**Kein `develop`-Branch.** `main` ist der einzige langlebige Branch.
+
+- `main` ← Integrationsbranch, auto-deploy DEV, Upstream-Merges landen hier
+- `feature/*` ← Feature-Branches von main, PR zurück nach main
+- `release/*` ← Geschnitten von main wenn TEST/PROD-ready
+
+### Promotion-Modell
+```
+feature/* → PR → main → auto-deploy DEV
+                  │
+                  └→ release/1.0 → workflow_dispatch → TEST
+                          │
+                          └→ tag v1.0.0 → workflow_dispatch → PROD
+                          │
+                          └→ merge back → main
+```
+
+### Release-Workflow
+```bash
+# 1. Release-Branch schneiden (wenn DEV stabil)
+git checkout main
+git checkout -b release/1.0
+
+# 2. TEST deployen
+gh workflow run stackit-deploy.yml -f environment=test --ref release/1.0
+
+# 3. Bugfixes auf Release-Branch, cherry-pick zurück nach main
+git cherry-pick <fix-commit> # auf main
+
+# 4. Wenn TEST approved: Tag setzen + PROD deployen
+git tag -a v1.0.0 -m "Release v1.0.0 — M1 Infrastruktur"
+git push origin v1.0.0
+gh workflow run stackit-deploy.yml -f environment=prod --ref release/1.0
+
+# 5. Release-Branch zurück nach main mergen
+git checkout main
+git merge release/1.0
+```
 
 ## Upstream-Sync — Schritt für Schritt
 

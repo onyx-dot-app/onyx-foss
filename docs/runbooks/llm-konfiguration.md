@@ -33,6 +33,8 @@
 | GPT-OSS 120B | `openai/gpt-oss-120b` | 131K Tokens | 0,45 / 0,65 EUR pro 1M Tokens |
 | Qwen3-VL 235B | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | 218K Tokens | 0,45 / 0,65 EUR pro 1M Tokens |
 | Llama 3.3 70B | `meta-llama/Llama-3.3-70B-Instruct` | 128K Tokens | — |
+
+> **TODO (H3):** Model-ID muss mit StackIT verifiziert werden. Im [Implementierungsplan](../referenz/stackit-implementierungsplan.md) steht `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` (FP8-Quantisierung). Korrekte ID bei StackIT prüfen und hier vereinheitlichen.
 | Gemma 3 27B | `google/gemma-3-27b-it` | — | — |
 | Mistral-Nemo 12B | `mistralai/Mistral-Nemo-Instruct-2407` | — | — |
 

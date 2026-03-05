@@ -355,10 +355,10 @@ deploy-{env}          → ~2 Min (Helm upgrade + Smoke Test)
 
 | Feature | DEV | TEST | PROD |
 |---------|-----|------|------|
-| Trigger | `develop`-Push oder manuell | Nur manuell | Nur manuell |
+| Trigger | `main`-Push oder manuell | Nur manuell | Nur manuell |
 | Helm Rollback | Manuell | `--atomic` (automatisch) | `--atomic` (automatisch) |
 | Recreate-Patch | Ja (Single-Node) | Nein | Nein |
-| Smoke Test | `/api/health` (120s Timeout) | `/api/health` (120s Timeout) | — |
+| Smoke Test | `/api/health` (120s Timeout) | `/api/health` (120s Timeout) | `/api/health` (180s Timeout, 18 Attempts) |
 | Required Reviewers | Nein | Nein | Ja (GitHub Settings) |
 
 ### Image-Strategie
@@ -477,6 +477,8 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 | **GPT-OSS 120B** | `openai/gpt-oss-120b` | 131K | ✅ Verifiziert |
 | **Qwen3-VL 235B** | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | 218K | ✅ Verifiziert |
 | Llama 3.3 70B | `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` | 128K | Verfügbar |
+
+> **TODO (H3):** Llama 3.3 Model-ID ist inkonsistent: hier `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` (FP8-Quantisierung), im [LLM-Runbook](../runbooks/llm-konfiguration.md) `meta-llama/Llama-3.3-70B-Instruct` (Standard). Korrekte StackIT Model-ID verifizieren und vereinheitlichen.
 | Gemma 3 27B | `google/gemma-3-27b-it` | 37K | Verfügbar |
 | Mistral-Nemo 12B | `neuralmagic/Mistral-Nemo-Instruct-2407-FP8` | 128K | Verfügbar |
 | Llama 3.1 8B | `neuralmagic/Meta-Llama-3.1-8B-Instruct-FP8` | 128K | Verfügbar |
@@ -517,7 +519,7 @@ terraform apply tfplan
 kubectl get nodes  # → 2 Nodes "Ready"
 ```
 
-> **Hinweis:** Node Pool Label `environment` wird auf `devtest` geändert (statt `dev`), da der Pool beide Environments bedient.
+> **Hinweis:** Node Pool Label `environment` bleibt `dev` (nicht `devtest`), da der Wert den PG-Instanznamen bestimmt (`vob-{environment}`). Für SEC-02 (Node Affinity) müssen die Nodes manuell per `kubectl label` separate Labels erhalten.
 
 ### 7.2 TEST PostgreSQL Flex + Object Storage
 
@@ -598,7 +600,7 @@ psql "postgresql://onyx_app:<PASSWORD>@<TEST_PG_HOST>:<PORT>/postgres" \
 
 ```bash
 # Option A: Manuell per workflow_dispatch (GitHub UI)
-# Branch: develop → Environment: test
+# Branch: main → Environment: test
 
 # Option B: Manuell per CLI
 helm upgrade --install onyx-test \
@@ -637,7 +639,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Embedding-Modell | Qwen3-VL-Embedding 8B fuer Dokumenten-Suche | [ ] ⚠️ Blockiert (Upstream PR #7541). Fallback: nomic-embed-text-v1 aktiv. |
-| CI/CD funktioniert | Push auf develop → Pods updated | [x] ✅ Run #5 (2026-03-02): 10 Min, 10/10 Pods, Health OK |
+| CI/CD funktioniert | Push auf main → Pods updated | [x] ✅ Run #5 (2026-03-02): 10 Min, 10/10 Pods, Health OK |
 
 ---
 
@@ -668,7 +670,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
 | DNS + TLS | Nach DNS-Setup | Let's Encrypt oder StackIT-CA | Blockiert (VÖB IT) |
 | Security-Härtung P0 | Vor TEST-Deploy | SEC-01: PG ACL einschränken (30 Min) | ✅ Erledigt (2026-03-03) |
-| Security-Härtung P1 | Nach TEST, vor PROD | SEC-02 bis SEC-05: Node Affinity, NetworkPolicies, Remote State, Kubeconfigs (~2 Tage) | ⏳ Geplant |
+| Security-Härtung P1 | Nach TEST, vor PROD | SEC-02, SEC-04, SEC-05: Node Affinity, Remote State, Kubeconfigs + M7: Cluster-ACL (~2 Tage) | ⏳ Geplant |
 | PROD Cluster | Vor Go-Live | Eigener SKE-Cluster + 2× g1a.4d + PG 4.8 HA (ADR-004) | Geplant |
 | Monitoring | Phase M5 | Prometheus/Grafana Stack | Geplant |
 
@@ -700,11 +702,18 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 20 | TEST: LLM-Konfiguration in Admin UI | Niko | ✅ Erledigt (2026-03-03) |
 | 21 | **SEC-01**: PostgreSQL ACL einschränken | Niko | ✅ Erledigt (2026-03-03) |
 | 22 | **SEC-02**: Node Affinity erzwingen | Niko | ⏳ P1 (vor PROD) |
-| 23 | **SEC-03**: Kubernetes NetworkPolicies | Niko | ⏳ P1 (vor PROD) |
+| 23 | **SEC-03**: Kubernetes NetworkPolicies | Niko | ✅ Erledigt (2026-03-05) |
 | 24 | **SEC-04**: Terraform Remote State | Niko | ⏳ P1 (vor PROD) |
 | 25 | **SEC-05**: Separate Kubeconfigs | Niko | ⏳ P1 (vor PROD) |
 | 26 | **SEC-06**: Container SecurityContext | Niko | ⏳ P2 (vor Abnahme) |
 | 27 | **SEC-07**: Encryption-at-Rest verifizieren | Niko | ⏳ P2 (vor Abnahme) |
+| 28 | **H3**: Llama 3.3 Model-ID vereinheitlichen (FP8 vs Standard) | Niko | ⏳ Klärung mit StackIT |
+| 29 | **M3**: IP-Ownership in ADR-001 klären ("CCJ oder VÖB" → eindeutig) | Niko | ⏳ Klärung mit VÖB |
+| 30 | **C5**: DSGVO-Dokumente erstellen (DSFA, Löschkonzept, AVV) | Niko | ⏳ P2 (vor Abnahme) |
+| 31 | **M5**: PROD OIDC-Secrets in GitHub Environment `prod` vorbereiten | Niko | ⏳ Nach Entra ID |
+| 32 | **M6**: PROD Node-Sizing entscheiden (2 vs 3 Nodes) | Niko | ⏳ Vor PROD |
+| 33 | **M7**: Cluster-API-ACL Default `0.0.0.0/0` entfernen (`modules/stackit/variables.tf`) | Niko | ⏳ P1 (vor PROD) |
+| 34 | **M9**: PROD Worker-Modus entscheiden (Lightweight vs Standard Celery) | Niko | ⏳ Vor PROD |
 
 ---
 
@@ -838,8 +847,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 3. **Prüfen** ob StackIT SKE einen NetworkPolicy-Controller (Calico, Cilium) vorinstalliert hat — ohne Controller werden Policies ignoriert.
 4. **Testen**: `kubectl exec` in einem DEV-Pod → `curl onyx-test-api:80` → sollte nach Policy abgelehnt werden.
 
-**Aufwand**: 4 Stunden (Design + Implementierung + Verifizierung)
-**Risiko bei Nicht-Umsetzung**: Pods können cross-namespace kommunizieren. Für BAIT-Audit ist das eine Lücke.
+**Status**: ✅ ERLEDIGT (2026-03-05). 5 Policies auf DEV + TEST applied, Cross-NS-Isolation verifiziert. Details: `docs/audit/networkpolicy-analyse.md`
 
 ### SEC-04: Terraform Remote State (P1 — vor PROD)
 

@@ -22,7 +22,7 @@
 git add <spezifische Dateien>  # NICHT git add .
 git commit -m "<type>(<scope>): <description>"
 git push origin feature/{modulname}
-# PR gegen develop erstellen
+# PR gegen main erstellen
 ```
 
 ## Commit-Format

@@ -102,7 +102,7 @@ Lokal (Docker Compose)
   ↓
 CI/CD Pipeline (GitHub Actions, automated)
   ↓
-DEV (StackIT K8s, Namespace onyx-dev)     ← Automatisches Deploy bei Push auf develop
+DEV (StackIT K8s, Namespace onyx-dev)     ← Automatisches Deploy bei Push auf main
   ↓
 TEST (StackIT K8s, Namespace onyx-test)   ← Manueller workflow_dispatch
   ↓
@@ -130,7 +130,7 @@ PROD (geplant, eigener SKE-Cluster)       ← Manuell + GitHub Environment Appro
 - **Technologie**: GitHub Actions (`.github/workflows/stackit-deploy.yml`)
 - **Build**: Backend + Frontend parallel (~8 Min mit Cache), SHA-gepinnte Actions
 - **Registry**: StackIT Container Registry (`voeb-chatbot`)
-- **Ausführung**: Automatisch bei Push auf `develop` (DEV), manuell per `workflow_dispatch` (TEST, PROD)
+- **Ausführung**: Automatisch bei Push auf `main` (DEV), manuell per `workflow_dispatch` (TEST, PROD)
 - **Validierung**: Smoke Tests (`/api/health`) nach jedem Deploy
 - **Artifacts**: Docker Images (Backend, Frontend), Helm Release
 
@@ -892,7 +892,7 @@ Markiert als "Verified Fixed"
 | **Phase 1-2: Infrastruktur** | Feb 2026 | DEV + TEST Environment Setup | Erledigt (DEV 2026-02-27, TEST 2026-03-03) | Entwicklung (CCJ) |
 | **Phase 4a: Extension Framework** | Feb 2026 | Feature Flags, Health Endpoint (10 Tests, 100% bestanden) | Erledigt (2026-02-12) | Entwicklung (CCJ) |
 | **Phase 3: Authentifizierung** | Ausstehend | Entra ID Integration | Blockiert (wartet auf VÖB IT) | Entwicklung + VÖB IT |
-| **Phase 4b-4d: Feature-Tests** | Ausstehend | Token Limits, RBAC, weitere Module | Geplant (nach M1) | QA + Dev |
+| **Phase 4b-4d: Feature-Tests** | Ausstehend | Token Limits, RBAC, weitere Module — **TODO (M10):** Testfallstatus aktualisieren sobald Module implementiert | Geplant (nach M1) | QA + Dev |
 | **Phase 5: E2E + Security Tests** | Ausstehend | Vollständige User Flows, Pentest | Geplant | QA + Security |
 | **Phase 6: UAT + Go-Live** | Ausstehend | VÖB-Stakeholder Abnahme auf TEST-Umgebung | Geplant | QA + VÖB |
 

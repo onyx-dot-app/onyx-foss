@@ -15,5 +15,5 @@
 - ❌ Code ohne Modulspezifikation + Freigabe
 - ❌ Feature ohne Feature Flag
 - ❌ Commit/Push ohne Nikos Freigabe
-- ❌ Direkt auf main/develop committen
+- ❌ Direkt auf main committen (immer über feature/* Branch + PR)
 - ❌ Neue Dateien in backend/onyx/ oder web/src/ (statt backend/ext/ bzw. web/src/ext/)

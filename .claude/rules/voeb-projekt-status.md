@@ -31,8 +31,9 @@
   - ✅ Upstream-Workflows: 21 Onyx-Workflows deaktiviert, nur StackIT Deploy + Upstream Check aktiv
   - ✅ CI/CD Run #5 (ea70a11): 10 Min, alle 10 Pods Running, Health Check OK
   - ✅ EE-Crash gelöst: `LICENSE_ENFORCEMENT_ENABLED: "false"` in values-common.yaml
-  - ⏳ DNS: `dev.chatbot.voeb-service.de` → `188.34.74.187`
-  - ⏳ TLS/HTTPS (nach DNS-Setup)
+  - ✅ DNS: A-Records gesetzt (2026-03-05): `dev.chatbot.voeb-service.de` → `188.34.74.187`, `test.chatbot.voeb-service.de` → `188.34.118.201`
+  - ✅ DNS: Cloudflare Proxy auf DNS-only umgestellt und verifiziert (2026-03-05)
+  - ⏳ TLS/HTTPS: Bereit zur Umsetzung (Runbook Teil B, alle Voraussetzungen erfuellt)
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
   - ⚠️ LLM: Embedding-Wechsel auf Qwen3-VL-Embedding 8B blockiert durch Upstream (PR #7541, OpenSearch-Migration). Fallback: nomic-embed-text-v1 (self-hosted) aktiv und funktional.
   - 📋 Scope: DEV live, TEST live.
@@ -53,7 +54,8 @@
   - ✅ DNS/TLS-Runbook erstellt (docs/runbooks/dns-tls-setup.md)
   - ✅ Fork-Management Doku überarbeitet (8-Schritte-Anleitung)
   - ⚠️ LLM: Embedding-Wechsel auf Qwen3-VL blockiert (Upstream PR #7541). nomic-embed-text-v1 aktiv als Fallback.
-  - ⏳ DNS + TLS (Runbook bereit, wartet auf Domain-Entscheidung mit VÖB)
+  - ✅ DNS: A-Records gesetzt + Cloudflare DNS-only verifiziert (2026-03-05)
+  - ⏳ TLS/HTTPS: Bereit zur Umsetzung (Runbook Teil B)
   - ✅ Cloud-Infrastruktur-Audit durchgeführt (2026-03-04): 10 CRITICAL, 18 HIGH, ~20 MEDIUM, ~12 LOW
   - ✅ 3 Security Quick Wins deployed (2026-03-05): C6 (DB_READONLY→Secret), H8 (Security-Header), H11 (Script Injection Fix)
   - ✅ C5/SEC-03: NetworkPolicies auf DEV + TEST applied (2026-03-05) — 5 Policies, Cross-NS-Isolation verifiziert
@@ -64,7 +66,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. DNS/TLS aktivieren (wartet auf Leif) → 2. M1-Abnahmeprotokoll ausfüllen → 3. Entra ID (Termin 06.03) → 4. Embedding auf Qwen3-VL (nach Upstream-Fix) → 5. SEC-02 bis SEC-04 (vor PROD).** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. TLS aktivieren (Runbook Teil B — alle Voraussetzungen erfuellt) → 2. M1-Abnahmeprotokoll ausfuellen → 3. Entra ID (Termin 06.03) → 4. Embedding auf Qwen3-VL (nach Upstream-Fix) → 5. SEC-02, SEC-04 (vor PROD).** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
