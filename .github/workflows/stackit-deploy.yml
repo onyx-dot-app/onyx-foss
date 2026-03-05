@@ -436,6 +436,21 @@ jobs:
             --set "auth.dbreadonly.values.db_readonly_password=${{ secrets.DB_READONLY_PASSWORD }}" \
             --atomic --timeout 15m
 
+      - name: Smoke test
+        run: |
+          echo "Waiting for API to be reachable..."
+          DOMAIN=$(kubectl get configmap env-configmap -n onyx-prod -o jsonpath='{.data.WEB_DOMAIN}')
+          for i in $(seq 1 18); do
+            if curl --silent --fail --max-time 5 "${DOMAIN}/api/health" > /dev/null 2>&1; then
+              echo "Health check passed: ${DOMAIN}/api/health"
+              exit 0
+            fi
+            echo "  Attempt $i/18 — waiting 10s..."
+            sleep 10
+          done
+          echo "::error::Health check failed after 3 minutes"
+          exit 1
+
       - name: Verify PROD deployment
         if: always()
         run: |

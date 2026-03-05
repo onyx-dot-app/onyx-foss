@@ -1,0 +1,217 @@
+# ===========================================================
+# VÖB Service Chatbot — PROD Environment Helm Values
+# ===========================================================
+# GRUNDGERUEST — Platzhalter fuer spaetere Befuellung.
+# PROD-Infrastruktur (Cluster, PG, S3) ist NOCH NICHT provisioniert.
+#
+# Vor dem ersten PROD-Deploy:
+#   1. Separaten SKE-Cluster provisionieren (ADR-004)
+#   2. Terraform environments/prod/ ausfuellen + apply
+#   3. Alle [TBD]-Werte in dieser Datei ersetzen
+#   4. GitHub Environment "prod" mit Required Reviewers konfigurieren
+#   5. GitHub Secrets fuer Environment "prod" anlegen
+#   6. Namespace onyx-prod manuell erstellen (kein --create-namespace)
+#   7. NetworkPolicies anwenden (deployment/k8s/network-policies/)
+#
+# Referenz: docs/referenz/stackit-infrastruktur.md (Zeilen 99-136)
+# ===========================================================
+
+global:
+  version: "latest"
+
+# --- Externe PostgreSQL (StackIT Flex 4.8 Replica — PROD, HA) ---
+# Host kommt aus terraform output (environments/prod/).
+# WICHTIG: PROD nutzt Flex 4.8 REPLICA (3-Node HA), nicht Single wie DEV/TEST.
+auth:
+  postgresql:
+    enabled: true
+    secretName: "onyx-postgresql"
+    values:
+      username: "onyx_app"
+      password: ""  # → GitHub Secret POSTGRES_PASSWORD (Environment: prod)
+  redis:
+    enabled: true
+    secretName: "onyx-redis"
+    values:
+      redis_password: ""  # → GitHub Secret REDIS_PASSWORD (Environment: prod)
+  objectstorage:
+    enabled: true
+    secretName: "onyx-objectstorage"
+    values:
+      s3_aws_access_key_id: ""       # → GitHub Secret S3_ACCESS_KEY_ID
+      s3_aws_secret_access_key: ""   # → GitHub Secret S3_SECRET_ACCESS_KEY
+  dbreadonly:
+    enabled: true
+    secretName: "onyx-dbreadonly"
+    values:
+      db_readonly_user: "db_readonly_user"
+      db_readonly_password: ""  # → GitHub Secret DB_READONLY_PASSWORD
+
+configMap:
+  # PostgreSQL (StackIT Managed Flex 4.8 Replica — PROD)
+  # ⚠️ PFLICHT VOR ERSTEM DEPLOY:
+  # 1. cd deployment/terraform/environments/prod && terraform apply
+  # 2. terraform output -raw pg_host → hier eintragen
+  POSTGRES_HOST: "[TBD]"  # → terraform output -raw pg_host
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "onyx"
+
+  # Redis: Release-Name = Service-Name bei OT Redis Operator
+  REDIS_HOST: "onyx-prod"
+
+  # Object Storage (PROD-Bucket)
+  S3_ENDPOINT_URL: "https://object.storage.eu01.onstackit.cloud"
+  S3_FILE_STORE_BUCKET_NAME: "vob-prod"
+
+  # Domain + TLS (HTTPS PFLICHT fuer PROD)
+  # ⚠️ PFLICHT VOR ERSTEM DEPLOY:
+  # 1. DNS A-Record: chatbot.voeb-service.de → <PROD-LB-IP>
+  # 2. cert-manager + ClusterIssuer konfigurieren (Runbook: docs/runbooks/dns-tls-setup.md)
+  # 3. Certificate-Ressource erstellen (ECDSA P-384, BSI-konform)
+  DOMAIN: "chatbot.voeb-service.de"
+  WEB_DOMAIN: "https://chatbot.voeb-service.de"
+
+  # Auth: Entra ID (OIDC) — PFLICHT fuer PROD
+  # ⚠️ PFLICHT: Vor PROD-Go-Live muessen OIDC-Secrets konfiguriert sein.
+  AUTH_TYPE: "oidc"
+  REQUIRE_EMAIL_VERIFICATION: "false"
+
+  # Logging: PROD weniger verbose
+  LOG_LEVEL: "WARNING"
+
+  # Celery: Lightweight Mode (kann fuer PROD auf Standard-Mode umgestellt werden)
+  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
+
+# --- Celery Worker: PROD-Konfiguration ---
+celery_beat:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+celery_worker_primary:
+  replicaCount: 2  # HA: 2 Worker fuer Ausfallsicherheit
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+celery_worker_heavy:
+  replicaCount: 0
+
+celery_worker_light:
+  replicaCount: 0
+
+celery_worker_docfetching:
+  replicaCount: 0
+
+celery_worker_docprocessing:
+  replicaCount: 0
+
+celery_worker_monitoring:
+  replicaCount: 0
+
+celery_worker_user_file_processing:
+  replicaCount: 0
+
+# --- Nginx: PROD IngressClass ---
+# PROD laeuft auf separatem Cluster (ADR-004), daher kein Namenskonflikt.
+nginx:
+  enabled: true
+  controller:
+    ingressClassResource:
+      name: "nginx"
+      controllerValue: "k8s.io/ingress-nginx"
+    ingressClass: "nginx"
+    service:
+      type: LoadBalancer
+
+# --- TLS ---
+letsencrypt:
+  enabled: false  # Eigener ClusterIssuer (DNS-01/Cloudflare), nicht Chart-Standard (HTTP-01)
+
+# --- Backend API: HA ---
+api:
+  replicaCount: 2  # HA: Mindestens 2 Replicas
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# --- Frontend: HA ---
+webserver:
+  replicaCount: 2  # HA: Mindestens 2 Replicas
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# --- Vespa: PROD ---
+vespa:
+  enabled: true
+  replicaCount: 1  # Vespa HA erfordert Content-Cluster-Config (spaeter evaluieren)
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi  # PROD: Mehr Speicher als DEV/TEST (20Gi)
+
+# --- Redis: PROD ---
+redis:
+  redisStandalone:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+# --- Model Server: PROD ---
+inferenceCapability:
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+indexCapability:
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi

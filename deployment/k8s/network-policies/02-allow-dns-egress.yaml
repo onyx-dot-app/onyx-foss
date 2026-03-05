@@ -1,0 +1,36 @@
+# NetworkPolicy: DNS-Egress erlauben
+#
+# Erlaubt allen Pods im Namespace, DNS-Anfragen an CoreDNS in kube-system zu senden.
+# KRITISCH: Ohne diese Policy funktioniert keine Namensaufloesung — alle Services brechen.
+#
+# Ziel: CoreDNS Pods (Label: k8s-app=kube-dns) in kube-system
+# Ports: UDP 53 + TCP 53 (TCP fuer grosse DNS-Antworten / Zone Transfers)
+#
+# Audit-Referenz: C5/SEC-03 — docs/audit/networkpolicy-analyse.md
+# Anwendung: kubectl apply -f 02-allow-dns-egress.yaml -n <namespace>
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  labels:
+    app.kubernetes.io/part-of: voeb-chatbot
+    app.kubernetes.io/component: network-policy
+    security.voeb/policy-type: allow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

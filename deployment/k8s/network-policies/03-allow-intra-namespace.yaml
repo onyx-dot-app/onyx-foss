@@ -1,0 +1,37 @@
+# NetworkPolicy: Intra-Namespace-Kommunikation erlauben
+#
+# Erlaubt allen Pods im Namespace, mit allen anderen Pods im SELBEN Namespace
+# zu kommunizieren (alle Ports, alle Protokolle).
+#
+# Abgedeckte Verbindungen (Beispiele):
+#   nginx → api-server:8080, web-server:3000
+#   web-server → api-server:8080 (INTERNAL_URL)
+#   api-server → redis:6379, vespa:8081+19071, inference-model:9000
+#   celery-* → redis:6379, vespa:8081+19071, model-server:9000, api-server:8080
+#
+# NICHT abgedeckt:
+#   Cross-Namespace-Traffic (onyx-dev ↔ onyx-test) — absichtlich blockiert
+#   Externer Egress (PG, S3, LLM) — siehe 05-allow-external-egress.yaml
+#
+# Audit-Referenz: C5/SEC-03 — docs/audit/networkpolicy-analyse.md
+# Anwendung: kubectl apply -f 03-allow-intra-namespace.yaml -n <namespace>
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  labels:
+    app.kubernetes.io/part-of: voeb-chatbot
+    app.kubernetes.io/component: network-policy
+    security.voeb/policy-type: allow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}

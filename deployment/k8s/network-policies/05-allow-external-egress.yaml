@@ -1,0 +1,37 @@
+# NetworkPolicy: Externer Egress (PG + HTTPS)
+#
+# Erlaubt allen Pods Egress auf zwei Ports:
+#   - TCP 5432: PostgreSQL (StackIT Managed Flex, *.postgresql.eu01.onstackit.cloud)
+#   - TCP 443:  HTTPS (S3, LLM API, K8s API Server, ACME/Let's Encrypt)
+#
+# Design-Entscheidung: Alle Pods statt per-Pod-Selektor (pragmatischer Ansatz).
+# Begruendung: Siehe docs/audit/networkpolicy-analyse.md Abschnitt 5.1
+#   - Vespa/Redis initiieren keinen Egress (reine Empfaenger)
+#   - Inkonsistente Labels machen per-Pod-Selektoren fragil
+#   - K8s API (kubernetes.default.svc:443) wird von nginx + celery-beat benoetigt
+#
+# Cross-Namespace-Isolation: Auch wenn diese Policy theoretisch Egress zu Pods
+# in anderen Namespaces auf Port 443/5432 erlaubt — der default-deny INGRESS
+# im Ziel-Namespace blockiert die Verbindung.
+#
+# Audit-Referenz: C5/SEC-03 — docs/audit/networkpolicy-analyse.md
+# Anwendung: kubectl apply -f 05-allow-external-egress.yaml -n <namespace>
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-egress
+  labels:
+    app.kubernetes.io/part-of: voeb-chatbot
+    app.kubernetes.io/component: network-policy
+    security.voeb/policy-type: allow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 5432

@@ -1,0 +1,21 @@
+# NetworkPolicy: Default-Deny (Zero-Trust Baseline)
+#
+# Blockiert JEGLICHEN Ingress und Egress fuer alle Pods im Namespace.
+# Alle erlaubten Verbindungen muessen explizit durch weitere Policies definiert werden.
+#
+# Audit-Referenz: C5/SEC-03 — docs/audit/networkpolicy-analyse.md
+# Anwendung: kubectl apply -f 01-default-deny-all.yaml -n <namespace>
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  labels:
+    app.kubernetes.io/part-of: voeb-chatbot
+    app.kubernetes.io/component: network-policy
+    security.voeb/policy-type: baseline
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

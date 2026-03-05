@@ -1,0 +1,33 @@
+# NetworkPolicy: Externer Ingress zum nginx Controller
+#
+# Erlaubt eingehenden Traffic von ausserhalb des Clusters zum nginx Ingress Controller.
+# Der nginx Controller ist der einzige Entrypoint — er proxied zu api-server und web-server.
+#
+# Ohne diese Policy: LoadBalancer-Traffic wird blockiert → 502/503 fuer alle Nutzer.
+#
+# Pod-Selektor: Standard ingress-nginx Chart Labels (verifiziert aus Chart v4.13.3)
+#   app.kubernetes.io/name: ingress-nginx
+#   app.kubernetes.io/component: controller
+#
+# Ingress: Uneingeschraenkt (nginx ist gehaertet fuer externen Traffic)
+#
+# Audit-Referenz: C5/SEC-03 — docs/audit/networkpolicy-analyse.md
+# Anwendung: kubectl apply -f 04-allow-external-ingress-nginx.yaml -n <namespace>
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-ingress-nginx
+  labels:
+    app.kubernetes.io/part-of: voeb-chatbot
+    app.kubernetes.io/component: network-policy
+    security.voeb/policy-type: allow
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/component: controller
+  policyTypes:
+    - Ingress
+  ingress:
+    - {}

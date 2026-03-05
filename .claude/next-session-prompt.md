@@ -1,66 +1,122 @@
-# Naechste Session — DNS/TLS aktivieren (C1)
+# Naechste Session — Security-Haertung Woche 1 fortsetzen
 
-## Wo wir stehen (2026-03-05)
+## Wo wir stehen (2026-03-05, Ende der Session)
 
-**Security Quick Wins committed + deployed:** `27dec3dcf` (C6, H8, H11) — DEV + TEST verifiziert.
-**CHANGELOG + Projektstatus:** Geaendert, noch NICHT committed (2 Dateien).
-**DNS A-Records:** Gesetzt, loesen korrekt auf.
-**Cloudflare API Token:** Erhalten von Leif.
+### Commits (chronologisch)
+1. `27dec3dcf` — 3 Security Quick Wins (C6, H8, H11) deployed auf DEV + TEST
+2. `2657712b7` — Doku-Nachtrag (CHANGELOG, Projektstatus, Runbook-Fixes, Next-Session-Prompt)
+
+### Diese Session erstellt (NOCH NICHT COMMITTED)
+
+**1. NetworkPolicies (C5/SEC-03) — komplett erstellt:**
+- `docs/audit/networkpolicy-analyse.md` — Vollstaendige Audit-Dokumentation:
+  - Calico CNI auf StackIT SKE verifiziert
+  - Komplette Traffic-Matrix (Pod-zu-Pod + extern)
+  - Pod-Labels aus Helm Chart verifiziert
+  - Design-Entscheidungen dokumentiert (pragmatisch, kein ipBlock.except)
+  - Verifikationsplan, Risiken, Quellen
+- `deployment/k8s/network-policies/` (8 Dateien):
+  - `01-default-deny-all.yaml` — Zero-Trust Baseline
+  - `02-allow-dns-egress.yaml` — DNS → CoreDNS (kube-system:53)
+  - `03-allow-intra-namespace.yaml` — Intra-Namespace (alle Ports)
+  - `04-allow-external-ingress-nginx.yaml` — Extern → nginx Controller
+  - `05-allow-external-egress.yaml` — PG:5432 + HTTPS:443
+  - `apply.sh` — Sichere Apply-Reihenfolge (Allows vor Deny)
+  - `rollback.sh` — Notfall: alle Policies loeschen
+  - `README.md` — Kurzanleitung
+
+**2. values-prod.yaml Grundgeruest:**
+- `deployment/helm/values/values-prod.yaml` — PROD-Template mit TBD-Platzhaltern
+  - HA-Replicas (api: 2, web: 2, celery-primary: 2)
+  - PROD-Ressource-Limits (2-4x DEV/TEST)
+  - Domain: `chatbot.voeb-service.de` (HTTPS)
+  - AUTH_TYPE: `oidc` (Entra ID)
+  - POSTGRES_HOST: `[TBD]` (Infra nicht provisioniert)
+  - Vespa: 50Gi Storage (statt 20Gi)
+
+**3. CI/CD-Fixes:**
+- `.github/workflows/stackit-deploy.yml` — PROD Smoke Test hinzugefuegt (18 Attempts, 3 Min)
+- `.github/workflows/upstream-check.yml` — SHA-Pinning: `@v4` → `@34e11487...`
 
 ---
 
-## VOR DEM TLS-SETUP: 2 offene Commits
+## NAECHSTE SCHRITTE (Woche 1 fortsetzen)
 
-### Commit 1: Doku-Nachtrag (CHANGELOG + Projektstatus)
-Dateien sind bereits geaendert, muessen nur committed werden:
-- `docs/CHANGELOG.md` — 3 Quick Wins + Audit-Dokument als Security-Eintraege
-- `.claude/rules/voeb-projekt-status.md` — Audit + Quick Wins ergaenzt, JNnovate-Blocker entfernt
+### Schritt 1: Uncommitted Changes committen
+Alle Dateien aus dieser Session committen (nach Nikos Review):
 
-### Commit 2 (optional): Runbook-Fix
-- `docs/runbooks/dns-tls-setup.md` Zeile 601: `configMap.DB_READONLY_PASSWORD` → `auth.dbreadonly.values.db_readonly_password` (veraltet nach C6-Fix)
-
----
-
-## BLOCKER: Cloudflare Proxy auf DNS-only umstellen
-
-DNS loest auf, ABER ueber `cdn.cloudflare.net` (Proxy AN = orange Wolke).
-**Leif muss in Cloudflare beide A-Records auf "DNS only" (graue Wolke) umstellen.**
-
-Ohne das:
-- Traffic geht ueber US-Infrastruktur (DSGVO-Verstoss)
-- Cloudflare terminiert TLS (unser cert-manager waere wirkungslos)
-
-Pruefung ob umgestellt:
 ```bash
-dig +short dev.chatbot.voeb-service.de
-# Erwartung: NUR "188.34.74.187" (kein cdn.cloudflare.net davor)
+git add docs/audit/networkpolicy-analyse.md
+git add deployment/k8s/network-policies/
+git add deployment/helm/values/values-prod.yaml
+git add .github/workflows/stackit-deploy.yml
+git add .github/workflows/upstream-check.yml
 ```
 
+Vorgeschlagener Commit:
+```
+chore(security): NetworkPolicies, values-prod.yaml, CI/CD-Fixes
+
+- C5/SEC-03: 5 NetworkPolicies + Apply/Rollback-Skripte + Audit-Dokumentation
+- values-prod.yaml: PROD-Grundgeruest mit TBD-Platzhaltern (HA, Ressourcen, OIDC)
+- CI/CD: PROD Smoke Test hinzugefuegt, upstream-check SHA-Pinning
+```
+
+### Schritt 2: NetworkPolicies auf DEV anwenden
+```bash
+cd deployment/k8s/network-policies/
+./apply.sh onyx-dev
+```
+Verifikation: siehe `docs/audit/networkpolicy-analyse.md` Abschnitt 7.
+
+### Schritt 3: NetworkPolicies auf TEST anwenden
+```bash
+./apply.sh onyx-test
+```
+
+### Schritt 4: DNS/TLS Setup (BLOCKER: Cloudflare DNS-only)
+Wartet auf Leif (Cloudflare Proxy → DNS-only umstellen).
+Pruefung: `dig +short dev.chatbot.voeb-service.de` → nur `188.34.74.187`
+Runbook: `docs/runbooks/dns-tls-setup.md`
+
 ---
 
-## AUFGABE: DNS/TLS Setup (Runbook Teil B, Schritte 1-6)
+## REFERENZ-DOKUMENTE
 
-**Runbook:** `docs/runbooks/dns-tls-setup.md`
-**Voraussetzung:** Cloudflare Proxy = DNS-only (graue Wolke)
+| Thema | Datei |
+|-------|-------|
+| NetworkPolicy-Analyse (Traffic, Labels, Entscheidungen) | `docs/audit/networkpolicy-analyse.md` |
+| NetworkPolicy YAMLs + Skripte | `deployment/k8s/network-policies/` |
+| Cloud-Infrastruktur-Audit (alle Findings) | `docs/audit/cloud-infrastruktur-audit-2026-03-04.md` |
+| DNS/TLS-Runbook (komplett, Schritte 1-6) | `docs/runbooks/dns-tls-setup.md` |
+| PROD Helm Values (Grundgeruest) | `deployment/helm/values/values-prod.yaml` |
+| CI/CD Pipeline | `.github/workflows/stackit-deploy.yml` |
+| Upstream-Check | `.github/workflows/upstream-check.yml` |
+| Projektstatus | `.claude/rules/voeb-projekt-status.md` |
+| CHANGELOG | `docs/CHANGELOG.md` |
+| Implementierungsplan | `docs/referenz/stackit-implementierungsplan.md` |
 
-### Reihenfolge (kritisch!)
+---
 
-1. **Pruefen:** DNS-only (kein cloudflare.net CNAME)
-2. **Schritt 1:** cert-manager installieren (`helm install cert-manager jetstack/cert-manager`)
-3. **Schritt 2:** Cloudflare API Token als K8s Secret
-4. **Schritt 3a:** Staging ClusterIssuers erstellen (DEV + TEST)
-5. **Schritt 3c:** Explizite Certificate-Ressourcen (ECDSA P-384, BSI-konform) — VOR Helm Deploy!
-6. **Gate-Check:** Alle Voraussetzungen pruefen (DNS, Issuers READY, Certs READY)
-7. **Schritt 4:** Helm Values anpassen (DOMAIN, WEB_DOMAIN → https://, ingress-Block)
-8. **Schritt 5:** Deploy DEV, verifizieren, dann TEST
-9. **Schritt 3b:** Staging → Production ClusterIssuers umschalten
-10. **Schritt 6:** Vollstaendige Verifikation (BSI ECDSA P-384, HTTP→HTTPS Redirect, Login)
+## OFFENE PUNKTE (Woche 1, noch nicht angegangen)
 
-### Wichtige Hinweise
-- `letsencrypt.enabled` bleibt `false` (eigener ClusterIssuer statt Chart-eigener)
-- Certificates MUESSEN VOR dem Helm Deploy existieren (sonst erstellt Ingress-Shim RSA-2048)
-- Erster TLS-Deploy besser manuell (nicht CI/CD) — cert-manager braucht 1-2 Min fuer Zertifikate
-- Nach TLS: CI/CD Smoke Test funktioniert automatisch (liest WEB_DOMAIN aus ConfigMap)
+Aus der Tiefenanalyse am Anfang dieser Session (vollstaendige Liste):
+
+### Sofort machbar (keine Blocker)
+- DSFA erstellen (C8, Art. 35 DSGVO) — 4-6h
+- Loeschkonzept (C9, Art. 17 DSGVO) — 3-4h
+- Terraform Remote State (C3/SEC-04) — 2h
+- Resource Limits fuer DEV/TEST (M3) — 2h (PROD bereits in values-prod.yaml)
+- M1-Abnahmeprotokoll ausfuellen — 1-2h
+- CSP-Header (M1) — 1h
+- Kubeconfig-Erneuerung planen (H10, laeuft 2026-05-28 ab) — 1h
+- Backup-Strategie dokumentieren (M7) — 2h
+
+### Blockiert
+- C1: TLS/HTTPS — wartet auf Cloudflare DNS-only (Leif)
+- Entra ID — wartet auf TLS + VoeB Credentials (Termin 06.03)
+- H1: PG createdb-Rolle — braucht Wartungsfenster
+- C4/H5: Container non-root — Upstream-Dockerfiles (READ-ONLY)
 
 ---
 
@@ -69,3 +125,4 @@ dig +short dev.chatbot.voeb-service.de
 - NIEMALS Co-Authored-By fuer Claude
 - Helm Chart Templates READ-ONLY
 - Kein Commit ohne Nikos Freigabe
+- Tiefenanalyse → Plan → Besprechung → Ausfuehrung (pro Aufgabe)
