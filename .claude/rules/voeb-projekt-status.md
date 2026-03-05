@@ -54,6 +54,8 @@
   - ✅ Fork-Management Doku überarbeitet (8-Schritte-Anleitung)
   - ⚠️ LLM: Embedding-Wechsel auf Qwen3-VL blockiert (Upstream PR #7541). nomic-embed-text-v1 aktiv als Fallback.
   - ⏳ DNS + TLS (Runbook bereit, wartet auf Domain-Entscheidung mit VÖB)
+  - ✅ Cloud-Infrastruktur-Audit durchgeführt (2026-03-04): 10 CRITICAL, 18 HIGH, ~20 MEDIUM, ~12 LOW
+  - ✅ 3 Security Quick Wins deployed (2026-03-05): C6 (DB_READONLY→Secret), H8 (Security-Header), H11 (Script Injection Fix)
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
   - 4a: ✅ Extension Framework Basis (Config, Feature Flags, Router, Health Endpoint, Docker)
@@ -67,7 +69,6 @@
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
 | Entra ID Zugangsdaten | VÖB IT | Phase 3 |
-| JNnovate Scope | JNnovate | Aufgabenverteilung |
 
 ## Erledigte Blocker
 | Blocker | Gelöst | Datum |

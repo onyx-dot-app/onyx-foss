@@ -60,21 +60,33 @@ Die BSI Technical Guideline TR-02102-2 (Version 2026-01) verlangt:
 | Algorithmus | Minimum | BSI-Anforderung seit |
 |-------------|---------|----------------------|
 | RSA | **3.072 Bit** | Januar 2024 |
-| ECDSA | **P-384** (oder P-256 minimum) | Januar 2024 |
+| ECDSA | **P-256** (250 Bit minimum), **P-384 empfohlen** | Januar 2024 |
 
-**Problem:** Let's Encrypt RSA-Intermediates nutzen nur 2.048-Bit-Keys — das erfuellt BSI TR-02102-2 **NICHT**.
+**Problem:** Let's Encrypt RSA-Intermediates nutzen nur 2.048-Bit-Keys — das erfuellt BSI TR-02102-2 **NICHT**. P-256 wuerde technisch genuegen (256 > 250 Bit Minimum), aber ein P-256-Leaf-Zertifikat koennte von Let's Encrypt ueber eine RSA-2048-Intermediate signiert werden — die gesamte Chain muss BSI-konform sein, nicht nur das Leaf.
 
-**Loesung:** Zertifikate explizit als **ECDSA P-384** anfordern. cert-manager unterstuetzt das ueber die `privateKey`-Konfiguration auf Certificate-Ressourcen. Let's Encrypt signiert dann ueber die ECDSA P-384 Intermediate Chain (E5-E9), die BSI-konform ist.
+**Loesung:** Zertifikate explizit als **ECDSA P-384** anfordern. cert-manager unterstuetzt das ueber die `privateKey`-Konfiguration auf Certificate-Ressourcen. Let's Encrypt signiert P-384-Leafs automatisch ueber die ECDSA P-384 Intermediate Chain (aktuell E7/E8), die BSI-konform ist. Damit ist die gesamte Chain ECDSA: Leaf (P-384) → Intermediate E7/E8 (P-384) → Root ISRG X1 (RSA 4096, BSI-konform).
 
 > **Auswirkung auf dieses Runbook:** Wir erstellen explizite Certificate-Ressourcen mit `privateKey.algorithm: ECDSA` und `privateKey.size: 384` (Schritt 3c), statt uns auf die automatische Erstellung durch Ingress-Annotations zu verlassen.
 
-### Datensouveraenitaet
+### Datensouveraenitaet — Warum DNS-only (graue Wolke) Pflicht ist
 
 - **Cloudflare Proxy (orange Cloud) wird NICHT verwendet** — kein Traffic ueber Cloudflare
 - A-Records werden auf **DNS-only (graue Cloud)** gesetzt
 - Cloudflare API wird nur fuer Zertifikats-Validierung genutzt (TXT-Record setzen/loeschen)
 - Gesamter Nutzer-Traffic geht direkt zu StackIT (Frankfurt, EU01)
 - Kein DSGVO-Risiko durch US-Infrastruktur
+
+> **Verifiziert (2026-03-05, 3 Opus-Agenten mit Quellenrecherche):**
+>
+> Im Proxy-Modus (orange Wolke) terminiert Cloudflare TLS am Edge und entschluesselt **allen Traffic** — auch bei "Full (Strict)" SSL. Das bedeutet: Chat-Inhalte (LLM-Queries + Responses von Bankmitarbeitern) wuerden im Klartext auf Cloudflare-Servern verarbeitet.
+>
+> **3 Gruende warum Proxy fuer VoeB nicht in Frage kommt:**
+>
+> 1. **TLS-Kontrolle:** Cloudflare-Edge-Zertifikate sind ECDSA P-256 (Universal SSL). Unser BSI-konformes P-384-Zertifikat wuerde nur fuer die Cloudflare→Origin-Verbindung genutzt — der Browser sieht es nie. Es gibt keine Moeglichkeit, P-384 auf Cloudflares Edge zu erzwingen (nur mit Enterprise Custom Certs).
+> 2. **Datensouveraenitaet:** VoeB Cloudflare-Account ist Pro-Plan. Die Data Localization Suite (EU-only Traffic) ist nur im Enterprise-Plan verfuegbar. Ohne DLS gibt es keine Garantie, dass Traffic in der EU bleibt.
+> 3. **DSGVO/Schrems II:** Cloudflare ist US-Unternehmen unter CLOUD Act/FISA 702. EU-US DPF ist zwar aktuell gueltig (General Court Sept 2025), aber CJEU-Appeal laeuft seit Oktober 2025. Fuer Banken-Chat-Daten ist das Restrisiko zu hoch.
+>
+> **Im DNS-only-Modus sieht Cloudflare nur DNS-Queries (Domainaufloesung) — keine Inhalte, keine Credentials, keine Chat-Daten.**
 
 ### Sicherheitshinweis: DEV/TEST-Zugriff einschraenken
 
@@ -192,7 +204,7 @@ helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --set crds.enabled=true \
   --set crds.keep=true \
-  --version v1.17.1
+  --version v1.18.2
 ```
 
 **Verifikation:**
@@ -210,8 +222,13 @@ kubectl get crds | grep cert-manager
 # Erwartete Ausgabe: clusterissuers, certificates, challenges, ...
 ```
 
-> **Version:** Zum Zeitpunkt der Ausfuehrung aktuelle stabile Version verwenden.
-> Check: https://cert-manager.io/docs/releases/
+> **Version:** v1.18.x empfohlen (v1.17.x ist seit Oktober 2025 End-of-Life).
+> v1.18.x unterstuetzt K8s 1.29-1.33 (unser Cluster: v1.32). Check: https://cert-manager.io/docs/releases/
+>
+> **StackIT-Kompatibilitaet (verifiziert 2026-03-05):** cert-manager ist offiziell auf SKE unterstuetzt.
+> StackIT bietet eigenes cert-manager Tutorial + Webhook (fuer StackIT DNS). Fuer Cloudflare DNS-01
+> wird der native cert-manager Cloudflare-Solver verwendet — kein Webhook noetig.
+> Outbound-Zugriff auf Let's Encrypt ACME + Cloudflare API ist auf SKE standardmaessig erlaubt.
 
 ### Schritt 2: Cloudflare API Token als Kubernetes Secret
 
@@ -598,7 +615,7 @@ helm upgrade --install onyx-test \
   --set "auth.redis.values.redis_password=<REDIS_PASSWORD>" \
   --set "auth.objectstorage.values.s3_aws_access_key_id=<S3_KEY>" \
   --set "auth.objectstorage.values.s3_aws_secret_access_key=<S3_SECRET>" \
-  --set "configMap.DB_READONLY_PASSWORD=<READONLY_PW>" \
+  --set "auth.dbreadonly.values.db_readonly_password=<READONLY_PW>" \
   --atomic --timeout 10m
 ```
 
@@ -685,8 +702,9 @@ echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
 echo | openssl s_client -connect dev.chatbot.voeb-service.de:443 \
   -servername dev.chatbot.voeb-service.de -showcerts 2>/dev/null | \
   openssl x509 -noout -issuer
-# Erwartete Ausgabe: issuer= ... O=Let's Encrypt, CN=E5 (oder E6-E9)
-# E5-E9 = ECDSA P-384 Intermediates (BSI-konform)
+# Erwartete Ausgabe: issuer= ... O=Let's Encrypt, CN=E7 (oder E8)
+# E7/E8 = aktive ECDSA P-384 Intermediates (BSI-konform, seit Juni 2024)
+# E5/E6 = retired, E9 = Emergency Backup
 # R10-R14 = RSA 2048 Intermediates (NICHT BSI-konform)
 ```
 
@@ -864,8 +882,8 @@ kubectl get clusterissuer
 | Nr. | Thema | Status | Wer |
 |-----|-------|--------|-----|
 | 1 | Subdomain-Name festlegen | **ERLEDIGT** — `chatbot` (2026-03-04) | Pascal/Leif (VoeB) |
-| 2 | DNS A-Records in Cloudflare anlegen | Ausstehend (nach #1) | Leif (VoeB) |
-| 3 | Cloudflare API Token erstellen + uebermitteln | Ausstehend (nach #1) | Leif (VoeB) |
+| 2 | DNS A-Records in Cloudflare anlegen | **ERLEDIGT** (2026-03-05) — ⚠️ Proxy auf DNS-only umstellen! | Leif (VoeB) |
+| 3 | Cloudflare API Token erstellen + uebermitteln | **ERLEDIGT** (2026-03-05) | Leif (VoeB) |
 | 4 | ACME-Email-Adresse — Team-Adresse statt persoenliche? | Empfehlung: Team-Adresse | CCJ + VoeB |
 | 5 | PROD: LoadBalancer IP + A-Record | Spaeter (PROD nicht provisioniert) | CCJ + VoeB |
 | 6 | Let's Encrypt Zertifikat-Renewal verifizieren | Nach 60 Tagen pruefen (auto-renew) | CCJ |

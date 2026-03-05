@@ -9,6 +9,17 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Security
+- [Infra] **C6: DB_READONLY_PASSWORD in K8s Secret verschoben** (2026-03-05)
+  - Passwort war im Klartext in K8s ConfigMap — jetzt über `auth.dbreadonly` als K8s Secret (identisch zu postgresql/redis/objectstorage)
+  - CI/CD Workflow in allen 3 Deploy-Jobs angepasst
+- [Infra] **H8: Security-Header auf nginx** (2026-03-05)
+  - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` via `http-snippet` in values-common.yaml
+- [CI/CD] **H11: image_tag Script Injection gefixt** (2026-03-05)
+  - `${{ inputs.image_tag }}` → `env:` Variable (GitHub Security Lab Best Practice) + Docker-Tag-Regex-Validierung
+- [Docs] **Cloud-Infrastruktur-Audit** (2026-03-04)
+  - 5 Opus-Agenten: 10 CRITICAL, 18 HIGH, ~20 MEDIUM, ~12 LOW Findings
+  - 5 Findings verifiziert durch separate Code-Analyse-Agenten
+  - Audit-Dokument: `docs/audit/cloud-infrastruktur-audit-2026-03-04.md`
 - [Infra] **SEC-01: PostgreSQL ACL eingeschränkt** (2026-03-03)
   - PG ACL von `0.0.0.0/0` auf Cluster-Egress-IP `188.34.93.194/32` + Admin-IP eingeschränkt
   - Default `pg_acl` in beiden Terraform-Modulen entfernt → erzwingt explizite Angabe pro Environment

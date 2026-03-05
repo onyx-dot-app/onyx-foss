@@ -1,89 +1,71 @@
-# Naechste Session — Entra ID Vorbereitung + M1-Abnahme + Doku-Fixes
+# Naechste Session — DNS/TLS aktivieren (C1)
 
-## Wo wir stehen (2026-03-04)
+## Wo wir stehen (2026-03-05)
 
-**Warten auf Leif (DNS + CF Token). Termin Freitag 06.03, 11:00 (Entra ID).**
-
-### Was heute passiert ist
-- Tiefenanalyse aller offenen Tasks (64 Tasks identifiziert, priorisiert)
-- Embedding-Modell: E5 Mistral 7B → Qwen3-VL-Embedding 8B (bessere Deutsch-Unterstuetzung)
-- Embedding-Wechsel via UI **blockiert** durch Upstream (PR #7541, OpenSearch-Migration)
-- Fallback `nomic-embed-text-v1` (self-hosted) ist aktiv — RAG funktioniert
-- 18 Doku-Dateien aktualisiert (Modell, Domain, Status)
-- Neues Runbook: `docs/runbooks/llm-konfiguration.md` (Chat + Embedding Anleitung)
-- Alle `voeb.example.com` → `voeb-service.de` korrigiert (0 veraltete Referenzen)
-- Uncommitted Changes: 13+ Dateien (Doku-Updates, neues Runbook)
+**Security Quick Wins committed + deployed:** `27dec3dcf` (C6, H8, H11) — DEV + TEST verifiziert.
+**CHANGELOG + Projektstatus:** Geaendert, noch NICHT committed (2 Dateien).
+**DNS A-Records:** Gesetzt, loesen korrekt auf.
+**Cloudflare API Token:** Erhalten von Leif.
 
 ---
 
-## Prioritaeten fuer naechste Session
+## VOR DEM TLS-SETUP: 2 offene Commits
 
-### 1. Uncommitted Changes committen (nach Nikos Review)
-Viele Doku-Aenderungen aus dieser Session. Dateien:
-- `docs/betriebskonzept.md`, `docs/sicherheitskonzept.md`, `docs/CHANGELOG.md`
-- `docs/referenz/stackit-infrastruktur.md`, `docs/referenz/stackit-implementierungsplan.md`
-- `docs/abnahme/meilensteinplan.md`
-- `docs/runbooks/llm-konfiguration.md` (NEU), `docs/runbooks/README.md`, `docs/runbooks/helm-deploy.md`
-- `.claude/rules/voeb-projekt-status.md`, `.claude/next-session-prompt.md`
+### Commit 1: Doku-Nachtrag (CHANGELOG + Projektstatus)
+Dateien sind bereits geaendert, muessen nur committed werden:
+- `docs/CHANGELOG.md` — 3 Quick Wins + Audit-Dokument als Security-Eintraege
+- `.claude/rules/voeb-projekt-status.md` — Audit + Quick Wins ergaenzt, JNnovate-Blocker entfernt
 
-### 2. Entra ID vorbereiten (Termin Fr 06.03, 11:00)
-- Helm Values Template fuer OIDC vorbereiten (AUTH_TYPE, OAUTH_CLIENT_ID, etc.)
-- Redirect URIs dokumentieren: `https://dev.chatbot.voeb-service.de/auth/oidc/callback`
-- Checkliste fuer den Termin mit Leif erstellen
-- Onyx OIDC-Code pruefen: welche Env-Vars/Config werden gebraucht?
-- **Voraussetzung:** HTTPS muss laufen! Falls Leif bis Freitag DNS + Token liefert, erst TLS aktivieren.
-
-### 3. Falls Leif vorher liefert — HTTPS aktivieren (~30 Min)
-Runbook: `docs/runbooks/dns-tls-setup.md` (komplett, alle Befehle drin)
-
-### 4. M1-Abnahmeprotokoll erstellen
-- Template: `docs/abnahme/abnahmeprotokoll-template.md`
-- Ist-Zustand befuellen (was funktioniert, was blockiert)
-- VoEB-Termin fuer Abnahme-Meeting ansetzen
-
-### 5. Weitere Quick-Wins (ohne Blocker)
-- `values-prod.yaml` Grundgeruest erstellen (CI/CD referenziert die Datei, existiert aber nicht!)
-- PROD Deploy-Job fixen (fehlender Smoke Test + `--create-namespace`)
-- `upstream-check.yml` SHA-pinning (actions/checkout@v4 → SHA)
-- ADR-003 ENTWURF-Abschnitte ausfuellen (Infra ist live, Details bekannt)
-- IP-Allowlisting fuer DEV/TEST vorbereiten (Nginx Ingress Annotations, BAIT)
+### Commit 2 (optional): Runbook-Fix
+- `docs/runbooks/dns-tls-setup.md` Zeile 601: `configMap.DB_READONLY_PASSWORD` → `auth.dbreadonly.values.db_readonly_password` (veraltet nach C6-Fix)
 
 ---
 
-## Finale URLs
+## BLOCKER: Cloudflare Proxy auf DNS-only umstellen
 
-| Environment | URL | IP |
-|---|---|---|
-| DEV | `https://dev.chatbot.voeb-service.de` | `188.34.74.187` |
-| TEST | `https://test.chatbot.voeb-service.de` | `188.34.118.201` |
-| PROD | `https://chatbot.voeb-service.de` | noch nicht provisioniert |
+DNS loest auf, ABER ueber `cdn.cloudflare.net` (Proxy AN = orange Wolke).
+**Leif muss in Cloudflare beide A-Records auf "DNS only" (graue Wolke) umstellen.**
 
-## Blocker
+Ohne das:
+- Traffic geht ueber US-Infrastruktur (DSGVO-Verstoss)
+- Cloudflare terminiert TLS (unser cert-manager waere wirkungslos)
 
-| Was | Wer | Status |
-|-----|-----|--------|
-| 2x DNS A-Records (DNS-only!) | Leif | Mail raus, ausstehend |
-| Cloudflare API Token | Leif | Mail raus, ausstehend |
-| Entra ID App-Registrierung | Leif + Niko | Termin Fr 06.03, 11:00 |
-| Embedding-Modell-Wechsel (Qwen3-VL) | Onyx Upstream (PR #7541) | Warten auf Re-Enablement |
+Pruefung ob umgestellt:
+```bash
+dig +short dev.chatbot.voeb-service.de
+# Erwartung: NUR "188.34.74.187" (kein cdn.cloudflare.net davor)
+```
 
-## Embedding-Status (wichtig!)
+---
 
-- **Aktuell aktiv:** `nomic-ai/nomic-embed-text-v1` (self-hosted auf Model Server, 768 Dim)
-- **Ziel:** `Qwen/Qwen3-VL-Embedding-8B` (StackIT, 4096 Dim, multilingual, 32k Context)
-- **Blocker:** Onyx hat Embedding-Wechsel via Admin UI deaktiviert (PR #7541, OpenSearch-Migration)
-- **Impact:** RAG funktioniert mit nomic, aber nicht optimal fuer Deutsch
-- **Naechster Schritt:** Bei jedem Upstream-Merge pruefen ob Endpoint reaktiviert
-- **Runbook:** `docs/runbooks/llm-konfiguration.md` (komplett, inkl. Troubleshooting)
-- **Admin UI Pfad:** Search Settings → Embedding Model → Cloud-based → LiteLLM
-- **Kritisch:** Embedding API URL muss `/v1/embeddings` sein (nicht nur `/v1`)
+## AUFGABE: DNS/TLS Setup (Runbook Teil B, Schritte 1-6)
 
-## Dateien
+**Runbook:** `docs/runbooks/dns-tls-setup.md`
+**Voraussetzung:** Cloudflare Proxy = DNS-only (graue Wolke)
 
-- Runbook DNS/TLS: `docs/runbooks/dns-tls-setup.md`
-- Runbook LLM: `docs/runbooks/llm-konfiguration.md` (NEU)
-- Memory: `memory/MEMORY.md`
-- Zeitplanung: `memory/clickup-zeitplanung.md`
-- Helm DEV: `deployment/helm/values/values-dev.yaml` (noch HTTP/IP)
-- Helm TEST: `deployment/helm/values/values-test.yaml` (noch HTTP/IP)
-- Upstream-Blocker Code: `backend/onyx/server/manage/search_settings.py:50`
+### Reihenfolge (kritisch!)
+
+1. **Pruefen:** DNS-only (kein cloudflare.net CNAME)
+2. **Schritt 1:** cert-manager installieren (`helm install cert-manager jetstack/cert-manager`)
+3. **Schritt 2:** Cloudflare API Token als K8s Secret
+4. **Schritt 3a:** Staging ClusterIssuers erstellen (DEV + TEST)
+5. **Schritt 3c:** Explizite Certificate-Ressourcen (ECDSA P-384, BSI-konform) — VOR Helm Deploy!
+6. **Gate-Check:** Alle Voraussetzungen pruefen (DNS, Issuers READY, Certs READY)
+7. **Schritt 4:** Helm Values anpassen (DOMAIN, WEB_DOMAIN → https://, ingress-Block)
+8. **Schritt 5:** Deploy DEV, verifizieren, dann TEST
+9. **Schritt 3b:** Staging → Production ClusterIssuers umschalten
+10. **Schritt 6:** Vollstaendige Verifikation (BSI ECDSA P-384, HTTP→HTTPS Redirect, Login)
+
+### Wichtige Hinweise
+- `letsencrypt.enabled` bleibt `false` (eigener ClusterIssuer statt Chart-eigener)
+- Certificates MUESSEN VOR dem Helm Deploy existieren (sonst erstellt Ingress-Shim RSA-2048)
+- Erster TLS-Deploy besser manuell (nicht CI/CD) — cert-manager braucht 1-2 Min fuer Zertifikate
+- Nach TLS: CI/CD Smoke Test funktioniert automatisch (liest WEB_DOMAIN aus ConfigMap)
+
+---
+
+## Regeln (Erinnerung)
+- `--no-verify` nutzen
+- NIEMALS Co-Authored-By fuer Claude
+- Helm Chart Templates READ-ONLY
+- Kein Commit ohne Nikos Freigabe
