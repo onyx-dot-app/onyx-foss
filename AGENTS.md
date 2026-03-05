@@ -3,10 +3,11 @@
 Dies ist ein **Enterprise-Fork** von Onyx für VÖB (Bundesverband Öffentlicher Banken).
 Tech Lead: Nikolaj Ivanov (CCJ / Coffee Studios). Null Fehlertoleranz.
 
-**3 Regeln die ALLES überschreiben:**
-1. **Extend, don't modify.** Code NUR in `backend/ext/` und `web/src/ext/`. Nur 7 Core-Dateien dürfen minimal verändert werden → @.claude/rules/core-dateien.md
-2. **Spec vor Code.** Vor jeder Implementierung: `/ext-framework` aufrufen. Kein Code ohne Modulspezifikation + Nikos Freigabe.
-3. **Kein Commit ohne Freigabe.** Du commitst NICHT selbstständig → @.claude/rules/commit-workflow.md
+**4 Regeln die ALLES überschreiben:**
+1. **Feature-Branch Pflicht.** NIEMALS direkt auf `main` arbeiten. Vor jeder Arbeit: `git checkout -b feature/<thema>` von `main`. Details → @.claude/rules/commit-workflow.md
+2. **Extend, don't modify.** Code NUR in `backend/ext/` und `web/src/ext/`. Nur 7 Core-Dateien dürfen minimal verändert werden → @.claude/rules/core-dateien.md
+3. **Spec vor Code.** Vor jeder Implementierung: `/ext-framework` aufrufen. Kein Code ohne Modulspezifikation + Nikos Freigabe.
+4. **Kein Commit ohne Freigabe.** Du commitst NICHT selbstständig → @.claude/rules/commit-workflow.md
 
 Alle Fork-Regeln: `.claude/rules/` | Skills: `/ext-framework`, `/modulspec` | Status: @.claude/rules/voeb-projekt-status.md
 Infrastruktur: `docs/referenz/stackit-implementierungsplan.md` | Codebase: @.claude/rules/codebase-orientierung.md

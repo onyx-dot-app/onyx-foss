@@ -1,5 +1,31 @@
 # Commit- und PR-Workflow
 
+## PFLICHT: Feature-Branch für JEDE Arbeit
+
+**NIEMALS direkt auf `main` committen.** Jede Session beginnt so:
+
+```bash
+# 1. Sicherstellen dass main aktuell ist
+git checkout main
+git pull origin main
+
+# 2. Feature-Branch erstellen
+git checkout -b feature/<thema>
+# Beispiele: feature/tls-setup, feature/doku-audit, feature/ext-token-limits
+```
+
+### Wann wird der Branch gemergt?
+- Feature-Branch lebt bis das Thema FERTIG ist (kann über mehrere Sessions gehen)
+- Wenn ein Branch bereits existiert: `git checkout feature/<thema>` (NICHT neu erstellen)
+- Am Ende: PR gegen `main` → Review → Merge → auto-deploy DEV
+
+### Session-Start Checkliste
+1. `git status` — Bin ich auf einem Feature-Branch? Wenn ja, weiterarbeiten.
+2. Kein Feature-Branch? → `git checkout -b feature/<thema>` von `main`
+3. NIEMALS `main` als Arbeitsbranch nutzen
+
+---
+
 ## WICHTIG: Du commitst NICHT selbstständig.
 1. Implementieren + Selbst-Review
 2. Niko Ergebnis präsentieren (Dateien, Tests, Core-Änderungen, offene Punkte)
@@ -21,9 +47,20 @@
 ```bash
 git add <spezifische Dateien>  # NICHT git add .
 git commit -m "<type>(<scope>): <description>"
-git push origin feature/{modulname}
-# PR gegen main erstellen
+git push origin feature/{thema}
+# PR gegen main erstellen (gh pr create)
 ```
+
+## PR-Workflow
+```bash
+# PR erstellen
+gh pr create --base main --title "<type>(<scope>): <Beschreibung>" --body "..."
+
+# Nach Nikos Freigabe: Merge
+gh pr merge <PR-NR> --squash --delete-branch
+```
+
+---
 
 ## Commit-Format
 
