@@ -10,7 +10,7 @@
 #   3. Alle [TBD]-Werte in dieser Datei ersetzen
 #   4. GitHub Environment "prod" mit Required Reviewers konfigurieren
 #   5. GitHub Secrets fuer Environment "prod" anlegen
-#   6. Namespace onyx-prod manuell erstellen (kein --create-namespace)
+#   6. Namespace onyx-prod wird automatisch erstellt (--create-namespace im Workflow)
 #   7. NetworkPolicies anwenden (deployment/k8s/network-policies/)
 #
 # Referenz: docs/referenz/stackit-infrastruktur.md (Zeilen 99-136)

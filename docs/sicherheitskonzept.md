@@ -2,7 +2,7 @@
 
 **Dokumentstatus**: Entwurf (teilweise implementiert)
 **Letzte Aktualisierung**: 2026-03-05
-**Version**: 0.3
+**Version**: 0.4
 **Nächste Überprüfung**: 2026-04-03
 
 ---
@@ -14,6 +14,7 @@
 | 0.1 | 2026-02 | Nikolaj Ivanov | Initialer Entwurf |
 | 0.2 | 2026-03-03 | Nikolaj Ivanov | Überarbeitung auf tatsächlichen Infrastruktur-Stand (DEV + TEST live), Security-Audit-Findings SEC-01 bis SEC-07 integriert, Code-Beispiele korrigiert (Python/FastAPI), Secrets Management aktualisiert |
 | 0.3 | 2026-03-05 | Nikolaj Ivanov | Cloud-Infrastruktur-Audit (2026-03-04) referenziert, SEC-03 als ERLEDIGT (NetworkPolicies DEV+TEST), 3 Quick Wins dokumentiert: C6 (DB_READONLY→K8s Secret), H8 (Security-Header), H11 (Script Injection Fix), Audit-Datum korrigiert |
+| 0.4 | 2026-03-05 | Nikolaj Ivanov | Zugriffsmatrix (M-CM-3) hinzugefügt, 4-Augen-Prinzip (M-CM-2) dokumentiert mit BAIT-Referenz, Interims-Lösung und geplanten GitHub-Protection-Maßnahmen |
 
 ---
 
@@ -174,6 +175,104 @@ Erweitertes RBAC über das Extension-Modul `ext-rbac` (Phase 4b) mit:
 
 Details werden in der Modulspezifikation für Phase 4b definiert.
 
+### Zugriffsmatrix
+
+Die folgende Matrix dokumentiert alle Zugriffsrechte auf Infrastruktur- und Anwendungsressourcen.
+
+#### GitHub Repository & CI/CD
+
+| Ressource | Rolle | Zugriff | Bemerkung |
+|-----------|-------|---------|-----------|
+| GitHub Repository | Tech Lead (Nikolaj Ivanov, CCJ) | Admin (Write, Merge, Settings) | Einziger Admin aktuell |
+| GitHub Repository | VÖB | Read | Einsicht in Code, PRs, Issues |
+| GitHub Environment `dev` | CI/CD Pipeline (auto) | Deploy | Automatisch bei Push auf `main` |
+| GitHub Environment `test` | Tech Lead | Deploy (workflow_dispatch) | Manueller Trigger |
+| GitHub Environment `prod` | Tech Lead + Reviewer | Deploy (workflow_dispatch + Approval) | 4-Augen-Prinzip (geplant) |
+| GitHub Actions Secrets (global) | Repository Admin | Read/Write | STACKIT_REGISTRY_*, STACKIT_KUBECONFIG |
+| GitHub Actions Secrets (per env) | Environment Admin | Read/Write | PG, Redis, S3, DB_READONLY Passwörter |
+
+#### Kubernetes Cluster
+
+| Ressource | Rolle | Zugriff | Bemerkung |
+|-----------|-------|---------|-----------|
+| SKE Cluster `vob-chatbot` | Tech Lead | Cluster-Admin (Kubeconfig) | SEC-05: Separate Kubeconfigs geplant |
+| SKE Cluster `vob-chatbot` | CI/CD Pipeline | Cluster-Admin (Kubeconfig) | Selber Kubeconfig wie Tech Lead |
+| Namespace `onyx-dev` | Tech Lead / CI/CD | Full Access | Deployment, Secrets, ConfigMaps |
+| Namespace `onyx-test` | Tech Lead / CI/CD | Full Access | Deployment, Secrets, ConfigMaps |
+| Namespace `onyx-prod` | Tech Lead + Reviewer | Full Access | Geplant: Namespace-scoped RBAC (SEC-05) |
+| SKE Cluster API | Alle (Internet) | Zugriff mit Kubeconfig | **OPS-01: ACL auf Cluster-Egress-IP einschränken (vor PROD)** |
+
+#### Datenbanken & Storage
+
+| Ressource | Rolle / User | Zugriff | Bemerkung |
+|-----------|-------------|---------|-----------|
+| PostgreSQL DEV (`vob-dev`) | `onyx_app` | Read/Write (login, createdb) | ACL: Cluster-Egress-IP (SEC-01) |
+| PostgreSQL DEV (`vob-dev`) | `db_readonly_user` | Read-Only | Knowledge Graph, Terraform-verwaltet |
+| PostgreSQL TEST (`vob-test`) | `onyx_app` | Read/Write | Eigene Instanz, ACL identisch |
+| PostgreSQL TEST (`vob-test`) | `db_readonly_user` | Read-Only | Knowledge Graph, Terraform-verwaltet |
+| PostgreSQL (Admin) | Tech Lead | Full Access (via Admin-IP) | `109.41.112.160/32` in PG ACL |
+| Object Storage DEV (`vob-dev`) | Anwendung | Read/Write (S3 API) | Access Key in K8s Secret |
+| Object Storage TEST (`vob-test`) | Anwendung | Read/Write (S3 API) | Access Key in K8s Secret |
+| Container Registry | CI/CD Robot Account | Push/Pull | `robot$voeb-chatbot+github-ci` |
+
+#### Infrastructure as Code
+
+| Ressource | Rolle | Zugriff | Bemerkung |
+|-----------|-------|---------|-----------|
+| Terraform State | Tech Lead (lokal) | Read/Write | SEC-04: Remote State geplant |
+| Terraform SA (`voeb-terraform`) | Tech Lead | StackIT Project Admin | Service Account Credentials lokal |
+| StackIT Console | Tech Lead | Projekt-Admin | Web-UI für Managed Services |
+
+#### Externe Services & APIs
+
+| Ressource | Rolle / Zugang | Zugriff | Bemerkung |
+|-----------|---------------|---------|-----------|
+| StackIT AI Model Serving (LLM) | Anwendung (API Token) | HTTPS API Calls | Token in Onyx Admin UI (DB), Rotation 90d empfohlen |
+| StackIT Console | Tech Lead | Projekt-Admin (Web-UI) | Managed-Service-Verwaltung (PG, S3, SKE) |
+| Cloudflare DNS (`voeb-service.de`) | VÖB IT (Leif Rasch) | Zone Admin | DNS-Records und API Token für cert-manager |
+| cert-manager (K8s) | ClusterIssuer | Cloudflare API Token (K8s Secret in NS `cert-manager`) | Für Let's Encrypt DNS-01 Challenge |
+| Docker Hub | Anwendung (public) | Pull (kein Auth) | Model Server `onyxdotapp/onyx-model-server:v2.9.8` |
+| Microsoft Entra ID | VÖB IT (geplant) | OIDC Provider | Phase 3, Zugangsdaten ausstehend |
+
+#### Geplante Änderungen
+
+| Maßnahme | Betrifft | Priorität | Status |
+|----------|----------|-----------|--------|
+| SEC-05: Namespace-scoped ServiceAccounts | Kubernetes RBAC | P1 (vor PROD) | Offen |
+| SEC-04: Remote State Backend | Terraform | P1 (vor PROD) | Offen |
+| Branch Protection auf `main` | GitHub | P1 (vor PROD) | Offen |
+| Environment Protection auf `prod` | GitHub | P1 (vor PROD) | Offen |
+| VÖB als Required Reviewer | GitHub Environment `prod` | Langfristig | Offen |
+
+### 4-Augen-Prinzip (BAIT Kap. 8.6)
+
+**Anforderung**: BAIT fordert, dass keine Änderung an der Produktionsumgebung ohne dokumentierte zweite Freigabe erfolgt. Dies betrifft insbesondere Code-Änderungen, Konfigurationsänderungen und Infrastrukturänderungen.
+
+**Aktueller Stand** (1-Person-Entwicklungsteam):
+
+Das Projekt wird aktuell von einem einzelnen Tech Lead (Nikolaj Ivanov, CCJ) entwickelt und betrieben. Eine vollständige Umsetzung des 4-Augen-Prinzips mit zwei unabhängigen Personen ist daher noch nicht möglich.
+
+**Implementierte Maßnahmen**:
+
+| Maßnahme | Status | Beschreibung |
+|----------|--------|-------------|
+| Feature-Branch + PR Pflicht | Implementiert | Jede Änderung läuft über einen Feature-Branch und wird per Pull Request gemergt |
+| PR-Checkliste | Implementiert | Dokumentierte Checkliste vor jedem Commit (Tests, Lint, Types, Doku) |
+| Explizite Commit-Freigabe | Implementiert | Tech Lead gibt jeden Commit explizit frei (Self-Review-Prozess) |
+| CHANGELOG-Dokumentation | Implementiert | Jede Änderung wird im Changelog erfasst |
+
+**Geplante Maßnahmen** (vor PROD):
+
+| Maßnahme | Konfiguration | Effekt |
+|----------|--------------|--------|
+| GitHub Branch Protection auf `main` | Require Pull Request, Require 1 Approval, Require Status Checks | Kein direkter Push auf `main` möglich |
+| GitHub Environment Protection auf `prod` | Required Reviewers (Tech Lead + VÖB-Kontakt) | Kein PROD-Deploy ohne zweite Freigabe |
+| Wait Timer auf `prod` | Optional: 10 Min Bedenkzeit | Versehentliche Freigabe verhindern |
+
+**Langfristige Lösung**: VÖB-Stakeholder oder ein zweiter CCJ-Mitarbeiter wird als Required Reviewer für das GitHub Environment `prod` hinterlegt. Damit ist das 4-Augen-Prinzip für alle Produktionsänderungen technisch erzwungen.
+
+> **Querverweise**: Change-Management-Prozess in `docs/betriebskonzept.md`, Abschnitt "Change Management".
+
 ---
 
 ## Datenverschlüsselung
@@ -199,7 +298,7 @@ letsencrypt:
   enabled: false  # Kein TLS bis DNS verfügbar
 ```
 
-**DNS-Status (2026-03-05)**: A-Records gesetzt (`dev.chatbot.voeb-service.de` → `188.34.74.187`, `test.chatbot.voeb-service.de` → `188.34.118.201`). **Ausstehend:** Cloudflare Proxy muss auf DNS-only (graue Wolke) umgestellt werden — solange Proxy aktiv ist, terminiert Cloudflare TLS und cert-manager kann kein Zertifikat ausstellen.
+**DNS-Status (2026-03-05)**: A-Records gesetzt (`dev.chatbot.voeb-service.de` → `188.34.74.187`, `test.chatbot.voeb-service.de` → `188.34.118.201`). Cloudflare Proxy auf DNS-only (graue Wolke) umgestellt und verifiziert (2026-03-05). **Ausstehend:** TLS-Zertifikate via cert-manager + Let's Encrypt (Cloudflare API Token Authentifizierungsproblem, wartet auf Token-Fix).
 
 #### Interne Kommunikation (Cluster-intern)
 
@@ -496,7 +595,7 @@ azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415     # v4
 
 - **Registry**: `registry.onstackit.cloud` (StackIT, Region EU01 Frankfurt)
 - **Projekt**: `voeb-chatbot`
-- **Zugang**: Robot Account (`robot$voeb-chatbot+github-ci`) -- nur Push-Rechte
+- **Zugang**: Robot Account (`robot$voeb-chatbot+github-ci`) -- Push- und Pull-Rechte (CI/CD Push + Kubernetes Image Pull)
 - **Datensouveränität**: Images werden in StackIT Registry gespeichert, nicht auf Docker Hub (Ausnahme: Model Server, siehe unten)
 
 ### Image-Strategie
@@ -693,7 +792,7 @@ Details zu jedem Finding in `docs/referenz/stackit-implementierungsplan.md`, Abs
 
 **Zusammenfassung der offenen P1-Items:**
 - **SEC-02**: Node Affinity erzwingen — `nodeSelector` in Helm Values, damit DEV- und TEST-Pods auf eigenen Nodes laufen (ADR-004)
-- **SEC-03**: Default-Deny NetworkPolicies + explizite Allow-Rules pro Namespace
+- ~~**SEC-03**: Default-Deny NetworkPolicies~~ → **ERLEDIGT** (2026-03-05, siehe oben)
 - **SEC-04**: Terraform State in StackIT Object Storage (Remote Backend mit State-Locking)
 - **SEC-05**: Namespace-scoped ServiceAccounts für CI/CD statt globalem Kubeconfig
 
@@ -850,6 +949,6 @@ configMap:
 ---
 
 **Dokumentstatus**: Entwurf (teilweise implementiert)
-**Version**: 0.3
+**Version**: 0.4
 **Letzte Aktualisierung**: 2026-03-05
 **Nächste Überprüfung**: 2026-04-03

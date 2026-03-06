@@ -14,6 +14,7 @@ Verifizierte Step-by-Step-Anleitungen für Setup, Deployment und Betrieb der Sta
 | 4 | [ci-cd-pipeline.md](./ci-cd-pipeline.md) | ✅ Verifiziert | CI/CD Pipeline: Deploy, Rollback, Secrets, Troubleshooting |
 | 5 | [dns-tls-setup.md](./dns-tls-setup.md) | Bereit zur Umsetzung | DNS A-Records, cert-manager, Let's Encrypt, Helm TLS |
 | 6 | [llm-konfiguration.md](./llm-konfiguration.md) | ✅ Verifiziert | LLM Chat + Embedding Modelle, StackIT AI Model Serving |
+| 7 | [rollback-verfahren.md](./rollback-verfahren.md) | ✅ Verifiziert | Entscheidungsbaum, Helm/DB-Rollback, Kommunikation, Post-Mortem |
 
 ## Konventionen
 

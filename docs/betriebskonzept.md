@@ -1,8 +1,8 @@
 # Betriebskonzept -- VÖB Service Chatbot
 
 **Dokumentstatus**: Entwurf (teilweise verifiziert)
-**Letzte Aktualisierung**: 2026-03-04
-**Version**: 0.3
+**Letzte Aktualisierung**: 2026-03-05
+**Version**: 0.4
 
 ---
 
@@ -175,9 +175,9 @@ Git Push auf "main"
   ↓
 GitHub Actions Workflow (automatisch)
   ├── Prepare: Image Tag bestimmen (Git SHA)
-  ├── Build Backend (parallel, ~1 Min mit Cache)
+  ├── Build Backend (parallel, je ~7 Min mit Cache)
   │   └── Push: registry.onstackit.cloud/voeb-chatbot/onyx-backend:<sha>
-  ├── Build Frontend (parallel, ~1 Min mit Cache)
+  ├── Build Frontend (parallel, je ~7 Min mit Cache)
   │   └── Push: registry.onstackit.cloud/voeb-chatbot/onyx-web-server:<sha>
   └── Deploy DEV
       ├── helm dependency build
@@ -200,6 +200,94 @@ Manuell (workflow_dispatch):
 - Concurrency: Nur ein Deploy pro Environment gleichzeitig, laufende Builds werden bei neuem Push abgebrochen
 - DEV-Deploy patcht Deployments auf Recreate-Strategie (Single g1a.4d Node hat nicht genug CPU für RollingUpdate)
 - Alle GitHub Actions sind SHA-gepinnt (Supply-Chain-Sicherheit)
+
+### CI/CD-Details
+
+#### Trigger und paths-ignore
+
+Der Workflow wird **nicht** ausgelöst bei Änderungen an:
+- `docs/**` -- reine Dokumentationsänderungen
+- `*.md` -- Markdown-Dateien im Root
+- `.claude/**` -- AI-Instruktionsdateien
+
+Dadurch erzeugen Docs-only Commits kein unnötiges Build+Deploy. Code-Änderungen an `main` triggern immer einen DEV-Deploy.
+
+#### Concurrency-Verhalten
+
+```yaml
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'dev' }}
+  cancel-in-progress: true
+```
+
+- Pro Environment (dev/test/prod) läuft maximal **ein** Deploy gleichzeitig
+- Ein neuer Push auf `main` bricht einen laufenden DEV-Deploy ab und startet den neueren
+- TEST- und PROD-Deploys (manuell) haben eigene Concurrency-Gruppen und beeinflussen DEV nicht
+
+#### Supply-Chain-Sicherheit (SHA-Pinning)
+
+Alle GitHub Actions sind auf **Commit-SHA fixiert** statt auf Major-Version-Tags (z.B. `v4`). Dies verhindert Supply-Chain-Angriffe, bei denen ein kompromittiertes Action-Repository ein Tag auf einen schadhaften Commit umbiegt.
+
+```
+actions/checkout@34e114876b...            # v4
+docker/login-action@c94ce9fb46...         # v3
+docker/setup-buildx-action@8d2750c6...    # v3
+docker/build-push-action@10e90e36...      # v6
+azure/setup-helm@bf6a7d304b...            # v4
+azure/setup-kubectl@c0c8b32d33...         # v4
+```
+
+Die Pipeline hat `permissions: contents: read` -- minimales Privilege, nur Lesezugriff auf das Repository.
+
+#### Smoke Test pro Environment
+
+Nach jedem Deploy wird ein Health Check gegen `/api/health` ausgeführt:
+
+| Environment | Versuche | Interval | Timeout | Gesamt |
+|-------------|----------|----------|---------|--------|
+| DEV | 12 | 10s | 5s pro Request | ~2 Min |
+| TEST | 12 | 10s | 5s pro Request | ~2 Min |
+| PROD | 18 | 10s | 5s pro Request | ~3 Min |
+
+PROD hat mehr Versuche, da HA-Deployments (mehrere Replicas) länger zum Starten brauchen können. Die Domain wird dynamisch aus der Kubernetes ConfigMap `env-configmap` gelesen.
+
+#### Model Server Pinning
+
+Der Model Server (`onyxdotapp/onyx-model-server`) wird **nicht** von uns gebaut. Er ist identisch mit dem Upstream Onyx Image und wird direkt von Docker Hub gepullt.
+
+- Gepinnt auf Version `v2.9.8` (kein `:latest`)
+- Definiert als Environment-Variable im Workflow (zentral änderbar)
+- Für PROD: Evaluierung ob das Image in die StackIT Registry gespiegelt wird (Datensouveränität)
+
+#### Secret-Injection
+
+Secrets werden **nie** in Git gespeichert. Der Injektionspfad:
+
+```
+GitHub Environment Secrets (verschlüsselt, pro Environment getrennt)
+  ↓ CI/CD Pipeline liest Secrets zur Laufzeit
+    ↓ helm upgrade --set "auth.postgresql.values.password=${{ secrets.POSTGRES_PASSWORD }}"
+      ↓ Helm erstellt Kubernetes Secrets (Base64-encoded)
+        ↓ Pods mounten Secrets als Environment-Variablen
+```
+
+**Verwaltete Secrets pro Environment**:
+
+| Secret | Verwendung |
+|--------|-----------|
+| `POSTGRES_PASSWORD` | PostgreSQL App-User Passwort |
+| `REDIS_PASSWORD` | Redis Standalone Passwort |
+| `S3_ACCESS_KEY_ID` | StackIT Object Storage Access Key |
+| `S3_SECRET_ACCESS_KEY` | StackIT Object Storage Secret Key |
+| `DB_READONLY_PASSWORD` | PostgreSQL Readonly-User (Knowledge Graph) |
+
+**Globale Secrets** (Repository-weit, nicht Environment-spezifisch):
+
+| Secret | Verwendung |
+|--------|-----------|
+| `STACKIT_REGISTRY_USER` | Container Registry Robot Account |
+| `STACKIT_REGISTRY_PASSWORD` | Container Registry Token |
+| `STACKIT_KUBECONFIG` | Base64-encoded Kubeconfig (Ablauf: 2026-05-28) |
 
 ### Helm-basiertes Deployment
 
@@ -251,6 +339,163 @@ helm upgrade --install onyx-test deployment/helm/charts/onyx \
    - Alembic-Migrationen werden vom API-Server beim Start ausgeführt
    - Vor kritischen Migrationen: PG-Backup verifizieren (managed, DEV 02:00 UTC, TEST 03:00 UTC)
    - Reverse-Migration: `alembic downgrade -1`
+
+---
+
+## Change Management
+
+### Branching-Strategie
+
+Das Projekt nutzt **Simplified GitLab Flow** -- ein einziger langlebiger Branch (`main`) mit Feature- und Release-Branches.
+
+```
+feature/*  →  PR  →  main  →  auto-deploy DEV
+                       │
+                       └→  release/X.Y  →  workflow_dispatch  →  TEST
+                                │
+                                └→  tag vX.Y.Z  →  workflow_dispatch  →  PROD
+                                │
+                                └→  merge back  →  main
+```
+
+**Branch-Typen**:
+
+| Branch | Zweck | Lebensdauer |
+|--------|-------|-------------|
+| `main` | Integrationsbranch, auto-deploy DEV, Upstream-Merges | Permanent |
+| `feature/*` | Feature-Entwicklung, Bugfixes, Doku | Temporär (bis PR gemergt) |
+| `release/*` | Release-Stabilisierung für TEST/PROD | Temporär (bis zurück in main gemergt) |
+| `hotfix/*` | Dringende Fixes auf Release-Branch | Temporär (Stunden bis Tage) |
+
+### Promotion-Pfad
+
+Jede Änderung durchläuft folgende Stufen:
+
+```
+Entwicklung (Feature-Branch)
+  → Pull Request (Code Review, CI muss grün sein)
+    → Merge auf main
+      → Automatischer Deploy auf DEV
+        → Manueller Deploy auf TEST (workflow_dispatch)
+          → Manueller Deploy auf PROD (workflow_dispatch + Approval)
+```
+
+### Änderungskategorien
+
+| Kategorie | Beschreibung | Beispiele | Prozess |
+|-----------|-------------|-----------|---------|
+| **Standard Change** | Geplante Feature-Entwicklung | Neues Modul, UI-Änderung, Doku | Feature-Branch → PR → main → DEV → TEST → PROD |
+| **Emergency Change** | Dringender Fix für Produktionsproblem | Security Patch, Crash Fix | Hotfix-Branch → PR → Release-Branch + main |
+| **Upstream-Merge** | Update von Onyx FOSS | Quarterly oder bei Security Updates | Feature-Branch → Test-Merge → PR → main |
+| **Infrastruktur-Change** | Terraform, Helm Values, CI/CD | Node-Skalierung, neue Secrets | Feature-Branch → PR → main → Deploy |
+
+### Freigabestufen pro Environment
+
+| Environment | Trigger | Freigabe | Rollback | Helm Timeout |
+|-------------|---------|----------|----------|-------------|
+| **DEV** | Automatisch bei Push auf `main` | Keine manuelle Freigabe nötig | `helm rollback` (manuell) | 10 Min |
+| **TEST** | Manuell (`workflow_dispatch`) | Tech Lead triggert Deploy | `--atomic` (automatisch bei Fehler) | 10 Min |
+| **PROD** | Manuell (`workflow_dispatch`) | Tech Lead + Required Reviewer (GitHub Environment Protection) | `--atomic` (automatisch bei Fehler) | 15 Min |
+
+### Dokumentation von Änderungen
+
+Jede Änderung wird an folgenden Stellen dokumentiert:
+
+1. **Git Commit**: Konventionelles Format `<type>(<scope>): <Beschreibung>` mit Bullet-Liste im Body
+2. **Pull Request**: Titel + Beschreibung der Änderung, verlinkte Issues
+3. **CHANGELOG.md**: Eintrag unter `[Unreleased]` mit Kategorie (Added, Changed, Fixed, Security)
+4. **Modulspezifikation**: Bei Abweichung von der Spezifikation wird diese aktualisiert
+
+### 4-Augen-Prinzip (BAIT Kap. 8.6)
+
+**BAIT-Anforderung**: Keine Änderung an der Produktionsumgebung ohne dokumentierte zweite Freigabe.
+
+**Aktueller Stand** (1-Person-Entwicklungsteam):
+
+| Maßnahme | Status | Details |
+|----------|--------|---------|
+| Pull Request Pflicht | IMPLEMENTIERT | Jede Änderung läuft über Feature-Branch + PR |
+| Self-Review + PR-Checkliste | IMPLEMENTIERT | Checkliste vor jedem Commit (Tests, Lint, Types, Docs) |
+| Branch Protection (`main`) | GEPLANT | Require PR, Require 1 Approval, Require Status Checks |
+| Environment Protection (`prod`) | GEPLANT | Required Reviewers in GitHub Environment Settings |
+
+**Interims-Lösung** (bis zweiter Reviewer verfügbar):
+- Tech Lead führt dokumentiertes Self-Review durch (PR-Beschreibung + Checkliste)
+- Commit-Freigabe erfolgt explizit durch Tech Lead nach lokaler Prüfung
+- Kein Self-Merge auf `main` ohne vorherige Checkliste
+
+**Langfristig**: VÖB-Stakeholder oder zweiter CCJ-Mitarbeiter als Required Reviewer für das GitHub Environment `prod`.
+
+---
+
+## Release Management
+
+### Release-Planung
+
+Releases sind an Projektmeilensteine (M1-M6) gebunden. Jeder Meilenstein erzeugt einen Release-Branch, der durch TEST und PROD promoviert wird.
+
+### Versionierung
+
+**Semantic Versioning** (SemVer): `Major.Minor.Patch`
+
+| Segment | Wann inkrementieren | Beispiel |
+|---------|---------------------|---------|
+| **Major** | Breaking Changes, große Architekturänderungen | `2.0.0` |
+| **Minor** | Neues Feature, neuer Meilenstein | `1.1.0` |
+| **Patch** | Bugfix, Security Patch | `1.0.1` |
+
+**Nomenklatur**:
+- Release-Branch: `release/X.Y` (z.B. `release/1.0`)
+- Git Tag: `vX.Y.Z` (z.B. `v1.0.0`)
+- Erster Release (M1 Infrastruktur): `v1.0.0`
+
+### Release-Checkliste
+
+Vor jedem Release-Deploy auf TEST/PROD:
+
+| # | Schritt | Verantwortlich | Prüfung |
+|---|---------|---------------|---------|
+| 1 | DEV stabil: Smoke Tests grün, keine offenen P0/P1 Bugs | Tech Lead | CI/CD Pipeline grün |
+| 2 | Release-Branch von `main` schneiden | Tech Lead | `git checkout -b release/X.Y` |
+| 3 | TEST-Deploy + Validierung | Tech Lead | `gh workflow run stackit-deploy.yml -f environment=test --ref release/X.Y` |
+| 4 | UAT (User Acceptance Testing) durch VÖB | VÖB | Falls für Meilenstein erforderlich |
+| 5 | Bugfixes auf Release-Branch, Cherry-Pick zurück nach `main` | Tech Lead | `git cherry-pick <fix-commit>` auf `main` |
+| 6 | Git Tag setzen | Tech Lead | `git tag -a vX.Y.Z -m "Release vX.Y.Z — Meilenstein"` |
+| 7 | PROD-Deploy | Tech Lead + Reviewer | `gh workflow run stackit-deploy.yml -f environment=prod --ref release/X.Y` |
+| 8 | Release-Branch zurück nach `main` mergen | Tech Lead | `git checkout main && git merge release/X.Y` |
+| 9 | CHANGELOG.md aktualisieren | Tech Lead | `[Unreleased]` → `[vX.Y.Z]` |
+| 10 | Abnahmeprotokoll ausfüllen | Tech Lead + VÖB | `docs/abnahme/` |
+
+### Hotfix-Prozess
+
+Für dringende Fixes auf einer bereits released Version:
+
+```
+1. Hotfix-Branch von release/* erstellen
+   git checkout release/X.Y
+   git checkout -b hotfix/beschreibung
+
+2. Fix implementieren + testen
+
+3. PR gegen release/* Branch
+   gh pr create --base release/X.Y
+
+4. Nach Merge: Neuen Patch-Tag setzen (Z inkrementieren)
+   git tag -a vX.Y.(Z+1) -m "Hotfix: Beschreibung"
+   # Beispiel: v1.0.0 → v1.0.1
+
+5. PROD-Deploy (workflow_dispatch)
+
+6. Cherry-Pick nach main
+   git checkout main
+   git cherry-pick <fix-commit>
+```
+
+### Release-Historie
+
+| Version | Meilenstein | Datum | Inhalt |
+|---------|-------------|-------|--------|
+| v1.0.0 | M1 Infrastruktur | Geplant | DEV+TEST live, CI/CD, Security Baseline |
 
 ---
 
@@ -568,7 +813,7 @@ SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werde
 - **GitHub Environments**: `dev` und `test` mit je 5 Secrets (POSTGRES_PASSWORD, REDIS_PASSWORD, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, DB_READONLY_PASSWORD)
 - **Globale Secrets**: STACKIT_REGISTRY_USER, STACKIT_REGISTRY_PASSWORD, STACKIT_KUBECONFIG
 - **Kubeconfig-Ablauf**: 2026-05-28 -- Erneuerung einplanen
-- **Kubernetes Secrets**: `onyx-postgresql`, `onyx-redis`, `onyx-objectstorage` (pro Namespace)
+- **Kubernetes Secrets**: `onyx-postgresql`, `onyx-redis`, `onyx-dbreadonly`, `onyx-objectstorage`, `stackit-registry` (pro Namespace)
 
 ### Security-Audit Findings (SEC-01 bis SEC-07)
 
@@ -613,6 +858,7 @@ Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständi
 | 4 | [CI/CD Pipeline](./runbooks/ci-cd-pipeline.md) | Verifiziert | Deploy, Rollback, Secrets, Troubleshooting |
 | 5 | [DNS/TLS Setup](./runbooks/dns-tls-setup.md) | Bereit zur Umsetzung | cert-manager, Let's Encrypt, Cloudflare DNS-01, BSI-konform |
 | 6 | [LLM-Konfiguration](./runbooks/llm-konfiguration.md) | Verifiziert | StackIT AI Model Serving, Embedding, Admin UI Setup |
+| 7 | [Rollback-Verfahren](./runbooks/rollback-verfahren.md) | Verifiziert | Entscheidungsbaum, Helm/DB-Rollback, Kommunikation, Post-Mortem |
 
 ### Geplante Runbooks (vor PROD)
 
@@ -635,5 +881,5 @@ Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständi
 ---
 
 **Dokumentstatus**: Entwurf (teilweise verifiziert)
-**Letzte Aktualisierung**: 2026-03-04
-**Version**: 0.3
+**Letzte Aktualisierung**: 2026-03-05
+**Version**: 0.4

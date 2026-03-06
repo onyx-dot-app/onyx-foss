@@ -418,6 +418,7 @@ jobs:
           helm upgrade --install onyx-prod \
             ${{ env.HELM_CHART_PATH }} \
             --namespace onyx-prod \
+            --create-namespace \
             --history-max 5 \
             -f deployment/helm/values/values-common.yaml \
             -f deployment/helm/values/values-prod.yaml \

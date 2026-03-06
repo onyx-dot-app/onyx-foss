@@ -8,6 +8,16 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- [Docs] **Change & Release Management Dokumentation** (2026-03-05)
+  - M-CM-1: Change-Management-Abschnitt im Betriebskonzept (Branching-Strategie, Promotion-Pfad, Änderungskategorien, Freigabestufen)
+  - M-CM-2: 4-Augen-Prinzip dokumentiert (Betriebskonzept + Sicherheitskonzept, BAIT Kap. 8.6, Interims-Lösung + geplante GitHub Protection)
+  - M-CM-3: Zugriffsmatrix im Sicherheitskonzept (GitHub, Kubernetes, Datenbanken, IaC)
+  - M-CM-4: Release-Management-Prozess (Versionierung, Release-Checkliste, Hotfix-Prozess)
+  - M-CM-5: Rollback-Runbook (`docs/runbooks/rollback-verfahren.md`) — Entscheidungsbaum, Helm/DB-Rollback, Kommunikation, Post-Mortem-Vorlage
+  - M-CM-6: CI/CD-Dokumentation vervollständigt (paths-ignore, Concurrency, SHA-Pinning, Smoke Tests, Model Server Pinning, Secret-Injection)
+  - Betriebskonzept v0.4, Sicherheitskonzept v0.4
+
 ### Security
 - [Infra] **C5/SEC-03: NetworkPolicies auf DEV + TEST applied** (2026-03-05)
   - 5 Policies: default-deny, DNS-egress, intra-namespace, external-ingress-nginx, external-egress
