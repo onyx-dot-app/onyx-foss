@@ -495,14 +495,7 @@ CELERY_WORKER_PRIMARY_POOL_OVERFLOW = int(
     os.environ.get("CELERY_WORKER_PRIMARY_POOL_OVERFLOW") or 4
 )
 
-# Consolidated background worker (light, docprocessing, docfetching, heavy, monitoring, user_file_processing)
-# separate workers' defaults: light=24, docprocessing=6, docfetching=1, heavy=4, kg=2, monitoring=1, user_file=2
-# Total would be 40, but we use a more conservative default of 20 for the consolidated worker
-CELERY_WORKER_BACKGROUND_CONCURRENCY = int(
-    os.environ.get("CELERY_WORKER_BACKGROUND_CONCURRENCY") or 20
-)
-
-# Individual worker concurrency settings (used when USE_LIGHTWEIGHT_BACKGROUND_WORKER is False or on Kuberenetes deployments)
+# Individual worker concurrency settings
 CELERY_WORKER_HEAVY_CONCURRENCY = int(
     os.environ.get("CELERY_WORKER_HEAVY_CONCURRENCY") or 4
 )
@@ -819,7 +812,9 @@ RERANK_COUNT = int(os.environ.get("RERANK_COUNT") or 1000)
 # Tool Configs
 #####
 # Code Interpreter Service Configuration
-CODE_INTERPRETER_BASE_URL = os.environ.get("CODE_INTERPRETER_BASE_URL")
+CODE_INTERPRETER_BASE_URL = os.environ.get(
+    "CODE_INTERPRETER_BASE_URL", "http://localhost:8000"
+)
 
 CODE_INTERPRETER_DEFAULT_TIMEOUT_MS = int(
     os.environ.get("CODE_INTERPRETER_DEFAULT_TIMEOUT_MS") or 60_000
@@ -900,6 +895,9 @@ CUSTOM_ANSWER_VALIDITY_CONDITIONS = json.loads(
 )
 
 VESPA_REQUEST_TIMEOUT = int(os.environ.get("VESPA_REQUEST_TIMEOUT") or "15")
+VESPA_MIGRATION_REQUEST_TIMEOUT_S = int(
+    os.environ.get("VESPA_MIGRATION_REQUEST_TIMEOUT_S") or "120"
+)
 
 SYSTEM_RECURSION_LIMIT = int(os.environ.get("SYSTEM_RECURSION_LIMIT") or "1000")
 

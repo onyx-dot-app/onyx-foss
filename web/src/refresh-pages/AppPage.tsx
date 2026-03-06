@@ -12,7 +12,10 @@ import { useFederatedConnectors, useFilters, useLlmManager } from "@/lib/hooks";
 import { useForcedTools } from "@/lib/hooks/useForcedTools";
 import OnyxInitializingLoader from "@/components/OnyxInitializingLoader";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
-import { useSettingsContext } from "@/providers/SettingsProvider";
+import {
+  useSettingsContext,
+  useVectorDbEnabled,
+} from "@/providers/SettingsProvider";
 import Dropzone from "react-dropzone";
 import AppInputBar, { AppInputBarHandle } from "@/sections/input/AppInputBar";
 import useChatSessions from "@/hooks/useChatSessions";
@@ -60,8 +63,8 @@ import {
 import ProjectChatSessionList from "@/app/app/components/projects/ProjectChatSessionList";
 import { cn } from "@/lib/utils";
 import Suggestions from "@/sections/Suggestions";
-import OnboardingFlow from "@/refresh-components/onboarding/OnboardingFlow";
-import { OnboardingStep } from "@/refresh-components/onboarding/types";
+import OnboardingFlow from "@/sections/onboarding/OnboardingFlow";
+import { OnboardingStep } from "@/interfaces/onboarding";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
 import * as AppLayouts from "@/layouts/app-layouts";
 import { SvgChevronDown, SvgFileText } from "@opal/icons";
@@ -142,7 +145,7 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
   // settings are passed in via Context and therefore aren't
   // available in server-side components
   const settings = useSettingsContext();
-  const vectorDbEnabled = settings?.settings.vector_db_enabled !== false;
+  const vectorDbEnabled = useVectorDbEnabled();
   const { ccPairs } = useCCPairs(vectorDbEnabled);
   const { tags } = useTags();
   const { documentSets } = useDocumentSets();
@@ -232,8 +235,6 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
     hideOnboarding,
   } = useShowOnboarding({
     liveAgent,
-    isLoadingProviders: llmManager.isLoadingProviders,
-    hasAnyProvider: llmManager.hasAnyProvider,
     isLoadingChatSessions,
     chatSessionsCount: chatSessions.length,
     userId: user?.id,
@@ -829,12 +830,8 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
                         ref={chatInputBarRef}
                         deepResearchEnabled={deepResearchEnabled}
                         toggleDeepResearch={toggleDeepResearch}
-                        toggleDocumentSidebar={toggleDocumentSidebar}
                         filterManager={filterManager}
                         llmManager={llmManager}
-                        removeDocs={() => setSelectedDocuments([])}
-                        retrievalEnabled={retrievalEnabled}
-                        selectedDocuments={selectedDocuments}
                         initialMessage={
                           searchParams?.get(SEARCH_PARAM_NAMES.USER_PROMPT) ||
                           ""
