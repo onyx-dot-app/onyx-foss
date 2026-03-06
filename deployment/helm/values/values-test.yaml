@@ -1,7 +1,7 @@
 # ===========================================================
 # VÖB Service Chatbot — TEST Environment Helm Values
 # ===========================================================
-# Analog zu DEV: 1 Replica pro Service, Lightweight Worker.
+# Analog zu DEV: 1 Replica pro Service, 8 separate Celery-Worker (Standard Mode).
 # Eigener Node im shared Cluster (ADR-004).
 #
 # Eigene PostgreSQL Flex Instanz (vob-test) und
@@ -73,10 +73,7 @@ configMap:
   # Logging
   LOG_LEVEL: "INFO"
 
-  # Celery: Lightweight Mode (ein konsolidierter Worker statt 8 separate)
-  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
-
-# --- Celery Worker: Nur Beat + Primary, alle anderen auf 0 ---
+# --- Celery Worker: Standard Mode (8 separate Worker, ADR-005) ---
 celery_beat:
   replicaCount: 1
   resources:
@@ -97,23 +94,65 @@ celery_worker_primary:
       cpu: 500m
       memory: 1Gi
 
-celery_worker_heavy:
-  replicaCount: 0
-
 celery_worker_light:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+celery_worker_heavy:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 celery_worker_docfetching:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 4Gi
 
 celery_worker_docprocessing:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 4Gi
 
 celery_worker_monitoring:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
 
 celery_worker_user_file_processing:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 # --- Nginx: Eigene IngressClass für TEST (Cluster-globale Ressource) ---
 # DEV besitzt IngressClass "nginx". TEST braucht eine eigene,

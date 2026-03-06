@@ -79,10 +79,8 @@ configMap:
   # Logging: PROD weniger verbose
   LOG_LEVEL: "WARNING"
 
-  # Celery: Lightweight Mode (kann fuer PROD auf Standard-Mode umgestellt werden)
-  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
-
-# --- Celery Worker: PROD-Konfiguration ---
+# --- Celery Worker: PROD-Konfiguration (Standard Mode) ---
+# replicaCount: 0 bis PROD provisioniert ist. Dann auf 1 setzen.
 celery_beat:
   replicaCount: 1
   resources:
@@ -103,23 +101,65 @@ celery_worker_primary:
       cpu: 1000m
       memory: 2Gi
 
-celery_worker_heavy:
-  replicaCount: 0
-
 celery_worker_light:
   replicaCount: 0
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+celery_worker_heavy:
+  replicaCount: 0
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
 
 celery_worker_docfetching:
   replicaCount: 0
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 4Gi
 
 celery_worker_docprocessing:
   replicaCount: 0
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 4Gi
 
 celery_worker_monitoring:
   replicaCount: 0
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 celery_worker_user_file_processing:
   replicaCount: 0
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
 
 # --- Nginx: PROD IngressClass ---
 # PROD laeuft auf separatem Cluster (ADR-004), daher kein Namenskonflikt.
