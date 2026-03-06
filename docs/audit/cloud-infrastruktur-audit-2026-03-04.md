@@ -12,9 +12,9 @@
 
 | Schweregrad | Anzahl | Verifiziert | Status |
 |-------------|--------|-------------|--------|
-| CRITICAL    | 10     | 5/10        | 1/10 erledigt |
-| HIGH        | 18     | 5/18        | 2/18 erledigt |
-| MEDIUM      | ~20    | —           | 0/~20 erledigt |
+| CRITICAL    | 10     | 5/10        | 3/10 erledigt (C5, C6, C7 teilweise) |
+| HIGH        | 18     | 5/18        | 2/18 erledigt (H8, H11) |
+| MEDIUM      | ~20    | —           | 2/~20 erledigt (M3, M4) |
 | LOW         | ~12    | —           | 0/~12 erledigt |
 
 **Positiv-Befunde:** SHA-gepinnte Actions, PG ACL (SEC-01) korrekt, 100% Datensouveraenitaet (StackIT/DE), saubere Extension-Architektur, separate PG+Buckets pro Env, `prevent_destroy` auf PG, `web/Dockerfile` korrekt mit `USER nextjs`.
@@ -193,10 +193,11 @@ kubectl exec deployment/onyx-dev-api-server -n onyx-dev -- env | grep DB_READONL
 - **Risiko:** PG-Passwort, S3-Keys im Klartext auf Laptop (auch wenn gitignored)
 - **Datei:** `deployment/helm/values/values-dev-secrets.yaml`
 - **Massnahme:**
-  - [ ] Verifizieren: Datei ist in `.gitignore`
-  - [ ] **Mittelfristig:** Sealed Secrets oder SOPS einfuehren
-  - [ ] **Alternativ:** Alle Secrets ausschliesslich ueber GitHub Secrets → CI/CD injizieren (kein lokales File)
-- **Status:** [ ] Erledigt
+  - [x] Verifizieren: Datei ist in `.gitignore` (Pattern `*-secrets.yaml`, Zeile 81)
+  - [x] CI/CD nutzt ausschliesslich GitHub Secrets per `--set` (kein Zugriff auf lokale Datei)
+  - [ ] **Mittelfristig:** SOPS oder Datei komplett entfernen (nur CI/CD-Deploy)
+- **Restrisiko:** Klartext auf Laptop. Mitigation: FileVault (macOS Festplattenverschluesselung).
+- **Status:** [x] Teilweise erledigt (2026-03-05) — gitignored + CI/CD-only, SOPS optional
 
 ---
 
@@ -589,15 +590,19 @@ gh workflow run stackit-deploy.yml -f environment=dev -f image_tag='"; echo PWNE
 
 ### M3: Keine Resource Limits/Requests
 - **Massnahme:**
-  - [ ] CPU/Memory Limits + Requests fuer alle Pods in values-common.yaml definieren
-  - [ ] LimitRange pro Namespace als Fallback
-- **Status:** [ ] Erledigt
+  - [x] CPU/Memory Limits + Requests fuer alle Pods in values-dev.yaml und values-test.yaml definiert
+  - [x] Alle Services abgedeckt: API, Webserver, Celery Beat/Primary, Vespa, Redis, Model Server (Inference + Index)
+  - [ ] LimitRange pro Namespace als Fallback (optional, nice-to-have)
+- **Status:** [x] Erledigt (bereits bei Erstdeployment konfiguriert)
 
 ### M4: Redis ohne Passwort
 - **Massnahme:**
-  - [ ] Redis-Passwort setzen (Helm Value `REDIS_PASSWORD`)
-  - [ ] Oder: NetworkPolicy als Schutz (Redis nur von API-Pods erreichbar)
-- **Status:** [ ] Erledigt
+  - [x] Redis-Passwort gesetzt via `auth.redis` Helm Secret-Mechanismus
+  - [x] DEV: Secret `onyx-redis` in NS `onyx-dev` vorhanden, Pods haben ENV `REDIS_PASSWORD`
+  - [x] TEST: Secret `onyx-redis` in NS `onyx-test` vorhanden, Pods haben ENV `REDIS_PASSWORD`
+  - [x] CI/CD injiziert Passwort per `--set "auth.redis.values.redis_password=${{ secrets.REDIS_PASSWORD }}"`
+  - [x] NetworkPolicies zusaetzlich als Defense-in-Depth (C5)
+- **Status:** [x] Erledigt (bereits bei Erstdeployment konfiguriert)
 
 ### M5: Kein Audit-Logging
 - **Massnahme:**
@@ -694,8 +699,8 @@ gh workflow run stackit-deploy.yml -f environment=dev -f image_tag='"; echo PWNE
 **Container-Hardening (Woche 2-3):**
 10. **C4:** Non-Root Container + SecurityContext
 11. ~~**C5:** NetworkPolicies (DEV + TEST Isolation)~~ ✅ Erledigt (2026-03-05)
-12. **M3:** Resource Limits/Requests
-13. **M4:** Redis-Passwort
+12. ~~**M3:** Resource Limits/Requests~~ ✅ Bereits bei Erstdeployment konfiguriert
+13. ~~**M4:** Redis-Passwort~~ ✅ Bereits bei Erstdeployment konfiguriert
 
 **Compliance-Dokumente (Woche 3-4):**
 14. **C8:** DSFA erstellen

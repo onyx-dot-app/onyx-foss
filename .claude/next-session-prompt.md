@@ -1,128 +1,52 @@
-# Naechste Session — Security-Haertung Woche 1 fortsetzen
+# Naechste Session — Offene Themen
 
-## Wo wir stehen (2026-03-05, Ende der Session)
+## Kontext (2026-03-06)
 
-### Commits (chronologisch)
-1. `27dec3dcf` — 3 Security Quick Wins (C6, H8, H11) deployed auf DEV + TEST
-2. `2657712b7` — Doku-Nachtrag (CHANGELOG, Projektstatus, Runbook-Fixes, Next-Session-Prompt)
+### Erledigte Themen dieser Session
+1. **Kostenvergleich Node-Upgrade** — Dokument komplett, alle Preise gegen StackIT Preisliste v1.0.36 verifiziert
+   - `docs/referenz/kostenvergleich-node-upgrade.md` + PDF
+   - IST DEV+TEST: 585,29 EUR | SOLL (g1a.8d): 868,47 EUR | PROD: 963,96 EUR | GESAMT: 1.832,43 EUR
+2. **Review-Gegenvorschlag analysiert** — Review hatte falsche Helm-Keys, zu niedrige Memory-Limits, Rechenfehler
+   - `docs/referenz/review-antwort-node-upgrade.md` + PDF
+   - Fazit: g1a.4d kann mit Tuning funktionieren, erst deployen + monitoren, dann entscheiden
+3. **Upstream-Analyse** — Embedding-Blocker aufgehoben (PR #9005), Lightweight Worker entfernt (PR #9014)
 
-### Diese Session erstellt (NOCH NICHT COMMITTED)
+### Offene Themen (Prioritaet)
 
-**1. NetworkPolicies (C5/SEC-03) — komplett erstellt:**
-- `docs/audit/networkpolicy-analyse.md` — Vollstaendige Audit-Dokumentation:
-  - Calico CNI auf StackIT SKE verifiziert
-  - Komplette Traffic-Matrix (Pod-zu-Pod + extern)
-  - Pod-Labels aus Helm Chart verifiziert
-  - Design-Entscheidungen dokumentiert (pragmatisch, kein ipBlock.except)
-  - Verifikationsplan, Risiken, Quellen
-- `deployment/k8s/network-policies/` (8 Dateien):
-  - `01-default-deny-all.yaml` — Zero-Trust Baseline
-  - `02-allow-dns-egress.yaml` — DNS → CoreDNS (kube-system:53)
-  - `03-allow-intra-namespace.yaml` — Intra-Namespace (alle Ports)
-  - `04-allow-external-ingress-nginx.yaml` — Extern → nginx Controller
-  - `05-allow-external-egress.yaml` — PG:5432 + HTTPS:443
-  - `apply.sh` — Sichere Apply-Reihenfolge (Allows vor Deny)
-  - `rollback.sh` — Notfall: alle Policies loeschen
-  - `README.md` — Kurzanleitung
+**1. Nikos Infrastruktur-Frage** — wurde angekuendigt aber noch nicht gestellt. Direkt fragen.
 
-**2. values-prod.yaml Grundgeruest:**
-- `deployment/helm/values/values-prod.yaml` — PROD-Template mit TBD-Platzhaltern
-  - HA-Replicas (api: 2, web: 2, celery-primary: 2)
-  - PROD-Ressource-Limits (2-4x DEV/TEST)
-  - Domain: `chatbot.voeb-service.de` (HTTPS)
-  - AUTH_TYPE: `oidc` (Entra ID)
-  - POSTGRES_HOST: `[TBD]` (Infra nicht provisioniert)
-  - Vespa: 50Gi Storage (statt 20Gi)
+**2. TLS/HTTPS aktivieren** — BLOCKIERT durch Cloudflare API Token
+- cert-manager installiert, ClusterIssuers ready, Certificates blocked
+- Wartet auf Token-Fix von Leif (E-Mail gesendet)
+- Details: MEMORY.md Section "DNS/TLS Setup"
+- Runbook: `docs/runbooks/dns-tls-setup.md`
 
-**3. CI/CD-Fixes:**
-- `.github/workflows/stackit-deploy.yml` — PROD Smoke Test hinzugefuegt (18 Attempts, 3 Min)
-- `.github/workflows/upstream-check.yml` — SHA-Pinning: `@v4` → `@34e11487...`
+**3. Upstream-Merge (57 Commits)** — nach Node-Upgrade-Entscheidung
+- Entfernt Lightweight Worker Mode (PR #9014)
+- Erfordert: `USE_LIGHTWEIGHT_BACKGROUND_WORKER` entfernen, 6 Worker aktivieren
+- Worker Resource Requests in values-dev.yaml + values-test.yaml setzen
+- Empfohlene Werte: siehe `docs/referenz/review-antwort-node-upgrade.md` Section 7
 
----
+**4. Embedding-Modell wechseln** — nach Upstream-Merge
+- Von nomic-embed-text-v1 auf Qwen3-VL-Embedding 8B (StackIT AI Model Serving)
+- Konfiguration ueber Admin UI, Re-Index im Hintergrund
 
-## NAECHSTE SCHRITTE (Woche 1 fortsetzen)
+**5. Entra ID (Phase 3)** — Termin war 06.03, Status pruefen
 
-### Schritt 1: Uncommitted Changes committen
-Alle Dateien aus dieser Session committen (nach Nikos Review):
-
-```bash
-git add docs/audit/networkpolicy-analyse.md
-git add deployment/k8s/network-policies/
-git add deployment/helm/values/values-prod.yaml
-git add .github/workflows/stackit-deploy.yml
-git add .github/workflows/upstream-check.yml
-```
-
-Vorgeschlagener Commit:
-```
-chore(security): NetworkPolicies, values-prod.yaml, CI/CD-Fixes
-
-- C5/SEC-03: 5 NetworkPolicies + Apply/Rollback-Skripte + Audit-Dokumentation
-- values-prod.yaml: PROD-Grundgeruest mit TBD-Platzhaltern (HA, Ressourcen, OIDC)
-- CI/CD: PROD Smoke Test hinzugefuegt, upstream-check SHA-Pinning
-```
-
-### Schritt 2: NetworkPolicies auf DEV anwenden
-```bash
-cd deployment/k8s/network-policies/
-./apply.sh onyx-dev
-```
-Verifikation: siehe `docs/audit/networkpolicy-analyse.md` Abschnitt 7.
-
-### Schritt 3: NetworkPolicies auf TEST anwenden
-```bash
-./apply.sh onyx-test
-```
-
-### Schritt 4: DNS/TLS Setup (BLOCKER: Cloudflare DNS-only)
-Wartet auf Leif (Cloudflare Proxy → DNS-only umstellen).
-Pruefung: `dig +short dev.chatbot.voeb-service.de` → nur `188.34.74.187`
-Runbook: `docs/runbooks/dns-tls-setup.md`
-
----
-
-## REFERENZ-DOKUMENTE
-
+## Referenz-Dokumente
 | Thema | Datei |
 |-------|-------|
-| NetworkPolicy-Analyse (Traffic, Labels, Entscheidungen) | `docs/audit/networkpolicy-analyse.md` |
-| NetworkPolicy YAMLs + Skripte | `deployment/k8s/network-policies/` |
-| Cloud-Infrastruktur-Audit (alle Findings) | `docs/audit/cloud-infrastruktur-audit-2026-03-04.md` |
-| DNS/TLS-Runbook (komplett, Schritte 1-6) | `docs/runbooks/dns-tls-setup.md` |
-| PROD Helm Values (Grundgeruest) | `deployment/helm/values/values-prod.yaml` |
-| CI/CD Pipeline | `.github/workflows/stackit-deploy.yml` |
-| Upstream-Check | `.github/workflows/upstream-check.yml` |
+| Kostenvergleich (verifiziert) | `docs/referenz/kostenvergleich-node-upgrade.md` |
+| Review-Antwort | `docs/referenz/review-antwort-node-upgrade.md` |
+| TLS-Runbook | `docs/runbooks/dns-tls-setup.md` |
+| Helm Values DEV | `deployment/helm/values/values-dev.yaml` |
+| Helm Values TEST | `deployment/helm/values/values-test.yaml` |
+| Helm Chart Defaults | `deployment/helm/charts/onyx/values.yaml` |
 | Projektstatus | `.claude/rules/voeb-projekt-status.md` |
-| CHANGELOG | `docs/CHANGELOG.md` |
-| Implementierungsplan | `docs/referenz/stackit-implementierungsplan.md` |
 
----
-
-## OFFENE PUNKTE (Woche 1, noch nicht angegangen)
-
-Aus der Tiefenanalyse am Anfang dieser Session (vollstaendige Liste):
-
-### Sofort machbar (keine Blocker)
-- DSFA erstellen (C8, Art. 35 DSGVO) — 4-6h
-- Loeschkonzept (C9, Art. 17 DSGVO) — 3-4h
-- Terraform Remote State (C3/SEC-04) — 2h
-- Resource Limits fuer DEV/TEST (M3) — 2h (PROD bereits in values-prod.yaml)
-- M1-Abnahmeprotokoll ausfuellen — 1-2h
-- CSP-Header (M1) — 1h
-- Kubeconfig-Erneuerung planen (H10, laeuft 2026-05-28 ab) — 1h
-- Backup-Strategie dokumentieren (M7) — 2h
-
-### Blockiert
-- C1: TLS/HTTPS — wartet auf Cloudflare DNS-only (Leif)
-- Entra ID — wartet auf TLS + VoeB Credentials (Termin 06.03)
-- H1: PG createdb-Rolle — braucht Wartungsfenster
-- C4/H5: Container non-root — Upstream-Dockerfiles (READ-ONLY)
-
----
-
-## Regeln (Erinnerung)
+## Regeln
 - `--no-verify` nutzen
 - NIEMALS Co-Authored-By fuer Claude
 - Helm Chart Templates READ-ONLY
 - Kein Commit ohne Nikos Freigabe
-- Tiefenanalyse → Plan → Besprechung → Ausfuehrung (pro Aufgabe)
+- Feature-Branch Pflicht
