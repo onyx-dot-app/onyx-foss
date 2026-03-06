@@ -1,7 +1,7 @@
 # ===========================================================
 # VÖB Service Chatbot — DEV Environment Helm Values
 # ===========================================================
-# Leichtgewichtig: 1 Replica pro Service, Lightweight Worker
+# 1 Replica pro Service, 8 separate Celery-Worker (Standard Mode)
 # Shared Node Pool (devtest), kein Autoscaling
 #
 # PostgreSQL + Object Storage Credentials werden als
@@ -64,12 +64,7 @@ configMap:
   # Logging
   LOG_LEVEL: "INFO"
 
-  # Celery: Lightweight Mode (ein konsolidierter Worker statt 8 separate)
-  USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"
-
-# --- Celery Worker: Nur Beat + Primary, alle anderen auf 0 ---
-# Lightweight Mode: celery_worker_primary übernimmt alles.
-# Die separaten Worker werden auf replicaCount: 0 gesetzt.
+# --- Celery Worker: Standard Mode (8 separate Worker, ADR-005) ---
 celery_beat:
   replicaCount: 1
   resources:
@@ -90,23 +85,65 @@ celery_worker_primary:
       cpu: 500m
       memory: 1Gi
 
-celery_worker_heavy:
-  replicaCount: 0
-
 celery_worker_light:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+celery_worker_heavy:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 celery_worker_docfetching:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 4Gi
 
 celery_worker_docprocessing:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 4Gi
 
 celery_worker_monitoring:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
 
 celery_worker_user_file_processing:
-  replicaCount: 0
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 # --- TLS ---
 letsencrypt:
