@@ -1,0 +1,134 @@
+# ===========================================================
+# PR Checks — Validierung vor Merge nach main
+# ===========================================================
+# Trigger: Pull Request gegen main
+#
+# Checks:
+#   1. Helm Template: Validiert dass Chart mit unseren Values rendert
+#   2. Docker Build Backend: Kompiliert ohne Push (validates Code)
+#   3. Docker Build Frontend: Kompiliert ohne Push (validates Code)
+#
+# Kein Push, kein Deploy — reine Validierung.
+# Wird als Required Status Check in Branch Protection verwendet.
+# ===========================================================
+
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  HELM_CHART_PATH: deployment/helm/charts/onyx
+
+jobs:
+  # =========================================================
+  # HELM TEMPLATE: Validiert Chart + Values
+  # =========================================================
+  helm-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@bf6a7d304bc2fdb57e0331155b7ebf2c504acf0a # v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
+          helm repo add opensearch https://opensearch-project.github.io/helm-charts
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add redis-operator https://ot-container-kit.github.io/helm-charts
+          helm repo add minio https://charts.min.io/
+          helm repo add python-sandbox https://onyx-dot-app.github.io/python-sandbox/
+
+      - name: Build Helm dependencies
+        run: helm dependency build ${{ env.HELM_CHART_PATH }}
+
+      - name: Validate DEV values
+        run: |
+          helm template onyx-dev ${{ env.HELM_CHART_PATH }} \
+            -f deployment/helm/values/values-common.yaml \
+            -f deployment/helm/values/values-dev.yaml \
+            --set "auth.postgresql.values.password=dummy" \
+            --set "auth.redis.values.redis_password=dummy" \
+            --set "auth.objectstorage.values.s3_aws_access_key_id=dummy" \
+            --set "auth.objectstorage.values.s3_aws_secret_access_key=dummy" \
+            --set "auth.dbreadonly.values.db_readonly_password=dummy" \
+            > /dev/null
+          echo "DEV values: OK"
+
+      - name: Validate TEST values
+        run: |
+          helm template onyx-test ${{ env.HELM_CHART_PATH }} \
+            -f deployment/helm/values/values-common.yaml \
+            -f deployment/helm/values/values-test.yaml \
+            --set "auth.postgresql.values.password=dummy" \
+            --set "auth.redis.values.redis_password=dummy" \
+            --set "auth.objectstorage.values.s3_aws_access_key_id=dummy" \
+            --set "auth.objectstorage.values.s3_aws_secret_access_key=dummy" \
+            --set "auth.dbreadonly.values.db_readonly_password=dummy" \
+            > /dev/null
+          echo "TEST values: OK"
+
+      - name: Validate PROD values
+        run: |
+          helm template onyx-prod ${{ env.HELM_CHART_PATH }} \
+            -f deployment/helm/values/values-common.yaml \
+            -f deployment/helm/values/values-prod.yaml \
+            --set "auth.postgresql.values.password=dummy" \
+            --set "auth.redis.values.redis_password=dummy" \
+            --set "auth.objectstorage.values.s3_aws_access_key_id=dummy" \
+            --set "auth.objectstorage.values.s3_aws_secret_access_key=dummy" \
+            --set "auth.dbreadonly.values.db_readonly_password=dummy" \
+            > /dev/null
+          echo "PROD values: OK"
+
+  # =========================================================
+  # DOCKER BUILD BACKEND: Kompiliert ohne Push
+  # =========================================================
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build Backend (no push)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./backend
+          push: false
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+  # =========================================================
+  # DOCKER BUILD FRONTEND: Kompiliert ohne Push
+  # =========================================================
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build Frontend (no push)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./web
+          push: false
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
