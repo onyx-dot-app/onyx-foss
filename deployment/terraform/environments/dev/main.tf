@@ -2,12 +2,12 @@
 # DEV Environment — VÖB Service Chatbot
 # ===========================================================
 # Provisioniert:
-#   - 1× SKE Cluster (2 Nodes: g1a.4d, je 4 vCPU, 16 GB)
+#   - 1× SKE Cluster (2 Nodes: g1a.8d, je 8 vCPU, 32 GB)
 #   - 1× PostgreSQL Flex 2.4 Single (2 CPU, 4 GB)
 #   - 1× Object Storage Bucket (vob-dev)
 #
 # Node Pool "devtest" bedient DEV + TEST (ADR-004).
-# Geschätzte Kosten DEV-Anteil: ~250 EUR/Monat
+# Geschätzte Kosten DEV-Anteil: ~434 EUR/Monat (ADR-005)
 # ===========================================================
 
 module "stackit" {
@@ -29,10 +29,10 @@ module "stackit" {
   # Vorher: min=1, max=1 (nur DEV)
   # Jetzt:  min=2, max=2 (je 1 Node für DEV und TEST)
   node_pool = {
-    machine_type = "g1a.4d"
+    machine_type = "g1a.8d"
     minimum      = 2
     maximum      = 2
-    volume_size  = 50
+    volume_size  = 100
     volume_type  = "storage_premium_perf2"
   }
 
