@@ -13,7 +13,7 @@ jobs:
           fetch-depth: 0
 
       - name: Add upstream remote
-        run: git remote add upstream https://github.com/onyx-dot-app/onyx.git || true
+        run: git remote add upstream https://github.com/onyx-dot-app/onyx-foss.git || true
 
       - name: Fetch upstream
         run: git fetch upstream main

@@ -1,8 +1,8 @@
 # Testkonzept – VÖB Service Chatbot
 
 **Dokumentstatus**: Entwurf (teilweise konsolidiert)
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-07
+**Version**: 0.3
 
 ---
 
@@ -137,9 +137,9 @@ PROD (geplant, eigener SKE-Cluster)       ← Manuell + GitHub Environment Appro
 ### DEV-Umgebung (StackIT) -- LIVE seit 2026-02-27
 
 **Charakteristiken**:
-- **Cluster**: SKE `vob-chatbot`, Node Pool `devtest`, Node 1 (g1a.4d: 4 vCPU, 16 GB RAM)
+- **Cluster**: SKE `vob-chatbot`, Node Pool `devtest`, Node 1 (g1a.8d: 8 vCPU, 32 GB RAM)
 - **Namespace**: `onyx-dev`
-- **Pods**: 10 Pods Running (API Server, Background, Web Server, Model Server, Vespa, Redis, Nginx)
+- **Pods**: 16 Pods Running (API Server, Background, Web Server, Model Server, Vespa, Redis, Nginx)
 - **Datenbank**: PostgreSQL Flex `vob-dev` (2 CPU, 4 GB RAM, Single)
 - **Object Storage**: Bucket `vob-dev`
 - **Zugriff**: `http://188.34.74.187` (DNS + TLS ausstehend)
@@ -151,9 +151,9 @@ PROD (geplant, eigener SKE-Cluster)       ← Manuell + GitHub Environment Appro
 ### TEST-Umgebung (StackIT) -- LIVE seit 2026-03-03
 
 **Charakteristiken**:
-- **Cluster**: Gleicher SKE-Cluster, Node Pool `devtest`, Node 2 (g1a.4d: 4 vCPU, 16 GB RAM)
+- **Cluster**: Gleicher SKE-Cluster, Node Pool `devtest`, Node 2 (g1a.8d: 8 vCPU, 32 GB RAM)
 - **Namespace**: `onyx-test`
-- **Pods**: 9 Pods Running (+ redis-operator im default Namespace)
+- **Pods**: 15 Pods Running
 - **Datenbank**: PostgreSQL Flex `vob-test` (2 CPU, 4 GB RAM, Single) — eigene Instanz, isoliert von DEV
 - **Object Storage**: Bucket `vob-test` — eigene Credentials
 - **Zugriff**: `http://188.34.118.201` (DNS + TLS ausstehend)
@@ -169,7 +169,7 @@ PROD (geplant, eigener SKE-Cluster)       ← Manuell + GitHub Environment Appro
 
 **Geplante Charakteristiken** (gem. ADR-004):
 - **Cluster**: Eigener SKE-Cluster (Blast-Radius-Minimierung, eigenes Maintenance-Window)
-- **Node Pool**: 2-3x g1a.4d
+- **Node Pool**: 2-3x g1a.8d
 - **Datenbank**: PostgreSQL Flex 4.8 Replica (3-Node HA)
 - **Authentifizierung**: Microsoft Entra ID (OIDC)
 - **Zugriff**: Nur Production Operations Team
@@ -899,5 +899,5 @@ Markiert als "Verified Fixed"
 ---
 
 **Dokumentstatus**: Entwurf (teilweise konsolidiert)
-**Letzte Aktualisierung**: 2026-03-03
-**Version**: 0.2
+**Letzte Aktualisierung**: 2026-03-07
+**Version**: 0.3

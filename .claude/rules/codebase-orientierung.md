@@ -54,7 +54,7 @@ deployment/docker_compose/
   docker-compose.yml         ← Docker (READ-ONLY Struktur)
 ```
 
-## StackIT Cloud-Infrastruktur (NEU)
+## StackIT Cloud-Infrastruktur
 ```
 deployment/terraform/
   modules/stackit/
@@ -68,21 +68,24 @@ deployment/terraform/
     terraform.tfvars         ← Projekt-spezifische Werte
 ```
 
-## Helm Value-Overlays (NEU)
+## Helm Value-Overlays
 ```
 deployment/helm/
   charts/onyx/               ← Onyx Helm Chart (READ-ONLY, nicht verändern!)
   values/
     values-common.yaml       ← Gemeinsame Config (PG extern, MinIO aus, Vespa+Redis an)
-    values-dev.yaml          ← DEV: 1 Replica, Lightweight, Auth disabled
+    values-dev.yaml          ← DEV: 1 Replica, 8 Celery-Worker (Standard Mode), Auth disabled
+    values-test.yaml         ← TEST: 1 Replica, 8 Celery-Worker, Auth disabled
+    values-prod.yaml         ← PROD: Platzhalter (noch nicht deployed)
 ```
-Deployment: `helm upgrade --install -f values-common.yaml -f values-dev.yaml`
+Deployment via CI/CD (`gh workflow run stackit-deploy.yml`). Manuell: `helm upgrade --install -f values-common.yaml -f values-{env}.yaml`
 
-## CI/CD (NEU)
+## CI/CD
 ```
 .github/workflows/
   stackit-deploy.yml         ← Build → StackIT Registry → Helm Deploy (DEV/TEST/PROD)
   upstream-check.yml         ← Wöchentlicher Upstream-Merge-Check
+  pr-checks.yml              ← PR-Validierung: helm-validate + Docker Build (Backend + Frontend)
 ```
 
 ## Enterprise-Docs

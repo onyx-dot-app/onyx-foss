@@ -226,16 +226,15 @@ jobs:
             --set "auth.dbreadonly.values.db_readonly_password=${{ secrets.DB_READONLY_PASSWORD }}" \
             --timeout 10m
 
-      # DEV läuft auf einem einzelnen g1a.4d Node (4 vCPU). Helm's Default RollingUpdate
-      # startet neue Pods neben den alten — dafür reicht die CPU nicht (Pending).
-      # Fix: Recreate-Strategie per kubectl patch, dann rollout abwarten.
-      # Chart-Templates für api/webserver/celery haben keinen strategy-Block in Values.
-      - name: Patch deployment strategy and wait (single-node DEV)
+      # DEV: Recreate-Strategie per kubectl patch fuer Deployments ohne strategy-Block in Values.
+      # Seit g1a.8d Upgrade (2026-03-06) waere RollingUpdate moeglich, aber Recreate
+      # vermeidet Port-Konflikte und ist bewaehrt. Rollout-Wait fuer alle Deployments.
+      - name: Patch deployment strategy and wait (DEV)
         run: |
           NAMESPACE="onyx-dev"
-          DEPLOYMENTS="onyx-dev-api-server onyx-dev-celery-worker-primary onyx-dev-web-server onyx-dev-celery-beat"
+          PATCH_DEPLOYMENTS="onyx-dev-api-server onyx-dev-celery-worker-primary onyx-dev-celery-worker-light onyx-dev-celery-worker-heavy onyx-dev-celery-worker-docfetching onyx-dev-celery-worker-docprocessing onyx-dev-celery-worker-monitoring onyx-dev-celery-worker-user-file-processing onyx-dev-web-server onyx-dev-celery-beat"
 
-          for dep in $DEPLOYMENTS; do
+          for dep in $PATCH_DEPLOYMENTS; do
             echo "Patching $dep to Recreate strategy..."
             kubectl patch deployment "$dep" -n "$NAMESPACE" \
               --type='json' \
@@ -244,7 +243,8 @@ jobs:
 
           echo "Waiting for all deployments to be ready..."
           FAILED=0
-          for dep in $DEPLOYMENTS onyx-dev-indexing-model onyx-dev-inference-model; do
+          ALL_DEPLOYMENTS="$PATCH_DEPLOYMENTS onyx-dev-indexing-model onyx-dev-inference-model"
+          for dep in $ALL_DEPLOYMENTS; do
             echo "  Waiting for $dep..."
             if ! kubectl rollout status deployment/"$dep" -n "$NAMESPACE" --timeout=10m; then
               echo "::error::Deployment $dep failed to become ready"

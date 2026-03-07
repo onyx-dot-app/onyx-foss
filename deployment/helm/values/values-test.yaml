@@ -227,8 +227,8 @@ redis:
 
 # --- Model Server: 1 Replica ---
 # Recreate-Strategie beibehalten (identisch zu DEV).
-# Eigener Node hätte theoretisch Platz für RollingUpdate, aber Recreate
-# eliminiert Port-Konflikte und ist bei DEV hart debuggt worden.
+# g1a.8d hat genug CPU fuer RollingUpdate, aber Recreate
+# eliminiert Port-Konflikte bei Model Servern und ist bei DEV hart debuggt worden.
 inferenceCapability:
   replicaCount: 1
   strategy:

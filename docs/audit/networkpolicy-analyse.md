@@ -59,13 +59,13 @@ StackIT SKE basiert auf Gardener und verwendet **Calico** als CNI-Plugin.
 | DEV | `onyx-dev` | `onyx-dev` | shared | `nginx` | `188.34.74.187` |
 | TEST | `onyx-test` | `onyx-test` | shared | `nginx-test` | `188.34.118.201` |
 
-- Node Pool: `devtest` (2x g1a.4d), geteilt zwischen DEV und TEST
+- Node Pool: `devtest` (2x g1a.8d, upgraded 2026-03-06), geteilt zwischen DEV und TEST
 - Egress-IP (Cluster): `188.34.93.194`
 - redis-operator laeuft im `default` Namespace (kommuniziert nur ueber K8s API, kein pod-to-pod)
 
 ### 2.2 Aktive Pods pro Environment
 
-Lightweight-Modus (`USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"`): Separate Celery-Worker sind deaktiviert (replicaCount: 0).
+Standard-Modus (8 separate Celery-Worker seit 2026-03-06, Lightweight Mode durch Upstream PR #9014 entfernt).
 
 | # | Pod | Deployment-Name (DEV) | Service-Port | Funktion |
 |---|-----|-----------------------|-------------|----------|
@@ -75,11 +75,17 @@ Lightweight-Modus (`USE_LIGHTWEIGHT_BACKGROUND_WORKER: "true"`): Separate Celery
 | 4 | Inference Model Server | `onyx-dev-inference-model` | 9000 (ClusterIP) | NLP-Modelle (Inference) |
 | 5 | Indexing Model Server | `onyx-dev-indexing-model` | 9000 (ClusterIP) | NLP-Modelle (Indexing) |
 | 6 | Celery Beat | `onyx-dev-celery-beat` | -- (kein Service) | Task-Scheduler |
-| 7 | Celery Worker Primary | `onyx-dev-celery-worker-primary` | -- (kein Service) | Background-Tasks (alle) |
-| 8 | Vespa | `da-vespa` (StatefulSet) | 8081 + 19071 (Headless) | Vektor-Datenbank |
-| 9 | Redis | `onyx-dev` (CRD) | 6379 (ClusterIP) | Cache + Celery Broker |
+| 7 | Celery Worker Primary | `onyx-dev-celery-worker-primary` | -- (kein Service) | Koordination, Connector-Mgmt |
+| 8 | Celery Worker Light | `onyx-dev-celery-worker-light` | -- (kein Service) | Vespa-Ops, Permissions Sync |
+| 9 | Celery Worker Heavy | `onyx-dev-celery-worker-heavy` | -- (kein Service) | Pruning (ressourcenintensiv) |
+| 10 | Celery Worker Docfetching | `onyx-dev-celery-worker-docfetching` | -- (kein Service) | Dokumente von Quellen holen |
+| 11 | Celery Worker Docprocessing | `onyx-dev-celery-worker-docprocessing` | -- (kein Service) | Indexing-Pipeline |
+| 12 | Celery Worker Monitoring | `onyx-dev-celery-worker-monitoring` | -- (kein Service) | Health-Monitoring, Metriken |
+| 13 | Celery Worker User-File | `onyx-dev-celery-worker-user-file-processing` | -- (kein Service) | User-Upload-Verarbeitung |
+| 14 | Vespa | `da-vespa` (StatefulSet) | 8081 + 19071 (Headless) | Vektor-Datenbank |
+| 15 | Redis | `onyx-dev` (CRD) | 6379 (ClusterIP) | Cache + Celery Broker |
 
-TEST ist identisch, aber 9 Pods (redis-operator laeuft nur einmal im `default` NS).
+DEV: 16 Pods (15 + redis-operator im `default` NS). TEST ist identisch, aber 15 Pods (redis-operator laeuft nur einmal im `default` NS).
 
 ---
 
@@ -104,21 +110,28 @@ api-server              → inference-model-server          9000    NLP Inferenc
 
 celery-beat             → redis                          6379    Celery Broker
 
-celery-worker-primary   → redis                          6379    Celery Broker
+celery-worker-*         → redis                          6379    Celery Broker (alle 7 Worker)
 celery-worker-primary   → vespa                          8081    Document Sync
 celery-worker-primary   → vespa                          19071   Schema Management
-celery-worker-primary   → inference-model-server          9000    NLP fuer Search
-celery-worker-primary   → indexing-model-server           9000    Embedding bei Indexierung
 celery-worker-primary   → api-server                     8080    INTERNAL_URL
+celery-worker-light     → vespa                          8081    Vespa-Ops, Deletion
+celery-worker-light     → vespa                          19071   Schema Management
+celery-worker-docfetch  → api-server                     8080    INTERNAL_URL
+celery-worker-docproc   → vespa                          8081    Chunk Feed
+celery-worker-docproc   → inference-model-server          9000    NLP fuer Search
+celery-worker-docproc   → indexing-model-server           9000    Embedding bei Indexierung
+celery-worker-heavy     → vespa                          8081    Pruning
+celery-worker-monitor   → redis                          6379    Queue-Monitoring
+celery-worker-userfile  → api-server                     8080    INTERNAL_URL
 ```
 
 ### 3.2 Externe Kommunikation (Egress)
 
 | Pod(s) | Ziel | Port | Protokoll | Zweck |
 |--------|------|------|-----------|-------|
-| api-server, celery-beat, celery-primary | `*.postgresql.eu01.onstackit.cloud` | 5432 | TCP/TLS | Managed PostgreSQL |
-| api-server, celery-primary | `object.storage.eu01.onstackit.cloud` | 443 | HTTPS | StackIT S3 |
-| api-server, celery-primary | `api.openai-compat.model-serving.eu01.onstackit.cloud` | 443 | HTTPS | LLM API (GPT-OSS, Qwen3) |
+| api-server, celery-beat, celery-worker-* | `*.postgresql.eu01.onstackit.cloud` | 5432 | TCP/TLS | Managed PostgreSQL |
+| api-server, celery-worker-* | `object.storage.eu01.onstackit.cloud` | 443 | HTTPS | StackIT S3 |
+| api-server, celery-worker-* | `api.openai-compat.model-serving.eu01.onstackit.cloud` | 443 | HTTPS | LLM API (GPT-OSS, Qwen3) |
 | inference-/indexing-model-server | Evtl. externe Embedding API | 443 | HTTPS | Remote Embeddings (nomic) |
 | nginx Controller | K8s API (`kubernetes.default.svc`) | 443 | HTTPS | Ingress-Resource-Watch |
 | celery-beat | K8s API (`kubernetes.default.svc`) | 443 | HTTPS | Leader Election (Lease) |

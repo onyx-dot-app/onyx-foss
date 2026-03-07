@@ -16,25 +16,27 @@
 | Parameter | Wert |
 |-----------|------|
 | Cluster | 1 (shared für alle Environments) |
-| Kubernetes-Version | v1.32.12 (SKE-zugewiesen) |
+| Kubernetes-Version | v1.32.12 (SKE-zugewiesen) — deprecated laut StackIT, Update einplanen |
 | Namespaces | `onyx-dev`, `onyx-test` (PROD: geplant eigener Cluster, ADR-004) |
 | Ingress Controller | NGINX via Essential Network Load Balancer (NLB-10) |
-| TLS | Let's Encrypt oder StackIT-bereitgestellt |
+| TLS | Let's Encrypt via cert-manager (installiert, Cloudflare DNS-01 geplant). Aktuell: Blockiert durch Cloudflare API Token Error |
 | Network Policies | IMPLEMENTIERT (SEC-03, 2026-03-05): 5 Policies (Default-Deny, DNS, Intra-NS, Ingress, Egress) auf DEV+TEST. PROD: zusätzlich granulare per-Pod-Rules geplant |
 
 ### Worker Nodes (Compute Engine g1a-Serie, AMD, kein Overprovisioning)
 
 | Environment | Node-Typ | vCPU | RAM | Anzahl | Pool |
 |-------------|----------|------|-----|--------|------|
-| DEV + TEST | g1a.4d | 4 | 16 GB | 2 (1 pro Env) | `devtest` |
-| PROD (dedicated) | g1a.4d | 4 | 16 GB | 2 (bei Bedarf 3) | eigener Cluster |
+| DEV + TEST | g1a.8d | 8 | 32 GB | 2 (1 pro Env) | `devtest` |
+| PROD (dedicated) | g1a.8d | 8 | 32 GB | 2 (bei Bedarf 3) | eigener Cluster |
 
-**DEV+TEST allokierbare Kapazität (2× g1a.4d):** ~7 CPU / ~31 GB RAM — je ~3.5 CPU / ~15 GB pro Env
-**PROD allokierbare Kapazität (2× g1a.4d):** ~7 CPU / ~31 GB RAM
-**PROD geschätzte Auslastung:** CPU ~70–80%, RAM ausreichend
+**DEV+TEST allokierbare Kapazitaet (2x g1a.8d):** ~15.8 CPU / ~56.6 Gi RAM — je ~7.9 CPU / ~28.3 Gi pro Env
+**PROD allokierbare Kapazitaet (2x g1a.8d):** ~15.8 CPU / ~56.6 Gi RAM
+**PROD geschaetzte Auslastung:** CPU ~40%, RAM ~25% (bei 150 Usern)
 
 > **Entscheidung (ADR-004):** Eigene Nodes pro Umgebung statt geteilter Node.
 > Begründung: CPU-Isolation, Ausfallsicherheit, Enterprise-Standard.
+
+> **Upgrade (ADR-005):** g1a.4d → g1a.8d seit 2026-03-06 (8 separate Celery-Worker nach Upstream PR #9014).
 
 ---
 
@@ -88,7 +90,7 @@
 | GPT-OSS 120B | `openai/gpt-oss-120b` | Chat-Antworten (primär) | ✅ Verifiziert (DEV + TEST) |
 | Qwen3-VL 235B | `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | Chat + Vision/OCR | ✅ Verifiziert (DEV + TEST) |
 | nomic-embed-text-v1 | `nomic-ai/nomic-embed-text-v1` | Embedding / Vektor-Suche (aktiver Fallback, self-hosted auf Model Server) | ✅ Aktiv |
-| Qwen3-VL-Embedding 8B | `Qwen/Qwen3-VL-Embedding-8B` | Embedding / Vektor-Suche (multilingual, 32k Context) | ⏳ Geplant (blockiert, Upstream PR #7541) |
+| Qwen3-VL-Embedding 8B | `Qwen/Qwen3-VL-Embedding-8B` | Embedding / Vektor-Suche (multilingual, 32k Context) | ⏳ Geplant (Blocker aufgehoben, Upstream PR #9005 — Search Settings Swap re-enabled) |
 
 **Weitere verfuegbare Modelle (Fallback):** Llama 3.3 70B, Gemma 3 27B, Mistral-Nemo 12B, Llama 3.1 8B
 
@@ -104,15 +106,22 @@
 |------------|------------|-------------|----------|
 | Backend API (FastAPI) | 500m | 512 Mi | 2–3 |
 | Frontend (Next.js) | 250m | 256 Mi | 2 |
-| Background Worker (Celery) | 500m | 1 Gi | 2 |
+| Background Worker (Celery Beat) | 250m | 512 Mi | 1 |
+| Background Worker (Primary) | 500m | 1 Gi | 2 |
+| Background Worker (Light) | 500m | 1 Gi | 1 |
+| Background Worker (Heavy) | 500m | 1 Gi | 1 |
+| Background Worker (DocFetching) | 500m | 1 Gi | 1 |
+| Background Worker (DocProcessing) | 500m | 1 Gi | 1 |
+| Background Worker (Monitoring) | 250m | 256 Mi | 1 |
+| Background Worker (User File) | 500m | 512 Mi | 1 |
 | Redis | 250m | 512 Mi | 1 |
 | Vespa (Vektor-Suche) | 2000m | 4 Gi | 1 |
-| System-Overhead (kube-system) | 500m | 512 Mi | — |
-| **TOTAL PROD** | **~5–7 CPU** | **~7–10 Gi** | — |
+| System-Overhead (kube-system) | ~1.4 CPU | ~2 Gi | — |
+| **TOTAL PROD** | **~9.5-10 CPU** | **~15-16 Gi** | — |
 
 ### Skalierung
 
-- 2× g1a.4d Worker Nodes decken den erwarteten Bedarf
+- 2× g1a.8d Worker Nodes decken den erwarteten Bedarf
 - Bei Lastspitzen: 3. Node hinzufügen (HPA-ready)
 - Vespa als In-Cluster Deployment (PROD: 1–2 Replicas)
 - Redis als In-Cluster Pod (kein Managed Redis notwendig)
@@ -125,7 +134,7 @@
 |--------|-----|------|------|
 | Namespace | `onyx-dev` | `onyx-test` | `onyx-prod` (geplant: eigener Cluster, ADR-004) |
 | Cluster | shared (`vob-chatbot`) | shared (`vob-chatbot`) | **eigener Cluster** (ADR-004) |
-| Worker Nodes | eigener Node (g1a.4d) | eigener Node (g1a.4d) | 2× g1a.4d dedicated |
+| Worker Nodes | eigener Node (g1a.8d) | eigener Node (g1a.8d) | 2× g1a.8d dedicated |
 | PostgreSQL | Flex 2.4 Single (`vob-dev`) | Flex 2.4 Single (`vob-test`) | Flex 4.8 Replica (3 Nodes HA) |
 | Object Storage | `vob-dev` | `vob-test` | `vob-prod` |
 | Vespa | In-Cluster (1 Replica) | In-Cluster (1 Replica) | In-Cluster (1–2 Replicas) |
@@ -134,6 +143,16 @@
 | Backups | PG PITR (auto) | PG PITR (auto) | PG PITR + ObjStore Versioning |
 | Resource Quotas | Entfernt (DEV) | Entfernt (TEST) | CPU: 8, RAM: 24 GB |
 | Network Policy | Implementiert (SEC-03, 2026-03-05) | Implementiert (SEC-03, 2026-03-05) | Geplant: Namespace-isoliert + Egress-Rules |
+
+### DNS
+
+| Environment | Domain | IP | Status |
+|-------------|--------|-----|--------|
+| DEV | `dev.chatbot.voeb-service.de` | `188.34.74.187` | A-Record gesetzt (2026-03-05) |
+| TEST | `test.chatbot.voeb-service.de` | `188.34.118.201` | A-Record gesetzt (2026-03-05) |
+| PROD | `chatbot.voeb-service.de` | — | Geplant |
+
+Cloudflare: DNS-only (kein Proxy). TLS: cert-manager + Let's Encrypt geplant (blockiert durch Cloudflare API Token Error).
 
 ---
 

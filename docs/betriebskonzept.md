@@ -1,8 +1,8 @@
 # Betriebskonzept -- VÖB Service Chatbot
 
 **Dokumentstatus**: Entwurf (teilweise verifiziert)
-**Letzte Aktualisierung**: 2026-03-05
-**Version**: 0.4
+**Letzte Aktualisierung**: 2026-03-07
+**Version**: 0.5
 
 ---
 
@@ -36,7 +36,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 │                                                                   │
 │  ┌─────────────────────────────────────────────────────────────┐ │
 │  │ SKE Kubernetes Cluster "vob-chatbot"                        │ │
-│  │ Node Pool "devtest": 2× g1a.4d (4 vCPU, 16 GB RAM)        │ │
+│  │ Node Pool "devtest": 2× g1a.8d (8 vCPU, 32 GB RAM)        │ │
 │  │ Kubernetes 1.32, Flatcar OS                                 │ │
 │  │                                                             │ │
 │  │  ┌───────────────────────────────────────────────────────┐  │ │
@@ -49,6 +49,12 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 │  │  │  ├── onyx-dev-api-server       (Backend, 1 Replica)   │  │ │
 │  │  │  ├── onyx-dev-celery-beat      (Scheduler, 1 Replica) │  │ │
 │  │  │  ├── onyx-dev-celery-worker-primary (Worker, 1 Rep.)  │  │ │
+│  │  │  ├── onyx-dev-celery-worker-light    (Worker, 1 Rep.)  │  │ │
+│  │  │  ├── onyx-dev-celery-worker-heavy    (Worker, 1 Rep.)  │  │ │
+│  │  │  ├── onyx-dev-celery-worker-docfetching  (Worker, 1 Rep.) │  │ │
+│  │  │  ├── onyx-dev-celery-worker-docprocessing (Worker, 1 Rep.)│  │ │
+│  │  │  ├── onyx-dev-celery-worker-monitoring   (Worker, 1 Rep.) │  │ │
+│  │  │  ├── onyx-dev-celery-worker-user-file    (Worker, 1 Rep.) │  │ │
 │  │  │  ├── onyx-dev-inference-model  (Model Server, 1 Rep.) │  │ │
 │  │  │  ├── onyx-dev-indexing-model   (Model Server, 1 Rep.) │  │ │
 │  │  │  ├── vespa                     (Vector Store, 1 Rep.) │  │ │
@@ -60,7 +66,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 │  │  │ IngressClass: nginx-test                              │  │ │
 │  │  │ LoadBalancer IP: 188.34.118.201                       │  │ │
 │  │  │                                                       │  │ │
-│  │  │  (Identische Pod-Struktur wie DEV)                    │  │ │
+│  │  │  (Identische Pod-Struktur wie DEV, 15 Pods)                    │  │ │
 │  │  └───────────────────────────────────────────────────────┘  │ │
 │  │                                                             │ │
 │  └─────────────────────────────────────────────────────────────┘ │
@@ -94,7 +100,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 │  │  DEV: GPT-OSS 120B + Qwen3-VL 235B (konfiguriert)         │ │
 │  │  TEST: GPT-OSS 120B + Qwen3-VL 235B (konfiguriert seit 2026-03-03) │ │
 │  │  Embedding: nomic-embed-text-v1 (self-hosted, aktiv).         │ │
-│  │    Ziel: Qwen3-VL-Embedding 8B (blockiert, Upstream PR #7541)│ │
+│  │    Ziel: Qwen3-VL-Embedding 8B (Blocker aufgehoben, Upstream PR #9005)│ │
 │  │                                                             │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                                                   │
@@ -116,7 +122,7 @@ Das Betriebskonzept beschreibt die operativen Anforderungen, Prozesse und Richtl
 |-----------|------------|-------|---------------------|
 | Frontend (Web Server) | Next.js 16, React 19, TypeScript | Web UI | 1 |
 | Backend (API Server) | Python 3.11, FastAPI 0.133.1, SQLAlchemy 2.0, Pydantic 2.11 | REST API | 1 |
-| Background Worker | Celery 5.5 (Lightweight Mode) | Async Tasks, Indexing | 1 (Primary) + 1 (Beat) |
+| Background Worker | Celery 5.5 (Standard Mode, 8 separate Worker) | Async Tasks, Indexing | 7 Worker + 1 Beat |
 | Model Server | Onyx Model Server v2.9.8 (Docker Hub Upstream) | Embedding, Inference | 2 (Index + Inference) |
 | Vespa | Vespa 8.609.39 (In-Cluster) | RAG + Vector Store | 1 |
 | Redis | Redis 7.0.15 (In-Cluster, OT Operator) | Cache, Celery Broker | 1 |
@@ -185,7 +191,7 @@ GitHub Actions Workflow (automatisch)
       │   -f values-common.yaml -f values-dev.yaml
       │   --set Secrets (PG, Redis, S3, DB_READONLY)
       ├── kubectl patch: Recreate-Strategie (Single-Node)
-      ├── kubectl rollout status (alle 6 Deployments)
+      ├── kubectl rollout status (alle 12 Deployments)
       └── Smoke Test: curl ${WEB_DOMAIN}/api/health
 
 Manuell (workflow_dispatch):
@@ -198,7 +204,7 @@ Manuell (workflow_dispatch):
 - Model Server wird NICHT gebaut -- Upstream-Image `onyxdotapp/onyx-model-server:v2.9.8` von Docker Hub
 - Secrets werden per `--set` aus GitHub Environment Secrets injiziert (nie in Git)
 - Concurrency: Nur ein Deploy pro Environment gleichzeitig, laufende Builds werden bei neuem Push abgebrochen
-- DEV-Deploy patcht Deployments auf Recreate-Strategie (Single g1a.4d Node hat nicht genug CPU für RollingUpdate)
+- DEV-Deploy patcht Deployments auf Recreate-Strategie (beibehalten zur Vermeidung von Port-Konflikten, g1a.8d haette genug CPU fuer RollingUpdate)
 - Alle GitHub Actions sind SHA-gepinnt (Supply-Chain-Sicherheit)
 
 ### CI/CD-Details
@@ -299,7 +305,7 @@ deployment/helm/
 │   └── templates/
 └── values/
     ├── values-common.yaml         ← Gemeinsam: PG aus, MinIO aus, Vespa+Redis an
-    ├── values-dev.yaml            ← DEV: 1 Replica, Lightweight Worker, eigene PG+S3
+    ├── values-dev.yaml            ← DEV: 1 Replica, 8 Celery-Worker (Standard Mode), eigene PG+S3
     └── values-test.yaml           ← TEST: Analog DEV, eigene PG+S3+IngressClass
 ```
 
@@ -416,7 +422,7 @@ Jede Änderung wird an folgenden Stellen dokumentiert:
 |----------|--------|---------|
 | Pull Request Pflicht | IMPLEMENTIERT | Jede Änderung läuft über Feature-Branch + PR |
 | Self-Review + PR-Checkliste | IMPLEMENTIERT | Checkliste vor jedem Commit (Tests, Lint, Types, Docs) |
-| Branch Protection (`main`) | GEPLANT | Require PR, Require 1 Approval, Require Status Checks |
+| Branch Protection (`main`) | IMPLEMENTIERT (2026-03-06) | PR required, 1 Review, 3 Required Status Checks (helm-validate, build-backend, build-frontend) |
 | Environment Protection (`prod`) | GEPLANT | Required Reviewers in GitHub Environment Settings |
 
 **Interims-Lösung** (bis zweiter Reviewer verfügbar):
@@ -667,7 +673,7 @@ Der Monitoring-Ausbau ist für die PROD-Vorbereitung geplant und umfasst:
 
 ### Skalierungsstrategie
 
-**DEV/TEST**: Keine Autoskalierung. 1 Replica pro Service. Lightweight Celery Mode (ein konsolidierter Worker statt 8 separate).
+**DEV/TEST**: Keine Autoskalierung. 1 Replica pro Service. Standard Celery Mode (8 separate Worker).
 
 **PROD (geplant)**:
 
@@ -675,13 +681,13 @@ Der Monitoring-Ausbau ist für die PROD-Vorbereitung geplant und umfasst:
 
 - Eigener SKE-Cluster (ADR-004)
 - Mehrere Replicas für API Server und Web Server
-- Separate Celery Worker (kein Lightweight Mode) — **TODO (M9):** Entscheidung Lightweight vs Standard Mode für PROD treffen. Standard Mode bietet bessere Isolation und unabhängige Skalierung der Worker-Typen, braucht aber mehr Ressourcen.
+- Separate Celery Worker (kein Lightweight Mode) — **Erledigt (2026-03-06):** Standard Mode (Lightweight durch Upstream PR #9014 entfernt).
 - Größere Node Types oder mehr Nodes
 - HPA (HorizontalPodAutoscaler) nach Bedarf
 
 ### Vertikale Skalierung
 
-- **Kubernetes Nodes**: g1a.4d (4 vCPU, 16 GB) ist aktuelles Minimum. Upgrade auf g1a.8d bei Bedarf.
+- **Kubernetes Nodes**: g1a.8d (8 vCPU, 32 GB) ist aktuelle Konfiguration (seit 2026-03-06, ADR-005).
 - **PostgreSQL**: Flex 2.4 (2 CPU, 4 GB). Upgrade auf größeres Flavor oder HA (3 Replicas) per Terraform.
 
 ---
@@ -881,5 +887,5 @@ Runbooks werden in `docs/runbooks/` gepflegt. Jedes Runbook ist ein eigenständi
 ---
 
 **Dokumentstatus**: Entwurf (teilweise verifiziert)
-**Letzte Aktualisierung**: 2026-03-05
-**Version**: 0.4
+**Letzte Aktualisierung**: 2026-03-07
+**Version**: 0.5

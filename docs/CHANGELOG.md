@@ -9,6 +9,27 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [Infra] **Node-Upgrade g1a.4d → g1a.8d** (2026-03-06)
+  - ADR-005: 8 vCPU, 32 GB RAM, 100 GB Disk pro Node (vorher: 4 vCPU, 16 GB RAM, 50 GB)
+  - Terraform apply erfolgreich (10m11s), 0 added, 1 changed, 0 destroyed
+  - Kosten DEV+TEST: ~868 EUR/Mo (vorher: ~426 EUR/Mo)
+  - Grund: 8 separate Celery-Worker (Standard Mode) benoetigen mehr Ressourcen
+- [Infra] **8 Celery-Worker aktiviert (Lightweight Mode entfernt)** (2026-03-06)
+  - Upstream PR #9014 entfernt Lightweight Background Worker Mode
+  - 8 separate Celery-Deployments: beat, primary, light, heavy, docfetching, docprocessing, monitoring, user-file-processing
+  - DEV: 16 Pods Running | TEST: 15 Pods Running
+  - Resource-Strategie: Reduzierte Requests + hohe Limits (Scheduling-freundlich)
+- [Infra] **Upstream-Merge: 100 Commits** (2026-03-06)
+  - Merged via Branch `chore/upstream-sync-2026-03-06` + PR #3 (Enterprise-Workflow)
+  - 1 Konflikt (AGENTS.md, --ours), Core-Patch main.py auto-merged, ext-Hook intakt
+  - Wichtige Upstream-Aenderungen: PR #9005 (Embedding-Swap re-enabled), PR #9014 (Lightweight entfernt), PR #9001 (SCIM Token Management)
+- [CI/CD] **PR-Validierung vor Merge** (2026-03-06)
+  - `.github/workflows/pr-checks.yml` mit 3 parallelen Jobs: helm-validate, build-backend, build-frontend
+  - Merged via PR #4
+- [Infra] **Branch Protection auf main aktiviert** (2026-03-06)
+  - PR required (kein Direct Push), 1 Approval required, Stale Reviews dismissed
+  - 3 Required Status Checks: helm-validate, build-backend, build-frontend
+  - Force Push + Branch Delete blockiert, enforce_admins: false (Notfall-Override)
 - [Docs] **Change & Release Management Dokumentation** (2026-03-05)
   - M-CM-1: Change-Management-Abschnitt im Betriebskonzept (Branching-Strategie, Promotion-Pfad, Änderungskategorien, Freigabestufen)
   - M-CM-2: 4-Augen-Prinzip dokumentiert (Betriebskonzept + Sicherheitskonzept, BAIT Kap. 8.6, Interims-Lösung + geplante GitHub Protection)
@@ -90,7 +111,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - GPT-OSS 120B als primäres Chat-Modell konfiguriert und verifiziert
   - Qwen3-VL 235B als zweites Chat-Modell konfiguriert und verifiziert
   - OpenAI-kompatible API via StackIT (Daten bleiben in DE)
-  - Embedding-Modell: Wechsel auf Qwen3-VL-Embedding 8B blockiert (Upstream PR #7541). Fallback nomic-embed-text-v1 aktiv.
+  - Embedding-Modell: nomic-embed-text-v1 aktiv. Wechsel auf Qwen3-VL-Embedding 8B moeglich (Blocker aufgehoben, Upstream PR #9005).
 - [Feature] **Phase 4a: Extension Framework Basis**
   - `backend/ext/` Paketstruktur mit `__init__.py`, `config.py`, `routers/`
   - Feature Flag System: `EXT_ENABLED` Master-Switch + 6 Modul-Flags (AND-gated, alle default `false`)
@@ -139,7 +160,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Repository und Tag wurden zusammen gesetzt → Helm erzeugte `repo:latest:sha` (ungültig)
   - Fix: `image.repository` und `image.tag` getrennt per `--set`
 - [Bugfix] **Recreate-Strategie für Single-Node DEV** (2026-03-02)
-  - RollingUpdate scheiterte auf g1a.4d (4 vCPU) — nicht genug CPU für alte + neue Pods gleichzeitig
+  - RollingUpdate scheiterte auf g1a.4d (4 vCPU, inzwischen auf g1a.8d upgraded) — nicht genug CPU für alte + neue Pods gleichzeitig
   - Fix: kubectl-Patch auf Recreate-Strategie nach Helm Deploy
 
 ---
@@ -263,7 +284,8 @@ docs/
 │   ├── adr-001-onyx-foss-als-basis.md           (Platform Choice)
 │   ├── adr-002-extension-architektur.md         (Extension Architecture)
 │   ├── adr-003-stackit-als-cloud-provider.md    (Cloud Provider)
-│   └── adr-004-umgebungstrennung-dev-test-prod.md (Environment Separation)
+│   ├── adr-004-umgebungstrennung-dev-test-prod.md (Environment Separation)
+│   └── adr-005-node-upgrade-g1a8d.md              (Node-Upgrade g1a.8d)
 ├── abnahme/
 │   ├── abnahmeprotokoll-template.md             (Acceptance Protocol)
 │   └── meilensteinplan.md                       (Milestone Plan)
@@ -274,7 +296,11 @@ docs/
 │   ├── helm-deploy.md                           (Helm Deploy)
 │   ├── ci-cd-pipeline.md                        (CI/CD Pipeline)
 │   ├── dns-tls-setup.md                         (DNS/TLS Setup)
-│   └── llm-konfiguration.md                     (LLM-Konfiguration)
+│   ├── llm-konfiguration.md                     (LLM-Konfiguration)
+│   └── rollback-verfahren.md                    (Rollback-Verfahren)
+├── audit/
+│   ├── cloud-infrastruktur-audit-2026-03-04.md  (Security Audit)
+│   └── networkpolicy-analyse.md                 (NetworkPolicy-Analyse)
 └── referenz/
     ├── stackit-implementierungsplan.md          (DEV+TEST Step-by-Step)
     ├── stackit-infrastruktur.md                 (Infra Specs + Sizing)
@@ -317,6 +343,6 @@ Bei Fragen zur Dokumentation:
 
 ---
 
-**Letzte Aktualisierung**: 2026-03-05
+**Letzte Aktualisierung**: 2026-03-07
 **Wartete durch**: [AUSSTEHEND]
 **Nächste Überprüfung**: [AUSSTEHEND]

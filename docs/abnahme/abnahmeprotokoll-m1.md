@@ -44,8 +44,8 @@
 - In-Cluster Services: Vespa, Redis (DEV + TEST)
 - LLM-Integration via StackIT AI Model Serving
 - CI/CD Pipeline (GitHub Actions → StackIT Container Registry → Helm Deploy)
-- DEV-Umgebung (`onyx-dev`, 10 Pods)
-- TEST-Umgebung (`onyx-test`, 9 Pods)
+- DEV-Umgebung (`onyx-dev`, 16 Pods)
+- TEST-Umgebung (`onyx-test`, 15 Pods)
 - Infrastruktur-Dokumentation (Runbooks, ADRs, Implementierungsplan)
 
 **Nicht im Umfang (folgt in spaeteren Meilensteinen)**:
@@ -65,7 +65,7 @@
 | Betriebskonzept | [betriebskonzept.md](../betriebskonzept.md) |
 | Sicherheitskonzept | [sicherheitskonzept.md](../sicherheitskonzept.md) |
 | Testkonzept | [testkonzept.md](../testkonzept.md) |
-| ADR-001 bis ADR-004 | [adr/](../adr/) |
+| ADR-001 bis ADR-005 | [adr/](../adr/) |
 | Cloud-Infrastruktur-Audit | [cloud-infrastruktur-audit-2026-03-04.md](../audit/cloud-infrastruktur-audit-2026-03-04.md) |
 
 ---
@@ -76,16 +76,16 @@
 
 | Nr. | Kriterium | Soll-Zustand | Ist-Zustand | Erfuellt? | Bemerkung |
 |-----|-----------|-------------|-------------|-----------|-----------|
-| F-1 | Kubernetes Cluster | 2 Nodes (g1a.4d) Running | 2 Nodes Running, v1.32.12 | [x] Ja | Node Pool `devtest`, Flatcar OS |
+| F-1 | Kubernetes Cluster | 2 Nodes (g1a.8d) Running | 2 Nodes Running, v1.32.12 | [x] Ja | Node Pool `devtest`, Flatcar OS |
 | F-2 | DEV: PostgreSQL | DB erreichbar, funktionsfaehig | PG Flex `vob-dev` (2 CPU, 4 GB, 20 GB SSD) | [x] Ja | Managed Service, taegliches Backup |
 | F-3 | DEV: Vespa | Deployed und lauffaehig | StatefulSet `da-vespa` Running, 20 Gi PV | [x] Ja | In-Cluster, Headless Service |
 | F-4 | DEV: Object Storage | Bucket funktioniert | Bucket `vob-dev`, S3-kompatibel | [x] Ja | StackIT Object Storage |
-| F-5 | DEV: Pods Running | Alle Pods Running | 10/10 Pods Running in `onyx-dev` | [x] Ja | Lightweight Worker Mode |
+| F-5 | DEV: Pods Running | Alle Pods Running | 16/16 Pods Running in `onyx-dev` | [x] Ja | Standard Worker Mode (8 separate Celery-Worker) |
 | F-6 | DEV: Health Check | API Health OK | `http://188.34.74.187/health` → 200 OK | [x] Ja | Seit 2026-02-27 |
 | F-7 | DEV: LLM antwortet | Chat-Modell antwortet korrekt | GPT-OSS 120B + Qwen3-VL 235B funktional | [x] Ja | StackIT AI Model Serving |
 | F-8 | TEST: PostgreSQL | Eigene Instanz erreichbar | PG Flex `vob-test` (2 CPU, 4 GB, 20 GB SSD) | [x] Ja | Separate Instanz von DEV |
 | F-9 | TEST: Object Storage | Eigener Bucket funktioniert | Bucket `vob-test`, eigene Credentials | [x] Ja | Enterprise-Trennung |
-| F-10 | TEST: Pods + Health | Pods Running, Health OK | 9/9 Pods Running, `http://188.34.118.201` OK | [x] Ja | Eigene IngressClass `nginx-test` |
+| F-10 | TEST: Pods + Health | Pods Running, Health OK | 15/15 Pods Running, `http://188.34.118.201` OK | [x] Ja | Eigene IngressClass `nginx-test` |
 | F-11 | CI/CD Pipeline | Build + Deploy funktioniert | Parallel-Build ~10 Min, SHA-gepinnte Actions | [x] Ja | Run #5 produktionsreif (2026-03-02) |
 | F-12 | Runbooks | Alle vorhanden und verifiziert | 4 Runbooks + Implementierungsplan | [x] Ja | Projekt-Setup, PostgreSQL, Helm, CI/CD |
 
@@ -95,8 +95,8 @@
 
 | Nr. | Kriterium | Soll-Zustand | Ist-Zustand | Erfuellt? | Bemerkung |
 |-----|-----------|-------------|-------------|-----------|-----------|
-| NF-1 | Verfuegbarkeit DEV | Pods laufen stabil | 10 Pods Running, kein CrashLoop seit Go-Live | [x] Ja | Seit 2026-02-27 |
-| NF-2 | Verfuegbarkeit TEST | Pods laufen stabil | 9 Pods Running seit Go-Live | [x] Ja | Seit 2026-03-03 |
+| NF-1 | Verfuegbarkeit DEV | Pods laufen stabil | 16 Pods Running, kein CrashLoop seit Go-Live | [x] Ja | Seit 2026-02-27, 16 Pods seit 2026-03-06 |
+| NF-2 | Verfuegbarkeit TEST | Pods laufen stabil | 15 Pods Running seit Redeploy | [x] Ja | Seit 2026-03-03, 15 Pods seit 2026-03-06 |
 | NF-3 | Backup | Taegliche PG Snapshots | StackIT Managed Backup aktiv (DEV 02:00, TEST 03:00 UTC) | [x] Ja | Managed Service |
 | NF-4 | CI/CD Robustheit | Automatischer Rollback bei Fehler | `--atomic` fuer TEST/PROD, Smoke Test nach Deploy | [x] Ja | Concurrency Control aktiv |
 | NF-5 | Umgebungstrennung | DEV und TEST isoliert | Separate Namespaces, PG-Instanzen, Buckets, Credentials | [x] Ja | ADR-004 dokumentiert |
@@ -136,12 +136,12 @@ Diese Punkte sind bekannt und werden in nachfolgenden Meilensteinen adressiert:
 
 | Nr. | Thema | Status | Geplant fuer |
 |-----|-------|--------|-------------|
-| N-1 | DNS-Eintraege (`dev.chatbot.voeb-service.de`) | Blockiert — wartet auf VÖB IT / Leif | Vor M2 |
-| N-2 | TLS/HTTPS (cert-manager + Let's Encrypt) | Blockiert — abhaengig von N-1 | Vor M2 |
-| N-3 | Embedding-Modell Qwen3-VL-Embedding 8B | Blockiert — Upstream PR #7541 | Fallback nomic-embed-text-v1 aktiv |
+| N-1 | DNS-Eintraege (`dev.chatbot.voeb-service.de`) | Erledigt — A-Records gesetzt (2026-03-05) | ✅ |
+| N-2 | TLS/HTTPS (cert-manager + Let's Encrypt) | Blockiert — Cloudflare API Token Error | Vor M2 |
+| N-3 | Embedding-Modell Qwen3-VL-Embedding 8B | Blocker aufgehoben — Upstream PR #9005 | Wechsel moeglich, Fallback nomic-embed-text-v1 aktiv |
 | N-4 | Authentifizierung (Entra ID / OIDC) | Blockiert — wartet auf VÖB Credentials | M2 |
 
-**Hinweis:** Alle blockierten Punkte haben externe Abhaengigkeiten (VÖB IT, Upstream-Projekt). Die Infrastruktur ist technisch bereit, sobald die Blocker geloest sind. Runbooks fuer DNS/TLS und Entra ID sind vorbereitet.
+**Hinweis:** N-1 (DNS) und N-3 (Embedding) sind geloest. Die verbleibenden blockierten Punkte haben externe Abhaengigkeiten (Cloudflare Token, VÖB IT). Die Infrastruktur ist technisch bereit. Runbooks fuer TLS-Aktivierung und Entra ID sind vorbereitet.
 
 ---
 

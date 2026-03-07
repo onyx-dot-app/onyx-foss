@@ -8,7 +8,7 @@
 
 **Kein `develop`-Branch.** `main` ist der einzige langlebige Branch.
 
-- `main` ← Integrationsbranch, auto-deploy DEV, Upstream-Merges landen hier
+- `main` ← Integrationsbranch, auto-deploy DEV, Upstream-Merges via Branch+PR
 - `feature/*` ← Feature-Branches von main, PR zurück nach main
 - `release/*` ← Geschnitten von main wenn TEST/PROD-ready
 
@@ -67,8 +67,12 @@ cd -
 git worktree remove .claude/worktrees/upstream-test
 ```
 
-### 3. Merge durchführen
+### 3. Merge-Branch erstellen + Merge durchführen
 ```bash
+# Branch erstellen (Branch Protection verbietet Direct Push auf main)
+git checkout -b chore/upstream-sync-YYYY-MM-DD
+
+# Merge durchführen
 git merge upstream/main --no-commit --no-ff
 ```
 
@@ -110,13 +114,21 @@ grep "repository:" deployment/helm/charts/onyx/Chart.yaml
 # Fehlende Repos in ALLEN 3 Deploy-Jobs (dev, test, prod) ergänzen
 ```
 
-### 7. CI/CD verifizieren
+### 7. PR erstellen und mergen
 ```bash
 git commit -m "chore(upstream): Merge upstream/main — <N> Commits"
-git push origin main
-gh workflow run stackit-deploy.yml -f environment=dev -R CCJ-Development/voeb-chatbot
-# Warten auf grünen Build + Health Check
+git push origin chore/upstream-sync-YYYY-MM-DD
+
+# PR erstellen
+gh pr create --base main --title "chore(upstream): Merge upstream/main — <N> Commits" \
+  --body "Upstream-Sync: <N> Commits, <X> Konflikte"
+
+# Nach CI-Checks + Review: Merge
+gh pr merge <PR-NR> --squash --delete-branch
 ```
+
+> **Hinweis:** Direct Push auf main ist durch Branch Protection blockiert.
+> PRs muessen 3 CI-Checks bestehen: helm-validate, build-backend, build-frontend.
 
 ### 8. TEST nach erfolgreichem DEV
 ```bash
@@ -134,6 +146,19 @@ gh workflow run stackit-deploy.yml -f environment=test -R CCJ-Development/voeb-c
 | Infrastruktur-Konflikte | 0 |
 | Zusätzlicher Fix | Helm Repo `python-sandbox` in CI/CD ergänzt |
 | Merge-Dauer | ~5 Min (inkl. Verifikation) |
+
+## Zweiter Upstream-Merge (2026-03-06) — Referenz
+
+| Metrik | Wert |
+|--------|------|
+| Upstream-Commits | 100 |
+| Konflikte | 1 (AGENTS.md) |
+| Core-Datei-Konflikte | 0 (main.py auto-merged, ext-Hook intakt) |
+| ext_-Code Konflikte | 0 |
+| Infrastruktur-Konflikte | 0 |
+| Wichtig | PR #9014 entfernt Lightweight Mode, PR #9005 Embedding-Blocker aufgehoben |
+| Merge-Dauer | ~5 Min |
+| Workflow | Branch + PR (erstmals mit Branch Protection) |
 
 ## Warum "Extend, don't modify" funktioniert
 - Max 7 vorhersagbare Merge-Konflikte (Core-Dateien)

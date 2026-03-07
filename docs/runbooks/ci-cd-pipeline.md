@@ -286,7 +286,7 @@ Docker Hub Image ist öffentlich, schnell, und mit `v2.9.8` gepinnt.
 
 ### Warum Recreate statt RollingUpdate (DEV)?
 
-Der DEV-Cluster hat 1 Node (g1a.4d, 4 vCPU). RollingUpdate startet neue Pods neben den alten — dafür reicht die CPU nicht. Recreate stoppt zuerst die alten, dann starten die neuen. Downtime ist für DEV akzeptabel.
+Der DEV-Cluster hat 1 Node (g1a.8d, 8 vCPU seit 2026-03-06). Recreate ist beibehalten um Port-Konflikte bei Model Servern zu vermeiden. Downtime ist für DEV akzeptabel.
 
 ### Warum `LICENSE_ENFORCEMENT_ENABLED: "false"`?
 
