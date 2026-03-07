@@ -207,7 +207,7 @@ redis:
 
 # --- Model Server: 1 Replica, minimale Requests (DEV) ---
 # Recreate-Strategie: Alter Pod wird gestoppt bevor neuer startet.
-# Notwendig weil ein einzelner g1a.4d Node nicht genug CPU für alte + neue Pods hat.
+# Beibehalten nach g1a.8d Upgrade — eliminiert Port-Konflikte bei Model Servern.
 inferenceCapability:
   replicaCount: 1
   strategy:

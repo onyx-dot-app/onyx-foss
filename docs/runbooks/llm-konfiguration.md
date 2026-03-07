@@ -108,11 +108,11 @@ curl -s http://<IP>/api/health | jq .
 
 ### Aktueller Status (Stand Maerz 2026)
 
-> **WICHTIG:** Das Wechseln des Embedding-Modells ueber die Admin-UI ist im aktuellen Onyx-Release **temporaer deaktiviert**. Grund: Onyx refactored das Index-Management von Vespa auf OpenSearch (siehe [PR #7541](https://github.com/onyx-dot-app/onyx/pull/7541)). Die Onyx-Entwickler planen die Reaktivierung nach Abschluss der OpenSearch-Migration.
+> **UPDATE (2026-03-06):** Das Wechseln des Embedding-Modells ueber die Admin-UI ist seit [PR #9005](https://github.com/onyx-dot-app/onyx/pull/9005) wieder moeglich (Search Settings Swap re-enabled). Die fruehere Sperre ([PR #7541](https://github.com/onyx-dot-app/onyx/pull/7541)) wurde durch den Upstream-Merge vom 2026-03-06 aufgehoben.
 >
-> **Workaround:** Das Default-Modell `nomic-ai/nomic-embed-text-v1` (self-hosted, laeuft auf dem Model Server im Cluster) ist automatisch aktiv und funktioniert fuer die Dokumentensuche. Es ist nicht optimal fuer deutsche Texte, aber funktional.
+> **Aktuell aktiv:** `nomic-ai/nomic-embed-text-v1` (self-hosted, laeuft auf dem Model Server im Cluster). Wechsel auf Qwen3-VL-Embedding 8B ist jetzt moeglich — siehe Ziel-Konfiguration unten.
 
-### Ziel-Konfiguration (sobald Upstream re-enabled)
+### Ziel-Konfiguration
 
 Pfad: **Admin** → **Search Settings** → **Embedding Model**
 
@@ -228,12 +228,11 @@ Beim Wechsel eines Embedding-Modells:
 
 ### "Setting new search settings is temporarily disabled"
 
-Dieses Verhalten ist **kein Bug**, sondern eine bewusste Deaktivierung im Upstream-Code (Onyx [PR #7541](https://github.com/onyx-dot-app/onyx/pull/7541)). Onyx migriert von Vespa auf OpenSearch und hat den Embedding-Modell-Wechsel temporaer gesperrt.
+Diese Fehlermeldung tritt auf, wenn ein aelteres Onyx-Release verwendet wird, das den Embedding-Wechsel noch gesperrt hatte ([PR #7541](https://github.com/onyx-dot-app/onyx/pull/7541)). Seit dem Upstream-Merge vom 2026-03-06 ([PR #9005](https://github.com/onyx-dot-app/onyx/pull/9005)) ist der Wechsel wieder moeglich.
 
 **Was tun:**
-- Das Default-Modell `nomic-embed-text-v1` weiter nutzen
-- Bei jedem Upstream-Merge pruefen ob der Endpoint reaktiviert wurde
-- Status verfolgen: [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx) → Search Settings PRs
+- Sicherstellen, dass das aktuelle Image deployed ist (nach 2026-03-06)
+- Falls die Meldung weiterhin erscheint: Upstream-Merge pruefen, ggf. neues Deployment ausloesen
 
 ### Rate Limits (StackIT)
 
@@ -267,5 +266,6 @@ Bei Rate-Limit-Fehlern (HTTP 429): Indexing-Geschwindigkeit in Onyx ist normaler
 - [Verfuegbare Modelle](https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/)
 - [StackIT Release Notes](https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/release-notes/)
 - [Qwen3-VL-Embedding-8B (Hugging Face)](https://huggingface.co/Qwen/Qwen3-VL-Embedding-8B)
-- [Onyx PR #7541 — Secondary Indices Disabled](https://github.com/onyx-dot-app/onyx/pull/7541)
+- [Onyx PR #9005 — Search Settings Swap Re-enabled](https://github.com/onyx-dot-app/onyx/pull/9005)
+- [Onyx PR #7541 — Secondary Indices Disabled (historisch)](https://github.com/onyx-dot-app/onyx/pull/7541)
 - [Helm Deploy Runbook](./helm-deploy.md)

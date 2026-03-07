@@ -16,10 +16,10 @@
 | Ressource | Spec | Geschätzte Kosten |
 |-----------|------|-------------------|
 | 1× SKE Cluster | 1 Node Pool (`devtest`) | ~72 EUR/Monat |
-| 2× Worker Nodes | g1a.4d (4 vCPU, 16 GB RAM) je | ~284 EUR/Monat |
+| 2× Worker Nodes | g1a.8d (8 vCPU, 32 GB RAM) je | ~566 EUR/Monat |
 | 2× PostgreSQL Flex 2.4 | Single (2 CPU, 4 GB, 20 GB SSD) je | ~60 EUR/Monat |
 | 2× Object Storage Bucket | `vob-dev`, `vob-test` | ~10 EUR/Monat |
-| **TOTAL DEV + TEST** | | **~426 EUR/Monat** |
+| **TOTAL DEV + TEST** | | **~868 EUR/Monat** |
 
 ---
 
@@ -60,8 +60,9 @@ deployment/
     charts/onyx/                      ← BESTEHEND — READ-ONLY, nicht anfassen
     values/                           ← NEU
       values-common.yaml              ← PG aus, MinIO aus, Vespa+Redis an
-      values-dev.yaml                 ← 1 Replica pro Service, Lightweight
+      values-dev.yaml                 ← 1 Replica pro Service, 8 Celery-Worker (Standard Mode)
       values-test.yaml                ← NEU — TEST analog DEV, eigene Credentials
+      values-prod.yaml              ← PROD: Platzhalter (noch nicht deployed)
 
 .github/workflows/
   stackit-deploy.yml                  ← NEU (neben bestehenden Workflows)
@@ -186,7 +187,7 @@ terraform apply tfplan
 Das Modul in `deployment/terraform/modules/stackit/main.tf` provisioniert:
 
 **SKE Cluster** (`vob-chatbot`):
-- 1 Node Pool `devtest` mit 2× g1a.4d (min=2, max=2)
+- 1 Node Pool `devtest` mit 2× g1a.8d (min=2, max=2)
 - Kubernetes v1.32.12 (SKE weist nächst-verfügbare Version zu)
 - Flatcar OS
 - Maintenance-Window: 02:00–04:00 UTC
@@ -273,7 +274,7 @@ spec:
 
 ## Phase 4: Helm Deploy (DEV)
 
-> **Status**: ✅ **Abgeschlossen** (2026-02-27). Alle 10 Pods Running, API Health OK, UI erreichbar unter `http://188.34.74.187`.
+> **Status**: ✅ **Abgeschlossen** (2026-02-27). Alle 16 Pods Running, API Health OK, UI erreichbar unter `http://188.34.74.187`.
 
 ### 4.1 Helm Values anpassen
 
@@ -313,12 +314,19 @@ curl -s http://<EXTERNAL_IP>/api/health
 | Model Server (Indexing) | 250m | 768Mi | 1 |
 | Celery Beat | 100m | 256Mi | 1 |
 | Celery Worker Primary | 250m | 512Mi | 1 |
+| Celery Worker Light | 250m | 512 Mi | 1 |
+| Celery Worker Heavy | 250m | 512 Mi | 1 |
+| Celery Worker DocFetching | 250m | 512 Mi | 1 |
+| Celery Worker DocProcessing | 250m | 512 Mi | 1 |
+| Celery Worker Monitoring | 100m | 256 Mi | 1 |
+| Celery Worker User File | 250m | 512 Mi | 1 |
 | Redis Operator | 500m | — | 1 |
-| **TOTAL DEV (onyx-dev)** | **~2.1 CPU** | **~4.7 Gi** | |
+| NGINX Ingress Controller | 100m | 128Mi | 1 |
+| **TOTAL DEV (onyx-dev)** | **~3.5 CPU** | **~7 Gi** | |
 | kube-system (Calico, DNS, VPN, Metrics) | ~1.4 CPU | ~2 Gi | — |
-| **TOTAL Node** | **~3.5 CPU** | **~6.7 Gi** | |
+| **TOTAL Node** | **~4.9 CPU** | **~9 Gi** | |
 
-**Verfügbar (1× g1a.4d)**: 4 CPU / 16 GB RAM. ~1.4 CPU werden von kube-system (Calico, CoreDNS, VPN, Metrics) beansprucht.
+**Verfuegbar (1x g1a.8d)**: ~7.9 CPU / ~28.3 Gi RAM. ~1.4 CPU werden von kube-system (Calico, CoreDNS, VPN, Metrics) beansprucht.
 
 ---
 
@@ -455,7 +463,7 @@ Separater Custom LLM Provider in der Admin UI:
 
 ### 6.3 Embedding-Modell konfigurieren
 
-> ⚠️ Blockiert durch Upstream (PR #7541). Fallback: nomic-embed-text-v1 aktiv.
+> ⚠️ Blocker aufgehoben (Upstream PR #9005). Fallback: nomic-embed-text-v1 aktiv.
 
 Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Eintrag in der Admin UI.
 
@@ -498,7 +506,7 @@ Gleicher Provider, gleiche API Base, gleicher Auth Token. Separater Provider-Ein
 
 ## Phase 7: TEST-Umgebung aufsetzen
 
-> **Status**: ✅ TEST LIVE (2026-03-03). ADR-004 akzeptiert. 9 Pods Running, Health Check OK, UI unter `http://188.34.118.201`.
+> **Status**: ✅ TEST LIVE (2026-03-03). ADR-004 akzeptiert. 15 Pods Running, Health Check OK, UI unter `http://188.34.118.201`.
 > **Bezug**: [ADR-004: Umgebungstrennung](../adr/adr-004-umgebungstrennung-dev-test-prod.md)
 
 ### 7.1 Node Pool skalieren (1 → 2 Nodes)
@@ -611,7 +619,7 @@ helm upgrade --install onyx-test \
   --atomic --timeout 10m
 
 # Verifizieren
-kubectl get pods -n onyx-test          # → 9 Pods Running (+ redis-operator im default NS)
+kubectl get pods -n onyx-test          # → 15 Pods Running (+ redis-operator im default NS)
 curl -s http://<TEST-IP>/api/health    # → {"success":true}
 ```
 
@@ -629,7 +637,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 
 | Kriterium | Test | Status |
 |-----------|------|--------|
-| K8s Cluster läuft | `kubectl get nodes` → Ready, g1a.4d | [x] ✅ (2026-02-27) |
+| K8s Cluster läuft | `kubectl get nodes` → Ready, g1a.8d | [x] ✅ (2026-02-27) |
 | PostgreSQL erreichbar | DB `onyx` existiert, Alembic-Migrationen laufen | [x] ✅ (2026-02-27) |
 | Vespa deployed | Pod Running, Application Package deployed | [x] ✅ (2026-02-27) |
 | Redis deployed | Pod Running, Celery Beat/Worker verbunden | [x] ✅ (2026-02-27) |
@@ -638,7 +646,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Onyx UI erreichbar | `http://188.34.74.187/auth/login` → Login-Seite | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (GPT-OSS) | GPT-OSS 120B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
 | LLM Chat-Modell (Qwen3-VL) | Qwen3-VL 235B antwortet über Onyx Chat | [x] ✅ (2026-02-27) |
-| LLM Embedding-Modell | Qwen3-VL-Embedding 8B fuer Dokumenten-Suche | [ ] ⚠️ Blockiert (Upstream PR #7541). Fallback: nomic-embed-text-v1 aktiv. |
+| LLM Embedding-Modell | Qwen3-VL-Embedding 8B fuer Dokumenten-Suche | [ ] ⚠️ Blocker aufgehoben (Upstream PR #9005). Fallback: nomic-embed-text-v1 aktiv. |
 | CI/CD funktioniert | Push auf main → Pods updated | [x] ✅ Run #5 (2026-03-02): 10 Min, 10/10 Pods, Health OK |
 
 ---
@@ -647,11 +655,11 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 
 | Kriterium | Test | Status |
 |-----------|------|--------|
-| 2 Nodes im Cluster | `kubectl get nodes` → 2× Ready, g1a.4d | [x] ✅ (2026-03-03) |
+| 2 Nodes im Cluster | `kubectl get nodes` → 2× Ready, g1a.8d | [x] ✅ (2026-03-03) |
 | TEST PostgreSQL erreichbar | DB `onyx` existiert auf TEST-Instanz | [x] ✅ (2026-03-03) |
 | Object Storage (vob-test) | Credentials aktiv, Bucket erreichbar | [x] ✅ (2026-03-03) |
 | Namespace onyx-test | `kubectl get ns onyx-test` → Active | [x] ✅ (2026-03-03) |
-| 9 Pods Running (+ redis-operator im default NS) | `kubectl get pods -n onyx-test` → 9/9 Running | [x] ✅ (2026-03-03) |
+| 15 Pods Running (+ redis-operator im default NS) | `kubectl get pods -n onyx-test` → 15/15 Running | [x] ✅ (2026-03-03) |
 | API Health | `curl http://188.34.118.201/api/health` → `{"success":true}` | [x] ✅ (2026-03-03) |
 | Onyx UI erreichbar | `http://188.34.118.201/auth/login` → Login-Seite | [x] ✅ (2026-03-03) |
 | LLM Chat-Modell | GPT-OSS 120B antwortet über TEST Chat | [x] ✅ (2026-03-03) |
@@ -665,13 +673,13 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Schritt | Wann | Was | Status |
 |---------|------|-----|--------|
 | TEST Environment | Nach DEV-Validierung | Phase 7: Node Pool skalieren, PG + Bucket + Namespace + Helm | ✅ LIVE (2026-03-03) |
-| Embedding-Modell | Parallel zu TEST | Qwen3-VL-Embedding 8B in Admin UI konfigurieren | ⚠️ Blockiert (Upstream PR #7541, OpenSearch-Migration). nomic-embed-text-v1 als Fallback aktiv. |
+| Embedding-Modell | Parallel zu TEST | Qwen3-VL-Embedding 8B in Admin UI konfigurieren | ⚠️ Blocker aufgehoben (Upstream PR #9005). nomic-embed-text-v1 als Fallback aktiv. |
 | Branding | Nach TEST-Setup | Logo-Dateien ersetzen, ext/-Komponenten | ⏳ Offen |
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
 | DNS + TLS | Nach DNS-Setup | Let's Encrypt oder StackIT-CA | Blockiert (VÖB IT) |
 | Security-Härtung P0 | Vor TEST-Deploy | SEC-01: PG ACL einschränken (30 Min) | ✅ Erledigt (2026-03-03) |
 | Security-Härtung P1 | Nach TEST, vor PROD | SEC-02, SEC-04, SEC-05: Node Affinity, Remote State, Kubeconfigs + M7: Cluster-ACL (~2 Tage) | ⏳ Geplant |
-| PROD Cluster | Vor Go-Live | Eigener SKE-Cluster + 2× g1a.4d + PG 4.8 HA (ADR-004) | Geplant |
+| PROD Cluster | Vor Go-Live | Eigener SKE-Cluster + 2× g1a.8d + PG 4.8 HA (ADR-004) | Geplant |
 | Monitoring | Phase M5 | Prometheus/Grafana Stack | Geplant |
 
 ---
@@ -689,7 +697,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 7 | DB `onyx` + `db_readonly_user` anlegen | Niko | ✅ Erledigt (2026-02-27) |
 | 8 | Object Storage Credentials | Niko | ✅ Erledigt (2026-02-27) |
 | 9 | StackIT AI Model Serving (Chat-Modell konfiguriert) | Niko | ✅ Erledigt (2026-02-27) |
-| 10 | DNS-Zone (`dev.chatbot.voeb-service.de` → `188.34.74.187`) | VÖB IT | Offen |
+| 10 | DNS-Zone (`dev.chatbot.voeb-service.de` → `188.34.74.187`) | VÖB IT | ✅ Erledigt (2026-03-05) |
 | 11 | Entra ID Credentials | VÖB IT | Blockiert |
 | 12 | Storage Class Name prüfen | Bei `terraform plan` sichtbar | ✅ `premium-perf2-stackit` (bestätigt) |
 | 13 | CI/CD Pipeline Helm-Fixes | Niko | ✅ Erledigt (2026-03-02) — `f3a22017f` + `64c9c7aca` |
@@ -713,7 +721,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 31 | **M5**: PROD OIDC-Secrets in GitHub Environment `prod` vorbereiten | Niko | ⏳ Nach Entra ID |
 | 32 | **M6**: PROD Node-Sizing entscheiden (2 vs 3 Nodes) | Niko | ⏳ Vor PROD |
 | 33 | **M7**: Cluster-API-ACL Default `0.0.0.0/0` entfernen (`modules/stackit/variables.tf`) | Niko | ⏳ P1 (vor PROD) |
-| 34 | **M9**: PROD Worker-Modus entscheiden (Lightweight vs Standard Celery) | Niko | ⏳ Vor PROD |
+| 34 | **M9**: ✅ Erledigt — Standard Mode (8 separate Worker), Lightweight Mode durch Upstream PR #9014 entfernt | Niko | ✅ Erledigt (2026-03-06) |
 
 ---
 

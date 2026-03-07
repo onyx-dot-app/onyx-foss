@@ -23,10 +23,10 @@ Mit der erfolgreichen Inbetriebnahme der DEV-Umgebung (Phase 2, 2026-02-27) und 
 
 ### Bestehendes Setup (DEV)
 
-- 1× SKE-Cluster `vob-chatbot` (Node Pool `devtest`, 1× g1a.4d: 4 vCPU, 16 GB RAM)
+- 1× SKE-Cluster `vob-chatbot` (Node Pool `devtest`, 1× g1a.4d: 4 vCPU, 16 GB RAM) *[Hinweis: Seit ADR-005 (2026-03-06) auf 2× g1a.8d upgraded]*
 - 1× PostgreSQL Flex `vob-dev` (2 CPU, 4 GB RAM, Single)
 - 1× Object Storage Bucket `vob-dev`
-- Namespace `onyx-dev` mit 10 Pods (~1850m CPU Requests, ~5.2 Gi RAM Requests)
+- Namespace `onyx-dev` mit 10 Pods (~1850m CPU Requests, ~5.2 Gi RAM Requests) *[Hinweis: Seit 2026-03-06 16 Pods im Standard Worker Mode]*
 - CI/CD: `deploy-dev` (automatisch), `deploy-test` und `deploy-prod` (manuell) vorbereitet
 
 ### Ursprünglicher Plan vs. Realität
@@ -43,13 +43,13 @@ Mit der erfolgreichen Inbetriebnahme der DEV-Umgebung (Phase 2, 2026-02-27) und 
 ┌─────────────────────────────────────────────────────────┐
 │ SKE Cluster "vob-chatbot" (shared, Frankfurt EU01)      │
 │                                                         │
-│  Node Pool "devtest" (2× g1a.4d)                        │
+│  Node Pool "devtest" (2× g1a.8d, seit ADR-005)           │
 │  ┌─────────────────────┐  ┌─────────────────────────┐  │
 │  │ Node 1              │  │ Node 2                  │  │
 │  │ Namespace: onyx-dev │  │ Namespace: onyx-test    │  │
-│  │ 10 Pods             │  │ 9 Pods                  │  │
-│  │ ~1850m CPU Req.     │  │ ~1850m CPU Req.         │  │
-│  │ ~5.2 Gi RAM Req.    │  │ ~5.2 Gi RAM Req.        │  │
+│  │ 16 Pods             │  │ 15 Pods                 │  │
+│  │ ~3.5 CPU Req.       │  │ ~3.5 CPU Req.           │  │
+│  │ ~7.5 Gi RAM Req.    │  │ ~7.5 Gi RAM Req.        │  │
 │  └─────────────────────┘  └─────────────────────────┘  │
 │                                                         │
 │  (Später: separater PROD-Cluster)                       │
@@ -99,7 +99,7 @@ main Branch ──push──→ DEV (automatisch)
 ### PROD: Eigener Cluster (spätere Phase)
 
 PROD wird in einem **separaten SKE-Cluster** betrieben:
-- Eigener Node Pool (2-3× g1a.4d)
+- Eigener Node Pool (2× g1a.8d, siehe ADR-005)
 - Eigene PG Flex 4.8 Replica (3-Node HA)
 - Eigene Network Policies mit Egress-Rules
 - Begründung: Blast-Radius-Minimierung, eigenes Maintenance-Window, strengere Security
@@ -280,13 +280,14 @@ Secrets: POSTGRES_PASSWORD, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
 
 | Ressource | DEV | TEST | Gesamt |
 |-----------|-----|------|--------|
-| Node Pool (2× g1a.4d) | ~125 EUR | ~125 EUR | ~250 EUR |
+| Node Pool (2× g1a.8d, seit ADR-005) | ~259 EUR | ~259 EUR | ~517 EUR |
 | PostgreSQL Flex 2.4 | ~50 EUR | ~50 EUR | ~100 EUR |
 | Object Storage | ~5 EUR | ~5 EUR | ~10 EUR |
 | Load Balancer (shared) | — | — | ~50 EUR |
-| **Gesamt** | **~180 EUR** | **~180 EUR** | **~410 EUR** |
+| LLM API (StackIT AI Model Serving) | ~96 EUR | ~96 EUR | ~191 EUR |
+| **Gesamt** | **~410 EUR** | **~410 EUR** | **~868 EUR** |
 
-> Hinweis: Node Pool wird als Einheit abgerechnet. Die Aufteilung DEV/TEST ist logisch, nicht kaufmännisch.
+> Hinweis: Node Pool wird als Einheit abgerechnet. Die Aufteilung DEV/TEST ist logisch, nicht kaufmännisch. Kosten aktualisiert nach g1a.8d Upgrade (ADR-005, 2026-03-06).
 
 ---
 

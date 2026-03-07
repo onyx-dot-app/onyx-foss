@@ -1,7 +1,7 @@
 # Meilensteinplan -- VÖB Service Chatbot
 
 **Dokumentstatus**: In Bearbeitung
-**Letzte Aktualisierung**: 2026-03-05
+**Letzte Aktualisierung**: 2026-03-07
 **Version**: 0.3
 
 ---
@@ -47,7 +47,7 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 ### Liefergegenstände
 
 - **StackIT Kubernetes Cluster (SKE)**
-  - 1 Cluster `vob-chatbot`, Node Pool `devtest` mit 2x g1a.4d (4 vCPU, 16 GB RAM je)
+  - 1 Cluster `vob-chatbot`, Node Pool `devtest` mit 2x g1a.8d (8 vCPU, 32 GB RAM je)
   - Kubernetes v1.32.12, Flatcar OS
   - Ingress Controller (NGINX) je Umgebung (DEV: `nginx`, TEST: `nginx-test`)
   - Load Balancer: DEV `188.34.74.187`, TEST `188.34.118.201`
@@ -63,7 +63,7 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 - **LLM-Integration (StackIT AI Model Serving)**
   - Chat-Modell: GPT-OSS 120B (131K Kontext) -- verifiziert 2026-02-27
   - Chat-Modell: Qwen3-VL 235B (218K Kontext) -- verifiziert 2026-02-27
-  - Embedding-Modell: nomic-embed-text-v1 aktiv (Fallback). Wechsel auf Qwen3-VL-Embedding 8B blockiert (Upstream PR #7541).
+  - Embedding-Modell: nomic-embed-text-v1 aktiv. Wechsel auf Qwen3-VL-Embedding 8B moeglich (Blocker aufgehoben, Upstream PR #9005).
   - Konfiguration: OpenAI-kompatible API via LiteLLM, reine Admin-UI-Konfiguration
 
 - **CI/CD Pipeline (GitHub Actions)**
@@ -92,11 +92,11 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 | Nr. | Kriterium | Status |
 |-----|-----------|--------|
-| M1-1 | Kubernetes Cluster laeuft mit 2 Nodes (g1a.4d) | [x] Ja |
+| M1-1 | Kubernetes Cluster laeuft mit 2 Nodes (g1a.8d, upgraded 2026-03-06) | [x] Ja |
 | M1-2 | DEV: PostgreSQL erreichbar und funktionsfaehig | [x] Ja |
 | M1-3 | DEV: Vespa deployed und lauffaehig | [x] Ja |
 | M1-4 | DEV: Object Storage Bucket `vob-dev` funktioniert | [x] Ja |
-| M1-5 | DEV: Alle 10 Pods Running in `onyx-dev` | [x] Ja |
+| M1-5 | DEV: Alle 16 Pods Running in `onyx-dev` (8 Celery-Worker seit 2026-03-06) | [x] Ja |
 | M1-6 | DEV: API Health Check `http://188.34.74.187/api/health` OK | [x] Ja |
 | M1-7 | DEV: LLM Chat-Modell antwortet korrekt (GPT-OSS 120B) | [x] Ja |
 | M1-8 | TEST: PostgreSQL erreichbar (eigene Instanz `vob-test`) | [x] Ja |
@@ -110,9 +110,9 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 | Nr. | Thema | Status |
 |-----|-------|--------|
-| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | ✅ A-Records gesetzt (2026-03-05). ⚠️ Cloudflare Proxy→DNS-only ausstehend (Leif) |
+| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | ✅ A-Records gesetzt (2026-03-05). ✅ Cloudflare DNS-only verifiziert (2026-03-05). TLS blockiert durch Cloudflare API Token Error |
 | M1-N2 | TLS/HTTPS (nach DNS-Setup) | Blockiert (Cloudflare Proxy-Umstellung) |
-| M1-N3 | Embedding-Modell (Qwen3-VL-Embedding 8B) konfigurieren | ⚠️ Blockiert (Upstream PR #7541). Fallback nomic-embed-text-v1 aktiv, RAG funktional. |
+| M1-N3 | Embedding-Modell (Qwen3-VL-Embedding 8B) konfigurieren | Blocker aufgehoben (Upstream PR #9005). Fallback nomic-embed-text-v1 aktiv, RAG funktional. |
 | M1-N4 | LLM in TEST Admin UI konfigurieren | ✅ Erledigt (2026-03-03) |
 | M1-N5 | CI/CD `workflow_dispatch` fuer TEST verifizieren | ✅ Erledigt (2026-03-03) |
 
@@ -385,7 +385,7 @@ Vollstaendiges Testing durchgefuehrt. Security-Haertung abgeschlossen. System is
 
 - **PROD Cluster provisionieren**
   - Eigener SKE-Cluster (ADR-004: separater Cluster fuer Blast-Radius-Minimierung)
-  - 2-3x g1a.4d Nodes
+  - 2x g1a.8d Nodes
   - PostgreSQL Flex 4.8 Replica (HA, 3 Nodes)
   - Eigene Network Policies, strengere Security
   - Eigenes Maintenance-Window
@@ -507,7 +507,7 @@ System ist produktiv deployed, validiert und an VÖB uebergeben.
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
 | Entra ID Zugangsdaten | VÖB IT | Blockiert M2 (Auth) |
-| DNS-Eintraege | VÖB IT | Blockiert TLS/HTTPS |
+| DNS-Eintraege | VÖB IT | ✅ A-Records gesetzt (2026-03-05). TLS blockiert durch Cloudflare API Token Error |
 
 ---
 
@@ -578,5 +578,5 @@ Falls Abnahme verweigert wird:
 ---
 
 **Dokumentstatus**: In Bearbeitung
-**Letzte Aktualisierung**: 2026-03-05
+**Letzte Aktualisierung**: 2026-03-07
 **Version**: 0.3

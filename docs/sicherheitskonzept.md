@@ -1,7 +1,7 @@
 # Sicherheitskonzept -- VÖB Service Chatbot
 
 **Dokumentstatus**: Entwurf (teilweise implementiert)
-**Letzte Aktualisierung**: 2026-03-05
+**Letzte Aktualisierung**: 2026-03-07
 **Version**: 0.4
 **Nächste Überprüfung**: 2026-04-03
 
@@ -85,7 +85,7 @@ Die Sicherheitsarchitektur folgt den klassischen Schutzzielen:
 | Anforderung | Status | Details |
 |-------------|--------|---------|
 | Kubernetes-Orchestrierung | IMPLEMENTIERT | SKE Cluster mit automatischem Pod-Restart |
-| Datenbank-Backups | IMPLEMENTIERT | PG Flex: tägliches Backup um 02:00 UTC (StackIT Managed) |
+| Datenbank-Backups | IMPLEMENTIERT | PG Flex: tägliches Backup (DEV 02:00 UTC, TEST 03:00 UTC, StackIT Managed) |
 | Monitoring und Alerting | GEPLANT | Prometheus/Grafana Stack geplant (Phase M5) |
 | DDoS-Mitigation | OFFEN | Kein Rate Limiting und keine WAF implementiert |
 | Hochverfügbarkeit | OFFEN (DEV/TEST) | Single-Replica pro Service. HA geplant für PROD |
@@ -240,7 +240,7 @@ Die folgende Matrix dokumentiert alle Zugriffsrechte auf Infrastruktur- und Anwe
 |----------|----------|-----------|--------|
 | SEC-05: Namespace-scoped ServiceAccounts | Kubernetes RBAC | P1 (vor PROD) | Offen |
 | SEC-04: Remote State Backend | Terraform | P1 (vor PROD) | Offen |
-| Branch Protection auf `main` | GitHub | P1 (vor PROD) | Offen |
+| Branch Protection auf `main` | GitHub | P1 (vor PROD) | **ERLEDIGT** (2026-03-06): PR required, 1 Review, 3 Status Checks |
 | Environment Protection auf `prod` | GitHub | P1 (vor PROD) | Offen |
 | VÖB als Required Reviewer | GitHub Environment `prod` | Langfristig | Offen |
 
@@ -261,11 +261,16 @@ Das Projekt wird aktuell von einem einzelnen Tech Lead (Nikolaj Ivanov, CCJ) ent
 | Explizite Commit-Freigabe | Implementiert | Tech Lead gibt jeden Commit explizit frei (Self-Review-Prozess) |
 | CHANGELOG-Dokumentation | Implementiert | Jede Änderung wird im Changelog erfasst |
 
+**Implementierte Maßnahmen**:
+
+| Maßnahme | Konfiguration | Effekt | Status |
+|----------|--------------|--------|--------|
+| GitHub Branch Protection auf `main` | Require Pull Request, Require 1 Approval, 3 Required Status Checks (helm-validate, build-backend, build-frontend) | Kein direkter Push auf `main` möglich | **ERLEDIGT** (2026-03-06) |
+
 **Geplante Maßnahmen** (vor PROD):
 
 | Maßnahme | Konfiguration | Effekt |
 |----------|--------------|--------|
-| GitHub Branch Protection auf `main` | Require Pull Request, Require 1 Approval, Require Status Checks | Kein direkter Push auf `main` möglich |
 | GitHub Environment Protection auf `prod` | Required Reviewers (Tech Lead + VÖB-Kontakt) | Kein PROD-Deploy ohne zweite Freigabe |
 | Wait Timer auf `prod` | Optional: 10 Min Bedenkzeit | Versehentliche Freigabe verhindern |
 
@@ -322,7 +327,7 @@ API Base: https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1
 #### PostgreSQL Datenbank (StackIT Managed Flex)
 
 - **Backup-Verschlüsselung**: StackIT Managed Service -- Details zur Verschlüsselung at-rest müssen bei StackIT verifiziert werden (SEC-07)
-- **Backup-Schedule**: Täglich um 02:00 UTC (konfiguriert per Terraform)
+- **Backup-Schedule**: Täglich (DEV: 02:00 UTC, TEST: 03:00 UTC, konfiguriert per Terraform)
 - **Column-Level Encryption**: Nicht implementiert. API Keys werden von Onyx im Klartext in der DB gespeichert (Onyx-Standardverhalten)
 
 #### Vespa Index (Vektorspeicher)
@@ -408,7 +413,7 @@ Externe Services (über Internet):
 
 **Cluster-Details**:
 - SKE Cluster `vob-chatbot` in StackIT Region EU01 (Frankfurt)
-- Node Pool `devtest`: 2x g1a.4d (4 vCPU, 16 GB RAM)
+- Node Pool `devtest`: 2x g1a.8d (8 vCPU, 32 GB RAM)
 - Flatcar OS
 - Maintenance-Window: 02:00-04:00 UTC (automatische K8s + OS Updates)
 - Cluster-Egress-IP (NAT Gateway): `188.34.93.194` (fest für Cluster-Lifecycle)
@@ -622,7 +627,7 @@ azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415     # v4
 | API-Protokoll | OpenAI-kompatible API über HTTPS |
 | Region | EU01 Frankfurt (Daten bleiben in Deutschland) |
 | Chat-Modelle | GPT-OSS 120B (131K Kontext), Qwen3-VL 235B (218K Kontext) |
-| Embedding-Modell | nomic-embed-text-v1 (self-hosted, aktiv). Ziel: Qwen3-VL-Embedding 8B (blockiert durch Upstream PR #7541) |
+| Embedding-Modell | nomic-embed-text-v1 (self-hosted, aktiv). Ziel: Qwen3-VL-Embedding 8B (Blocker aufgehoben (Upstream PR #9005)) |
 | Auth | Token-basiert (StackIT AI Model Serving Token) |
 | Preise | 0,45 EUR / 1M Input-Tokens, 0,65 EUR / 1M Output-Tokens |
 
@@ -876,7 +881,7 @@ Phase 6: NACHBEREITUNG
 | Ressource | DEV | TEST | PROD (geplant) |
 |-----------|-----|------|-----------------|
 | SKE Cluster | Shared (`vob-chatbot`) | Shared (`vob-chatbot`) | Eigener Cluster |
-| Node Pool | `devtest` (2 Nodes, g1a.4d) | `devtest` (shared) | Eigener Pool (2x g1a.4d) |
+| Node Pool | `devtest` (2 Nodes, g1a.8d) | `devtest` (shared) | Eigener Pool (2x g1a.8d) |
 | PostgreSQL | Flex 2.4 Single (`vob-dev`) | Flex 2.4 Single (`vob-test`) | Flex 4.8 HA (3 Replicas) |
 | Object Storage | `vob-dev` | `vob-test` | `vob-prod` |
 | Namespace | `onyx-dev` | `onyx-test` | `onyx-prod` |
@@ -950,5 +955,5 @@ configMap:
 
 **Dokumentstatus**: Entwurf (teilweise implementiert)
 **Version**: 0.4
-**Letzte Aktualisierung**: 2026-03-05
+**Letzte Aktualisierung**: 2026-03-07
 **Nächste Überprüfung**: 2026-04-03

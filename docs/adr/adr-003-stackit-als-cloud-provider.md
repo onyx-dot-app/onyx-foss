@@ -76,9 +76,9 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 │  │ Kubernetes Cluster (managed by StackIT)                   │ │
 │  │                                                            │ │
 │  │  Namespace: onyx-dev                                      │ │
-│  │  ├── Pods: 10 (backend, web-server, background,         │ │
-│  │  │         model-server x2, vespa, nginx-ingress,        │ │
-│  │  │         redis-master, redis-replicas)                  │ │
+│  │  ├── Pods: 16 (api-server, web-server, 8 celery,       │ │
+│  │  │         model-server x2, vespa, nginx, redis)         │ │
+│  │  │         (seit 2026-03-06, Standard Worker Mode)       │ │
 │  │  ├── Replicas: 1 (DEV/TEST)                              │ │
 │  │  ├── Services: LoadBalancer, Internal                     │ │
 │  │  ├── Ingress: TLS, SSL Termination                        │ │
@@ -140,7 +140,7 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 - **PostgreSQL Flex**: Managed DB mit ACL, Backups, SSL
 - **AI Model Serving**: LLM-Hosting direkt auf StackIT (GPT-OSS 120B, Qwen3-VL 235B)
 - **Region EU01 Frankfurt**: Geringe Latenz fuer deutsche Nutzer
-- **Kosten**: DEV+TEST ~426 EUR/Monat (transparent, keine versteckten Gebuehren)
+- **Kosten**: DEV+TEST ~868 EUR/Monat nach g1a.8d Upgrade (transparent, keine versteckten Gebuehren, siehe ADR-005)
 
 ---
 
@@ -322,7 +322,7 @@ Basierend auf **ADR-001** und **ADR-002** benötigen wir einen Cloud Provider f�
 Infrastruktur ist fuer DEV und TEST live. Details siehe `docs/referenz/stackit-implementierungsplan.md`.
 
 1. **Phase 1**: StackIT Account + Service Account + Container Registry -- erledigt
-2. **Phase 2**: SKE Cluster (Flavor g1a.4d, Region EU01 Frankfurt) via Terraform -- erledigt
+2. **Phase 2**: SKE Cluster (Flavor g1a.8d seit 2026-03-06, Region EU01 Frankfurt) via Terraform -- erledigt (siehe ADR-005)
 3. **Phase 3**: PostgreSQL Flex (Flavor Flex 2.4 Single), Object Storage Buckets via Terraform -- erledigt
 4. **Phase 4**: Namespace-Setup, Ingress (nginx), PG ACL (IP-Allowlisting) -- erledigt
 5. **Phase 5**: Monitoring & Observability -- geplant (wird vor PROD-Deployment ergaenzt)
@@ -330,7 +330,7 @@ Infrastruktur ist fuer DEV und TEST live. Details siehe `docs/referenz/stackit-i
 
 ### Kostenschätzung
 
-Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`, Abschnitt Kosten. DEV+TEST: ~426 EUR/Monat.
+Aktuelle Kostenübersicht siehe `docs/referenz/stackit-implementierungsplan.md`, Abschnitt Kosten. DEV+TEST: ~868 EUR/Monat (nach g1a.8d Upgrade, siehe ADR-005).
 
 ### Sicherheits-Konfiguration
 

@@ -17,10 +17,11 @@ Enterprise-AI-Chatbot basierend auf Onyx FOSS mit Custom Extension Layer für de
 | Ordner | Inhalt |
 |--------|--------|
 | [technisches-feinkonzept/](./technisches-feinkonzept/) | Modulspezifikationen (Template + je eine Spec pro Feature-Modul) |
-| [adr/](./adr/) | Architecture Decision Records (ADR-001 bis ADR-004) |
+| [adr/](./adr/) | Architecture Decision Records (ADR-001 bis ADR-005) |
 | [abnahme/](./abnahme/) | Abnahmeprotokoll-Template + Meilensteinplan |
 | [runbooks/](./runbooks/) | Verifizierte Step-by-Step-Anleitungen (StackIT Setup, Deploy, Betrieb) |
 | [referenz/](./referenz/) | Implementierungsplan, Infrastruktur-Specs, Container Registry |
+| [audit/](./audit/) | Cloud-Infrastruktur-Audit, NetworkPolicy-Analyse |
 
 ## Architecture Decision Records
 
@@ -30,6 +31,7 @@ Enterprise-AI-Chatbot basierend auf Onyx FOSS mit Custom Extension Layer für de
 | [ADR-002](./adr/adr-002-extension-architektur.md) | Akzeptiert | Extension-Architektur (Extend, don't modify) |
 | [ADR-003](./adr/adr-003-stackit-als-cloud-provider.md) | Akzeptiert | StackIT als Cloud Provider |
 | [ADR-004](./adr/adr-004-umgebungstrennung-dev-test-prod.md) | Akzeptiert | Umgebungstrennung DEV / TEST / PROD |
+| [ADR-005](./adr/adr-005-node-upgrade-g1a8d.md) | Akzeptiert | Node-Upgrade g1a.4d → g1a.8d |
 
 ## Runbooks
 
@@ -41,6 +43,7 @@ Enterprise-AI-Chatbot basierend auf Onyx FOSS mit Custom Extension Layer für de
 | [ci-cd-pipeline.md](./runbooks/ci-cd-pipeline.md) | Verifiziert | CI/CD Pipeline Setup, Secrets, Debugging |
 | [dns-tls-setup.md](./runbooks/dns-tls-setup.md) | Bereit zur Umsetzung | DNS/TLS Setup — cert-manager, Let's Encrypt, Cloudflare |
 | [llm-konfiguration.md](./runbooks/llm-konfiguration.md) | Verifiziert | LLM-Konfiguration — Chat + Embedding Modelle |
+| [rollback-verfahren.md](./runbooks/rollback-verfahren.md) | Verifiziert | Rollback-Runbook — Entscheidungsbaum, Helm/DB-Rollback, Post-Mortem |
 
 ## Referenzdokumente
 
@@ -65,4 +68,4 @@ Enterprise-AI-Chatbot basierend auf Onyx FOSS mit Custom Extension Layer für de
 | Projektmanagement | CCJ / Coffee Studios | Benito-Miguel Schwankhart |
 | Auftraggeber | VÖB | Luca Koenes |
 
-Letzte Aktualisierung: 2026-03-05
+Letzte Aktualisierung: 2026-03-07

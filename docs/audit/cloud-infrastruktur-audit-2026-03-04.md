@@ -249,7 +249,7 @@ Der Agent hat den Terraform State und das StackIT-Provider-Verhalten analysiert:
 1. **StackIT PG Flex erlaubt kein Patching von User-Rollen.** Eine Aenderung der `roles` fuehrt zu **Destroy + Recreate** des Users.
 2. **Bei Recreate wird ein NEUES Passwort auto-generiert** (aktuelles Passwort im State: `cP3JgN...`, 64 Zeichen).
 3. **Das GitHub Secret `POSTGRES_PASSWORD` wird NICHT automatisch aktualisiert.**
-4. **Konsequenz:** Alle 10 DEV-Pods + 9 TEST-Pods verlieren DB-Zugang → CrashLoop.
+4. **Konsequenz:** Alle 16 DEV-Pods + 15 TEST-Pods verlieren DB-Zugang → CrashLoop.
 
 #### Ablauf bei Umsetzung (Wartungsfenster erforderlich)
 
