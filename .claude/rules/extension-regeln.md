@@ -42,7 +42,7 @@ web/src/ext/
 
 ## Import-Regeln
 - ext → Onyx: ERLAUBT (read-only)
-- Onyx → ext: NUR in 7 Core-Dateien (einzige Brücke)
+- Onyx → ext: NUR in 9 Core-Dateien (einzige Brücke)
 - Sichere Imports: `onyx.db.models`, `onyx.db.engine`, `onyx.auth.users`, `onyx.configs.*`, `onyx.server.schemas`
 - Vorsicht: `onyx.llm.*`, `onyx.chat.*`, `onyx.indexing.*` (Git-History prüfen)
 - Verboten: `onyx.utils.internal`, `onyx.cli`, `onyx.background`

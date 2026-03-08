@@ -5,7 +5,7 @@ Tech Lead: Nikolaj Ivanov (CCJ / Coffee Studios). Null Fehlertoleranz.
 
 **4 Regeln die ALLES überschreiben:**
 1. **Feature-Branch Pflicht.** NIEMALS direkt auf `main` arbeiten. Vor jeder Arbeit: `git checkout -b feature/<thema>` von `main`. Details → @.claude/rules/commit-workflow.md
-2. **Extend, don't modify.** Code NUR in `backend/ext/` und `web/src/ext/`. Nur 7 Core-Dateien dürfen minimal verändert werden → @.claude/rules/core-dateien.md
+2. **Extend, don't modify.** Code NUR in `backend/ext/` und `web/src/ext/`. Nur 9 Core-Dateien dürfen minimal verändert werden → @.claude/rules/core-dateien.md
 3. **Spec vor Code.** Vor jeder Implementierung: `/ext-framework` aufrufen. Kein Code ohne Modulspezifikation + Nikos Freigabe.
 4. **Kein Commit ohne Freigabe.** Du commitst NICHT selbstständig → @.claude/rules/commit-workflow.md
 

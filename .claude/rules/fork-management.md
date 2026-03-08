@@ -81,30 +81,40 @@ git merge upstream/main --no-commit --no-ff
 **Erwartete Konflikte (harmlos):**
 - `AGENTS.md`, `.claude/skills` → Unsere Version behalten (`git checkout --ours`)
 - `Chart.yaml`, `Chart.lock` → Upstream übernehmen (`git checkout --theirs`)
-- 7 Core-Dateien → Upstream übernehmen, Patches neu anwenden (siehe unten)
+- 9 Core-Dateien → Upstream übernehmen, Patches neu anwenden (siehe unten)
 
 **Unerwartete Konflikte:**
 - Dateien in `backend/onyx/`, `web/src/` (außer Core) = Regeln gebrochen
 - Ursache analysieren, ext_-Code anpassen (NICHT Onyx-Code)
 
 ### 5. Core-Datei-Patches aktualisieren
-```bash
-# Upstream-Version als neues Original speichern:
-git show upstream/main:backend/onyx/main.py > backend/ext/_core_originals/main.py.original
 
-# Patch gegen aktuellen Stand regenerieren:
+Fuer JEDE gepatchte Core-Datei (aktuell 4: main.py, constants.ts, LoginText.tsx, AuthFlowContainer.tsx):
+
+```bash
+# Beispiel Backend-Datei:
+git show upstream/main:backend/onyx/main.py > backend/ext/_core_originals/main.py.original
 diff -u backend/ext/_core_originals/main.py.original backend/onyx/main.py \
   > backend/ext/_core_originals/main.py.patch
+
+# Beispiel Frontend-Datei:
+git show upstream/main:web/src/lib/constants.ts > backend/ext/_core_originals/constants.ts.original
+diff -u backend/ext/_core_originals/constants.ts.original web/src/lib/constants.ts \
+  > backend/ext/_core_originals/constants.ts.patch
+
+# Analog fuer LoginText.tsx und AuthFlowContainer.tsx
 ```
 
 Falls Core-Datei-Konflikte auftreten (auto-merge fehlschlägt):
 ```bash
 # Upstream übernehmen:
-git checkout --theirs backend/onyx/main.py
+git checkout --theirs backend/onyx/main.py  # oder web/src/lib/constants.ts etc.
 # Patch anwenden:
 patch -p0 < backend/ext/_core_originals/main.py.patch
 # Prüfen ob Patch sauber angewendet wurde, ggf. manuell nachbessern
 ```
+
+> **Alle Patches liegen zentral in `backend/ext/_core_originals/`** — sowohl Backend- als auch Frontend-Dateien. Pro Core-Datei genau ein `.original` + ein `.patch`.
 
 ### 6. Helm-Dependencies prüfen
 ```bash
@@ -161,7 +171,7 @@ gh workflow run stackit-deploy.yml -f environment=test -R CCJ-Development/voeb-c
 | Workflow | Branch + PR (erstmals mit Branch Protection) |
 
 ## Warum "Extend, don't modify" funktioniert
-- Max 7 vorhersagbare Merge-Konflikte (Core-Dateien)
+- Max 9 vorhersagbare Merge-Konflikte (Core-Dateien)
 - Unser ext_-Code: Zero Konflikte (Ordner existiert nicht in Upstream)
 - Unsere Infra (Terraform, Helm Values, CI/CD): Zero Konflikte (Pfade existieren nicht in Upstream)
 - Unsere Docs: Zero Konflikte (existieren nicht in Upstream)

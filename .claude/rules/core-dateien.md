@@ -8,7 +8,7 @@ paths:
 
 # Core-Dateien: Was darf geändert werden
 
-**NUR DIESE 7 DATEIEN dürfen verändert werden. Keine Ausnahmen.**
+**NUR DIESE 9 DATEIEN dürfen verändert werden. Keine Ausnahmen.**
 
 ## 1. `backend/onyx/main.py` — Router registrieren
 - ERLAUBT: `from ext.config import EXT_ENABLED` + `register_ext_routers(app)` hinter Feature Flag + try/except ImportError
@@ -45,6 +45,18 @@ paths:
 - ERLAUBT: Hook für Custom Prompt Injection (prepend, nicht override) hinter Flag
 - VERBOTEN: Bestehenden Prompt-Flow verändern
 - MERGE: Injection-Point einfügen
+
+## 8. `web/src/app/auth/login/LoginText.tsx` — Login Tagline
+- ERLAUBT: Tagline ("Your open source AI platform for work") durch EnterpriseSettings-Wert ersetzen oder entfernen, mit Fallback
+- VERBOTEN: Login-Layout/Struktur verändern
+- MERGE: Textersetzung, kein Strukturkonflikt
+- HINWEIS: Freigabe durch Niko (2026-03-08) für ext-branding Whitelabel
+
+## 9. `web/src/components/auth/AuthFlowContainer.tsx` — Login Icon + Text
+- ERLAUBT: OnyxIcon durch Custom Logo ersetzen (mit Fallback), "New to Onyx?" durch application_name ersetzen
+- VERBOTEN: Auth-Flow-Logik, Formular-Struktur verändern
+- MERGE: Icon/Text-Ersetzung, kein Strukturkonflikt
+- HINWEIS: Freigabe durch Niko (2026-03-08) für ext-branding Whitelabel
 
 ## Absicherung
 Vor JEDER Core-Datei-Änderung:
