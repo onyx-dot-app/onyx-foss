@@ -23,9 +23,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Docker: `COPY ./ext /app/ext` in Dockerfile (ext-Code im Image), `main.py` Mount in `docker-compose.voeb.yml`
   - Docker: `NEXT_PUBLIC_DO_NOT_USE_TOGGLE_OFF_DANSWER_POWERED=true` in `.env` (Build-Time, Web-Server Rebuild noetig)
   - `env.template` erweitert: Alle EXT_-Feature Flags dokumentiert
-  - `.claude/hooks/protect-onyx-files.sh` erweitert: 7 → 9 erlaubte Core-Dateien (CORE #8 + #9)
-  - 6 Core-Originals + Patches in `backend/ext/_core_originals/` (3 Paare: constants.ts, LoginText.tsx, AuthFlowContainer.tsx)
-  - Admin-UI vorbereitet (`web/src/ext/pages/admin/branding/page.tsx`), Route noch nicht aktiv
+  - CORE #10 (AdminSidebar.tsx): "Upgrade Plan"/Billing ausgeblendet, "Branding"-Link unter Settings eingefuegt
+  - `.claude/hooks/protect-onyx-files.sh` erweitert: 7 → 10 erlaubte Core-Dateien (CORE #8, #9, #10)
+  - 8 Core-Originals + Patches in `backend/ext/_core_originals/` (4 Paare: constants.ts, LoginText.tsx, AuthFlowContainer.tsx, AdminSidebar.tsx)
+  - Admin-UI Route aktiv unter `/admin/ext-branding` (Sidebar-Link + Next.js App Router)
   - Modulspezifikation: `docs/technisches-feinkonzept/ext-branding.md` v1.0
 - [Infra] **Kubernetes v1.32 → v1.33 Upgrade** (2026-03-08)
   - Terraform apply erfolgreich (9m40s), 0 added, 1 changed, 0 destroyed

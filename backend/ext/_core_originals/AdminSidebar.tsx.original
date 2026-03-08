@@ -19,7 +19,7 @@ import { usePaidEnterpriseFeaturesEnabled } from "@/components/settings/usePaidE
 import { CombinedSettings } from "@/interfaces/settings";
 import SidebarTab from "@/refresh-components/buttons/SidebarTab";
 import SidebarBody from "@/sections/sidebar/SidebarBody";
-import { SvgArrowUpCircle, SvgPaintBrush } from "@opal/icons";
+import { SvgArrowUpCircle } from "@opal/icons";
 import { ADMIN_PATHS, sidebarItem } from "@/lib/admin-routes";
 import UserAvatarPopover from "@/sections/sidebar/UserAvatarPopover";
 
@@ -155,19 +155,13 @@ const collections = (
             name: "Settings",
             items: [
               ...(enableEnterprise ? [sidebarItem(ADMIN_PATHS.THEME)] : []),
-              // ext-branding: Show branding config when VÖB extension is active
-              ...(settings?.enterpriseSettings && !hasSubscription
-                ? [{ name: "Branding", icon: SvgPaintBrush, link: "/admin/ext-branding" }]
-                : []),
-              // ext-branding: Hide billing/upgrade when using VÖB branding (no Onyx license)
-              ...(hasSubscription || !settings?.enterpriseSettings
-                ? [{
-                    ...sidebarItem(ADMIN_PATHS.BILLING),
-                    ...(hasSubscription
-                      ? {}
-                      : { name: "Upgrade Plan", icon: SvgArrowUpCircle }),
-                  }]
-                : []),
+              // Always show billing/upgrade - community users need access to upgrade
+              {
+                ...sidebarItem(ADMIN_PATHS.BILLING),
+                ...(hasSubscription
+                  ? {}
+                  : { name: "Upgrade Plan", icon: SvgArrowUpCircle }),
+              },
               ...(settings?.settings.opensearch_indexing_enabled
                 ? [sidebarItem(ADMIN_PATHS.INDEX_MIGRATION)]
                 : []),

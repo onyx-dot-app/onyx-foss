@@ -620,7 +620,7 @@ Der Monitoring-Ausbau ist für die PROD-Vorbereitung geplant und umfasst:
    git merge upstream/main
 
 4. Resolve Conflicts
-   - Konflikte NUR in 7 Core-Dateien erwartet
+   - Konflikte NUR in 10 Core-Dateien erwartet
    - Upstream übernehmen, dann Patches aus _core_originals/ neu anwenden
    - Andere Konflikte = Fork-Regeln wurden verletzt
 

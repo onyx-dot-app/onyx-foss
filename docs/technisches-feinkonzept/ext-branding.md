@@ -18,7 +18,8 @@
 | Core-Patch CORE #9 (AuthFlowContainer.tsx) | Implementiert | Logo + Name Override, Patch generiert |
 | Unit-Tests (21 Tests) | Bestanden | Schema, Magic Bytes, Defaults, Constraints |
 | Docker-Integration | Verifiziert | Lokal getestet, alle Endpoints OK |
-| Admin-UI (Browser-Seite) | Vorbereitet | Code existiert in `web/src/ext/`, Route fehlt (Next.js App Router) |
+| Admin-UI (Browser-Seite) | Implementiert | Route `/admin/ext-branding`, Sidebar-Link unter Settings |
+| Core-Patch CORE #10 (AdminSidebar.tsx) | Implementiert | Billing→Branding, Patch generiert |
 | Favicon | Offen | Nicht im Scope v1.0 (siehe "Nicht im Umfang") |
 | Farben/Theme | Offen | Eigenes Modul, nicht Teil von ext-branding |
 
@@ -33,7 +34,9 @@
 | "Powered by Onyx" entfernen | Via Env-Variable | `NEXT_PUBLIC_DO_NOT_USE_TOGGLE_OFF_DANSWER_POWERED=true` (kein Code-Patch noetig) |
 | Docker nicht erwähnt in Spec | 3 Docker-Aenderungen | `Dockerfile`: COPY ext/, `docker-compose.voeb.yml`: main.py Mount, `.env`: Feature Flags |
 | Auth auf public Endpoints | Public ohne Auth + PUBLIC_ENDPOINT_SPECS | Runtime-Mutation der Onyx-Allowlist in `ext/routers/__init__.py` (keine Dateiänderung) |
-| Hook protect-onyx-files.sh | 7 → 9 Core-Dateien | CORE #8 (LoginText.tsx) + CORE #9 (AuthFlowContainer.tsx) zur Allowlist |
+| Hook protect-onyx-files.sh | 7 → 10 Core-Dateien | CORE #8 (LoginText.tsx) + CORE #9 (AuthFlowContainer.tsx) + CORE #10 (AdminSidebar.tsx) zur Allowlist |
+| Admin-Sidebar | "Upgrade Plan" entfernen + "Branding" Link | CORE #10: AdminSidebar.tsx — Billing verstecken, Branding-Route einfuegen |
+| Admin-UI Route | page.tsx unter web/src/app/admin/ext-branding/ | Next.js App Router Route → importiert Komponente aus web/src/ext/ |
 
 ---
 
@@ -156,7 +159,7 @@ Frontend (NEU): web/src/ext/providers/BrandingProvider.tsx
      ▼
 Problem: Bestehende Komponenten lesen aus SettingsProvider,
          nicht aus ext-BrandingProvider → muessten geaendert werden
-         → Aber diese Dateien sind NICHT in den 7 Core-Files
+         → Aber diese Dateien waren NICHT in den Core-Files (damals 7, jetzt 10)
 ```
 
 **Vorteile:**
@@ -1028,12 +1031,13 @@ Frontend-Aenderung (`constants.ts`) hat NULL Einfluss auf Backend. Getrennte Gat
 
 **Freigabe:** Niko (2026-03-08). "Alles von Onyx soll raus und komplett auf VoeB gebrandet werden."
 
-**Aenderung:** `.claude/rules/core-dateien.md` um 2 Eintraege erweitert (7 → 9 Core-Dateien):
+**Aenderung:** `.claude/rules/core-dateien.md` um 3 Eintraege erweitert (7 → 10 Core-Dateien):
 
 | # | Datei | Aenderung | Zeilen |
 |---|-------|----------|--------|
 | CORE #8 | `web/src/app/auth/login/LoginText.tsx` | Tagline ("Your open source AI platform for work") entfernen oder durch `custom_header_content` ersetzen | ~3 Zeilen |
 | CORE #9 | `web/src/components/auth/AuthFlowContainer.tsx` | OnyxIcon durch Custom Logo ersetzen (Fallback auf OnyxIcon), "New to Onyx?" durch `application_name` ersetzen | ~5 Zeilen |
+| CORE #10 | `web/src/sections/sidebar/AdminSidebar.tsx` | "Upgrade Plan"/Billing ausblenden, "Branding"-Link auf `/admin/ext-branding` einfuegen | ~12 Zeilen |
 
 Patches folgen demselben Pattern und werden in `_core_originals/` gesichert.
 

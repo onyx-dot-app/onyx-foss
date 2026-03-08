@@ -63,7 +63,7 @@ Wie bauen wir **Custom Features** (Token Limits, RBAC, Branding, Analytics) für
 │ └─────────────────────────────────────────────────────────────┘ │
 │                                                                 │
 │ ┌─────────────────────────────────────────────────────────────┐ │
-│ │ Integration Points (7 Core-Dateien, minimale Änderungen)   │ │
+│ │ Integration Points (10 Core-Dateien, minimale Änderungen)  │ │
 │ │ 1. backend/onyx/main.py         (Route Registration)       │ │
 │ │ 2. backend/onyx/llm/multi_llm.py (Token Hook)             │ │
 │ │ 3. backend/onyx/access/access.py (Access Control Hook)     │ │
@@ -246,7 +246,7 @@ Frontend-Extensions leben in `web/src/ext/` und werden über die 3 Frontend-Core
    - Registrierung über Feature Flag in `backend/ext/config.py`
    - Keine Angst vor Breaking Changes
 
-### Warum 7 Core-Änderungen nötig?
+### Warum 10 Core-Änderungen nötig?
 
 1. **backend/onyx/main.py**: Extension Routes müssen in FastAPI registriert werden
 2. **backend/onyx/llm/multi_llm.py**: Token-Tracking nach LLM-Calls
@@ -255,8 +255,11 @@ Frontend-Extensions leben in `web/src/ext/` und werden über die 3 Frontend-Core
 5. **web/src/app/layout.tsx**: Navigation für Extension-Seiten
 6. **web/src/components/header/**: Branding (Logo/Titel über Config)
 7. **web/src/lib/constants.ts**: CSS Variables für Extension-Theming
+8. **web/src/app/auth/login/LoginText.tsx**: Login-Tagline durch Branding-Wert ersetzen (seit ext-branding)
+9. **web/src/components/auth/AuthFlowContainer.tsx**: Login-Logo + App-Name (seit ext-branding)
+10. **web/src/sections/sidebar/AdminSidebar.tsx**: Billing→Branding in Admin-Sidebar (seit ext-branding)
 
-Diese 7 Punkte sind **minimal notwendig** für funktionsfähiges System.
+Punkte 1-7 sind **minimal notwendig** für das Extension Framework. Punkte 8-10 kamen durch ext-branding Whitelabel hinzu.
 
 ---
 
@@ -347,8 +350,8 @@ Diese 7 Punkte sind **minimal notwendig** für funktionsfähiges System.
 
 ### Negative Auswirkungen / Mitigation
 
-1. **7 Core-Änderungen nötig**
-   - Mitigation: Diese 7 Files sind stabil, selten ändern sich
+1. **10 Core-Änderungen nötig**
+   - Mitigation: Diese 10 Files sind stabil, selten ändern sich
    - Impact: Minimal (nur beim initialen Setup + bei Major Onyx Updates)
 
 2. **Extension Registry könnte komplex werden**

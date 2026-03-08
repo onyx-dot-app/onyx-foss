@@ -51,7 +51,7 @@ Liste JEDEN möglichen Fehlerfall:
 - Verhalten wenn deaktiviert (Onyx unverändert, keine Seiteneffekte)
 
 ### 6. Betroffene Core-Dateien
-Liste JEDE der 9 Core-Dateien die verändert wird:
+Liste JEDE der 10 Core-Dateien die verändert wird:
 - Welche Datei
 - Was genau geändert wird (exakte Zeilen/Code)
 - Warum es nicht anders geht

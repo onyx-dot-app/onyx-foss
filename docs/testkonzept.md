@@ -739,6 +739,66 @@ Wenn Production-Daten verwendet werden, müssen diese DSGVO-konform anonymisiert
 | Testdatum | 2026-02-12 |
 | Testdateien | `backend/ext/tests/test_config.py` (5), `backend/ext/tests/test_health.py` (5) |
 
+### ext-branding (Phase 4b) -- Testfaelle
+
+#### TC-BRANDING-001: Schema-Validierung
+
+| Feld | Wert |
+|------|------|
+| **Test ID** | TC-BRANDING-001 |
+| **Beschreibung** | Pydantic-Schema validiert Eingaben korrekt (Feldlaengen, Popup/Consent-Regeln, Nav-Items) |
+| **Testtyp** | Unit Test |
+| **Ergebnis** | 11 Tests bestanden |
+
+#### TC-BRANDING-002: Logo Magic-Byte-Validierung
+
+| Feld | Wert |
+|------|------|
+| **Test ID** | TC-BRANDING-002 |
+| **Beschreibung** | Nur PNG und JPEG werden akzeptiert (Magic Bytes), SVG/GIF/unbekannt werden abgelehnt, 2 MB Limit |
+| **Testtyp** | Unit Test |
+| **Ergebnis** | 5 Tests bestanden |
+
+#### TC-BRANDING-003: Defaults und Constraints
+
+| Feld | Wert |
+|------|------|
+| **Test ID** | TC-BRANDING-003 |
+| **Beschreibung** | Leere DB liefert korrekte Defaults, Logo-Groessenlimit wird durchgesetzt |
+| **Testtyp** | Unit Test |
+| **Ergebnis** | 3 Tests bestanden |
+
+#### TC-BRANDING-004: API-Endpoints funktional
+
+| Feld | Wert |
+|------|------|
+| **Test ID** | TC-BRANDING-004 |
+| **Beschreibung** | GET/PUT Config + Logo (5 Endpoints), Public ohne Auth, Admin mit Auth |
+| **Testtyp** | Integration (manuell, Docker) |
+| **Ergebnis** | 5/5 Endpoints funktional, 3/3 Validierung, 2/2 Routing (direkt + nginx) |
+
+#### TC-BRANDING-005: Feature Flag Gating
+
+| Feld | Wert |
+|------|------|
+| **Test ID** | TC-BRANDING-005 |
+| **Beschreibung** | EXT_BRANDING_ENABLED=false → Router nicht registriert, Endpoints 404, Onyx unveraendert |
+| **Testtyp** | Unit Test (Teil von TC-EXT-FW-002/003) |
+| **Ergebnis** | Bestanden (AND-gated mit EXT_ENABLED) |
+
+#### Testergebnis-Zusammenfassung Phase 4b
+
+| Metrik | Wert |
+|--------|------|
+| Tests geplant | 21 |
+| Tests durchgefuehrt | 21 |
+| Tests bestanden | 21 |
+| Erfolgsquote | 100% |
+| Kritische Fehler | 0 |
+| Testumgebung | Docker (onyx-api_server-1) |
+| Testdatum | 2026-03-08 |
+| Testdateien | `backend/ext/tests/test_branding.py` (21 Tests in 4 Klassen) |
+
 ---
 
 ## Abnahmekriterien

@@ -8,7 +8,7 @@ paths:
 
 # Core-Dateien: Was darf geändert werden
 
-**NUR DIESE 9 DATEIEN dürfen verändert werden. Keine Ausnahmen.**
+**NUR DIESE 10 DATEIEN dürfen verändert werden. Keine Ausnahmen.**
 
 ## 1. `backend/onyx/main.py` — Router registrieren
 - ERLAUBT: `from ext.config import EXT_ENABLED` + `register_ext_routers(app)` hinter Feature Flag + try/except ImportError
@@ -57,6 +57,12 @@ paths:
 - VERBOTEN: Auth-Flow-Logik, Formular-Struktur verändern
 - MERGE: Icon/Text-Ersetzung, kein Strukturkonflikt
 - HINWEIS: Freigabe durch Niko (2026-03-08) für ext-branding Whitelabel
+
+## 10. `web/src/sections/sidebar/AdminSidebar.tsx` — Admin Sidebar
+- ERLAUBT: "Upgrade Plan"/Billing ausblenden wenn ext-branding aktiv, "Branding"-Link einfuegen
+- VERBOTEN: Sidebar-Struktur, andere Sections, Navigation-Logik veraendern
+- MERGE: Settings-Section anpassen (Zeilen ~155-170), Import ergaenzen
+- HINWEIS: Freigabe durch Niko (2026-03-08) fuer ext-branding Whitelabel. Bedingung: `enterpriseSettings && !hasSubscription` → Branding statt Billing.
 
 ## Absicherung
 Vor JEDER Core-Datei-Änderung:

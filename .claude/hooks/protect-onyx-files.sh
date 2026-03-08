@@ -17,11 +17,12 @@ if [[ "$FILE_PATH" == */backend/ext/* ]] || \
    [[ "$FILE_PATH" == */.claude/* ]] || \
    [[ "$FILE_PATH" == */.github/* ]] || \
    [[ "$FILE_PATH" == */.githooks/* ]] || \
-   [[ "$FILE_PATH" == */deployment/docker_compose/.env* ]]; then
+   [[ "$FILE_PATH" == */deployment/docker_compose/.env* ]] || \
+   [[ "$FILE_PATH" == */web/src/app/admin/ext-* ]]; then
   exit 0  # Erlaubt
 fi
 
-# 9 erlaubte Core-Dateien (erweitert 2026-03-08, CORE #8 + #9 fuer ext-branding)
+# 10 erlaubte Core-Dateien (erweitert 2026-03-08, CORE #8-#10 fuer ext-branding)
 ALLOWED_CORE=(
   "backend/onyx/main.py"
   "backend/onyx/llm/multi_llm.py"
@@ -32,6 +33,7 @@ ALLOWED_CORE=(
   "web/src/lib/constants.ts"
   "web/src/app/auth/login/LoginText.tsx"
   "web/src/components/auth/AuthFlowContainer.tsx"
+  "web/src/sections/sidebar/AdminSidebar.tsx"
 )
 
 for allowed in "${ALLOWED_CORE[@]}"; do
@@ -46,7 +48,7 @@ if [[ "$FILE_PATH" == */backend/onyx/* ]] || \
    [[ "$FILE_PATH" == */web/src/components/* ]] || \
    [[ "$FILE_PATH" == */web/src/lib/* ]]; then
   echo "❌ BLOCKIERT: $FILE_PATH gehört zum Onyx-Core und darf nicht verändert werden." >&2
-  echo "Erlaubt sind nur: backend/ext/, web/src/ext/, docs/, und die 9 definierten Core-Dateien." >&2
+  echo "Erlaubt sind nur: backend/ext/, web/src/ext/, docs/, und die 10 definierten Core-Dateien." >&2
   exit 2  # Exit 2 = Aktion wird deterministisch blockiert
 fi
 

@@ -499,6 +499,22 @@ class CreateChatMessageRequest(BaseModel):
 
 Ungültige Requests werden mit HTTP 422 (Validation Error) abgelehnt, bevor sie die Business-Logik erreichen.
 
+### Datei-Upload-Sicherheit (ext-branding Logo)
+
+**IMPLEMENTIERT (ext-branding, 2026-03-08)**:
+
+Das ext-branding-Modul erlaubt Logo-Upload ueber `PUT /api/admin/enterprise-settings/logo`. Folgende Sicherheitsmassnahmen sind implementiert:
+
+- **Dateigrösse:** Maximal 2 MB (`LOGO_MAX_SIZE_BYTES`), serverseitig geprueft
+- **Dateityp:** Nur PNG und JPEG erlaubt — Validierung ueber **Magic Bytes** (nicht MIME-Type oder Dateiendung)
+  - PNG: `\x89PNG\r\n\x1a\n` (8 Bytes)
+  - JPEG: `\xFF\xD8\xFF` (3 Bytes)
+- **Kein SVG:** SVG ist explizit ausgeschlossen (XSS-Risiko durch eingebettetes JavaScript — kritisch im Banking-Kontext)
+- **Speicherung:** Als BLOB in PostgreSQL (`ext_branding_config.logo_data`), nicht im Dateisystem (kein Path Traversal moeglich)
+- **Auth:** Upload nur fuer Admin-Rolle (`Depends(current_admin_user)`)
+- **Serving:** `GET /enterprise-settings/logo` ist public (Login-Seite), liefert nur Binary mit `image/png` oder `image/jpeg` Content-Type + `Cache-Control: public, max-age=3600`
+- **Unit-Tests:** 5 Tests fuer Magic-Byte-Detection (PNG, JPEG, ungueltig, zu gross, leer)
+
 ### CORS (Cross-Origin Resource Sharing)
 
 **IMPLEMENTIERT (Onyx-nativ)**:

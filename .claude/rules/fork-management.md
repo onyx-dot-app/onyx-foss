@@ -81,7 +81,7 @@ git merge upstream/main --no-commit --no-ff
 **Erwartete Konflikte (harmlos):**
 - `AGENTS.md`, `.claude/skills` → Unsere Version behalten (`git checkout --ours`)
 - `Chart.yaml`, `Chart.lock` → Upstream übernehmen (`git checkout --theirs`)
-- 9 Core-Dateien → Upstream übernehmen, Patches neu anwenden (siehe unten)
+- 10 Core-Dateien → Upstream übernehmen, Patches neu anwenden (siehe unten)
 - `backend/Dockerfile` → Upstream übernehmen, COPY ext/ neu einfügen (siehe "Zusätzliche Merge-Stellen")
 - `deployment/docker_compose/env.template` → Manuell mergen (wir appenden am Ende, Upstream ändert Mitte)
 
@@ -91,7 +91,7 @@ git merge upstream/main --no-commit --no-ff
 
 ### 5. Core-Datei-Patches aktualisieren
 
-Fuer JEDE gepatchte Core-Datei (aktuell 4: main.py, constants.ts, LoginText.tsx, AuthFlowContainer.tsx):
+Fuer JEDE gepatchte Core-Datei (aktuell 5: main.py, constants.ts, LoginText.tsx, AuthFlowContainer.tsx, AdminSidebar.tsx):
 
 ```bash
 # Beispiel Backend-Datei:
@@ -104,7 +104,7 @@ git show upstream/main:web/src/lib/constants.ts > backend/ext/_core_originals/co
 diff -u backend/ext/_core_originals/constants.ts.original web/src/lib/constants.ts \
   > backend/ext/_core_originals/constants.ts.patch
 
-# Analog fuer LoginText.tsx und AuthFlowContainer.tsx
+# Analog fuer LoginText.tsx, AuthFlowContainer.tsx und AdminSidebar.tsx
 ```
 
 Falls Core-Datei-Konflikte auftreten (auto-merge fehlschlägt):
@@ -174,7 +174,7 @@ gh workflow run stackit-deploy.yml -f environment=test -R CCJ-Development/voeb-c
 
 ## Zusätzliche Merge-Stellen (neben Core-Dateien)
 
-Neben den 9 Core-Dateien ändern wir 2 weitere Upstream-Dateien. Diese sind KEINE Core-Dateien, aber bekannte Merge-Stellen:
+Neben den 10 Core-Dateien ändern wir 2 weitere Upstream-Dateien. Diese sind KEINE Core-Dateien, aber bekannte Merge-Stellen:
 
 ### `backend/Dockerfile` (seit Phase 4a)
 
@@ -205,6 +205,19 @@ git checkout --theirs deployment/docker_compose/env.template
 
 **Risiko:** Niedrig — Appends am Dateiende mergen fast immer automatisch.
 
+### `web/src/sections/sidebar/AdminSidebar.tsx` (CORE #10, seit ext-branding)
+
+2 Stellen: Import-Zeile (SvgPaintBrush hinzufuegen) + Settings-Section (~12 Zeilen: Billing durch Branding ersetzen).
+
+**Bei Upstream-Konflikt:**
+```bash
+git checkout --theirs web/src/sections/sidebar/AdminSidebar.tsx
+patch -p0 < backend/ext/_core_originals/AdminSidebar.tsx.patch
+# Pruefen ob Patch sauber angewendet wurde
+```
+
+**Risiko:** Mittel — Upstream aendert Admin-Sidebar aktiv (neue Features, Restrukturierung). Patch-Stelle (Settings-Section) ist relativ stabil, aber Import-Zeile kann sich verschieben.
+
 ### Vollständige Liste aller Upstream-Änderungen
 
 | Datei | Art | Zeilen | Risiko |
@@ -213,13 +226,14 @@ git checkout --theirs deployment/docker_compose/env.template
 | `web/src/lib/constants.ts` (CORE #6) | 1 Zeile | 1 | Niedrig |
 | `web/src/app/auth/login/LoginText.tsx` (CORE #8) | Conditional | ~8 | Niedrig |
 | `web/src/components/auth/AuthFlowContainer.tsx` (CORE #9) | Logo+Name | ~25 | Mittel |
+| `web/src/sections/sidebar/AdminSidebar.tsx` (CORE #10) | Billing→Branding | ~12 | Mittel |
 | `backend/Dockerfile` | COPY | 3 | Mittel |
 | `deployment/docker_compose/env.template` | Append | 25 | Niedrig |
 
 Alle anderen Dateien (ext/, docs/, .claude/, deployment/helm/values/) existieren nicht in Upstream → Zero Konflikte.
 
 ## Warum "Extend, don't modify" funktioniert
-- Max 9 vorhersagbare Core-Konflikte + 2 bekannte Infra-Stellen
+- Max 10 vorhersagbare Core-Konflikte + 2 bekannte Infra-Stellen
 - Unser ext_-Code: Zero Konflikte (Ordner existiert nicht in Upstream)
 - Unsere Infra (Terraform, Helm Values, CI/CD): Zero Konflikte (Pfade existieren nicht in Upstream)
 - Unsere Docs: Zero Konflikte (existieren nicht in Upstream)

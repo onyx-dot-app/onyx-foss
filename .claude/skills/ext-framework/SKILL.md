@@ -20,7 +20,7 @@ Lies und verstehe die betroffenen Onyx-Dateien VOLLSTÄNDIG:
 
 - [ ] Verstehe ich den Code wirklich, oder rate ich?
 - [ ] Passt mein Ansatz zu Onyx-Patterns? (SQLAlchemy, FastAPI, Alembic, Pydantic)
-- [ ] Verändere ich NUR die 9 Core-Dateien auf erlaubte Weise?
+- [ ] Verändere ich NUR die 10 Core-Dateien auf erlaubte Weise?
 - [ ] Neue Dateien NUR unter backend/ext/ und web/src/ext/?
 - [ ] Alle Edge Cases bedacht? (leere DB, fehlende Config, Flag=false, Concurrent Access)
 - [ ] Feature Flag vorhanden und abschaltbar?

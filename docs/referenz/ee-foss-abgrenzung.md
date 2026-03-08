@@ -147,7 +147,7 @@ Onyx FOSS (MIT, READ-ONLY)          Unsere Extensions (MIT, eigener Code)
 └─────────────────────────┘         └──────────────────────────┘
 ```
 
-- **7 Core-Dateien** duerfen minimal geaendert werden (Hook-Pattern mit try/except)
+- **10 Core-Dateien** duerfen minimal geaendert werden (Hook-Pattern mit try/except)
 - **Patches** werden als `.original` + `.patch` in `backend/ext/_core_originals/` gesichert
 - **Upstream-Merges** sind konfliktfrei fuer ext_-Code (Ordner existiert nicht in Upstream)
 - **Feature Flags** steuern alles: `EXT_ENABLED` (Master) + `EXT_{MODUL}_ENABLED` (pro Modul)
