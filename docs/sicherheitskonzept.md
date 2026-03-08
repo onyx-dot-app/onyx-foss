@@ -240,7 +240,7 @@ Die folgende Matrix dokumentiert alle Zugriffsrechte auf Infrastruktur- und Anwe
 |----------|----------|-----------|--------|
 | SEC-05: Namespace-scoped ServiceAccounts | Kubernetes RBAC | ~~P1~~ → P3 | **ZURÜCKGESTELLT** (2026-03-08) — PROD = eigener Cluster |
 | SEC-04: Remote State Backend | Terraform | ~~P1~~ → P3 | **ZURÜCKGESTELLT** (2026-03-08) — Solo-Dev, FileVault |
-| SEC-06: Container SecurityContext | Helm Values | ~~P2~~ → **P1** | Offen — `privileged: true` entfernen |
+| SEC-06: Container SecurityContext | Helm Values | ~~P2~~ → **P1** | **Phase 1 ERLEDIGT** (2026-03-08) — `privileged: false` deployed |
 | Branch Protection auf `main` | GitHub | P1 (vor PROD) | **ERLEDIGT** (2026-03-07): PR required, 3 Status Checks, kein Review (Solo-Dev) |
 | Environment Protection auf `prod` | GitHub | P1 (vor PROD) | Offen |
 | VÖB als Required Reviewer | GitHub Environment `prod` | Langfristig | Offen |
@@ -685,7 +685,7 @@ Der VÖB Service Chatbot muss mit folgenden Regelwerken konform sein:
 | BAIT | Verschlüsselung im Transit | OFFEN (kein TLS, siehe oben) |
 | BAIT | Zugangskontrolle | TEILWEISE (Basic Auth, Entra ID geplant) |
 | BAIT | Netzwerksegmentierung | ERFÜLLT (SEC-03: 5 NetworkPolicies, DEV+TEST, 2026-03-05) |
-| BSI-Grundschutz | Container-Härtung | OFFEN (SEC-06: keine SecurityContexts) |
+| BSI-Grundschutz | Container-Härtung | **TEILWEISE** (SEC-06 Phase 1: `privileged: false` deployed, Phase 2: `runAsNonRoot` vor PROD) |
 | BSI-Grundschutz | Verschlüsselung at-rest | OFFEN (SEC-07: nicht verifiziert) |
 
 ### Personenbezogene Daten (PII)
@@ -779,7 +779,7 @@ Kubernetes Pod-Logs werden standardmäßig bei Pod-Restart gelöscht. Ohne zentr
 | SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | **ERLEDIGT** (2026-03-05) |
 | SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | ~~P1~~ → P3 | **ZURÜCKGESTELLT** — Quick Win `chmod 600` umgesetzt, Remote State optional |
 | SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | ~~P1~~ → P3 | **ZURÜCKGESTELLT** — PROD = eigener Cluster (ADR-004), löst sich automatisch |
-| SEC-06 | Container SecurityContext (`privileged: true` entfernen) | ~~P2~~ → **P1** | OFFEN — `privileged: true` auf Celery/Model Server/Vespa ist inakzeptabel |
+| SEC-06 | Container SecurityContext (`privileged: true` entfernen) | ~~P2~~ → **P1** | **Phase 1 ERLEDIGT** (2026-03-08) — `privileged: false` deployed, Phase 2 (runAsNonRoot) vor PROD |
 | SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | **ERLEDIGT** (2026-03-08) — StackIT Default |
 
 ### SEC-01: PostgreSQL ACL (ERLEDIGT)
@@ -842,7 +842,7 @@ Kubernetes Pod-Logs werden standardmäßig bei Pod-Restart gelöscht. Ohne zentr
 
 **Opportunistische Umsetzung**: Kann beim Kubeconfig-Renewal (Ablauf 2026-05-28) kostenneutral mitgemacht werden — neue ServiceAccounts + namespace-scoped RoleBindings statt erneuter Cluster-Admin-Kubeconfig.
 
-### SEC-06: Container SecurityContext — P1 (vor PROD)
+### SEC-06: Container SecurityContext — Phase 1 ERLEDIGT (2026-03-08)
 
 **Kritisches Finding (2026-03-08):** Analyse der Onyx Helm Chart Templates ergab, dass mehrere Komponenten mit `privileged: true` + `runAsUser: 0` laufen — die höchstmögliche Privilegierung. Ein privilegierter Container hat vollen Zugriff auf den Host-Kernel, Devices und kann Host-Filesysteme mounten.
 
@@ -1000,7 +1000,7 @@ configMap:
 2. ~~**SEC-03**: Kubernetes NetworkPolicies implementieren~~ → **ERLEDIGT** (2026-03-05)
 3. ~~**SEC-04**: Terraform Remote State~~ → **ZURÜCKGESTELLT** (2026-03-08, herabgestuft auf P3)
 4. ~~**SEC-05**: Separate Kubeconfigs~~ → **ZURÜCKGESTELLT** (2026-03-08, herabgestuft auf P3)
-5. **SEC-06**: Container SecurityContext — `privileged: true` entfernen (hochgestuft von P2 auf P1)
+5. ~~**SEC-06 Phase 1**: `privileged: true` entfernen~~ → **ERLEDIGT** (2026-03-08, deployed auf DEV + TEST)
 6. **M7**: Cluster-API-ACL (`cluster_acl`) von `0.0.0.0/0` auf Cluster-Egress-IP einschränken (analog SEC-01 für PG)
 7. **TLS**: DNS-Einträge von VÖB IT, dann Let's Encrypt aktivieren
 8. **Entra ID**: App Registration + Credentials von VÖB IT

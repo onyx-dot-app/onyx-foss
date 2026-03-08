@@ -83,6 +83,9 @@ deployment/helm/values/*-secrets.yaml
 # Meeting-Notizen (vertraulich, niemals committen)
 docs/referenz/*meeting-notizen*
 
+# Mail-Entwürfe (intern, nicht committen)
+docs/referenz/mail-entwurf-*
+
 # Temporäre Helm-Artefakte
 ingress-nginx/
 

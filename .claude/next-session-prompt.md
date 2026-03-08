@@ -77,10 +77,10 @@
 
 ## Naechste Schritte (Prioritaet)
 
-### 1. SEC-06: Container SecurityContext (`privileged: true` entfernen)
-- Phase 1 Quick Win (1-2h): `privileged: false` in values-common.yaml fuer Celery, Model Server, Vespa
-- Phase 2 (vor PROD, 4-6h): `runAsUser: 1001` + `runAsNonRoot: true`
-- Stufenplan dokumentiert in Sicherheitskonzept + Implementierungsplan
+### 1. SEC-06 Phase 2 (vor PROD): `runAsNonRoot: true`
+- Phase 1 ERLEDIGT (2026-03-08): `privileged: false` deployed auf DEV + TEST, Smoke Tests gruen
+- Phase 2 (vor PROD, 4-6h): `runAsUser: 1001` + `runAsNonRoot: true` fuer API, Celery, Model Server
+- Vespa als dokumentierte Ausnahme (Upstream-Limitation)
 
 ### 2. Commit + PR
 - Alle Aenderungen auf `feature/k8s-upgrade-1.33` committen

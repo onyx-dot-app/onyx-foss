@@ -74,7 +74,7 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. TLS aktivieren (Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen, Details: docs/runbooks/dns-tls-setup.md) → 2. SEC-06: `privileged: true` entfernen (Celery/Model Server/Vespa, Audit-relevant, hochgestuft auf P1) → 3. M1-Abnahmeprotokoll ausfuellen → 4. Entra ID (wartet auf VÖB) → 5. Embedding auf Qwen3-VL (Blocker aufgehoben, via Admin-UI). SEC-02/04/05 zurückgestellt (P3). SEC-07 erledigt.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. TLS aktivieren (Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen, Details: docs/runbooks/dns-tls-setup.md) → 2. M1-Abnahmeprotokoll ausfuellen → 3. Entra ID (wartet auf VÖB) → 4. Embedding auf Qwen3-VL (Blocker aufgehoben, via Admin-UI) → 5. SEC-06 Phase 2: runAsNonRoot (vor PROD). SEC-06 Phase 1 erledigt (privileged: false deployed). SEC-02/04/05 zurückgestellt (P3). SEC-07 erledigt.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

@@ -678,7 +678,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
 | DNS + TLS | Nach DNS-Setup | Let's Encrypt oder StackIT-CA | Blockiert (VÖB IT) |
 | Security-Härtung P0 | Vor TEST-Deploy | SEC-01: PG ACL einschränken (30 Min) | ✅ Erledigt (2026-03-03) |
-| Security-Härtung P1 | Nach TEST, vor PROD | SEC-06: `privileged: true` entfernen (1-2h Quick Win + 4-6h Phase 2) + M7: Cluster-ACL. SEC-02/04/05 zurückgestellt. | ⏳ Geplant |
+| Security-Härtung P1 | Nach TEST, vor PROD | SEC-06 Phase 1 ✅ (`privileged: false` deployed). Phase 2: `runAsNonRoot` (4-6h) + M7: Cluster-ACL. SEC-02/04/05 zurückgestellt. | ⏳ Teilweise |
 | PROD Cluster | Vor Go-Live | Eigener SKE-Cluster + 2× g1a.8d + PG 4.8 HA (ADR-004) | Geplant |
 | Monitoring | Phase M5 | Prometheus/Grafana Stack | Geplant |
 
@@ -713,7 +713,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 23 | **SEC-03**: Kubernetes NetworkPolicies | Niko | ✅ Erledigt (2026-03-05) |
 | 24 | **SEC-04**: Terraform Remote State | Niko | **Zurückgestellt** (2026-03-08) → P3 (Nice-to-have) |
 | 25 | **SEC-05**: Separate Kubeconfigs | Niko | **Zurückgestellt** (2026-03-08) → P3 (opportunistisch bei Kubeconfig-Renewal) |
-| 26 | **SEC-06**: Container SecurityContext (`privileged: true` entfernen) | Niko | ⏳ **P1 (vor PROD)** — hochgestuft, kritisches Finding |
+| 26 | **SEC-06**: Container SecurityContext (`privileged: true` entfernen) | Niko | **Phase 1 ✅** (2026-03-08) — `privileged: false` deployed. Phase 2 (runAsNonRoot) vor PROD |
 | 27 | **SEC-07**: Encryption-at-Rest verifizieren | Niko | ✅ Erledigt (2026-03-08) — StackIT Default |
 | 28 | **H3**: Llama 3.3 Model-ID vereinheitlichen (FP8 vs Standard) | Niko | ⏳ Klärung mit StackIT |
 | 29 | **M3**: IP-Ownership in ADR-001 klären ("CCJ oder VÖB" → eindeutig) | Niko | ⏳ Klärung mit VÖB |
@@ -869,7 +869,7 @@ Begründung (Details im Sicherheitskonzept):
 **Aufwand bei Umsetzung**: 3 Stunden
 **Risiko bei Nicht-Umsetzung**: Gering für DEV/TEST. Für PROD durch ADR-004 (eigener Cluster) abgedeckt.
 
-### SEC-06: Container SecurityContext — HOCHGESTUFT auf P1 (2026-03-08)
+### SEC-06: Container SecurityContext — Phase 1 ERLEDIGT (2026-03-08)
 
 **Kritisches Finding**: Analyse der Onyx Helm Chart Templates (2026-03-08) ergab, dass mehrere Komponenten mit `privileged: true` + `runAsUser: 0` laufen. Ein privilegierter Container hat vollen Host-Kernel-Zugriff — faktisch keine Container-Isolation.
 

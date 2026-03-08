@@ -832,7 +832,7 @@ SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werde
 | SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | **Umgesetzt** (2026-03-05) |
 | SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | ~~P1~~ → P3 | **Zurückgestellt** (2026-03-08) — Solo-Dev, FileVault, Quick Win `chmod 600` umgesetzt |
 | SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | ~~P1~~ → P3 | **Zurückgestellt** (2026-03-08) — PROD = eigener Cluster, opportunistisch bei Renewal |
-| SEC-06 | Container SecurityContext (`privileged: true` entfernen) | ~~P2~~ → **P1** | Offen — `privileged: true` auf Celery/Model Server/Vespa, Audit-relevant |
+| SEC-06 | Container SecurityContext (`privileged: true` entfernen) | ~~P2~~ → **P1** | **Phase 1 ERLEDIGT** (2026-03-08) — `privileged: false` deployed, Phase 2 vor PROD |
 | SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | **Umgesetzt** (2026-03-08) — StackIT Default |
 
 ### Betriebsmaßnahmen (OPS)
