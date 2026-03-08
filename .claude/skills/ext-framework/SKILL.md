@@ -93,7 +93,7 @@ Muss ich Onyx-Verhalten erweitern?
 import os
 EXT_ENABLED = os.getenv("EXT_ENABLED", "true").lower() == "true"
 EXT_TOKEN_LIMITS_ENABLED = EXT_ENABLED and os.getenv("EXT_TOKEN_LIMITS_ENABLED", "false").lower() == "true"
-EXT_USER_GROUPS_ENABLED = EXT_ENABLED and os.getenv("EXT_USER_GROUPS_ENABLED", "false").lower() == "true"
+EXT_RBAC_ENABLED = EXT_ENABLED and os.getenv("EXT_RBAC_ENABLED", "false").lower() == "true"
 EXT_ANALYTICS_ENABLED = EXT_ENABLED and os.getenv("EXT_ANALYTICS_ENABLED", "false").lower() == "true"
 EXT_BRANDING_ENABLED = EXT_ENABLED and os.getenv("EXT_BRANDING_ENABLED", "false").lower() == "true"
 EXT_CUSTOM_PROMPTS_ENABLED = EXT_ENABLED and os.getenv("EXT_CUSTOM_PROMPTS_ENABLED", "false").lower() == "true"
@@ -180,7 +180,7 @@ def get_user_statistics(user_id: int):
 # deployment/docker_compose/.env
 EXT_ENABLED=true
 EXT_TOKEN_LIMITS_ENABLED=true
-EXT_USER_GROUPS_ENABLED=true
+EXT_RBAC_ENABLED=true
 EXT_ANALYTICS_ENABLED=false
 EXT_BRANDING_ENABLED=false
 EXT_CUSTOM_PROMPTS_ENABLED=false

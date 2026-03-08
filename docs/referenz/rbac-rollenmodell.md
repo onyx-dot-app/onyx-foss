@@ -268,4 +268,4 @@ Zusaetzlich zum Rollenmodell wurden im Kickoff folgende Monitoring-Anforderungen
 | Entra ID Kundenfragen | `docs/entra-id-kundenfragen.md` |
 | Extension Framework Spezifikation | `docs/technisches-feinkonzept/ext-framework.md` |
 | Meilensteinplan (M2, M3) | `docs/abnahme/meilensteinplan.md` |
-| Kickoff-Meeting Notizen | `docs/referenz/kickoff-transkription.md` |
+| Kickoff-Meeting Notizen | `docs/referenz/kickoff-meeting-notizen.md` |

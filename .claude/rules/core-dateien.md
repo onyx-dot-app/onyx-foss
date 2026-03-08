@@ -21,7 +21,7 @@ paths:
 - VERBOTEN: LLM-Call-Flow, Parameter, Return-Values verändern
 - MERGE: Hook-Insertion-Point finden, Zeilen einfügen
 
-## 3. `backend/onyx/access/access.py` — RBAC
+## 3. `backend/onyx/access/access.py` — Access Control
 - ERLAUBT: Additiver Permission-Check NACH bestehenden Checks
 - VERBOTEN: Bestehende Checks verändern/entfernen
 - MERGE: Additiv, einfach einfügen
@@ -54,6 +54,14 @@ cp <original> backend/ext/_core_originals/<name>.original
 # Nach Änderung:
 diff -u backend/ext/_core_originals/<name>.original <geändert> > backend/ext/_core_originals/<name>.patch
 ```
+
+## Patch-Verwaltung
+- **Ein .original + ein .patch PRO Core-Datei** (nicht pro Modul)
+- Wenn mehrere Module dieselbe Core-Datei patchen, waechst der Patch kumulativ
+- `.original` = immer die unveraenderte Upstream-Version
+- `.patch` = Diff zwischen Upstream und unserem Stand (alle Hooks zusammen)
+- Beispiel: ext-rbac UND ext-access patchen beide `access.py` → ein `.patch` mit beiden Hooks
+- Bei Upstream-Merge: `.original` aktualisieren, `.patch` regenerieren (siehe fork-management.md Schritt 5)
 
 ## Hook-Pattern für Core-Dateien
 ```python

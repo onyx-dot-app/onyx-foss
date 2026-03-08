@@ -68,13 +68,19 @@
   - ✅ Branch Protection auf main: PR required, 3 Required Status Checks, kein Review-Requirement (Solo-Dev) (2026-03-07)
   - ✅ K8s v1.32 → v1.33 Upgrade (2026-03-08): v1.33.8, Flatcar 4459.2.1, Terraform apply 9m40s, DEV 16/16 + TEST 15/15 Pods Running
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
-- **Phase 4 (Extensions):**
+- **Phase 4 (Extensions):** Detailplan: `docs/referenz/ext-entwicklungsplan.md` | Lizenz-Abgrenzung: `docs/referenz/ee-foss-abgrenzung.md`
   - 4a: ✅ Extension Framework Basis (Config, Feature Flags, Router, Health Endpoint, Docker)
-  - 4b-4d: 📋 Geplant — Token Limits, RBAC, weitere Module (nach M1)
+  - 4b: 📋 ext-branding — Whitelabel (Logo, App-Name, Favicon). **JETZT STARTBAR**, keine Blocker.
+  - 4c: 📋 ext-token — LLM Usage Tracking + Limits. **JETZT STARTBAR**, keine Blocker.
+  - 4d: 📋 ext-prompts — Custom System Prompts. **JETZT STARTBAR**, keine Blocker.
+  - 4e: 📋 ext-analytics — Nutzungsstatistiken + Dashboard. **JETZT STARTBAR**, keine Blocker.
+  - 4f: ⏳ ext-rbac — Rollen + Gruppen. **BLOCKIERT** (Entra ID).
+  - 4g: ⏳ ext-access — Document Access Control. **BLOCKIERT** (braucht RBAC).
+  - **Hinweis**: Alle EE-Features werden custom nachgebaut (keine Onyx Enterprise-Lizenz vorhanden).
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. TLS aktivieren (Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen, Details: docs/runbooks/dns-tls-setup.md) → 2. M1-Abnahmeprotokoll ausfuellen → 3. Entra ID (wartet auf VÖB) → 4. Embedding auf Qwen3-VL (Blocker aufgehoben, via Admin-UI) → 5. SEC-06 Phase 2: runAsNonRoot (vor PROD). SEC-06 Phase 1 erledigt (privileged: false deployed). SEC-02/04/05 zurückgestellt (P3). SEC-07 erledigt.** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. Extension-Module starten: ext-branding → ext-token → ext-prompts → ext-analytics (alle unblockiert, Plan: `docs/referenz/ext-entwicklungsplan.md`) → 2. TLS aktivieren (Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen, Details: docs/runbooks/dns-tls-setup.md) → 3. M1-Abnahmeprotokoll ausfuellen → 4. Entra ID (wartet auf VÖB) → 5. Embedding auf Qwen3-VL (Blocker aufgehoben, via Admin-UI) → 6. SEC-06 Phase 2: runAsNonRoot (vor PROD). SEC-06 Phase 1 erledigt (privileged: false deployed). SEC-02/04/05 zurückgestellt (P3). SEC-07 erledigt.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |

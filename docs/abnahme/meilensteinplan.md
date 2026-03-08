@@ -25,8 +25,8 @@ Jeder Meilenstein (M1-M6) entspricht einer Projektphase und hat zugehörige Akze
 |-------------|-------|--------|--------|--------|
 | **M1** | Infrastruktur + DEV/TEST | Phase 0-2 | 2026-02-27 (DEV) / 2026-03-03 (TEST) | Abgeschlossen |
 | **M2** | Authentifizierung (Entra ID) + Extension Framework | Phase 3, 4a | [TBD] | Blockiert (Entra ID) |
-| **M3** | Token Limits + RBAC | Phase 4b, 4c | [TBD] | Geplant |
-| **M4** | Advanced Features (Analytics, Branding, Prompts) | Phase 4d, 4e, 4f | [TBD] | Geplant |
+| **M3** | Branding + Token Limits | Phase 4b, 4c | [TBD] | Geplant |
+| **M4** | Advanced Features (Prompts, Analytics, RBAC, Access) | Phase 4d, 4e, 4f, 4g | [TBD] | Geplant |
 | **M5** | Testing, Security Hardening + Go-Live Readiness | Phase 5 | [TBD] | Geplant |
 | **M6** | Production Go-Live | Phase 6 | [TBD] | Geplant |
 
@@ -172,12 +172,12 @@ Phase 4a (Extension Framework Basis) ist bereits abgeschlossen. Die Entra ID Int
 
 - **Core-Aenderungen (7 erlaubte Dateien)**
   - `backend/onyx/main.py` -- Router-Registrierung (bereits implementiert in Phase 4a)
-  - `backend/onyx/llm/multi_llm.py` -- Token Hook (Phase 4b)
-  - `backend/onyx/access/access.py` -- RBAC Check (Phase 4c)
-  - `backend/onyx/chat/prompt_utils.py` -- Prompt Injection (Phase 4f)
-  - `web/src/app/layout.tsx` -- Navigation (Phase 4d+)
-  - `web/src/components/header/` -- Branding (Phase 4e)
-  - `web/src/lib/constants.ts` -- CSS Variables (Phase 4e)
+  - `backend/onyx/llm/multi_llm.py` -- Token Hook (Phase 4c)
+  - `backend/onyx/access/access.py` -- Access Control Hook (Phase 4f, 4g)
+  - `backend/onyx/chat/prompt_utils.py` -- Prompt Injection (Phase 4d)
+  - `web/src/app/layout.tsx` -- Navigation (Phase 4b+)
+  - `web/src/components/header/` -- Branding (Phase 4b)
+  - `web/src/lib/constants.ts` -- CSS Variables (Phase 4b)
 
 - **Testing**
   - Unit Tests (Extension Framework)
@@ -243,11 +243,11 @@ Token Limits Management und Role-Based Access Control sind implementiert und get
   - Admin-Endpunkte fuer Quota-Verwaltung
   - DB-Tabellen: `ext_limits_quota`, `ext_limits_usage_log`, `ext_limits_alerts`
 
-- **RBAC Modul (`ext_user_groups`)**
+- **RBAC Modul (`ext-rbac`)**
   - Additiver Permission-Check in `backend/onyx/access/access.py` (Core-Datei #3)
-  - DB-Tabelle: `ext_user_groups`
-  - User Group Management
-  - Admin-Endpunkte fuer Group Management
+  - DB-Tabellen: `ext_rbac_groups`, `ext_rbac_roles`, `ext_rbac_permissions`
+  - Rollen- und Gruppenverwaltung (Mapping auf Entra ID Abteilungen)
+  - Admin-Endpunkte fuer Gruppen- und Rollenverwaltung
 
 - **Testing**
   - Unit Tests (beide Module)

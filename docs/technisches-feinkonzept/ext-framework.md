@@ -172,7 +172,7 @@ EXT_ENABLED: bool = os.getenv("EXT_ENABLED", "false").lower() == "true"
 
 # Individual module flags (all gated behind EXT_ENABLED)
 EXT_TOKEN_LIMITS_ENABLED: bool = EXT_ENABLED and os.getenv("EXT_TOKEN_LIMITS_ENABLED", "false").lower() == "true"
-EXT_USER_GROUPS_ENABLED: bool = EXT_ENABLED and os.getenv("EXT_USER_GROUPS_ENABLED", "false").lower() == "true"
+EXT_RBAC_ENABLED: bool = EXT_ENABLED and os.getenv("EXT_RBAC_ENABLED", "false").lower() == "true"
 EXT_ANALYTICS_ENABLED: bool = EXT_ENABLED and os.getenv("EXT_ANALYTICS_ENABLED", "false").lower() == "true"
 EXT_BRANDING_ENABLED: bool = EXT_ENABLED and os.getenv("EXT_BRANDING_ENABLED", "false").lower() == "true"
 EXT_CUSTOM_PROMPTS_ENABLED: bool = EXT_ENABLED and os.getenv("EXT_CUSTOM_PROMPTS_ENABLED", "false").lower() == "true"
@@ -230,7 +230,7 @@ from onyx.db.models import User
 from ext.config import (
     EXT_ENABLED,
     EXT_TOKEN_LIMITS_ENABLED,
-    EXT_USER_GROUPS_ENABLED,
+    EXT_RBAC_ENABLED,
     EXT_ANALYTICS_ENABLED,
     EXT_BRANDING_ENABLED,
     EXT_CUSTOM_PROMPTS_ENABLED,
@@ -250,7 +250,7 @@ def ext_health_check(
         "ext_enabled": EXT_ENABLED,
         "modules": {
             "token_limits": EXT_TOKEN_LIMITS_ENABLED,
-            "user_groups": EXT_USER_GROUPS_ENABLED,
+            "rbac": EXT_RBAC_ENABLED,
             "analytics": EXT_ANALYTICS_ENABLED,
             "branding": EXT_BRANDING_ENABLED,
             "custom_prompts": EXT_CUSTOM_PROMPTS_ENABLED,
@@ -273,7 +273,7 @@ Leere Datei als Platzhalter für die Frontend-Extension-Struktur.
 |----------|-----|---------|---------|-------------|
 | `EXT_ENABLED` | boolean | Nein | `false` | Master-Schalter für alle Extensions |
 | `EXT_TOKEN_LIMITS_ENABLED` | boolean | Nein | `false` | Token Limits Modul |
-| `EXT_USER_GROUPS_ENABLED` | boolean | Nein | `false` | User Groups/RBAC Modul |
+| `EXT_RBAC_ENABLED` | boolean | Nein | `false` | RBAC Modul (Rollen + Gruppen) |
 | `EXT_ANALYTICS_ENABLED` | boolean | Nein | `false` | Analytics Modul |
 | `EXT_BRANDING_ENABLED` | boolean | Nein | `false` | Branding Modul |
 | `EXT_CUSTOM_PROMPTS_ENABLED` | boolean | Nein | `false` | Custom Prompts Modul |

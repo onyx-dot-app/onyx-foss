@@ -7,28 +7,36 @@ paths:
 # Extension-Code Regeln
 
 ## Backend (`backend/ext/`)
+
+Aktueller Stand (Phase 4a) und geplante Erweiterungen:
+
 ```
 backend/ext/
-  __init__.py
-  config.py                  ← Feature Flags (EXT_{MODUL}_ENABLED)
-  requirements.txt           ← Eigene Dependencies
-  routers/                   ← FastAPI Router pro Modul
+  __init__.py                ← Package-Marker (existiert)
+  config.py                  ← Feature Flags (existiert)
+  routers/                   ← FastAPI Router (existiert: health.py)
+  tests/                     ← pytest Tests (existiert: test_config.py)
+  _core_originals/           ← Backups der Core-Dateien (existiert: main.py.*)
+  # --- Ab Phase 4b werden diese Verzeichnisse erstellt: ---
   models/                    ← SQLAlchemy Models (ext_-Prefix)
   schemas/                   ← Pydantic Schemas
   services/                  ← Business Logic
-  migrations/versions/       ← Eigene Alembic-Migrationen
-  tests/                     ← pytest Tests
-  _core_originals/           ← Backups der Core-Dateien vor Änderung
 ```
 
+> **Hinweis:** `models/`, `schemas/`, `services/` werden erst mit dem jeweils ersten
+> Modul erstellt, das sie benoetigt. Nicht vorher leere Ordner anlegen.
+
 ## Frontend (`web/src/ext/`)
+
+Aktuell nur `.gitkeep`. Wird ab Phase 4b befuellt:
+
 ```
 web/src/ext/
   components/                ← Eigene React-Komponenten
   pages/                     ← Eigene Seiten (/ext/admin/...)
   hooks/                     ← Eigene React Hooks
   lib/api.ts                 ← Eigener API-Client (/api/ext/...)
-  styles/                    ← Eigene Styles (ext- Prefix für Klassen)
+  styles/                    ← Eigene Styles (ext- Prefix fuer Klassen)
   __tests__/                 ← Frontend-Tests
 ```
 

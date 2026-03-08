@@ -56,7 +56,7 @@ Die folgenden Optionen waren zur Diskussion:
 │  │ Custom Extension Layer (VÖB-Specific)                   │   │
 │  │ - Authentifizierung (Entra ID / OIDC)                   │   │
 │  │ - Token Limits Management                               │   │
-│  │ - RBAC via ext_user_groups                              │   │
+│  │ - RBAC via ext-rbac (Rollen + Gruppen)                   │   │
 │  │ - Branding & Theming                                    │   │
 │  │ - System Prompts Management                             │   │
 │  │ - Analytics & Reporting                                 │   │

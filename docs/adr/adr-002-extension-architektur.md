@@ -66,7 +66,7 @@ Wie bauen wir **Custom Features** (Token Limits, RBAC, Branding, Analytics) für
 │ │ Integration Points (7 Core-Dateien, minimale Änderungen)   │ │
 │ │ 1. backend/onyx/main.py         (Route Registration)       │ │
 │ │ 2. backend/onyx/llm/multi_llm.py (Token Hook)             │ │
-│ │ 3. backend/onyx/access/access.py (RBAC Check)             │ │
+│ │ 3. backend/onyx/access/access.py (Access Control Hook)     │ │
 │ │ 4. backend/onyx/chat/prompt_utils.py (Prompt Injection)    │ │
 │ │ 5. web/src/app/layout.tsx        (Navigation)              │ │
 │ │ 6. web/src/components/header/    (Branding)                │ │
@@ -81,7 +81,7 @@ Wie bauen wir **Custom Features** (Token Limits, RBAC, Branding, Analytics) für
 #### 1. Additive Extensions
 - **Datenbank**: `ext_*` Tabellen für Custom Data
   - Nicht: Bestehende Core-Tabellen modifizieren
-  - Beispiel: `ext_limits_quota`, `ext_user_groups`, `ext_branding_config`
+  - Beispiel: `ext_limits_quota`, `ext_rbac_groups`, `ext_branding_config`
 
 - **API Routes**: `/api/ext/<modul>/*` für Custom Endpoints
   - Nicht: Bestehende `/api/` Routes modifizieren
@@ -125,9 +125,9 @@ EXT_TOKEN_LIMITS_ENABLED: bool = (
     EXT_ENABLED
     and os.getenv("EXT_TOKEN_LIMITS_ENABLED", "false").lower() == "true"
 )
-EXT_USER_GROUPS_ENABLED: bool = (
+EXT_RBAC_ENABLED: bool = (
     EXT_ENABLED
-    and os.getenv("EXT_USER_GROUPS_ENABLED", "false").lower() == "true"
+    and os.getenv("EXT_RBAC_ENABLED", "false").lower() == "true"
 )
 # ... weitere Modul-Flags
 ```
@@ -176,7 +176,8 @@ except ImportError:
 - `ext_limits_quota`
 - `ext_limits_usage_log`
 - `ext_limits_alerts`
-- `ext_user_groups`
+- `ext_rbac_groups`
+- `ext_rbac_roles`
 - `ext_branding_config`
 - `ext_system_prompts`
 - `ext_analytics_events`
@@ -249,7 +250,7 @@ Frontend-Extensions leben in `web/src/ext/` und werden über die 3 Frontend-Core
 
 1. **backend/onyx/main.py**: Extension Routes müssen in FastAPI registriert werden
 2. **backend/onyx/llm/multi_llm.py**: Token-Tracking nach LLM-Calls
-3. **backend/onyx/access/access.py**: Additiver Permission-Check für RBAC
+3. **backend/onyx/access/access.py**: Additiver Permission-Check (Access Control)
 4. **backend/onyx/chat/prompt_utils.py**: Custom Prompt Injection (prepend)
 5. **web/src/app/layout.tsx**: Navigation für Extension-Seiten
 6. **web/src/components/header/**: Branding (Logo/Titel über Config)
@@ -370,7 +371,7 @@ voeb-chatbot/
 │   ├── onyx/                    (Core – READONLY, upstream merges)
 │   │   ├── main.py              (CORE #1 – Extension Route Hook)
 │   │   ├── llm/multi_llm.py    (CORE #2 – Token Hook)
-│   │   ├── access/access.py    (CORE #3 – RBAC Hook)
+│   │   ├── access/access.py    (CORE #3 – Access Control Hook)
 │   │   ├── chat/prompt_utils.py (CORE #7 – Prompt Hook)
 │   │   ├── db/models.py        (READ-ONLY)
 │   │   └── server/             (READ-ONLY)
