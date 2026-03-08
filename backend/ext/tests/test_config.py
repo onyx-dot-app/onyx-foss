@@ -19,7 +19,7 @@ class TestExtConfig:
 
             assert ext.config.EXT_ENABLED is False
             assert ext.config.EXT_TOKEN_LIMITS_ENABLED is False
-            assert ext.config.EXT_USER_GROUPS_ENABLED is False
+            assert ext.config.EXT_RBAC_ENABLED is False
             assert ext.config.EXT_ANALYTICS_ENABLED is False
             assert ext.config.EXT_BRANDING_ENABLED is False
             assert ext.config.EXT_CUSTOM_PROMPTS_ENABLED is False
@@ -36,7 +36,7 @@ class TestExtConfig:
 
             assert ext.config.EXT_ENABLED is True
             assert ext.config.EXT_TOKEN_LIMITS_ENABLED is False
-            assert ext.config.EXT_USER_GROUPS_ENABLED is False
+            assert ext.config.EXT_RBAC_ENABLED is False
             assert ext.config.EXT_ANALYTICS_ENABLED is False
 
     def test_module_flag_requires_ext_enabled(self) -> None:

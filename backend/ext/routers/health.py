@@ -12,7 +12,7 @@ from ext.config import EXT_CUSTOM_PROMPTS_ENABLED
 from ext.config import EXT_DOC_ACCESS_ENABLED
 from ext.config import EXT_ENABLED
 from ext.config import EXT_TOKEN_LIMITS_ENABLED
-from ext.config import EXT_USER_GROUPS_ENABLED
+from ext.config import EXT_RBAC_ENABLED
 
 router = APIRouter(prefix="/ext", tags=["ext"])
 
@@ -27,7 +27,7 @@ def ext_health_check(
         "ext_enabled": EXT_ENABLED,
         "modules": {
             "token_limits": EXT_TOKEN_LIMITS_ENABLED,
-            "user_groups": EXT_USER_GROUPS_ENABLED,
+            "rbac": EXT_RBAC_ENABLED,
             "analytics": EXT_ANALYTICS_ENABLED,
             "branding": EXT_BRANDING_ENABLED,
             "custom_prompts": EXT_CUSTOM_PROMPTS_ENABLED,

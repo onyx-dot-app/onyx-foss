@@ -14,9 +14,9 @@ EXT_TOKEN_LIMITS_ENABLED: bool = (
     EXT_ENABLED
     and os.getenv("EXT_TOKEN_LIMITS_ENABLED", "false").lower() == "true"
 )
-EXT_USER_GROUPS_ENABLED: bool = (
+EXT_RBAC_ENABLED: bool = (
     EXT_ENABLED
-    and os.getenv("EXT_USER_GROUPS_ENABLED", "false").lower() == "true"
+    and os.getenv("EXT_RBAC_ENABLED", "false").lower() == "true"
 )
 EXT_ANALYTICS_ENABLED: bool = (
     EXT_ENABLED

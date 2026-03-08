@@ -168,12 +168,12 @@ configMap:
 Onyx bringt ein rollenbasiertes Zugangskontrollsystem mit (siehe Rollen oben). Rollen werden pro User in der PostgreSQL-Datenbank gespeichert.
 
 **GEPLANT (Extension Layer)**:
-Erweitertes RBAC über das Extension-Modul `ext-rbac` (Phase 4b) mit:
-- Organisation-basierter Zugriffskontrolle
-- Token-Quotas pro Organisation
-- Erweiterte Rollen (VÖB Admin, Org Admin, Content Manager)
+Erweitertes RBAC ueber das Extension-Modul `ext-rbac` (Phase 4f) mit:
+- Gruppen-basierter Zugriffskontrolle (Abteilungen = Gruppen, Mapping auf Entra ID)
+- 4 Rollen: System-Admin, Gruppen-Admin, Power-User, Standard-User
+- Zugriffssteuerung pro Gruppe (Agenten, Modelle, Dokumente) ueber `ext-access` (Phase 4g)
 
-Details werden in der Modulspezifikation für Phase 4b definiert.
+Details: [Rollenmodell](referenz/rbac-rollenmodell.md) | [Entwicklungsplan](referenz/ext-entwicklungsplan.md)
 
 ### Zugriffsmatrix
 
@@ -651,7 +651,7 @@ Aktuell implementierte Schutzmaßnahmen:
 
 ### Token Limits als Kostenschutz
 
-**GEPLANT (Phase 4b)**:
+**GEPLANT (Phase 4c)**:
 
 Das **Token Limits Management Modul** (`ext-token`) wird implementieren:
 - Pro-User und Pro-Organisation Quotas

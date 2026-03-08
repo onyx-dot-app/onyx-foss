@@ -37,7 +37,7 @@ class TestExtHealthEndpoint:
             result = self._call_health()
             expected_modules = [
                 "token_limits",
-                "user_groups",
+                "rbac",
                 "analytics",
                 "branding",
                 "custom_prompts",
