@@ -1,11 +1,39 @@
 # Modulspezifikation: ext-branding (Whitelabel/Branding)
 
-**Dokumentstatus**: Entwurf
-**Version**: 0.3
+**Dokumentstatus**: Implementiert
+**Version**: 1.0
 **Autor**: Nikolaj Ivanov (CCJ / Coffee Studios)
 **Datum**: 2026-03-08
-**Status**: [x] Entwurf | [ ] Review | [ ] Freigegeben
+**Status**: [ ] Entwurf | [ ] Review | [x] Implementiert
 **Prioritaet**: [x] Hoch | [ ] Kritisch | [ ] Normal | [ ] Niedrig
+
+### Implementierungsstatus (2026-03-08)
+
+| Komponente | Status | Anmerkung |
+|------------|--------|-----------|
+| Backend REST-API (5 Endpoints) | Implementiert | GET/PUT Config + Logo, public + admin |
+| Datenbank ext_branding_config | Implementiert | Migration `ff7273065d0d`, Singleton-Pattern |
+| Core-Patch CORE #6 (constants.ts) | Implementiert | 1 Zeile, Patch generiert |
+| Core-Patch CORE #8 (LoginText.tsx) | Implementiert | Conditional Render, Patch generiert |
+| Core-Patch CORE #9 (AuthFlowContainer.tsx) | Implementiert | Logo + Name Override, Patch generiert |
+| Unit-Tests (21 Tests) | Bestanden | Schema, Magic Bytes, Defaults, Constraints |
+| Docker-Integration | Verifiziert | Lokal getestet, alle Endpoints OK |
+| Admin-UI (Browser-Seite) | Vorbereitet | Code existiert in `web/src/ext/`, Route fehlt (Next.js App Router) |
+| Favicon | Offen | Nicht im Scope v1.0 (siehe "Nicht im Umfang") |
+| Farben/Theme | Offen | Eigenes Modul, nicht Teil von ext-branding |
+
+### Abweichungen von Spec v0.3
+
+| Spec | Implementierung | Grund |
+|------|-----------------|-------|
+| Core-Patches CORE #4 + #5 (layout.tsx, header) | Nicht noetig | FOSS-Komponenten lesen automatisch von `/enterprise-settings` |
+| Endpoint-Pfad `/api/ext/branding/config` | `/enterprise-settings` | Identischer Pfad wie EE — FOSS-Frontend braucht keine Aenderung |
+| Public Endpoints mit Auth | Public ohne Auth | Login-Seite braucht Branding vor User-Login |
+| Revision ID `a1b2c3d4e5f6` | `ff7273065d0d` | Kollision mit existierender Onyx-Migration gleicher ID |
+| "Powered by Onyx" entfernen | Via Env-Variable | `NEXT_PUBLIC_DO_NOT_USE_TOGGLE_OFF_DANSWER_POWERED=true` (kein Code-Patch noetig) |
+| Docker nicht erwähnt in Spec | 3 Docker-Aenderungen | `Dockerfile`: COPY ext/, `docker-compose.voeb.yml`: main.py Mount, `.env`: Feature Flags |
+| Auth auf public Endpoints | Public ohne Auth + PUBLIC_ENDPOINT_SPECS | Runtime-Mutation der Onyx-Allowlist in `ext/routers/__init__.py` (keine Dateiänderung) |
+| Hook protect-onyx-files.sh | 7 → 9 Core-Dateien | CORE #8 (LoginText.tsx) + CORE #9 (AuthFlowContainer.tsx) zur Allowlist |
 
 ---
 

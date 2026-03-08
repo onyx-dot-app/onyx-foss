@@ -12,11 +12,9 @@ export default function LoginText() {
         Welcome to{" "}
         {(settings && settings?.enterpriseSettings?.application_name) || "Onyx"}
       </Text>
-      {settings?.enterpriseSettings?.custom_header_content && (
-        <Text as="p" text03 mainUiMuted>
-          {settings.enterpriseSettings.custom_header_content}
-        </Text>
-      )}
+      <Text as="p" text03 mainUiMuted>
+        Your open source AI platform for work
+      </Text>
     </div>
   );
 }

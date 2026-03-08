@@ -126,6 +126,9 @@ WORKDIR /app
 COPY --chown=onyx:onyx ./ee /app/ee
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# VÖB Extension Framework
+COPY --chown=onyx:onyx ./ext /app/ext
+
 # Set up application files
 COPY --chown=onyx:onyx ./onyx /app/onyx
 COPY --chown=onyx:onyx ./shared_configs /app/shared_configs

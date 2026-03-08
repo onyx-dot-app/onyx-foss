@@ -1,0 +1,12 @@
+--- backend/ext/_core_originals/constants.ts.original	2026-03-08 15:08:20
++++ web/src/lib/constants.ts	2026-03-08 15:08:27
+@@ -48,7 +48,8 @@
+ export const SERVER_SIDE_ONLY__PAID_ENTERPRISE_FEATURES_ENABLED =
+   process.env.ENABLE_PAID_ENTERPRISE_EDITION_FEATURES?.toLowerCase() ===
+     "true" ||
+-  process.env.LICENSE_ENFORCEMENT_ENABLED?.toLowerCase() !== "false";
++  process.env.LICENSE_ENFORCEMENT_ENABLED?.toLowerCase() !== "false" ||
++  process.env.EXT_BRANDING_ENABLED?.toLowerCase() === "true";
+ // NOTE: since this is a `NEXT_PUBLIC_` variable, it will be set at
+ // build-time
+ // TODO: consider moving this to an API call so that the api_server

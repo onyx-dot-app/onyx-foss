@@ -1,0 +1,49 @@
+--- backend/ext/_core_originals/AuthFlowContainer.tsx.original	2026-03-08 15:09:02
++++ web/src/components/auth/AuthFlowContainer.tsx	2026-03-08 15:09:14
+@@ -1,5 +1,10 @@
++"use client";
++
+ import Link from "next/link";
++import Image from "next/image";
+ import { OnyxIcon } from "../icons/icons";
++import { useContext } from "react";
++import { SettingsContext } from "@/providers/SettingsProvider";
+ 
+ export default function AuthFlowContainer({
+   children,
+@@ -10,17 +15,33 @@
+   authState?: "signup" | "login" | "join";
+   footerContent?: React.ReactNode;
+ }) {
++  const settings = useContext(SettingsContext);
++  const enterpriseSettings = settings?.enterpriseSettings;
++  const appName = enterpriseSettings?.application_name;
++
+   return (
+     <div className="p-4 flex flex-col items-center justify-center min-h-screen bg-background">
+       <div className="w-full max-w-md flex items-start flex-col bg-background-tint-00 rounded-16 shadow-lg shadow-02 p-6">
+-        <OnyxIcon size={44} className="text-theme-primary-05" />
++        {enterpriseSettings?.use_custom_logo ? (
++          <div className="relative overflow-hidden rounded-full" style={{ width: 44, height: 44 }}>
++            <Image
++              alt="Logo"
++              src="/api/enterprise-settings/logo"
++              fill
++              className="object-cover object-center"
++              sizes="44px"
++            />
++          </div>
++        ) : (
++          <OnyxIcon size={44} className="text-theme-primary-05" />
++        )}
+         <div className="w-full mt-3">{children}</div>
+       </div>
+       {authState === "login" && (
+         <div className="text-sm mt-6 text-center w-full text-text-03 mainUiBody mx-auto">
+           {footerContent ?? (
+             <>
+-              New to Onyx?{" "}
++              New to {appName || "Onyx"}?{" "}
+               <Link
+                 href="/auth/signup"
+                 className="text-text-05 mainUiAction underline transition-colors duration-200"

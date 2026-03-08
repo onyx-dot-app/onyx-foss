@@ -15,8 +15,9 @@ Alle Enterprise-Features werden custom in `backend/ext/` + `web/src/ext/` entwic
 ```
 Phase 4a: ✅ Extension Framework Basis (erledigt)
           │
-          ├── Phase 4b: ext-branding ← JETZT STARTBAR
-          │     Whitelabel: Logo, App-Name, Farben, Favicon
+          ├── Phase 4b: ✅ ext-branding (implementiert 2026-03-08)
+          │     Whitelabel: Logo, App-Name, Login-Text, Greeting, Disclaimer, Popup, Consent
+          │     Offen: Admin-UI Route, Favicon, Farben/Theme
           │
           ├── Phase 4c: ext-token ← JETZT STARTBAR
           │     LLM-Nutzung tracken, Limits pro User/Gruppe

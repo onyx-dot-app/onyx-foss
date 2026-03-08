@@ -12,6 +12,7 @@ services:
   api_server:
     volumes:
       - ../../backend/ext:/app/ext
+      - ../../backend/onyx/main.py:/app/onyx/main.py:ro
     env_file:
       - path: .env
         required: false

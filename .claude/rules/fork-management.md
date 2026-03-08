@@ -82,6 +82,8 @@ git merge upstream/main --no-commit --no-ff
 - `AGENTS.md`, `.claude/skills` → Unsere Version behalten (`git checkout --ours`)
 - `Chart.yaml`, `Chart.lock` → Upstream übernehmen (`git checkout --theirs`)
 - 9 Core-Dateien → Upstream übernehmen, Patches neu anwenden (siehe unten)
+- `backend/Dockerfile` → Upstream übernehmen, COPY ext/ neu einfügen (siehe "Zusätzliche Merge-Stellen")
+- `deployment/docker_compose/env.template` → Manuell mergen (wir appenden am Ende, Upstream ändert Mitte)
 
 **Unerwartete Konflikte:**
 - Dateien in `backend/onyx/`, `web/src/` (außer Core) = Regeln gebrochen
@@ -170,8 +172,54 @@ gh workflow run stackit-deploy.yml -f environment=test -R CCJ-Development/voeb-c
 | Merge-Dauer | ~5 Min |
 | Workflow | Branch + PR (erstmals mit Branch Protection) |
 
+## Zusätzliche Merge-Stellen (neben Core-Dateien)
+
+Neben den 9 Core-Dateien ändern wir 2 weitere Upstream-Dateien. Diese sind KEINE Core-Dateien, aber bekannte Merge-Stellen:
+
+### `backend/Dockerfile` (seit Phase 4a)
+
+3 Zeilen zwischen `COPY ./ee` und `COPY ./onyx`:
+```dockerfile
+# VÖB Extension Framework
+COPY --chown=onyx:onyx ./ext /app/ext
+```
+
+**Bei Upstream-Konflikt:**
+```bash
+git checkout --theirs backend/Dockerfile
+# Manuell einfuegen: 3 Zeilen nach "COPY ./ee /app/ee" + "COPY supervisord.conf"
+```
+
+**Risiko:** Mittel — Upstream ändert Dockerfile aktiv (~5 Commits/Monat). Insertion-Stelle ist stabil (zwischen ee und onyx COPY).
+
+### `deployment/docker_compose/env.template` (seit Phase 4b)
+
+25 Zeilen am Dateiende: VÖB Extension Framework Feature Flags.
+
+**Bei Upstream-Konflikt:**
+```bash
+# Meist auto-merge (Append am Ende). Falls nicht:
+git checkout --theirs deployment/docker_compose/env.template
+# Unseren Block am Ende wieder anfuegen
+```
+
+**Risiko:** Niedrig — Appends am Dateiende mergen fast immer automatisch.
+
+### Vollständige Liste aller Upstream-Änderungen
+
+| Datei | Art | Zeilen | Risiko |
+|-------|-----|--------|--------|
+| `backend/onyx/main.py` (CORE #1) | Hook | ~14 | Niedrig |
+| `web/src/lib/constants.ts` (CORE #6) | 1 Zeile | 1 | Niedrig |
+| `web/src/app/auth/login/LoginText.tsx` (CORE #8) | Conditional | ~8 | Niedrig |
+| `web/src/components/auth/AuthFlowContainer.tsx` (CORE #9) | Logo+Name | ~25 | Mittel |
+| `backend/Dockerfile` | COPY | 3 | Mittel |
+| `deployment/docker_compose/env.template` | Append | 25 | Niedrig |
+
+Alle anderen Dateien (ext/, docs/, .claude/, deployment/helm/values/) existieren nicht in Upstream → Zero Konflikte.
+
 ## Warum "Extend, don't modify" funktioniert
-- Max 9 vorhersagbare Merge-Konflikte (Core-Dateien)
+- Max 9 vorhersagbare Core-Konflikte + 2 bekannte Infra-Stellen
 - Unser ext_-Code: Zero Konflikte (Ordner existiert nicht in Upstream)
 - Unsere Infra (Terraform, Helm Values, CI/CD): Zero Konflikte (Pfade existieren nicht in Upstream)
 - Unsere Docs: Zero Konflikte (existieren nicht in Upstream)

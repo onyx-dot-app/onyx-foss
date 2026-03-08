@@ -1,0 +1,17 @@
+--- backend/ext/_core_originals/LoginText.tsx.original	2026-03-08 15:08:30
++++ web/src/app/auth/login/LoginText.tsx	2026-03-08 15:08:58
+@@ -12,9 +12,11 @@
+         Welcome to{" "}
+         {(settings && settings?.enterpriseSettings?.application_name) || "Onyx"}
+       </Text>
+-      <Text as="p" text03 mainUiMuted>
+-        Your open source AI platform for work
+-      </Text>
++      {settings?.enterpriseSettings?.custom_header_content && (
++        <Text as="p" text03 mainUiMuted>
++          {settings.enterpriseSettings.custom_header_content}
++        </Text>
++      )}
+     </div>
+   );
+ }
