@@ -80,5 +80,11 @@ deployment/terraform/environments/**/*.auto.tfvars
 # Helm Secrets (Passwörter, API Keys)
 deployment/helm/values/*-secrets.yaml
 
+# Meeting-Notizen (vertraulich, niemals committen)
+docs/referenz/*meeting-notizen*
+
+# Temporäre Helm-Artefakte
+ingress-nginx/
+
 # direnv (lokale Env-Vars, nie committen)
 .envrc

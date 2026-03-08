@@ -1,7 +1,7 @@
 # Runbook: DNS + HTTPS Setup (Cloudflare DNS-01)
 
-**Status:** Bereit zur Umsetzung — alle Voraussetzungen erfuellt
-**Erstellt:** 2026-03-03 | **Aktualisiert:** 2026-03-05
+**Status:** BLOCKIERT — DNS-Architektur: `voeb-service.de` liegt bei GlobVill (nicht Cloudflare). ACME Challenge CNAME-Delegation bei GlobVill noetig. Wartet auf Leif.
+**Erstellt:** 2026-03-03 | **Aktualisiert:** 2026-03-07 (Tiefenanalyse DNS + HTTP-01)
 **Erstellt von:** Nikolaj Ivanov (CCJ / Coffee Studios)
 
 ---
@@ -76,7 +76,7 @@ Die BSI Technical Guideline TR-02102-2 (Version 2026-01) verlangt:
 - Gesamter Nutzer-Traffic geht direkt zu StackIT (Frankfurt, EU01)
 - Kein DSGVO-Risiko durch US-Infrastruktur
 
-> **Verifiziert (2026-03-05, 3 Opus-Agenten mit Quellenrecherche):**
+> **Verifiziert (2026-03-05, Quellenrecherche):**
 >
 > Im Proxy-Modus (orange Wolke) terminiert Cloudflare TLS am Edge und entschluesselt **allen Traffic** — auch bei "Full (Strict)" SSL. Das bedeutet: Chat-Inhalte (LLM-Queries + Responses von Bankmitarbeitern) wuerden im Klartext auf Cloudflare-Servern verarbeitet.
 >
@@ -179,9 +179,12 @@ cert-manager benoetigt einen Cloudflare API Token um DNS-TXT-Records fuer die Ze
 |---|---------|-----|--------|
 | 1 | Subdomain-Name festlegen | Pascal/Leif | **ERLEDIGT** — `chatbot` |
 | 2 | 2x DNS A-Record anlegen (DNS-only!) | Leif | **ERLEDIGT** (2026-03-05) |
-| 3 | Cloudflare API Token erstellen | Leif | **ERLEDIGT** (2026-03-05) |
+| 3 | Cloudflare API Token erstellen | Leif | **ERLEDIGT** (2026-03-05, Permissions korrigiert 2026-03-07) |
+| 4 | 2x ACME Challenge CNAME bei GlobVill | Leif | **OFFEN — AKTUELLER BLOCKER** |
 
-**Sobald wir diese 3 Dinge haben, koennen wir HTTPS innerhalb von ~30 Minuten aktivieren.**
+**Punkt 4 ist der letzte Blocker.** Die Domain `voeb-service.de` liegt bei GlobVill (nicht Cloudflare). cert-manager setzt TXT-Records bei Cloudflare, aber DNS-Queries gehen an GlobVill. Leif muss 2 CNAME-Records bei GlobVill anlegen, die die ACME-Challenge-Subdomains an Cloudflare delegieren. Details: siehe Diagnose 2 weiter unten.
+
+**Sobald die CNAMEs stehen, koennen wir HTTPS innerhalb von ~30 Minuten aktivieren.**
 
 ---
 
@@ -891,11 +894,245 @@ kubectl get clusterissuer
 |-----|-------|--------|-----|
 | 1 | Subdomain-Name festlegen | **ERLEDIGT** — `chatbot` (2026-03-04) | Pascal/Leif (VoeB) |
 | 2 | DNS A-Records in Cloudflare anlegen (DNS-only) | **ERLEDIGT** (2026-03-05) — DNS-only verifiziert | Leif (VoeB) |
-| 3 | Cloudflare API Token erstellen + uebermitteln | **ERLEDIGT** (2026-03-05) | Leif (VoeB) |
-| 4 | ACME-Email-Adresse — Team-Adresse statt persoenliche? | Empfehlung: Team-Adresse | CCJ + VoeB |
-| 5 | PROD: LoadBalancer IP + A-Record | Spaeter (PROD nicht provisioniert) | CCJ + VoeB |
-| 6 | Let's Encrypt Zertifikat-Renewal verifizieren | Nach 60 Tagen pruefen (auto-renew) | CCJ |
-| 7 | Cloudflare API Token Backup | Token als GitHub Environment Secret hinterlegen (Disaster Recovery) | CCJ |
+| 3 | Cloudflare API Token erstellen + uebermitteln | **ERLEDIGT** (2026-03-07) — Permissions korrigiert, ClusterIssuers READY | Leif (VoeB) |
+| 4 | **ACME Challenge CNAME-Delegation bei GlobVill** | **OFFEN — AKTUELLER BLOCKER** (siehe Diagnose 2) | Leif (VoeB) |
+| 5 | ACME-Email-Adresse — Team-Adresse statt persoenliche? | Empfehlung: Team-Adresse | CCJ + VoeB |
+| 6 | PROD: LoadBalancer IP + A-Record | Spaeter (PROD nicht provisioniert) | CCJ + VoeB |
+| 7 | Let's Encrypt Zertifikat-Renewal verifizieren | Nach 60 Tagen pruefen (auto-renew) | CCJ |
+| 8 | Cloudflare API Token Backup | Token als GitHub Environment Secret hinterlegen (Disaster Recovery) | CCJ |
+| 9 | CAA Records bei GlobVill setzen | Empfohlen: `voeb-service.de CAA 0 issue "letsencrypt.org"` | Leif (VoeB) |
+
+---
+
+## Diagnose 1: Cloudflare API Token Error 10000 (2026-03-07, vormittags)
+
+### Problem
+
+ClusterIssuers READY = False, Error 10000 bei Cloudflare API.
+
+### Ursache
+
+Cloudflare Token hatte falsche Permissions:
+
+| # | IST | SOLL |
+|---|-----|------|
+| 1 | Zone / DNS / **Lesen** | Zone / DNS / **Bearbeiten** |
+| 2 | *(fehlt)* | Zone / Zone / **Lesen** |
+
+### Loesung
+
+Leif hat Token-Permissions korrigiert (2026-03-07). ClusterIssuers sind jetzt READY = True.
+
+Falls Cloudflare einen neuen Token-String generiert hat, muss das K8s Secret aktualisiert werden:
+
+```bash
+kubectl delete secret cloudflare-api-token -n cert-manager
+kubectl create secret generic cloudflare-api-token \
+  --namespace cert-manager \
+  --from-literal=api-token="<NEUER_TOKEN>"
+```
+
+---
+
+## Diagnose 2: DNS-Architektur — voeb-service.de liegt NICHT auf Cloudflare (2026-03-07, nachmittags)
+
+### Entdeckung
+
+Nach dem Token-Fix durch Leif: ClusterIssuers READY = True, cert-manager meldet "Presented challenge using DNS-01" (TXT-Record bei Cloudflare API erfolgreich gesetzt). **Aber:** `dig TXT _acme-challenge.dev.chatbot.voeb-service.de` gibt NICHTS zurueck. Propagation-Check loopt endlos.
+
+### Ursache: GlobVill ist authoritative DNS, nicht Cloudflare
+
+```bash
+# Beweis: Authoritative Nameserver
+dig NS voeb-service.de
+# Ausgabe:
+# dns.voerde.globvill.de.
+# dns.globvill.de.
+# dns.globvill.ruhr.
+# → NICHT ns1.cloudflare.com / ns2.cloudflare.com!
+
+# DNS-Aufloesungskette fuer dev.chatbot.voeb-service.de:
+dig +trace A dev.chatbot.voeb-service.de
+# Step 1: GlobVill antwortet: CNAME dev.chatbot.voeb-service.de.cdn.cloudflare.net
+# Step 2: Cloudflare antwortet: A 188.34.74.187
+
+# ACME TXT-Record ist unsichtbar:
+dig TXT _acme-challenge.dev.chatbot.voeb-service.de @dns.globvill.de
+# → LEER (GlobVill hat keinen CNAME fuer _acme-challenge)
+```
+
+**Zusammenfassung:** `voeb-service.de` nutzt ein Cloudflare CNAME/Partial-Setup:
+- GlobVill ist der authoritative DNS-Provider (NS-Records zeigen auf GlobVill)
+- GlobVill hat CNAME-Records fuer `dev.chatbot` und `test.chatbot` die auf `*.cdn.cloudflare.net` zeigen
+- Cloudflare liefert die A-Records (188.34.74.187 / 188.34.118.201)
+- **Aber:** Fuer `_acme-challenge.*` Subdomains existieren KEINE CNAMEs bei GlobVill
+- cert-manager setzt TXT-Records bei Cloudflare API (erfolgreich), aber niemand fragt Cloudflare danach
+- DNS-Queries fuer `_acme-challenge.*` gehen an GlobVill → NXDOMAIN → DNS-01 scheitert
+
+### Warum der Token-Fix allein nicht reicht
+
+| Schritt | Status | Problem |
+|---------|--------|---------|
+| cert-manager → Cloudflare API: TXT-Record setzen | Funktioniert (Token OK) | - |
+| Let's Encrypt → DNS-Query fuer TXT-Record | Geht an GlobVill (authoritative) | GlobVill hat keinen CNAME fuer `_acme-challenge` → TXT unsichtbar |
+| cert-manager Self-Check → DNS-Query | Geht an GlobVill | Gleisches Problem |
+
+---
+
+## Diagnose 3: HTTP-01 funktioniert auch nicht — Onyx NGINX Port-Mapping (2026-03-07)
+
+### Versuch
+
+Nach Erkenntnis dass DNS-01 an der DNS-Architektur scheitert, wurde HTTP-01 als Alternative getestet.
+
+### Vorgehen
+
+1. ClusterIssuers auf HTTP-01 umgestellt (DEV: `ingressClassName: nginx`, TEST: `ingressClassName: nginx-test`)
+2. Test-Certificate erstellt (DEV, ECDSA P-384)
+3. cert-manager erstellte erfolgreich: temporaere Ingress (`cm-acme-http-solver-*`), Solver Pod (Running), Solver Service
+
+### Beobachtung
+
+cert-manager Self-Check meldet: "did not get expected response — expected challenge token but got: <!DOCTYPE html>..."
+NGINX Controller Logs zeigen: Challenge-Request wird an `100.82.169.152:3000` (Onyx Webserver) geroutet, NICHT an Solver Pod (Port 8089).
+
+**Von localhost im NGINX Pod funktioniert die Challenge korrekt:**
+
+```bash
+kubectl exec -n onyx-dev deploy/onyx-dev-nginx-controller -- \
+  curl -s http://localhost:80/.well-known/acme-challenge/<token> -H "Host: dev.chatbot.voeb-service.de"
+# → Gibt korrekten Challenge-Token zurueck!
+```
+
+### Ursache: containerPort http = 1024
+
+```bash
+kubectl get deployment onyx-dev-nginx-controller -n onyx-dev \
+  -o jsonpath='{.spec.template.spec.containers[0].ports}'
+# Ausgabe:
+# [{"containerPort":1024,"name":"http","protocol":"TCP"},
+#  {"containerPort":443,"name":"https","protocol":"TCP"},
+#  {"containerPort":8443,"name":"webhook","protocol":"TCP"}]
+```
+
+Das Onyx Helm Chart definiert den HTTP containerPort als **1024**, nicht als 80:
+
+```
+LoadBalancer Service:  port 80 → targetPort: http → containerPort: 1024
+                                                           ↓
+                                              custom server.conf (Onyx-Routing)
+                                              location / → proxy_pass http://web_server (Port 3000)
+                                              location ~/api → proxy_pass http://api_server (Port 8080)
+
+Im Pod intern:     Port 80 → Standard Ingress Controller Config (Ingress-Ressourcen)
+                             ↑ Von aussen NICHT erreichbar!
+```
+
+- **Port 1024 (von aussen erreichbar):** Custom `server.conf` aus `/etc/nginx/custom-snippets/` — routet ALLES an Onyx Webserver/API
+- **Port 80 (nur intern):** Standard Ingress Controller mit generierten Server-Blocks aus Kubernetes Ingress-Ressourcen
+
+cert-manager's temporaere Challenge-Ingress wird korrekt in die Port-80-Config aufgenommen, aber externer Traffic erreicht Port 80 nie — er geht immer an Port 1024.
+
+### Custom NGINX Config (Referenz)
+
+```bash
+# server.conf (gemountet in /etc/nginx/custom-snippets/)
+server {
+    listen 1024;
+    server_name $$DOMAIN;  # = 188.34.74.187 (aus env DOMAIN)
+    location ~ ^/(api|openapi\.json)(/.*)?$ {
+        proxy_pass http://api_server;  # onyx-dev-api-service:8080
+    }
+    location / {
+        proxy_pass http://web_server;  # onyx-dev-webserver:3000
+    }
+}
+
+# upstreams.conf
+upstream api_server { server onyx-dev-api-service:8080; }
+upstream web_server { server onyx-dev-webserver:3000; }
+
+# ConfigMap onyx-dev-nginx-controller (http-snippet):
+# include /etc/nginx/custom-snippets/upstreams.conf;
+# include /etc/nginx/custom-snippets/server.conf;
+```
+
+### Fazit
+
+**HTTP-01 ist mit dem Onyx Chart fundamental nicht moeglich**, weil externer HTTP-Traffic (Port 80) zum NGINX containerPort 1024 geroutet wird, wo die custom Onyx-Config alles an den Webserver weiterleitet. Die Standard Ingress Controller Config (Port 80 im Pod) wird von aussen nie erreicht. Das Chart ist READ-ONLY — die Port-Zuordnung kann nicht geaendert werden.
+
+---
+
+## Warum HTTP-01 keine Alternative ist (aktualisiert 2026-03-07)
+
+Die urspruengliche Analyse vom Vormittag (2026-03-07) nannte 3 Gruende gegen HTTP-01. Die Nachmittags-Tiefenanalyse hat 2 davon als falsch identifiziert, aber einen **neuen, fundamentalen Blocker** gefunden:
+
+| Urspruengliches Argument | Status | Erklaerung |
+|--------------------------|--------|------------|
+| IngressClass-Mismatch (Chart hardcoded `class: nginx`) | **War falsch** | Betrifft nur den Chart-eigenen Issuer. Mit manuellen ClusterIssuers kann die IngressClass frei gewaehlt werden. |
+| Henne-Ei-Problem (Ingress braucht TLS, TLS braucht Ingress) | **War falsch** | cert-manager erstellt eigene temporaere Ingress-Ressourcen. Keine Application-Ingress noetig. |
+| Geringere Netzwerk-Exposition | **War falsch** | Port 80 ist bereits offen. |
+| **NEU: containerPort http = 1024** | **Echter Blocker** | Externer Traffic auf Port 80 geht an containerPort 1024 (custom server.conf → Webserver), nicht an Port 80 (Ingress Controller). Chart ist READ-ONLY. |
+
+### BSI/Compliance-Bewertung (aus Tiefenanalyse mit 4 Agenten)
+
+Unabhaengig vom Blocker wurde die Compliance-Frage abschliessend beantwortet:
+
+| Kriterium | DNS-01 | HTTP-01 | Quelle |
+|-----------|--------|---------|--------|
+| Kryptographische Staerke | ECDSA P-384 | ECDSA P-384 | Identisch — Challenge-Typ hat null Einfluss |
+| BSI TR-02102-2 | Konform | Konform | Richtlinie regelt Krypto, nicht Challenge-Typen |
+| Zertifikats-Chain | E7/E8 ECDSA | E7/E8 ECDSA | Chain haengt vom Key-Algorithmus ab, nicht vom Challenge |
+| Datensouveraenitaet | Cloudflare API (US) | StackIT-lokal | HTTP-01 waere besser gewesen |
+| Audit-Risiko | Keines | Keines | Challenge-Typ ist operationale Entscheidung |
+
+---
+
+## Aktueller Blocker und Loesung (Stand 2026-03-07 abends)
+
+### IST-Zustand im Cluster
+
+| Komponente | Status |
+|------------|--------|
+| cert-manager v1.19.4 | 3 Pods Running |
+| Cloudflare API Token | Permissions OK (Leifs Fix wirkt) |
+| ClusterIssuer `onyx-dev-letsencrypt` (DNS-01, Staging) | READY = **True** |
+| ClusterIssuer `onyx-test-letsencrypt` (DNS-01, Staging) | READY = **True** |
+| Certificates | Keine (alle geloescht nach Tests) |
+
+### Verbleibender Blocker
+
+**DNS-01 TXT-Records sind unsichtbar**, weil `voeb-service.de` bei GlobVill gehostet ist (nicht Cloudflare). cert-manager setzt TXT-Records bei Cloudflare API, aber DNS-Queries gehen an GlobVill.
+
+### Loesung: ACME Challenge CNAME-Delegation (Leif bei GlobVill)
+
+Leif muss **2 CNAME-Records bei GlobVill** (dem DNS-Provider von `voeb-service.de`) anlegen:
+
+| Type | Name | Target |
+|------|------|--------|
+| CNAME | `_acme-challenge.dev.chatbot` | `_acme-challenge.dev.chatbot.voeb-service.de.cdn.cloudflare.net` |
+| CNAME | `_acme-challenge.test.chatbot` | `_acme-challenge.test.chatbot.voeb-service.de.cdn.cloudflare.net` |
+
+**Zweck:** Wenn Let's Encrypt (oder cert-manager) den TXT-Record `_acme-challenge.dev.chatbot.voeb-service.de` abfragt:
+1. GlobVill antwortet mit dem CNAME → Cloudflare
+2. Cloudflare antwortet mit dem TXT-Record (den cert-manager dort gesetzt hat)
+3. DNS-01 Validierung erfolgreich
+
+**Alternative (groesserer Eingriff):** NS-Records von `voeb-service.de` komplett auf Cloudflare umstellen (Full Cloudflare Setup). Dann funktioniert DNS-01 ohne CNAME-Delegation.
+
+### Naechste Schritte nach CNAME-Delegation
+
+```bash
+# 1. Verifizieren dass CNAME-Delegation funktioniert
+dig CNAME _acme-challenge.dev.chatbot.voeb-service.de
+# Erwartete Ausgabe: CNAME _acme-challenge.dev.chatbot.voeb-service.de.cdn.cloudflare.net
+
+# 2. Certificates erstellen (Schritt 3c oben)
+# 3. Warten bis READY = True (1-2 Min)
+# 4. Staging verifizieren
+# 5. Auf Production umschalten (Schritt 3b)
+# 6. Helm Values anpassen + Deploy (Schritt 4+5)
+```
 
 ---
 

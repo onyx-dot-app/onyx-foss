@@ -678,7 +678,7 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | Entra ID (Auth) | Sobald Credentials von VÖB | `AUTH_TYPE: oidc` in Helm Values | Blockiert |
 | DNS + TLS | Nach DNS-Setup | Let's Encrypt oder StackIT-CA | Blockiert (VÖB IT) |
 | Security-Härtung P0 | Vor TEST-Deploy | SEC-01: PG ACL einschränken (30 Min) | ✅ Erledigt (2026-03-03) |
-| Security-Härtung P1 | Nach TEST, vor PROD | SEC-02, SEC-04, SEC-05: Node Affinity, Remote State, Kubeconfigs + M7: Cluster-ACL (~2 Tage) | ⏳ Geplant |
+| Security-Härtung P1 | Nach TEST, vor PROD | SEC-06: `privileged: true` entfernen (1-2h Quick Win + 4-6h Phase 2) + M7: Cluster-ACL. SEC-02/04/05 zurückgestellt. | ⏳ Geplant |
 | PROD Cluster | Vor Go-Live | Eigener SKE-Cluster + 2× g1a.8d + PG 4.8 HA (ADR-004) | Geplant |
 | Monitoring | Phase M5 | Prometheus/Grafana Stack | Geplant |
 
@@ -709,12 +709,12 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 | 19 | TEST: Helm Deploy + Validierung | Niko | ✅ Erledigt (2026-03-03) |
 | 20 | TEST: LLM-Konfiguration in Admin UI | Niko | ✅ Erledigt (2026-03-03) |
 | 21 | **SEC-01**: PostgreSQL ACL einschränken | Niko | ✅ Erledigt (2026-03-03) |
-| 22 | **SEC-02**: Node Affinity erzwingen | Niko | ⏳ P1 (vor PROD) |
+| 22 | **SEC-02**: Node Affinity erzwingen | Niko | **Zurückgestellt** (2026-03-08) — bestehende Isolation ausreichend |
 | 23 | **SEC-03**: Kubernetes NetworkPolicies | Niko | ✅ Erledigt (2026-03-05) |
-| 24 | **SEC-04**: Terraform Remote State | Niko | ⏳ P1 (vor PROD) |
-| 25 | **SEC-05**: Separate Kubeconfigs | Niko | ⏳ P1 (vor PROD) |
-| 26 | **SEC-06**: Container SecurityContext | Niko | ⏳ P2 (vor Abnahme) |
-| 27 | **SEC-07**: Encryption-at-Rest verifizieren | Niko | ⏳ P2 (vor Abnahme) |
+| 24 | **SEC-04**: Terraform Remote State | Niko | **Zurückgestellt** (2026-03-08) → P3 (Nice-to-have) |
+| 25 | **SEC-05**: Separate Kubeconfigs | Niko | **Zurückgestellt** (2026-03-08) → P3 (opportunistisch bei Kubeconfig-Renewal) |
+| 26 | **SEC-06**: Container SecurityContext (`privileged: true` entfernen) | Niko | ⏳ **P1 (vor PROD)** — hochgestuft, kritisches Finding |
+| 27 | **SEC-07**: Encryption-at-Rest verifizieren | Niko | ✅ Erledigt (2026-03-08) — StackIT Default |
 | 28 | **H3**: Llama 3.3 Model-ID vereinheitlichen (FP8 vs Standard) | Niko | ⏳ Klärung mit StackIT |
 | 29 | **M3**: IP-Ownership in ADR-001 klären ("CCJ oder VÖB" → eindeutig) | Niko | ⏳ Klärung mit VÖB |
 | 30 | **C5**: DSGVO-Dokumente erstellen (DSFA, Löschkonzept, AVV) | Niko | ⏳ P2 (vor Abnahme) |
@@ -768,46 +768,23 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 - DEV + TEST: `pg_acl = ["188.34.93.194/32", "109.41.112.160/32"]`
 - Credentials-Handling: `~/.stackit/credentials.json` (Wrapper → SA Key), `chmod 600`, `.envrc` in `.gitignore`
 
-### SEC-02: Node Affinity erzwingen (P1 — vor PROD)
+### SEC-02: Node Affinity — ZURÜCKGESTELLT (2026-03-08)
 
-**Problem**: ADR-004 verspricht "eigener Node pro Umgebung", aber weder Terraform noch Helm erzwingt das. Der Kubernetes-Scheduler könnte alle Pods auf einen Node packen (z.B. nach Node-Drain oder OOM-Kill).
+**Ursprüngliches Finding**: `nodeSelector` in Helm Values erzwingen, damit DEV- und TEST-Pods jeweils auf eigenen Nodes laufen.
 
-**Betrifft**:
-- `deployment/helm/values/values-dev.yaml` (alle Deployments)
-- `deployment/helm/values/values-test.yaml` (alle Deployments)
+**Entscheidung: Zurückgestellt — kein akuter Handlungsbedarf.**
 
-**Lösung**:
-1. **Node-Labels setzen** (einmalig, kubectl):
-   ```bash
-   # Nodes auflisten
-   kubectl get nodes --show-labels
-   # Label pro Node setzen:
-   kubectl label node <NODE-1-NAME> environment=dev
-   kubectl label node <NODE-2-NAME> environment=test
-   ```
-2. **`nodeSelector` in Helm Values** (beide Environments):
-   ```yaml
-   # values-dev.yaml — zu jedem Deployment hinzufügen:
-   api:
-     nodeSelector:
-       environment: dev
-   webserver:
-     nodeSelector:
-       environment: dev
-   # ... analog für vespa, redis, celery, model server
-   ```
-   ```yaml
-   # values-test.yaml — analog:
-   api:
-     nodeSelector:
-       environment: test
-   # ...
-   ```
-3. **Prüfen** ob das Onyx Helm Chart `nodeSelector` pro Deployment unterstützt (Template lesen).
-4. **Alternativ** (falls Chart kein `nodeSelector` unterstützt): `podAntiAffinity` mit Namespace-Label.
+Begründung (Details im Sicherheitskonzept):
+- ADR-004 sagt explizit: "Kein Dedicated-Node-Affinity nötig" (Zeile 61)
+- Bestehende Isolation ausreichend: Namespace-Isolation + NetworkPolicies (SEC-03) + separate PG/S3/Secrets/LoadBalancer
+- BAIT/BSI-Grundschutz fordern keine Node-Level-Isolation für DEV/TEST
+- DEV/TEST enthalten keine Produktionsdaten
+- PROD wird eigener Cluster (ADR-004) — dort irrelevant
+- Technische Einschränkung: 1 Node Pool = Labels nur uniform per Terraform; persistente Per-Node-Labels erfordern separate Node Pools (Kostenimpact)
 
-**Aufwand**: 2 Stunden (inkl. Helm-Chart-Analyse + Testing)
-**Risiko bei Nicht-Umsetzung**: Die Isolation aus ADR-004 ist nicht erzwungen, aber der Scheduler verteilt natürlich. Geringes akutes Risiko.
+**Wiederaufnahme**: Nur bei expliziter Forderung im VÖB-Audit oder bei drittem Tenant auf demselben Cluster.
+
+**Risiko bei Nicht-Umsetzung**: Gering. Scheduler verteilt natürlich (Bin-Packing), NetworkPolicies verhindern Cross-NS-Zugriff.
 
 ### SEC-03: Kubernetes NetworkPolicies (P1 — vor PROD)
 
@@ -857,117 +834,94 @@ Nach erfolgreichem Deploy: Gleiche LLM-Provider in der TEST Admin UI konfigurier
 
 **Status**: ✅ ERLEDIGT (2026-03-05). 5 Policies auf DEV + TEST applied, Cross-NS-Isolation verifiziert. Details: `docs/audit/networkpolicy-analyse.md`
 
-### SEC-04: Terraform Remote State (P1 — vor PROD)
+### SEC-04: Terraform Remote State — ZURÜCKGESTELLT (2026-03-08)
 
-**Problem**: Terraform State liegt lokal auf dem Entwickler-Laptop. Der State enthält Klartext-Passwörter (PG-Credentials). Kein State-Locking (parallele `terraform apply` kann State korrumpieren), kein Backup, kein Audit-Trail.
+**Ursprüngliches Finding**: Terraform State liegt lokal mit Klartext-Passwörtern (PG-Credentials, Kubeconfig). Kein Backup, kein Audit-Trail.
 
-**Betrifft**:
-- `deployment/terraform/environments/dev/backend.tf`
-- `deployment/terraform/environments/test/backend.tf`
+**Entscheidung: Herabgestuft von P1 auf P3 (Nice-to-have).** Begründung:
+- Solo-Entwickler — kein State-Locking nötig (StackIT S3 bietet ohnehin kein DynamoDB-Äquivalent)
+- FileVault aktiv (Full-Disk-Encryption), State gitignored, CI/CD nutzt kein Terraform
+- PG ACL als Defense-in-Depth (Passwort allein reicht nicht für DB-Zugang)
+- Remote State tauscht ein lokales Secret gegen ein anderes (S3-Credentials müssten lokal liegen)
+- Kein BAIT/BSI-Requirement für Remote IaC State
+- Kosten bei Umsetzung: 0,03 EUR/Monat (reine GB-Abrechnung, kein Bucket-Grundpreis)
 
-**Lösung**:
-1. **State-Bucket erstellen** (einmalig):
-   ```bash
-   stackit object-storage bucket create voeb-terraform-state \
-     --project-id <PROJECT_ID>
-   # Credentials erstellen:
-   stackit object-storage credentials create \
-     --project-id <PROJECT_ID>
-   ```
-2. **`backend.tf` in beiden Environments aktivieren** (auskommentierter S3-Backend-Block):
-   ```hcl
-   terraform {
-     backend "s3" {
-       bucket                      = "voeb-terraform-state"
-       key                         = "dev/terraform.tfstate"  # bzw. "test/..."
-       region                      = "eu01"
-       endpoints = {
-         s3 = "https://object.storage.eu01.onstackit.cloud"
-       }
-       skip_credentials_validation = true
-       skip_region_validation      = true
-       skip_s3_checksum            = true
-       skip_requesting_account_id  = true
-       skip_metadata_api_check     = true
-     }
-   }
-   ```
-3. **State migrieren** (pro Environment):
-   ```bash
-   cd deployment/terraform/environments/dev
-   terraform init -backend-config="access_key=..." -backend-config="secret_key=..."
-   # Terraform fragt: "Do you want to migrate state?" → yes
-   ```
-4. **Lokale `.tfstate`-Dateien** nach Migration löschen + `.gitignore` prüfen.
-5. **State-Locking**: StackIT S3 bietet kein DynamoDB-Äquivalent. Mitigation: Im Runbook dokumentieren, dass nur ein Operator gleichzeitig `terraform apply` ausführt.
+**Quick Win umgesetzt**: `chmod 600` auf alle State-Dateien (war `644`).
 
-**Aufwand**: 2 Stunden (Bucket + Migration + Verifizierung)
-**Risiko bei Nicht-Umsetzung**: Passwörter im Klartext auf Laptop, kein Backup des Infra-States. Bei Laptop-Verlust müsste Infra manuell re-importiert werden.
+**Wiederaufnahme**: Bei Teamvergrößerung oder expliziter Audit-Anforderung. `backend.tf` ist bereits vorbereitet (auskommentierter S3-Block).
 
-### SEC-05: Separate Kubeconfigs pro Environment (P1 — vor PROD)
+**Aufwand bei Umsetzung**: 2 Stunden (Bucket + Migration + Verifizierung)
+**Risiko bei Nicht-Umsetzung**: Gering. Bei Laptop-Verlust müssten ~6 Terraform-Ressourcen manuell re-importiert werden (~1-2h).
 
-**Problem**: Ein einziger `STACKIT_KUBECONFIG` GitHub Secret wird für alle Environments genutzt. Wer DEV deployen kann, hat auch Zugriff auf TEST und PROD Namespaces.
+### SEC-05: Separate Kubeconfigs — ZURÜCKGESTELLT (2026-03-08)
 
-**Betrifft**: `.github/workflows/stackit-deploy.yml`, GitHub Secrets.
+**Ursprüngliches Finding**: Ein globaler `STACKIT_KUBECONFIG` GitHub Secret für alle Environments. Kompromittierter DEV-Workflow kann TEST/PROD manipulieren.
 
-**Lösung**:
-1. **ServiceAccounts pro Namespace** erstellen:
-   ```bash
-   # ServiceAccount für DEV-Deploys
-   kubectl create serviceaccount github-ci-dev -n onyx-dev
-   kubectl create rolebinding github-ci-dev-admin \
-     --clusterrole=admin \
-     --serviceaccount=onyx-dev:github-ci-dev \
-     -n onyx-dev
+**Entscheidung: Herabgestuft von P1 auf P3 (Nice-to-have).** Begründung:
+- PROD wird eigener Cluster (ADR-004) — separates Kubeconfig ergibt sich automatisch. Blast-Radius-Reduktion ist architektonisch gelöst.
+- Solo-Entwickler — Namespace-scoped RBAC isoliert den einzigen Operator vor sich selbst (kein praktischer Nutzen)
+- CI/CD bereits gehärtet: SHA-gepinnte Actions, `permissions: contents: read`, Environment-gated Deploys
+- Kein BAIT/BSI-Requirement für Pre-Production bei Solo-Dev (BAIT Kap. 8.6 gilt für Produktionsumgebung)
+- DEV/TEST enthalten keine Kundendaten
 
-   # ServiceAccount für TEST-Deploys (analog)
-   kubectl create serviceaccount github-ci-test -n onyx-test
-   kubectl create rolebinding github-ci-test-admin \
-     --clusterrole=admin \
-     --serviceaccount=onyx-test:github-ci-test \
-     -n onyx-test
-   ```
-2. **Kubeconfig pro ServiceAccount** generieren (Token-basiert).
-3. **GitHub Secrets trennen**: `STACKIT_KUBECONFIG` von global → per Environment (`dev`, `test`, `prod`).
-4. **Workflow anpassen**: `secrets.STACKIT_KUBECONFIG` referenziert dann automatisch den Environment-spezifischen Secret.
+**Opportunistische Umsetzung**: Beim Kubeconfig-Renewal (Ablauf 2026-05-28) kostenneutral mitnehmbar — neue ServiceAccounts + namespace-scoped RoleBindings statt erneuter Cluster-Admin-Kubeconfig.
 
-**Aufwand**: 3 Stunden (ServiceAccounts + RBAC + Kubeconfig + Workflow-Test)
-**Risiko bei Nicht-Umsetzung**: Kompromittierter DEV-Workflow kann TEST/PROD manipulieren. Für PROD zwingend erforderlich.
+**Aufwand bei Umsetzung**: 3 Stunden
+**Risiko bei Nicht-Umsetzung**: Gering für DEV/TEST. Für PROD durch ADR-004 (eigener Cluster) abgedeckt.
 
-### SEC-06: Container SecurityContext (P2 — vor VÖB-Abnahme)
+### SEC-06: Container SecurityContext — HOCHGESTUFT auf P1 (2026-03-08)
 
-**Problem**: Keine `securityContext`-Konfiguration in Helm Values. Container laufen potenziell als root. BSI-Grundschutz fordert Minimierung von Container-Privilegien.
+**Kritisches Finding**: Analyse der Onyx Helm Chart Templates (2026-03-08) ergab, dass mehrere Komponenten mit `privileged: true` + `runAsUser: 0` laufen. Ein privilegierter Container hat vollen Host-Kernel-Zugriff — faktisch keine Container-Isolation.
 
 **Betrifft**: `deployment/helm/values/values-common.yaml` (alle Environments).
 
-**Lösung**:
-1. **Onyx Helm Chart prüfen** — welche Deployments `securityContext` im Template unterstützen:
-   ```bash
-   grep -r "securityContext" deployment/helm/charts/onyx/templates/
-   ```
-2. **SecurityContext in values-common.yaml** für alle Deployments die es unterstützen:
+**Betroffene Komponenten:**
+
+| Komponente | Aktueller Zustand | Risiko |
+|------------|-------------------|--------|
+| Celery (alle 8 Worker) | `privileged: true`, `runAsUser: 0` | HOCH |
+| Model Server (inference + index) | `privileged: true`, `runAsUser: 0` | HOCH |
+| Vespa | `privileged: true`, `runAsUser: 0` | HOCH |
+| API Server | `runAsUser: 0` (nicht privileged) | Mittel |
+| Web Server (Next.js) | UID 1001 (non-root) | OK |
+| NGINX Ingress | `runAsNonRoot`, UID 101 | OK |
+
+**BSI-Relevanz**: SYS.1.6.A10: "Privileged Mode SOLLTE NICHT verwendet werden." In einem Banking-Kontext wird dies in jedem Audit als Finding markiert.
+
+**Technischer Hinweis**: Alle Chart-Templates unterstützen `securityContext`-Overrides via Values (`{{- toYaml .Values.<component>.securityContext | nindent 12 }}`). Kein Chart-Umbau nötig.
+
+**Stufenplan:**
+1. **Phase 1 (Quick Win, 1-2h):** `privileged: false` für Celery, Model Server, Vespa via `values-common.yaml`. `runAsUser: 0` beibehalten. Eliminiert das schlimmste Finding — `privileged` wird fast nie tatsächlich benötigt (Onyx setzt es als lazy Default).
    ```yaml
-   api:
+   # values-common.yaml — für jede betroffene Komponente:
+   celery_shared:
      securityContext:
-       runAsNonRoot: true
-       runAsUser: 1000
-       readOnlyRootFilesystem: true  # falls möglich
+       privileged: false
+   inferenceCapability:
+     securityContext:
+       privileged: false
+   indexCapability:
+     securityContext:
+       privileged: false
+   vespa:
+     securityContext:
+       privileged: false
    ```
-3. **Testen**: Jeder Pod muss mit der neuen Config starten können. Manche Onyx-Komponenten brauchen ggf. Schreibzugriff auf `/tmp` → `emptyDir`-Volume.
+2. **Phase 2 (vor PROD, 4-6h):** `runAsUser: 1001` + `runAsNonRoot: true` für API, Celery, Model Server. Dockerfiles definieren User `onyx` (UID 1001), nutzen ihn aber nie via `USER` Directive. `emptyDir` für `/tmp` (Celery Readiness/Liveness Probes schreiben nach `/tmp/onyx_k8s_*`). Vespa als dokumentierte Ausnahme (Upstream-Limitation: benötigt ggf. Root für `vm.max_map_count`).
+3. **Phase 3 (P2, optional):** `readOnlyRootFilesystem: true` mit vollständigem emptyDir-Mapping. Diminishing Returns.
 
-**Aufwand**: 4 Stunden (Chart-Analyse + Konfiguration + Testing)
-**Risiko bei Nicht-Umsetzung**: BSI-Härtung nicht vollständig. Kein akutes Risiko für DEV/TEST.
+**Aufwand**: Phase 1: 1-2h | Phase 2: 4-6h | Phase 3: 3-4h
+**Risiko bei Nicht-Umsetzung**: `privileged: true` ist inakzeptabel in einem Banking-Kontext. Selbst bei geringer Angriffswahrscheinlichkeit (internes System) ist es ein Audit-Blocker.
 
-### SEC-07: Encryption-at-Rest verifizieren (P2 — vor VÖB-Abnahme)
+### SEC-07: Encryption-at-Rest — ERLEDIGT (2026-03-08)
 
-**Problem**: Nicht dokumentiert/verifiziert, ob StackIT Managed PG Flex und Object Storage Verschlüsselung at-rest bieten.
+**Verifiziert**: StackIT Managed Services bieten Encryption-at-Rest standardmäßig — nicht deaktivierbar.
 
-**Lösung**:
-1. StackIT-Dokumentation prüfen oder Support kontaktieren.
-2. Nachweis in `docs/sicherheitskonzept.md` dokumentieren.
-3. Falls nicht standardmäßig: Encryption-Optionen evaluieren.
+- **PostgreSQL Flex**: Verschlüsselte SSD-Volumes (AES-256)
+- **Object Storage**: Server-Side Encryption (SSE) als Default
+- **Nachweis**: Dokumentiert in `docs/sicherheitskonzept.md`, Abschnitt SEC-07
 
-**Aufwand**: 1 Stunde (Recherche + Dokumentation)
+**Kein Handlungsbedarf.** Verschlüsselung ist plattformseitig garantiert.
 
 ---
 

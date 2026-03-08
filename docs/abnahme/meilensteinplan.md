@@ -48,7 +48,7 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 - **StackIT Kubernetes Cluster (SKE)**
   - 1 Cluster `vob-chatbot`, Node Pool `devtest` mit 2x g1a.8d (8 vCPU, 32 GB RAM je)
-  - Kubernetes v1.32.12, Flatcar OS
+  - Kubernetes v1.33.8, Flatcar 4459.2.1 (upgraded 2026-03-08)
   - Ingress Controller (NGINX) je Umgebung (DEV: `nginx`, TEST: `nginx-test`)
   - Load Balancer: DEV `188.34.74.187`, TEST `188.34.118.201`
   - Architekturentscheidung: [ADR-004](../adr/adr-004-umgebungstrennung-dev-test-prod.md)
@@ -92,7 +92,7 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 | Nr. | Kriterium | Status |
 |-----|-----------|--------|
-| M1-1 | Kubernetes Cluster laeuft mit 2 Nodes (g1a.8d, upgraded 2026-03-06) | [x] Ja |
+| M1-1 | Kubernetes Cluster laeuft mit 2 Nodes (g1a.8d, K8s v1.33.8 upgraded 2026-03-08) | [x] Ja |
 | M1-2 | DEV: PostgreSQL erreichbar und funktionsfaehig | [x] Ja |
 | M1-3 | DEV: Vespa deployed und lauffaehig | [x] Ja |
 | M1-4 | DEV: Object Storage Bucket `vob-dev` funktioniert | [x] Ja |
@@ -110,8 +110,8 @@ Die Cloud-Infrastruktur ist auf StackIT provisioniert, DEV- und TEST-Umgebung si
 
 | Nr. | Thema | Status |
 |-----|-------|--------|
-| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | ✅ A-Records gesetzt (2026-03-05). ✅ Cloudflare DNS-only verifiziert (2026-03-05). TLS blockiert durch Cloudflare API Token Error |
-| M1-N2 | TLS/HTTPS (nach DNS-Setup) | Blockiert (Cloudflare Proxy-Umstellung) |
+| M1-N1 | DNS-Eintraege (`dev.chatbot.voeb-service.de` / `test.chatbot.voeb-service.de`) | ✅ A-Records gesetzt (2026-03-05). ✅ Cloudflare DNS-only verifiziert (2026-03-05). TLS blockiert — DNS-Architektur (voeb-service.de bei GlobVill), wartet auf 2 ACME-Challenge CNAMEs |
+| M1-N2 | TLS/HTTPS (nach DNS-Setup) | Blockiert — Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen. Details: docs/runbooks/dns-tls-setup.md |
 | M1-N3 | Embedding-Modell (Qwen3-VL-Embedding 8B) konfigurieren | Blocker aufgehoben (Upstream PR #9005). Fallback nomic-embed-text-v1 aktiv, RAG funktional. |
 | M1-N4 | LLM in TEST Admin UI konfigurieren | ✅ Erledigt (2026-03-03) |
 | M1-N5 | CI/CD `workflow_dispatch` fuer TEST verifizieren | ✅ Erledigt (2026-03-03) |
@@ -507,7 +507,7 @@ System ist produktiv deployed, validiert und an VÖB uebergeben.
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
 | Entra ID Zugangsdaten | VÖB IT | Blockiert M2 (Auth) |
-| DNS-Eintraege | VÖB IT | ✅ A-Records gesetzt (2026-03-05). TLS blockiert durch Cloudflare API Token Error |
+| DNS-Eintraege | VÖB IT | ✅ A-Records gesetzt (2026-03-05). TLS blockiert — 2 ACME-Challenge CNAMEs bei GlobVill offen (wartet auf Leif) |
 
 ---
 
@@ -525,7 +525,8 @@ System ist produktiv deployed, validiert und an VÖB uebergeben.
 | 2026-03-02 | CI/CD Pipeline produktionsreif (Run #5 gruen, ~10 Min) |
 | 2026-03-02 | 21 Onyx-Upstream-Workflows deaktiviert |
 | 2026-03-03 | SEC-01: PostgreSQL ACL eingeschraenkt |
-| 2026-03-03 | TEST LIVE: Node Pool 2 Nodes, PG `vob-test`, Bucket `vob-test`, 9 Pods Running |
+| 2026-03-03 | TEST LIVE: Node Pool 2 Nodes, PG `vob-test`, Bucket `vob-test` |
+| 2026-03-06 | TEST redeployed: 15 Pods Running (8 Celery-Worker, Standard Mode), g1a.8d Nodes |
 
 ---
 

@@ -9,6 +9,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- [Infra] **Kubernetes v1.32 → v1.33 Upgrade** (2026-03-08)
+  - Terraform apply erfolgreich (9m40s), 0 added, 1 changed, 0 destroyed
+  - Nodes: v1.33.8, Flatcar 4459.2.1 (beide supported, vorherige Versionen deprecated)
+  - DEV 16/16 Pods Running, TEST 15/15 Pods Running, Health OK
 - [Infra] **Node-Upgrade g1a.4d → g1a.8d** (2026-03-06)
   - ADR-005: 8 vCPU, 32 GB RAM, 100 GB Disk pro Node (vorher: 4 vCPU, 16 GB RAM, 50 GB)
   - Terraform apply erfolgreich (10m11s), 0 added, 1 changed, 0 destroyed
@@ -27,7 +31,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `.github/workflows/pr-checks.yml` mit 3 parallelen Jobs: helm-validate, build-backend, build-frontend
   - Merged via PR #4
 - [Infra] **Branch Protection auf main aktiviert** (2026-03-06)
-  - PR required (kein Direct Push), 1 Approval required, Stale Reviews dismissed
+  - PR required (kein Direct Push), 3 Required Status Checks. Review-Requirement entfernt (Solo-Dev, 2026-03-07)
   - 3 Required Status Checks: helm-validate, build-backend, build-frontend
   - Force Push + Branch Delete blockiert, enforce_admins: false (Notfall-Override)
 - [Docs] **Change & Release Management Dokumentation** (2026-03-05)
@@ -40,6 +44,17 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Betriebskonzept v0.4, Sicherheitskonzept v0.4
 
 ### Security
+- [Infra] **SEC-06: `privileged: true` entfernt** (2026-03-08)
+  - Betroffen: Celery (8 Worker), Model Server (inference + index), Vespa — liefen als `privileged: true` + `runAsUser: 0`
+  - Fix: `privileged: false` in `values-common.yaml` für `celery_shared`, `inferenceCapability`, `indexCapability`, `vespa`
+  - BSI SYS.1.6.A10: "Privileged Mode SOLLTE NICHT verwendet werden"
+  - Helm Template validiert: 11x `privileged: false`, 0x `true` (DEV + TEST)
+  - Phase 2 (vor PROD): `runAsNonRoot: true` + `runAsUser: 1001`
+- [Infra] **SEC-02/04/05 zurückgestellt, SEC-07 verifiziert** (2026-03-08)
+  - SEC-02 (Node Affinity): P1 → Zurückgestellt — ADR-004: "Kein Dedicated-Node-Affinity nötig", bestehende Isolation ausreichend
+  - SEC-04 (Remote State): P1 → P3 — Solo-Dev, FileVault, gitignored. Quick Win: `chmod 600` auf State-Dateien
+  - SEC-05 (Kubeconfigs): P1 → P3 — PROD = eigener Cluster (ADR-004), opportunistisch bei Renewal
+  - SEC-07 (Encryption-at-Rest): Verifiziert — StackIT Default (AES-256 PG, SSE S3)
 - [Infra] **C5/SEC-03: NetworkPolicies auf DEV + TEST applied** (2026-03-05)
   - 5 Policies: default-deny, DNS-egress, intra-namespace, external-ingress-nginx, external-egress
   - Zero-Trust Baseline: DEV ↔ TEST Cross-Namespace-Isolation verifiziert

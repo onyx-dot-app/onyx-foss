@@ -89,17 +89,14 @@ Der Review rechnet mit einem einzelnen Node (4 vCPU = 4000m, davon ~3300m schedu
 **Tatsaechliche Situation:**
 
 - 2 Nodes teilen sich DEV + TEST + System-Pods
-- DEV: 10 Pods (~2.000m CPU Requests)
-- TEST: 9 Pods (~1.900m CPU Requests)
+- DEV: 16 Pods (~3.500m CPU Requests, 8 Celery-Worker Standard Mode)
+- TEST: 15 Pods (~3.500m CPU Requests, 8 Celery-Worker Standard Mode)
 - System (CoreDNS, kube-proxy, Gardener Node-Agent): ~500m
-- **Aktuell: ~4.400m von ~6.600m schedulable = 67%**
+- **Aktuell: ~7.500m von ~15.820m schedulable (2x g1a.8d) = ~47%**
 
-Nach Hinzufuegen von 12 neuen Worker-Pods (6 pro Environment) mit reduzierten Requests (100m je):
-
-- **Zusaetzlich: ~1.200m**
-- **Neu: ~5.600m von ~6.600m = 85%**
-
-Das passt rechnerisch, laesst aber keinen Headroom fuer Lastspitzen, Pod-Restarts oder Node-Drain bei Updates.
+> **Update 2026-03-06:** Node-Upgrade auf g1a.8d (8 vCPU, 32 GB RAM, 100 GB Disk pro Node) durchgefuehrt.
+> Lightweight Worker Mode durch Upstream PR #9014 entfernt — 8 separate Celery-Worker-Deployments pro Environment.
+> CPU-Auslastung ist komfortabel mit ausreichend Headroom fuer Lastspitzen und Node-Drain.
 
 ---
 

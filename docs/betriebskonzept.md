@@ -422,7 +422,7 @@ Jede Änderung wird an folgenden Stellen dokumentiert:
 |----------|--------|---------|
 | Pull Request Pflicht | IMPLEMENTIERT | Jede Änderung läuft über Feature-Branch + PR |
 | Self-Review + PR-Checkliste | IMPLEMENTIERT | Checkliste vor jedem Commit (Tests, Lint, Types, Docs) |
-| Branch Protection (`main`) | IMPLEMENTIERT (2026-03-06) | PR required, 1 Review, 3 Required Status Checks (helm-validate, build-backend, build-frontend) |
+| Branch Protection (`main`) | IMPLEMENTIERT (2026-03-07) | PR required, 3 Required Status Checks (helm-validate, build-backend, build-frontend), kein Review-Requirement (Solo-Dev) |
 | Environment Protection (`prod`) | GEPLANT | Required Reviewers in GitHub Environment Settings |
 
 **Interims-Lösung** (bis zweiter Reviewer verfügbar):
@@ -828,12 +828,12 @@ SLAs, Verfügbarkeitsziele und Reaktionszeiten müssen mit VÖB abgestimmt werde
 | ID | Finding | Priorität | Status |
 |----|---------|-----------|--------|
 | SEC-01 | PostgreSQL ACL auf Cluster-Egress-IP einschränken | P0 | Umgesetzt |
-| SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | P1 | Vor PROD |
+| SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | ~~P1~~ | **Zurückgestellt** (2026-03-08) — bestehende Isolation ausreichend (siehe Sicherheitskonzept) |
 | SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | **Umgesetzt** (2026-03-05) |
-| SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | P1 | Vor PROD |
-| SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | P1 | Vor PROD |
-| SEC-06 | Container SecurityContext (runAsNonRoot etc.) | P2 | Vor Abnahme |
-| SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | Vor Abnahme |
+| SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | ~~P1~~ → P3 | **Zurückgestellt** (2026-03-08) — Solo-Dev, FileVault, Quick Win `chmod 600` umgesetzt |
+| SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | ~~P1~~ → P3 | **Zurückgestellt** (2026-03-08) — PROD = eigener Cluster, opportunistisch bei Renewal |
+| SEC-06 | Container SecurityContext (`privileged: true` entfernen) | ~~P2~~ → **P1** | Offen — `privileged: true` auf Celery/Model Server/Vespa, Audit-relevant |
+| SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | **Umgesetzt** (2026-03-08) — StackIT Default |
 
 ### Betriebsmaßnahmen (OPS)
 

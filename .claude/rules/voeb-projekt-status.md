@@ -34,7 +34,7 @@
   - ✅ EE-Crash gelöst: `LICENSE_ENFORCEMENT_ENABLED: "false"` in values-common.yaml
   - ✅ DNS: A-Records gesetzt (2026-03-05): `dev.chatbot.voeb-service.de` → `188.34.74.187`, `test.chatbot.voeb-service.de` → `188.34.118.201`
   - ✅ DNS: Cloudflare Proxy auf DNS-only umgestellt und verifiziert (2026-03-05)
-  - ⏳ TLS/HTTPS: Blockiert durch Cloudflare API Token Auth Error (10000), wartet auf Leif
+  - ⏳ TLS/HTTPS: Blockiert — DNS-Architektur (voeb-service.de bei GlobVill, nicht Cloudflare). Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen. Token-Fix erledigt, ClusterIssuers READY. HTTP-01 nicht moeglich (Onyx Chart containerPort 1024). Details: docs/runbooks/dns-tls-setup.md
   - ✅ LLM: GPT-OSS 120B + Qwen3-VL 235B via StackIT AI Model Serving (2026-02-27)
   - ✅ LLM: Embedding-Blocker aufgehoben (Upstream PR #9005 — Search Settings Swap re-enabled). nomic-embed-text-v1 noch aktiv, Wechsel auf Qwen3-VL-Embedding 8B jetzt moeglich ueber Admin-UI.
   - 📋 Scope: DEV live, TEST live.
@@ -56,7 +56,7 @@
   - ✅ Fork-Management Doku überarbeitet (8-Schritte-Anleitung)
   - ✅ LLM: Embedding-Blocker aufgehoben (Upstream PR #9005). Wechsel auf Qwen3-VL-Embedding 8B jetzt moeglich.
   - ✅ DNS: A-Records gesetzt + Cloudflare DNS-only verifiziert (2026-03-05)
-  - ⏳ TLS/HTTPS: Blockiert durch Cloudflare API Token Auth Error (10000), wartet auf Leif
+  - ⏳ TLS/HTTPS: Blockiert — DNS-Architektur (voeb-service.de bei GlobVill, nicht Cloudflare). Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen. Token-Fix erledigt, ClusterIssuers READY. HTTP-01 nicht moeglich (Onyx Chart containerPort 1024). Details: docs/runbooks/dns-tls-setup.md
   - ✅ Cloud-Infrastruktur-Audit durchgeführt (2026-03-04): 10 CRITICAL, 18 HIGH, ~20 MEDIUM, ~12 LOW
   - ✅ 3 Security Quick Wins deployed (2026-03-05): C6 (DB_READONLY→Secret), H8 (Security-Header), H11 (Script Injection Fix)
   - ✅ C5/SEC-03: NetworkPolicies auf DEV + TEST applied (2026-03-05) — 5 Policies, Cross-NS-Isolation verifiziert
@@ -65,7 +65,8 @@
   - ✅ Celery: 8 separate Worker-Deployments (Lightweight Mode entfernt, Upstream PR #9014)
   - ✅ DEV: 16 Pods Running | TEST: 15 Pods Running (redeployed 2026-03-06)
   - ✅ PR-CI-Workflow (PR #4): helm-validate + build-backend + build-frontend (2026-03-06)
-  - ✅ Branch Protection auf main: PR required, 1 Review, 3 Required Status Checks (2026-03-06)
+  - ✅ Branch Protection auf main: PR required, 3 Required Status Checks, kein Review-Requirement (Solo-Dev) (2026-03-07)
+  - ✅ K8s v1.32 → v1.33 Upgrade (2026-03-08): v1.33.8, Flatcar 4459.2.1, Terraform apply 9m40s, DEV 16/16 + TEST 15/15 Pods Running
 - **Phase 3 (Auth):** ⏳ Blockiert — wartet auf Entra ID von VÖB
 - **Phase 4 (Extensions):**
   - 4a: ✅ Extension Framework Basis (Config, Feature Flags, Router, Health Endpoint, Docker)
@@ -73,11 +74,12 @@
 - **Phase 5-6:** Geplant (Testing, Production)
 
 ## Nächster Schritt
-**1. TLS aktivieren (blockiert durch Cloudflare Token Error, wartet auf Leif) → 2. M1-Abnahmeprotokoll ausfuellen → 3. Entra ID (wartet auf VÖB) → 4. Embedding auf Qwen3-VL (Blocker aufgehoben, via Admin-UI) → 5. K8s v1.32 Upgrade (deprecated laut StackIT) → 6. SEC-02, SEC-04 (vor PROD).** Plan: `docs/referenz/stackit-implementierungsplan.md`
+**1. TLS aktivieren (Leif muss 2 ACME-Challenge CNAMEs bei GlobVill setzen, Details: docs/runbooks/dns-tls-setup.md) → 2. SEC-06: `privileged: true` entfernen (Celery/Model Server/Vespa, Audit-relevant, hochgestuft auf P1) → 3. M1-Abnahmeprotokoll ausfuellen → 4. Entra ID (wartet auf VÖB) → 5. Embedding auf Qwen3-VL (Blocker aufgehoben, via Admin-UI). SEC-02/04/05 zurückgestellt (P3). SEC-07 erledigt.** Plan: `docs/referenz/stackit-implementierungsplan.md`
 
 ## Blocker
 | Blocker | Wartet auf | Impact |
 |---------|-----------|--------|
+| TLS/HTTPS: 2 ACME-Challenge CNAMEs bei GlobVill | Leif (GlobVill DNS-Admin) | TLS fuer DEV + TEST |
 | Entra ID Zugangsdaten | VÖB IT | Phase 3 |
 
 ## Erledigte Blocker
@@ -87,3 +89,4 @@
 | SA `project.admin`-Rolle | ✅ Rolle erteilt | 2026-02-22 |
 | LLM API Keys | ✅ StackIT AI Model Serving Token erstellt, GPT-OSS 120B konfiguriert | 2026-02-27 |
 | Embedding-Wechsel blockiert (PR #7541) | ✅ Upstream PR #9005 — Search Settings Swap re-enabled | 2026-03-06 |
+| Cloudflare API Token Auth Error (10000) | ✅ Leif hat Permissions erweitert, ClusterIssuers READY | 2026-03-07 |

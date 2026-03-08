@@ -22,7 +22,7 @@ module "stackit" {
 
   # SKE Cluster
   cluster_name       = "vob-chatbot"
-  kubernetes_version = "1.32"
+  kubernetes_version = "1.33"
   availability_zones = ["eu01-3"]
 
   # Node Pool "devtest" — 2 Nodes für DEV + TEST (ADR-004)

@@ -238,9 +238,10 @@ Die folgende Matrix dokumentiert alle Zugriffsrechte auf Infrastruktur- und Anwe
 
 | Maßnahme | Betrifft | Priorität | Status |
 |----------|----------|-----------|--------|
-| SEC-05: Namespace-scoped ServiceAccounts | Kubernetes RBAC | P1 (vor PROD) | Offen |
-| SEC-04: Remote State Backend | Terraform | P1 (vor PROD) | Offen |
-| Branch Protection auf `main` | GitHub | P1 (vor PROD) | **ERLEDIGT** (2026-03-06): PR required, 1 Review, 3 Status Checks |
+| SEC-05: Namespace-scoped ServiceAccounts | Kubernetes RBAC | ~~P1~~ → P3 | **ZURÜCKGESTELLT** (2026-03-08) — PROD = eigener Cluster |
+| SEC-04: Remote State Backend | Terraform | ~~P1~~ → P3 | **ZURÜCKGESTELLT** (2026-03-08) — Solo-Dev, FileVault |
+| SEC-06: Container SecurityContext | Helm Values | ~~P2~~ → **P1** | Offen — `privileged: true` entfernen |
+| Branch Protection auf `main` | GitHub | P1 (vor PROD) | **ERLEDIGT** (2026-03-07): PR required, 3 Status Checks, kein Review (Solo-Dev) |
 | Environment Protection auf `prod` | GitHub | P1 (vor PROD) | Offen |
 | VÖB als Required Reviewer | GitHub Environment `prod` | Langfristig | Offen |
 
@@ -265,7 +266,7 @@ Das Projekt wird aktuell von einem einzelnen Tech Lead (Nikolaj Ivanov, CCJ) ent
 
 | Maßnahme | Konfiguration | Effekt | Status |
 |----------|--------------|--------|--------|
-| GitHub Branch Protection auf `main` | Require Pull Request, Require 1 Approval, 3 Required Status Checks (helm-validate, build-backend, build-frontend) | Kein direkter Push auf `main` möglich | **ERLEDIGT** (2026-03-06) |
+| GitHub Branch Protection auf `main` | Require Pull Request, 3 Required Status Checks (helm-validate, build-backend, build-frontend) | Kein direkter Push auf `main` möglich. Review-Requirement entfernt (Solo-Dev, 2026-03-07). | **ERLEDIGT** |
 
 **Geplante Maßnahmen** (vor PROD):
 
@@ -774,12 +775,12 @@ Kubernetes Pod-Logs werden standardmäßig bei Pod-Restart gelöscht. Ohne zentr
 | ID | Finding | Priorität | Status |
 |----|---------|-----------|--------|
 | SEC-01 | PostgreSQL ACL auf Cluster-Egress-IP einschränken | P0 | **ERLEDIGT** (2026-03-03) |
-| SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | P1 | OFFEN |
+| SEC-02 | Node Affinity erzwingen (DEV/TEST auf eigenen Nodes) | ~~P1~~ | **ZURÜCKGESTELLT** — Begründung siehe unten |
 | SEC-03 | Kubernetes NetworkPolicies (Namespace-Isolation) | P1 | **ERLEDIGT** (2026-03-05) |
-| SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | P1 | OFFEN |
-| SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | P1 | OFFEN |
-| SEC-06 | Container SecurityContext (runAsNonRoot etc.) | P2 | OFFEN |
-| SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | OFFEN |
+| SEC-04 | Terraform Remote State (Secrets im Klartext lokal) | ~~P1~~ → P3 | **ZURÜCKGESTELLT** — Quick Win `chmod 600` umgesetzt, Remote State optional |
+| SEC-05 | Separate Kubeconfigs pro Environment (RBAC) | ~~P1~~ → P3 | **ZURÜCKGESTELLT** — PROD = eigener Cluster (ADR-004), löst sich automatisch |
+| SEC-06 | Container SecurityContext (`privileged: true` entfernen) | ~~P2~~ → **P1** | OFFEN — `privileged: true` auf Celery/Model Server/Vespa ist inakzeptabel |
+| SEC-07 | Encryption-at-Rest verifizieren (PG, S3, Volumes) | P2 | **ERLEDIGT** (2026-03-08) — StackIT Default |
 
 ### SEC-01: PostgreSQL ACL (ERLEDIGT)
 
@@ -791,20 +792,87 @@ Kubernetes Pod-Logs werden standardmäßig bei Pod-Restart gelöscht. Ohne zentr
 - `188.34.93.194` = Cluster-Egress-IP (NAT Gateway, fest für Cluster-Lifecycle)
 - `109.41.112.160` = Admin-IP (für direkten DB-Zugriff bei Debugging)
 
-### SEC-02 bis SEC-05: Geplant (P1 -- vor PROD)
+### SEC-02: Node Affinity — ZURÜCKGESTELLT (2026-03-08)
 
-Details zu jedem Finding in `docs/referenz/stackit-implementierungsplan.md`, Abschnitt "Security-Härtung".
+**Ursprüngliches Finding**: `nodeSelector` in Helm Values erzwingen, damit DEV- und TEST-Pods jeweils auf eigenen Nodes laufen.
 
-**Zusammenfassung der offenen P1-Items:**
-- **SEC-02**: Node Affinity erzwingen — `nodeSelector` in Helm Values, damit DEV- und TEST-Pods auf eigenen Nodes laufen (ADR-004)
-- ~~**SEC-03**: Default-Deny NetworkPolicies~~ → **ERLEDIGT** (2026-03-05, siehe oben)
-- **SEC-04**: Terraform State in StackIT Object Storage (Remote Backend mit State-Locking)
-- **SEC-05**: Namespace-scoped ServiceAccounts für CI/CD statt globalem Kubeconfig
+**Entscheidung: Zurückgestellt — kein akuter Handlungsbedarf.** Begründung:
 
-### SEC-06 und SEC-07: Geplant (P2 -- vor VÖB-Abnahme)
+1. **ADR-004 sagt explizit**: "Kein Dedicated-Node-Affinity nötig — der Scheduler balanciert automatisch" (Zeile 61). Die eigene Architekturentscheidung stuft Node Affinity als unnötig ein.
+2. **Bestehende Isolation ist ausreichend**: Namespace-Isolation + NetworkPolicies (SEC-03, 5 Policies pro Namespace, Cross-NS-Traffic verifiziert blockiert) + separate PG-Instanzen + separate S3-Buckets + separate Secrets + separate LoadBalancer-IPs. BAIT und BSI IT-Grundschutz fordern nachweisbare Umgebungstrennung, aber nicht explizit auf Node-Ebene.
+3. **DEV/TEST enthalten keine Produktionsdaten** — das Restrisiko bei Pod-Kolokation (Container Escape, Resource Exhaustion) ist gering und durch Resource Limits bereits mitigiert.
+4. **PROD wird ein eigener Cluster** (ADR-004) — dort ist Node Affinity irrelevant, da keine Shared-Node-Situation entsteht.
+5. **Technische Einschränkung**: Der aktuelle Node Pool (`devtest`) ist ein einzelner Pool mit 2 Nodes. Persistente Labels per Terraform erfordern **separate Node Pools** (einer für DEV, einer für TEST), was eine größere Infrastrukturänderung mit Kostenimpact wäre. Manuelle `kubectl label`-Labels überleben keine Node-Replacements (Scaling, Maintenance).
 
-- **SEC-06**: `securityContext` in Helm Values (runAsNonRoot, readOnlyRootFilesystem)
-- **SEC-07**: Verifizierung bei StackIT ob Managed PG Flex und Object Storage Encryption-at-Rest bieten
+**Risikobewertung**: Gering. Der Kubernetes-Scheduler verteilt Pods natürlich über verfügbare Nodes (Bin-Packing). Bei ~3,5 CPU Requests pro Environment und ~7,9 CPU Allocatable pro Node ist eine einseitige Verteilung unwahrscheinlich. Selbst im Worst Case (alle Pods auf einem Node) greifen Namespace-Isolation und NetworkPolicies.
+
+**Wiederaufnahme-Kriterium**: Nur relevant, falls VÖB-Audit explizit Node-Level-Isolation fordert oder falls ein dritter Tenant auf denselben Cluster kommt.
+
+### SEC-04: Terraform Remote State — ZURÜCKGESTELLT (2026-03-08)
+
+**Ursprüngliches Finding**: Terraform State liegt lokal mit Klartext-Passwörtern. Kein Backup, kein Audit-Trail.
+
+**Entscheidung: Herabgestuft von P1 auf P3 (Nice-to-have).** Begründung:
+
+1. **Solo-Entwickler** — kein Risiko durch Team-Kollisionen, kein State-Locking nötig (StackIT S3 bietet ohnehin kein DynamoDB-Äquivalent)
+2. **FileVault aktiv** — volle Festplattenverschlüsselung auf dem Entwickler-Laptop, State ist at-rest verschlüsselt
+3. **State ist gitignored** — `*.tfstate` und `*.tfstate.*` in `.gitignore`, kein Risiko eines versehentlichen Commits
+4. **CI/CD nutzt kein Terraform** — nur Helm/kubectl. Terraform wird ausschließlich lokal ausgeführt
+5. **PG ACL als Defense-in-Depth** — selbst bei Passwort-Leak ist DB-Zugang auf Cluster-Egress-IP + Admin-IP beschränkt
+6. **Remote State löst das Problem nicht vollständig** — S3-Credentials für den Bucket-Zugriff müssten wiederum lokal gespeichert werden
+7. **Kein BAIT/BSI-Requirement** — keine regulatorische Vorschrift für Remote IaC State
+
+**Quick Win umgesetzt**: `chmod 600` auf alle State-Dateien (war `644` = world-readable).
+
+**Kosten bei Umsetzung**: 0,03 EUR/Monat (StackIT Object Storage, reine GB-Abrechnung, kein Bucket-Grundpreis). Umsetzung ~2h, kann opportunistisch bei PROD-Vorbereitung erfolgen.
+
+**Wiederaufnahme**: Bei Teamvergrößerung (mehrere Terraform-Operatoren) oder bei expliziter Audit-Anforderung.
+
+### SEC-05: Separate Kubeconfigs — ZURÜCKGESTELLT (2026-03-08)
+
+**Ursprüngliches Finding**: Ein globaler `STACKIT_KUBECONFIG` GitHub Secret für alle Environments. Kompromittierter DEV-Workflow kann TEST/PROD manipulieren.
+
+**Entscheidung: Herabgestuft von P1 auf P3 (Nice-to-have).** Begründung:
+
+1. **PROD wird ein eigener Cluster** (ADR-004) — separates Kubeconfig ergibt sich automatisch. Die Blast-Radius-Reduktion (das einzige starke Argument) ist architektonisch gelöst.
+2. **Solo-Entwickler** — derselbe Operator deployt auf alle Environments. Namespace-scoped RBAC isoliert ihn vor sich selbst, was bei einem 1-Personen-Team keinen praktischen Nutzen hat.
+3. **CI/CD ist bereits gehärtet** — SHA-gepinnte Actions, `permissions: contents: read`, Environment-gated Deploys (TEST/PROD nur per `workflow_dispatch`)
+4. **Kein BAIT/BSI-Requirement** für Pre-Production — BAIT Kap. 8.6 (4-Augen-Prinzip) gilt explizit für Produktionsumgebung, nicht für DEV/TEST bei Solo-Dev
+5. **DEV/TEST enthalten keine Kundendaten** — Worst Case (Cluster-Admin Leak auf DEV/TEST-Cluster) betrifft nur Testdaten
+
+**Opportunistische Umsetzung**: Kann beim Kubeconfig-Renewal (Ablauf 2026-05-28) kostenneutral mitgemacht werden — neue ServiceAccounts + namespace-scoped RoleBindings statt erneuter Cluster-Admin-Kubeconfig.
+
+### SEC-06: Container SecurityContext — P1 (vor PROD)
+
+**Kritisches Finding (2026-03-08):** Analyse der Onyx Helm Chart Templates ergab, dass mehrere Komponenten mit `privileged: true` + `runAsUser: 0` laufen — die höchstmögliche Privilegierung. Ein privilegierter Container hat vollen Zugriff auf den Host-Kernel, Devices und kann Host-Filesysteme mounten.
+
+**Betroffene Komponenten:**
+
+| Komponente | Aktueller Zustand | Risiko |
+|------------|-------------------|--------|
+| Celery (alle 8 Worker) | `privileged: true`, `runAsUser: 0` | **HOCH** — Host-Kernel-Zugriff |
+| Model Server (inference + index) | `privileged: true`, `runAsUser: 0` | **HOCH** — Host-Kernel-Zugriff |
+| Vespa | `privileged: true`, `runAsUser: 0` (Chart überschreibt Subchart-Default) | **HOCH** — Host-Kernel-Zugriff |
+| API Server | `runAsUser: 0` (Root, aber nicht privileged) | Mittel |
+| Web Server (Next.js) | `USER nextjs` (UID 1001) | OK — bereits non-root |
+| NGINX Ingress | `runAsNonRoot: true`, UID 101, no privilege escalation | OK — bereits gehärtet |
+
+**BSI-Relevanz**: SYS.1.6.A10: "Privileged Mode SOLLTE NICHT verwendet werden." (SOLLTE = dringende Empfehlung). In einem Banking-Kontext würde dies als Finding in jedem Audit markiert.
+
+**Geplante Umsetzung (Stufenplan):**
+1. **Phase 1 (Quick Win, 1-2h):** `privileged: false` für Celery, Model Server, Vespa via `values-common.yaml`. `runAsUser: 0` erstmal beibehalten. Eliminiert das schlimmste Finding mit minimalem Risiko — `privileged` wird fast nie tatsächlich benötigt.
+2. **Phase 2 (vor PROD, 4-6h):** `runAsUser: 1001` + `runAsNonRoot: true` für API, Celery, Model Server. `emptyDir` für `/tmp` wo nötig. Vespa als dokumentierte Ausnahme (Upstream-Limitation: benötigt ggf. Root für `vm.max_map_count`).
+3. **Phase 3 (optional, vor Abnahme):** `readOnlyRootFilesystem: true` mit vollständigem emptyDir-Mapping. Diminishing Returns für den Aufwand.
+
+**Technischer Hinweis**: Alle Onyx Chart Templates unterstützen `securityContext`-Overrides via Values (`{{- toYaml .Values.<component>.securityContext | nindent 12 }}`). Kein Chart-Umbau nötig — Änderungen ausschließlich in `values-common.yaml`.
+
+### SEC-07: Encryption-at-Rest (ERLEDIGT)
+
+**Verifiziert (2026-03-08)**: StackIT Managed Services bieten Encryption-at-Rest standardmäßig — nicht deaktivierbar.
+
+- **PostgreSQL Flex**: Verschlüsselte SSD-Volumes (AES-256)
+- **Object Storage**: Server-Side Encryption (SSE) als Default
+- **Status**: Kein Handlungsbedarf, Verschlüsselung ist plattformseitig garantiert
 
 ---
 
@@ -928,20 +996,27 @@ configMap:
 
 ### Vor PROD-Deployment (P1)
 
-1. **SEC-02**: Node Affinity erzwingen (`nodeSelector` in Helm Values, damit DEV/TEST auf eigenen Nodes laufen)
-2. ~~**SEC-03**: Kubernetes NetworkPolicies implementieren~~ → **ERLEDIGT** (2026-03-05, siehe `docs/audit/networkpolicy-analyse.md`)
-3. **SEC-04**: Terraform Remote State migrieren
-4. **SEC-05**: Separate Kubeconfigs pro Environment
-5. **M7**: Cluster-API-ACL (`cluster_acl`) von `0.0.0.0/0` auf Cluster-Egress-IP einschränken (analog SEC-01 für PG)
-6. **TLS**: DNS-Einträge von VÖB IT, dann Let's Encrypt aktivieren
-7. **Entra ID**: App Registration + Credentials von VÖB IT
+1. ~~**SEC-02**: Node Affinity erzwingen~~ → **ZURÜCKGESTELLT** (2026-03-08)
+2. ~~**SEC-03**: Kubernetes NetworkPolicies implementieren~~ → **ERLEDIGT** (2026-03-05)
+3. ~~**SEC-04**: Terraform Remote State~~ → **ZURÜCKGESTELLT** (2026-03-08, herabgestuft auf P3)
+4. ~~**SEC-05**: Separate Kubeconfigs~~ → **ZURÜCKGESTELLT** (2026-03-08, herabgestuft auf P3)
+5. **SEC-06**: Container SecurityContext — `privileged: true` entfernen (hochgestuft von P2 auf P1)
+6. **M7**: Cluster-API-ACL (`cluster_acl`) von `0.0.0.0/0` auf Cluster-Egress-IP einschränken (analog SEC-01 für PG)
+7. **TLS**: DNS-Einträge von VÖB IT, dann Let's Encrypt aktivieren
+8. **Entra ID**: App Registration + Credentials von VÖB IT
 
 ### Vor VÖB-Abnahme (P2)
 
-7. **SEC-06**: Container SecurityContext (runAsNonRoot)
-8. **SEC-07**: Encryption-at-Rest bei StackIT verifizieren und dokumentieren
-9. **Penetration Test**: Externe Durchführung
-10. **DSGVO-Assessment (C5)**: Datenschutz-Folgenabschätzung (DSFA), Auftragsverarbeitungsvertrag (AVV), Löschkonzept erstellen
+9. ~~**SEC-07**: Encryption-at-Rest bei StackIT verifizieren~~ → **ERLEDIGT** (2026-03-08, StackIT Default)
+10. **SEC-06 Phase 2**: `runAsNonRoot: true` + `runAsUser: 1001` für alle Komponenten (außer Vespa)
+11. **Penetration Test**: Externe Durchführung
+12. **DSGVO-Assessment (C5)**: Datenschutz-Folgenabschätzung (DSFA), Auftragsverarbeitungsvertrag (AVV), Löschkonzept erstellen
+
+### Opportunistisch (P3 — Nice-to-have)
+
+13. **SEC-04**: Terraform Remote State (bei Teamvergrößerung oder Audit-Anforderung)
+14. **SEC-05**: Separate Kubeconfigs (beim Kubeconfig-Renewal 2026-05-28)
+15. **SEC-06 Phase 3**: `readOnlyRootFilesystem: true` (diminishing returns)
 11. **BAIT-Compliance-Check (M2)**: Vollständige Prüfung gegen BAIT-Anforderungen, Lücken im Sicherheitskonzept schließen
 12. **IP-Ownership (M3)**: In ADR-001 "CCJ oder VÖB" eindeutig klären
 
