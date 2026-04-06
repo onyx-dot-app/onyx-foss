@@ -30,6 +30,7 @@ import InputSelect from "@/refresh-components/inputs/InputSelect";
 import Text from "@/refresh-components/texts/Text";
 import { Button, Card, EmptyMessageCard } from "@opal/components";
 import { SvgMinusCircle, SvgPlusCircle } from "@opal/icons";
+import { markdown } from "@opal/utils";
 import { toast } from "@/hooks/useToast";
 import { Content } from "@opal/layouts";
 import { Section } from "@/layouts/general-layouts";
@@ -344,7 +345,9 @@ export default function CustomModal({
                 <InputLayouts.Vertical
                   name="provider"
                   title="Provider Name"
-                  subDescription="Should be one of the providers listed at https://docs.litellm.ai/docs/providers."
+                  subDescription={markdown(
+                    "Should be one of the providers listed at [LiteLLM](https://docs.litellm.ai/docs/providers)."
+                  )}
                 >
                   <InputTypeInField
                     name="provider"
@@ -362,7 +365,9 @@ export default function CustomModal({
             <Section gap={0.75}>
               <Content
                 title="Provider Configs"
-                description="Add properties as needed by the model provider. This is passed to LiteLLM completion() call as arguments in the environment variable. See LiteLLM documentation for more instructions."
+                description={markdown(
+                  "Add properties as needed by the model provider. This is passed to LiteLLM's `completion()` call as [arguments](https://docs.litellm.ai/docs/completion/input#input-params-1) (e.g. API base URL, API version, API key). See [documentation](https://docs.onyx.app/admins/ai_models/custom_inference_provider) for more instructions."
+                )}
                 widthVariant="full"
                 variant="section"
                 sizePreset="main-content"
@@ -373,6 +378,7 @@ export default function CustomModal({
                 onChange={(items) =>
                   formikProps.setFieldValue("custom_config_list", items)
                 }
+                keyPlaceholder="e.g. api_base, api_version, api_key"
                 addButtonLabel="Add Line"
               />
             </Section>
