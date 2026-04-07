@@ -11,15 +11,6 @@ import LMStudioForm from "@/sections/modals/llmConfig/LMStudioForm";
 import LiteLLMProxyModal from "@/sections/modals/llmConfig/LiteLLMProxyModal";
 import BifrostModal from "@/sections/modals/llmConfig/BifrostModal";
 
-function detectIfRealOpenAIProvider(provider: LLMProviderView) {
-  return (
-    provider.provider === LLMProviderName.OPENAI &&
-    provider.api_key &&
-    !provider.api_base &&
-    Object.keys(provider.custom_config || {}).length === 0
-  );
-}
-
 export function getModalForExistingProvider(
   provider: LLMProviderView,
   onOpenChange?: (open: boolean) => void,
@@ -31,26 +22,44 @@ export function getModalForExistingProvider(
     defaultModelName,
   };
 
+  const hasCustomConfig = provider.custom_config != null;
+
   switch (provider.provider) {
+    // These providers don't use custom_config themselves, so a non-null
+    // custom_config means the provider was created via CustomModal.
     case LLMProviderName.OPENAI:
-      // "openai" as a provider name can be used for litellm proxy / any OpenAI-compatible provider
-      if (detectIfRealOpenAIProvider(provider)) {
-        return <OpenAIModal {...props} />;
-      } else {
-        return <CustomModal {...props} />;
-      }
+      return hasCustomConfig ? (
+        <CustomModal {...props} />
+      ) : (
+        <OpenAIModal {...props} />
+      );
     case LLMProviderName.ANTHROPIC:
-      return <AnthropicModal {...props} />;
+      return hasCustomConfig ? (
+        <CustomModal {...props} />
+      ) : (
+        <AnthropicModal {...props} />
+      );
+    case LLMProviderName.AZURE:
+      return hasCustomConfig ? (
+        <CustomModal {...props} />
+      ) : (
+        <AzureModal {...props} />
+      );
+    case LLMProviderName.OPENROUTER:
+      return hasCustomConfig ? (
+        <CustomModal {...props} />
+      ) : (
+        <OpenRouterModal {...props} />
+      );
+
+    // These providers legitimately store settings in custom_config,
+    // so always use their dedicated modals.
     case LLMProviderName.OLLAMA_CHAT:
       return <OllamaModal {...props} />;
-    case LLMProviderName.AZURE:
-      return <AzureModal {...props} />;
     case LLMProviderName.VERTEX_AI:
       return <VertexAIModal {...props} />;
     case LLMProviderName.BEDROCK:
       return <BedrockModal {...props} />;
-    case LLMProviderName.OPENROUTER:
-      return <OpenRouterModal {...props} />;
     case LLMProviderName.LM_STUDIO:
       return <LMStudioForm {...props} />;
     case LLMProviderName.LITELLM_PROXY:

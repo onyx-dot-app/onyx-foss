@@ -17,7 +17,7 @@ import Switch from "@/refresh-components/inputs/Switch";
 import Text from "@/refresh-components/texts/Text";
 import { Button, LineItemButton, Tag } from "@opal/components";
 import { BaseLLMFormValues } from "@/sections/modals/llmConfig/utils";
-import { WithoutStyles } from "@opal/types";
+import { RichStr, WithoutStyles } from "@opal/types";
 import Separator from "@/refresh-components/Separator";
 import { Section } from "@/layouts/general-layouts";
 import { Hoverable } from "@opal/core";
@@ -49,7 +49,7 @@ import {
 } from "@/lib/llmConfig/providers";
 
 export function FieldSeparator() {
-  return <Separator noPadding className="px-2" />;
+  return <Separator noPadding className="p-2" />;
 }
 
 export type FieldWrapperProps = WithoutStyles<
@@ -89,11 +89,13 @@ export function DisplayNameField({ disabled = false }: DisplayNameFieldProps) {
 export interface APIKeyFieldProps {
   optional?: boolean;
   providerName?: string;
+  subDescription?: string | RichStr;
 }
 
 export function APIKeyField({
   optional = false,
   providerName,
+  subDescription,
 }: APIKeyFieldProps) {
   return (
     <FieldWrapper>
@@ -101,13 +103,15 @@ export function APIKeyField({
         name="api_key"
         title="API Key"
         subDescription={
-          providerName
-            ? `Paste your API key from ${providerName} to access your models.`
-            : "Paste your API key to access your models."
+          subDescription
+            ? subDescription
+            : providerName
+              ? `Paste your API key from ${providerName} to access your models.`
+              : "Paste your API key to access your models."
         }
         suffix={optional ? "optional" : undefined}
       >
-        <PasswordInputTypeInField name="api_key" placeholder="API Key" />
+        <PasswordInputTypeInField name="api_key" />
       </InputLayouts.Vertical>
     </FieldWrapper>
   );
@@ -689,7 +693,7 @@ export function LLMConfigurationModalWrapper({
             description={description}
             onClose={onClose}
           />
-          <Modal.Body padding={0.5} gap={0.5}>
+          <Modal.Body padding={0.5} gap={0}>
             {children}
           </Modal.Body>
           <Modal.Footer>

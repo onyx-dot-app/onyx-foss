@@ -14,6 +14,7 @@ import {
   submitOnboardingProvider,
 } from "@/sections/modals/llmConfig/svc";
 import {
+  APIKeyField,
   DisplayNameField,
   FieldSeparator,
   ModelsAccessField,
@@ -182,28 +183,14 @@ function ModelConfigurationList({ formikProps }: ModelConfigurationListProps) {
 
 // ─── Custom Config Processing ─────────────────────────────────────────────────
 
-// Keys that the backend accepts as dedicated fields on the LLM provider model
-// (alongside `name`, `provider`, etc.) rather than inside the freeform
-// `custom_config` dict. When the user enters one of these in the key-value
-// list, we pull it out and send it as a top-level field in the upsert request
-// so the backend stores and validates it properly.
-const FIRST_CLASS_KEYS = ["api_key", "api_base", "api_version"] as const;
-
-function extractFirstClassFields(items: KeyValue[]) {
-  const firstClass: Record<string, string | undefined> = {};
-  const remaining: { [key: string]: string } = {};
-
+function keyValueListToDict(items: KeyValue[]): Record<string, string> {
+  const result: Record<string, string> = {};
   for (const { key, value } of items) {
-    if ((FIRST_CLASS_KEYS as readonly string[]).includes(key)) {
-      if (value.trim() !== "") {
-        firstClass[key] = value;
-      }
-    } else {
-      remaining[key] = value;
+    if (key.trim() !== "") {
+      result[key] = value;
     }
   }
-
-  return { firstClass, customConfig: remaining };
+  return result;
 }
 
 export default function CustomModal({
@@ -229,6 +216,9 @@ export default function CustomModal({
     ),
     ...(isOnboarding ? buildOnboardingInitialValues() : {}),
     provider: existingLlmProvider?.provider ?? "",
+    api_key: existingLlmProvider?.api_key ?? "",
+    api_base: existingLlmProvider?.api_base ?? "",
+    api_version: existingLlmProvider?.api_version ?? "",
     model_configurations: existingLlmProvider?.model_configurations.map(
       (mc) => ({
         name: mc.name,
@@ -244,16 +234,11 @@ export default function CustomModal({
         supports_image_input: false,
       },
     ],
-    custom_config_list: [
-      ...FIRST_CLASS_KEYS.filter(
-        (k) => existingLlmProvider?.[k] != null && existingLlmProvider[k] !== ""
-      ).map((k) => ({ key: k, value: String(existingLlmProvider![k]) })),
-      ...(existingLlmProvider?.custom_config
-        ? Object.entries(existingLlmProvider.custom_config).map(
-            ([key, value]) => ({ key, value: String(value) })
-          )
-        : []),
-    ],
+    custom_config_list: existingLlmProvider?.custom_config
+      ? Object.entries(existingLlmProvider.custom_config).map(
+          ([key, value]) => ({ key, value: String(value) })
+        )
+      : [],
   };
 
   const modelConfigurationSchema = Yup.object({
@@ -302,16 +287,16 @@ export default function CustomModal({
           return;
         }
 
-        const { firstClass, customConfig } = extractFirstClassFields(
-          values.custom_config_list
-        );
+        // Always send custom_config as a dict (even empty) so the backend
+        // preserves it as non-null — this is the signal that the provider was
+        // created via CustomModal.
+        const customConfig = keyValueListToDict(values.custom_config_list);
 
         if (isOnboarding && onboardingState && onboardingActions) {
           await submitOnboardingProvider({
             providerName: values.provider,
             payload: {
               ...values,
-              ...firstClass,
               model_configurations: modelConfigurations,
               custom_config: customConfig,
             },
@@ -326,23 +311,18 @@ export default function CustomModal({
             (config) => config.name
           );
 
-          const {
-            firstClass: initialFirstClass,
-            customConfig: initialCustomConfig,
-          } = extractFirstClassFields(initialValues.custom_config_list);
-
           await submitLLMProvider({
             providerName: values.provider,
             values: {
               ...values,
-              ...firstClass,
               selected_model_names: selectedModelNames,
               custom_config: customConfig,
             },
             initialValues: {
               ...initialValues,
-              ...initialFirstClass,
-              custom_config: initialCustomConfig,
+              custom_config: keyValueListToDict(
+                initialValues.custom_config_list
+              ),
             },
             modelConfigurations,
             existingLlmProvider,
@@ -366,35 +346,54 @@ export default function CustomModal({
           isSubmitting={formikProps.isSubmitting}
         >
           {!isOnboarding && (
-            <Section gap={0}>
-              <DisplayNameField disabled={!!existingLlmProvider} />
-
-              <FieldWrapper>
-                <InputLayouts.Vertical
+            <FieldWrapper>
+              <InputLayouts.Vertical
+                name="provider"
+                title="Provider Name"
+                subDescription={markdown(
+                  "Should be one of the providers listed at [LiteLLM](https://docs.litellm.ai/docs/providers)."
+                )}
+              >
+                <InputTypeInField
                   name="provider"
-                  title="Provider Name"
-                  subDescription={markdown(
-                    "Should be one of the providers listed at [LiteLLM](https://docs.litellm.ai/docs/providers)."
-                  )}
-                >
-                  <InputTypeInField
-                    name="provider"
-                    placeholder="Provider Name"
-                    variant={existingLlmProvider ? "disabled" : undefined}
-                  />
-                </InputLayouts.Vertical>
-              </FieldWrapper>
-            </Section>
+                  placeholder="Provider Name as shown on LiteLLM"
+                  variant={existingLlmProvider ? "disabled" : undefined}
+                />
+              </InputLayouts.Vertical>
+            </FieldWrapper>
           )}
 
-          <FieldSeparator />
+          <FieldWrapper>
+            <InputLayouts.Vertical
+              name="api_base"
+              title="API Base URL"
+              suffix="optional"
+            >
+              <InputTypeInField name="api_base" placeholder="https://" />
+            </InputLayouts.Vertical>
+          </FieldWrapper>
+
+          <FieldWrapper>
+            <InputLayouts.Vertical
+              name="api_version"
+              title="API Version"
+              suffix="optional"
+            >
+              <InputTypeInField name="api_version" />
+            </InputLayouts.Vertical>
+          </FieldWrapper>
+
+          <APIKeyField
+            optional
+            subDescription="Paste your API key if your model provider requires authentication."
+          />
 
           <FieldWrapper>
             <Section gap={0.75}>
               <Content
-                title="Provider Configs"
+                title="Additional Configs"
                 description={markdown(
-                  "Add properties as needed by the model provider. This is passed to LiteLLM's `completion()` call as [arguments](https://docs.litellm.ai/docs/completion/input#input-params-1) (e.g. API base URL, API version, API key). See [documentation](https://docs.onyx.app/admins/ai_models/custom_inference_provider) for more instructions."
+                  "Add extra properties as needed by the model provider. These are passed to LiteLLM's `completion()` call as [environment variables](https://docs.litellm.ai/docs/set_keys#environment-variables). See [documentation](https://docs.onyx.app/admins/ai_models/custom_inference_provider) for more instructions."
                 )}
                 widthVariant="full"
                 variant="section"
@@ -406,11 +405,16 @@ export default function CustomModal({
                 onChange={(items) =>
                   formikProps.setFieldValue("custom_config_list", items)
                 }
-                keyPlaceholder="e.g. api_base, api_version, api_key"
                 addButtonLabel="Add Line"
               />
             </Section>
           </FieldWrapper>
+
+          <FieldSeparator />
+
+          {!isOnboarding && (
+            <DisplayNameField disabled={!!existingLlmProvider} />
+          )}
 
           <FieldSeparator />
 
