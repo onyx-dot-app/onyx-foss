@@ -120,7 +120,10 @@ export default function ModelSelector({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <div className="flex items-center justify-end gap-1 p-1">
+      <div
+        data-testid="model-selector"
+        className="flex items-center justify-end gap-1 p-1"
+      >
         {!atMax && (
           <Button
             prominence="tertiary"
@@ -144,10 +147,10 @@ export default function ModelSelector({
               <Separator
                 orientation="vertical"
                 paddingXRem={0.5}
-                paddingYRem={0.5}
+                className="h-5"
               />
             )}
-            <div className="flex items-center">
+            <div className="flex items-center shrink-0">
               {selectedModels.map((model, index) => {
                 const ProviderIcon = getProviderIcon(
                   model.provider,
@@ -211,12 +214,7 @@ export default function ModelSelector({
         )}
       </div>
 
-      <Popover.Content
-        side="top"
-        align="start"
-        width="lg"
-        avoidCollisions={false}
-      >
+      <Popover.Content side="top" align="end" width="lg">
         <ModelListContent
           llmProviders={llmManager.llmProviders}
           isLoading={llmManager.isLoadingProviders}

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   MAX_MODELS,
   SelectedModel,
 } from "@/refresh-components/popovers/ModelSelector";
 import { LLMOverride } from "@/app/app/services/lib";
 import { LlmManager } from "@/lib/hooks";
-import { buildLlmOptions } from "@/refresh-components/popovers/LLMPopover";
+import { buildLlmOptions } from "@/refresh-components/popovers/llmUtils";
 
 export interface UseMultiModelChatReturn {
   /** Currently selected models for multi-model comparison. */
@@ -49,12 +49,32 @@ export default function useMultiModelChat(
     [llmManager.llmProviders]
   );
 
+  // Sync selectedModels[0] with llmManager.currentLlm when in single-model
+  // mode. This handles both initial load and session override changes (e.g.
+  // page reload restores the persisted model after providers load).
+  // Skip when user has manually added multiple models (multi-model mode).
+  const selectedModelsRef = useRef(selectedModels);
+  selectedModelsRef.current = selectedModels;
+
   useEffect(() => {
-    if (defaultInitialized) return;
     if (llmOptions.length === 0) return;
     const { currentLlm } = llmManager;
-    // Don't initialize if currentLlm hasn't loaded yet
     if (!currentLlm.modelName) return;
+
+    const current = selectedModelsRef.current;
+
+    // Don't override multi-model selections
+    if (current.length > 1) return;
+
+    // Skip if already showing the correct model
+    if (
+      current.length === 1 &&
+      current[0]!.provider === currentLlm.provider &&
+      current[0]!.modelName === currentLlm.modelName
+    ) {
+      return;
+    }
+
     const match = llmOptions.find(
       (opt) =>
         opt.provider === currentLlm.provider &&
@@ -71,7 +91,7 @@ export default function useMultiModelChat(
       ]);
       setDefaultInitialized(true);
     }
-  }, [llmOptions, llmManager.currentLlm, defaultInitialized]);
+  }, [llmOptions, llmManager.currentLlm]);
 
   const isMultiModelActive = selectedModels.length > 1;
 
@@ -172,7 +192,7 @@ export default function useMultiModelChat(
 
   const buildLlmOverrides = useCallback((): LLMOverride[] => {
     return selectedModels.map((m) => ({
-      model_provider: m.provider,
+      model_provider: m.name,
       model_version: m.modelName,
       display_name: m.displayName,
     }));
