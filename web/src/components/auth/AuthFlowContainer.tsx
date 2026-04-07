@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OnyxIcon } from "../icons/icons";
+import { t } from "@/lib/i18n";
 
 export default function AuthFlowContainer({
   children,
@@ -20,12 +21,12 @@ export default function AuthFlowContainer({
         <div className="text-sm mt-6 text-center w-full text-text-03 mainUiBody mx-auto">
           {footerContent ?? (
             <>
-              New to Onyx?{" "}
+              {t("auth.noAccount")}{" "}
               <Link
                 href="/auth/signup"
                 className="text-text-05 mainUiAction underline transition-colors duration-200"
               >
-                Create an Account
+                {t("auth.createAccountCta")}
               </Link>
             </>
           )}
@@ -33,12 +34,12 @@ export default function AuthFlowContainer({
       )}
       {authState === "signup" && (
         <div className="text-sm mt-6 text-center w-full text-text-03 mainUiBody mx-auto">
-          Already have an account?{" "}
+          {t("auth.alreadyHaveAccount")}{" "}
           <Link
             href="/auth/login?autoRedirectToSignup=false"
             className="text-text-05 mainUiAction underline transition-colors duration-200"
           >
-            Sign In
+            {t("auth.signInCta")}
           </Link>
         </div>
       )}

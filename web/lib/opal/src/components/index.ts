@@ -7,7 +7,7 @@ export type TooltipSide = "top" | "bottom" | "left" | "right";
 export {
   Button,
   type ButtonProps,
-} from "@opal/components/buttons/button/components";
+} from "@opal/components/buttons/Button/components";
 
 /* SelectButton */
 export {

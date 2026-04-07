@@ -10,6 +10,7 @@ import {
   SvgHourglass,
   SvgEditBig,
 } from "@opal/icons";
+import { t } from "@/lib/i18n";
 
 export default function SharedAppInputBar() {
   return (
@@ -18,7 +19,7 @@ export default function SharedAppInputBar() {
         {/* Textarea area */}
         <div className="flex flex-row items-center w-full">
           <Text text03 className="w-full px-3 pt-3 pb-2 select-none">
-            How can Onyx help you today
+            {t("app.sharedInputPrompt")}
           </Text>
         </div>
 
@@ -47,7 +48,7 @@ export default function SharedAppInputBar() {
       {/* CTA button */}
       <div className="absolute inset-0 flex items-center justify-center">
         <Button prominence="secondary" icon={SvgEditBig} href="/app">
-          Start New Session
+          {t("app.startNewSession")}
         </Button>
       </div>
     </div>

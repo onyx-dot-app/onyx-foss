@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useState } from "react";
+import { getLocaleTag, t } from "@/lib/i18n";
 
 export const useNightTime = () => {
   const [isNight, setIsNight] = useState(false);
@@ -86,10 +87,13 @@ export const timestampToReadableDate = (timestamp: string) => {
 
 export const buildDateString = (date: Date | null) => {
   return date
-    ? `${Math.round(
-        (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-      )} days ago`
-    : "Select a time range";
+    ? t("time.ago", {
+        count: Math.round(
+          (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+        ),
+        unit: t("time.day"),
+      })
+    : t("common.selectTimeRange");
 };
 
 export const getFormattedDateRangeString = (
@@ -103,8 +107,9 @@ export const getFormattedDateRangeString = (
     day: "numeric",
     year: "numeric",
   };
-  const fromString = from.toLocaleDateString("en-US", options);
-  const toString = to.toLocaleDateString("en-US", options);
+  const locale = getLocaleTag();
+  const fromString = from.toLocaleDateString(locale, options);
+  const toString = to.toLocaleDateString(locale, options);
 
   return `${fromString} - ${toString}`;
 };
@@ -125,7 +130,7 @@ export const getDateRangeString = (from: Date | null, to: Date | null) => {
   if (fromString === toString) return fromString;
 
   if (toDiffDays === 0) {
-    return `${fromString} - Today`;
+    return `${fromString} - ${t("time.today")}`;
   }
 
   return `${fromString} - ${toString}`;
@@ -140,11 +145,11 @@ export const getTimeAgoString = (date: Date | null) => {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (now.toDateString() === date.toDateString()) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${diffWeeks}w ago`;
-  return `${diffMonths}mo ago`;
+  if (now.toDateString() === date.toDateString()) return t("time.today");
+  if (diffDays === 1) return t("time.yesterday");
+  if (diffDays < 7) return t("time.ago", { count: diffDays, unit: "d" });
+  if (diffDays < 30) return t("time.ago", { count: diffWeeks, unit: "w" });
+  return t("time.ago", { count: diffMonths, unit: "mo" });
 };
 
 /**
@@ -153,7 +158,7 @@ export const getTimeAgoString = (date: Date | null) => {
  */
 export const formatDateShort = (dateStr: string | null | undefined): string => {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return new Date(dateStr).toLocaleDateString(getLocaleTag(), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -208,15 +213,13 @@ export const getFormattedDateTime = (date: Date | null) => {
   const isToday = now.toDateString() === date.toDateString();
 
   if (isToday) {
-    // If it's today, return the time in format like "3:45 PM"
-    return date.toLocaleTimeString("en-US", {
+    return date.toLocaleTimeString(getLocaleTag(), {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
   } else {
-    // Otherwise return the date in format like "Jan 15, 2023"
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(getLocaleTag(), {
       month: "short",
       day: "numeric",
       year: "numeric",

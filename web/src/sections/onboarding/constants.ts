@@ -1,5 +1,6 @@
 import { OnboardingStep, FinalStepItemProps } from "@/interfaces/onboarding";
 import { SvgGlobe, SvgImage, SvgUsers } from "@opal/icons";
+import { t } from "@/lib/i18n";
 
 type StepConfig = {
   index: number;
@@ -11,26 +12,26 @@ type StepConfig = {
 export const STEP_CONFIG: Record<OnboardingStep, StepConfig> = {
   [OnboardingStep.Welcome]: {
     index: 0,
-    title: "Let's take a moment to get you set up.",
-    buttonText: "Let's Go",
+    title: t("onboarding.setupIntro"),
+    buttonText: t("onboarding.letsGo"),
     iconPercentage: 10,
   },
   [OnboardingStep.Name]: {
     index: 1,
-    title: "Let's take a moment to get you set up.",
-    buttonText: "Next",
+    title: t("onboarding.setupIntro"),
+    buttonText: t("onboarding.next"),
     iconPercentage: 40,
   },
   [OnboardingStep.LlmSetup]: {
     index: 2,
-    title: "Almost there! Connect your models to start chatting.",
-    buttonText: "Next",
+    title: t("onboarding.connectModelsIntro"),
+    buttonText: t("onboarding.next"),
     iconPercentage: 70,
   },
   [OnboardingStep.Complete]: {
     index: 3,
-    title: "You're all set, review the optional settings or click Finish Setup",
-    buttonText: "Finish Setup",
+    title: t("onboarding.finishIntro"),
+    buttonText: t("onboarding.finishSetup"),
     iconPercentage: 100,
   },
 } as const;
@@ -55,24 +56,24 @@ export const STEP_NAVIGATION: Record<
 
 export const FINAL_SETUP_CONFIG: FinalStepItemProps[] = [
   {
-    title: "Select web search provider",
-    description: "Enable Onyx to search the internet for information.",
+    title: t("onboarding.selectWebSearchProvider"),
+    description: t("onboarding.webSearchDescription"),
     icon: SvgGlobe,
-    buttonText: "Web Search",
+    buttonText: t("onboarding.webSearchCta"),
     buttonHref: "/admin/configuration/web-search",
   },
   {
-    title: "Enable image generation",
-    description: "Set up models to create images in your chats.",
+    title: t("onboarding.enableImageGeneration"),
+    description: t("onboarding.imageGenerationDescription"),
     icon: SvgImage,
-    buttonText: "Image Generation",
+    buttonText: t("onboarding.imageGenerationCta"),
     buttonHref: "/admin/configuration/image-generation",
   },
   {
-    title: "Invite your team",
-    description: "Manage users and permissions for your team",
+    title: t("onboarding.inviteYourTeam"),
+    description: t("onboarding.inviteTeamDescription"),
     icon: SvgUsers,
-    buttonText: "Manage Users",
+    buttonText: t("onboarding.manageUsers"),
     buttonHref: "/admin/users",
   },
 ];

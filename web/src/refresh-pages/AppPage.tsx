@@ -75,6 +75,7 @@ import { eeGated } from "@/ce";
 import EESearchUI from "@/ee/sections/SearchUI";
 const SearchUI = eeGated(EESearchUI);
 import { motion, AnimatePresence } from "motion/react";
+import { t } from "@/lib/i18n";
 
 interface FadeProps {
   show: boolean;
@@ -127,7 +128,7 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
 
   useToastFromQuery({
     oauth_connected: {
-      message: "Authentication successful",
+      message: t("app.authenticationSuccessful"),
       type: "success",
     },
   });
@@ -279,8 +280,8 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
       const names = lastFailedFiles.map((f) => f.name).join(", ");
       toast.error(
         lastFailedFiles.length === 1
-          ? `File failed and was removed: ${names}`
-          : `Files failed and were removed: ${names}`
+          ? t("app.fileFailedRemoved", { names })
+          : t("app.filesFailedRemoved", { names })
       );
       clearLastFailedFiles();
     }
@@ -432,7 +433,7 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
       .reverse()
       .find((m) => m.type === "user");
     if (!lastUserMsg) {
-      toast.error("No previously-submitted user message found.");
+      toast.error(t("app.noPreviousMessageFound"));
       return;
     }
 
@@ -631,7 +632,7 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
             <Modal.Content>
               <Modal.Header
                 icon={SvgFileText}
-                title="Sources"
+                title={t("app.sources")}
                 onClose={() => updateCurrentDocumentSidebarVisible(false)}
               />
               <Modal.Body>
@@ -732,21 +733,21 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
                           }
                           title={
                             sessionFetchError.type === "not_found"
-                              ? "Chat not found"
+                              ? t("app.chatNotFound")
                               : sessionFetchError.type === "access_denied"
-                                ? "Access denied"
-                                : "Something went wrong"
+                                ? t("app.accessDenied")
+                                : t("app.somethingWentWrong")
                           }
                           description={
                             sessionFetchError.type === "not_found"
-                              ? "This chat session doesn't exist or has been deleted."
+                              ? t("app.chatSessionMissing")
                               : sessionFetchError.type === "access_denied"
-                                ? "You don't have permission to view this chat session."
+                                ? t("app.chatSessionForbidden")
                                 : sessionFetchError.detail
                           }
                         />
                         <Button href="/app" prominence="secondary">
-                          Start a new chat
+                          {t("app.startNewChat")}
                         </Button>
                       </Section>
                     )}

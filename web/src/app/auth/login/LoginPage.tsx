@@ -9,6 +9,7 @@ import { useSendAuthRequiredMessage } from "@/lib/extension/utils";
 import Text from "@/refresh-components/texts/Text";
 import { Button } from "@opal/components";
 import Message from "@/refresh-components/messages/Message";
+import { t } from "@/lib/i18n";
 
 interface LoginPageProps {
   authUrl: string | null;
@@ -39,7 +40,7 @@ export default function LoginPage({
         <Message
           success
           close={false}
-          text="Your email has been verified! Please sign in to continue."
+          text={t("auth.emailVerified")}
           className="w-full mb-4"
         />
       )}
@@ -69,7 +70,7 @@ export default function LoginPage({
               <div className="flex flex-row items-center w-full gap-2">
                 <div className="flex-1 border-t border-text-01" />
                 <Text as="p" text03 mainUiMuted>
-                  or
+                  {t("auth.cloudOrDivider")}
                 </Text>
                 <div className="flex-1 border-t border-text-01" />
               </div>
@@ -77,7 +78,9 @@ export default function LoginPage({
           )}
           <EmailPasswordForm shouldVerify={true} nextUrl={effectiveNextUrl} />
           {NEXT_PUBLIC_FORGOT_PASSWORD_ENABLED && (
-            <Button href="/auth/forgot-password">Reset Password</Button>
+            <Button href="/auth/forgot-password">
+              {t("auth.resetPassword")}
+            </Button>
           )}
         </div>
       )}
@@ -91,7 +94,7 @@ export default function LoginPage({
 
       {!hidePageRedirect && (
         <p className="text-center mt-4">
-          Don&apos;t have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <span
             onClick={() => {
               if (typeof window !== "undefined" && window.top) {
@@ -102,7 +105,7 @@ export default function LoginPage({
             }}
             className="text-link font-medium cursor-pointer"
           >
-            Create an account
+            {t("auth.createAccountLink")}
           </span>
         </p>
       )}

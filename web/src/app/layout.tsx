@@ -19,6 +19,8 @@ import AppHealthBanner from "@/sections/AppHealthBanner";
 import CustomAnalyticsScript from "@/providers/CustomAnalyticsScript";
 import ProductGatingWrapper from "@/providers/ProductGatingWrapper";
 import SWRConfigProvider from "@/providers/SWRConfigProvider";
+import LocaleSync from "@/providers/LocaleSync";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 
 const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
@@ -51,7 +53,7 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   title: "Onyx",
-  description: "Question answering for your documents",
+  description: "Documents and workplace AI assistant",
 };
 
 // force-dynamic prevents Next.js from statically prerendering pages at build
@@ -67,7 +69,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang={DEFAULT_LOCALE}
       className={cn(hankenGrotesk.variable, dmMono.variable)}
       suppressHydrationWarning
     >
@@ -107,6 +109,7 @@ export default function RootLayout({
                 <SWRConfigProvider>
                   <AppHealthBanner />
                   <AppProvider>
+                    <LocaleSync />
                     <DynamicMetadata />
                     <CustomAnalyticsScript />
                     <Suspense fallback={null}>

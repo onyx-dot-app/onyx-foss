@@ -19,6 +19,7 @@ import { Button } from "@opal/components";
 import { PopoverSearchInput } from "@/sections/sidebar/ChatButton";
 import LineItem from "@/refresh-components/buttons/LineItem";
 import { SvgFolder, SvgFolderIn, SvgShare, SvgTrash } from "@opal/icons";
+import { t } from "@/lib/i18n";
 // Constants
 const DEFAULT_PERSONA_ID = 0;
 const LS_HIDE_MOVE_CUSTOM_AGENT_MODAL_KEY = "onyx:hideMoveCustomAgentModal";
@@ -148,7 +149,7 @@ export function ChatSessionMorePopup({
             icon={SvgShare}
             onClick={noProp(() => showShareModal(chatSession))}
           >
-            Share
+            {t("common.share")}
           </LineItem>
         ),
         <LineItem
@@ -156,7 +157,7 @@ export function ChatSessionMorePopup({
           icon={SvgFolderIn}
           onClick={noProp(() => setShowMoveOptions(true))}
         >
-          Move to Project
+          {t("sidebar.moveToProject")}
         </LineItem>,
         projectId && (
           <LineItem
@@ -164,9 +165,11 @@ export function ChatSessionMorePopup({
             icon={SvgFolder}
             onClick={noProp(() => handleRemoveChatSessionFromProject())}
           >
-            {`Remove from ${
-              projects.find((p) => p.id === projectId)?.name ?? "Project"
-            }`}
+            {t("sidebar.removeFromProject", {
+              projectName:
+                projects.find((p) => p.id === projectId)?.name ??
+                t("common.project"),
+            })}
           </LineItem>
         ),
         null,
@@ -176,7 +179,7 @@ export function ChatSessionMorePopup({
           onClick={noProp(() => setIsDeleteModalOpen(true))}
           danger
         >
-          Delete
+          {t("common.delete")}
         </LineItem>,
       ];
     }
@@ -248,17 +251,16 @@ export function ChatSessionMorePopup({
       </div>
       {isDeleteModalOpen && (
         <ConfirmationModalLayout
-          title="Delete Chat"
+          title={t("sidebar.deleteChatTitle")}
           icon={SvgTrash}
           onClose={() => setIsDeleteModalOpen(false)}
           submit={
             <Button variant="danger" onClick={handleConfirmDelete}>
-              Delete
+              {t("common.delete")}
             </Button>
           }
         >
-          Are you sure you want to delete this chat? This action cannot be
-          undone.
+          {t("sidebar.deleteChatConfirmation")}
         </ConfirmationModalLayout>
       )}
 

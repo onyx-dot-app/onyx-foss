@@ -13,6 +13,7 @@ import {
   SvgSettings,
 } from "@opal/icons";
 import { ProviderIcon } from "@/app/admin/configuration/llm/ProviderIcon";
+import { t } from "@/lib/i18n";
 
 export interface LLMProviderCardProps {
   title: string;
@@ -109,7 +110,7 @@ function LLMProviderCardInner({
           <div className="flex items-start p-1">
             <div className="flex items-center gap-0.5">
               <Text as="p" text03 secondaryAction>
-                Connect
+                {t("common.connect")}
               </Text>
               <div className="p-0.5">
                 <SvgArrowExchange className="w-4 h-4 stroke-text-03" />

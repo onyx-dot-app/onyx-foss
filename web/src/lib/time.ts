@@ -1,11 +1,15 @@
 import { User } from "@/lib/types";
+import { getCurrentLocale, getLocaleTag } from "@/lib/i18n";
 
-const conditionallyAddPlural = (noun: string, cnt: number) => {
-  if (cnt > 1) {
-    return `${noun}s`;
-  }
-  return noun;
-};
+function formatRelativeTime(
+  value: number,
+  unit: Intl.RelativeTimeFormatUnit,
+  numeric: Intl.RelativeTimeFormatNumeric = "always"
+) {
+  return new Intl.RelativeTimeFormat(getLocaleTag(getCurrentLocale()), {
+    numeric,
+  }).format(value, unit);
+}
 
 export const timeAgo = (
   dateString: string | undefined | null
@@ -19,42 +23,36 @@ export const timeAgo = (
   const secondsDiff = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (secondsDiff < 60) {
-    return `${secondsDiff} ${conditionallyAddPlural(
-      "second",
-      secondsDiff
-    )} ago`;
+    return formatRelativeTime(-secondsDiff, "second");
   }
 
   const minutesDiff = Math.floor(secondsDiff / 60);
   if (minutesDiff < 60) {
-    return `${minutesDiff} ${conditionallyAddPlural(
-      "minute",
-      secondsDiff
-    )} ago`;
+    return formatRelativeTime(-minutesDiff, "minute");
   }
 
   const hoursDiff = Math.floor(minutesDiff / 60);
   if (hoursDiff < 24) {
-    return `${hoursDiff} ${conditionallyAddPlural("hour", hoursDiff)} ago`;
+    return formatRelativeTime(-hoursDiff, "hour");
   }
 
   const daysDiff = Math.floor(hoursDiff / 24);
   if (daysDiff < 30) {
-    return `${daysDiff} ${conditionallyAddPlural("day", daysDiff)} ago`;
+    return formatRelativeTime(-daysDiff, "day");
   }
 
   const weeksDiff = Math.floor(daysDiff / 7);
   if (weeksDiff < 4) {
-    return `${weeksDiff} ${conditionallyAddPlural("week", weeksDiff)} ago`;
+    return formatRelativeTime(-weeksDiff, "week");
   }
 
   const monthsDiff = Math.floor(daysDiff / 30);
   if (monthsDiff < 12) {
-    return `${monthsDiff} ${conditionallyAddPlural("month", monthsDiff)} ago`;
+    return formatRelativeTime(-monthsDiff, "month");
   }
 
   const yearsDiff = Math.floor(monthsDiff / 12);
-  return `${yearsDiff} ${conditionallyAddPlural("year", yearsDiff)} ago`;
+  return formatRelativeTime(-yearsDiff, "year");
 };
 
 export function localizeAndPrettify(dateString: string) {
@@ -63,18 +61,12 @@ export function localizeAndPrettify(dateString: string) {
 }
 
 export function humanReadableFormat(dateString: string): string {
-  // Create a Date object from the dateString
   const date = new Date(dateString);
-
-  // Use Intl.DateTimeFormat to format the date
-  // Specify the locale as 'en-US' and options for month, day, and year
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    month: "long", // full month name
-    day: "numeric", // numeric day
-    year: "numeric", // numeric year
+  const formatter = new Intl.DateTimeFormat(getLocaleTag(getCurrentLocale()), {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   });
-
-  // Format the date and return it
   return formatter.format(date);
 }
 
@@ -84,7 +76,7 @@ export function humanReadableFormat(dateString: string): string {
 export function humanReadableFormatShort(date: string | Date | null): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(getLocaleTag(getCurrentLocale()), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -93,19 +85,14 @@ export function humanReadableFormatShort(date: string | Date | null): string {
 }
 
 export function humanReadableFormatWithTime(datetimeString: string): string {
-  // Create a Date object from the dateString
   const date = new Date(datetimeString);
-
-  // Use Intl.DateTimeFormat to format the date
-  // Specify the locale as 'en-US' and options for month, day, and year
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    month: "long", // full month name
-    day: "numeric", // numeric day
-    year: "numeric", // numeric year
+  const formatter = new Intl.DateTimeFormat(getLocaleTag(getCurrentLocale()), {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
     hour: "numeric",
     minute: "numeric",
   });
-  // Format the date and return it
   return formatter.format(date);
 }
 

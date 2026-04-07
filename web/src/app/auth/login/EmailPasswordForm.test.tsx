@@ -47,12 +47,12 @@ describe("Email/Password Login Workflow", () => {
     await user.type(passwordInput, "password123");
 
     // User submits the form
-    const loginButton = screen.getByRole("button", { name: /sign in/i });
+    const loginButton = screen.getByRole("button", { name: /ログイン/i });
     await user.click(loginButton);
 
     // Verify success message is shown after login
     await waitFor(() => {
-      expect(screen.getByText(/signed in successfully\./i)).toBeInTheDocument();
+      expect(screen.getByText(/ログインしました。/i)).toBeInTheDocument();
     });
 
     // Verify API was called with correct credentials
@@ -93,13 +93,13 @@ describe("Email/Password Login Workflow", () => {
     await user.type(passwordInput, "wrongpassword");
 
     // User submits
-    const loginButton = screen.getByRole("button", { name: /sign in/i });
+    const loginButton = screen.getByRole("button", { name: /ログイン/i });
     await user.click(loginButton);
 
     // Verify field-level error message is displayed (not the toast)
     await waitFor(() => {
       expect(
-        screen.getByText(/^Invalid email or password$/i)
+        screen.getByText(/^メールアドレスまたはパスワードが正しくありません$/i)
       ).toBeInTheDocument();
     });
   });
@@ -143,7 +143,7 @@ describe("Email/Password Signup Workflow", () => {
 
     // User submits the signup form
     const signupButton = screen.getByRole("button", {
-      name: /create account/i,
+      name: /アカウントを作成/i,
     });
     await user.click(signupButton);
 
@@ -183,7 +183,7 @@ describe("Email/Password Signup Workflow", () => {
     // Verify success message is shown
     await waitFor(() => {
       expect(
-        screen.getByText(/account created\. signing in/i)
+        screen.getByText(/アカウントを作成しました。ログインしています/i)
       ).toBeInTheDocument();
     });
   });
@@ -209,16 +209,14 @@ describe("Email/Password Signup Workflow", () => {
 
     // User submits
     const signupButton = screen.getByRole("button", {
-      name: /create account/i,
+      name: /アカウントを作成/i,
     });
     await user.click(signupButton);
 
     // Verify field-level error message is displayed (not the toast)
     await waitFor(() => {
       expect(
-        screen.getByText(
-          /^An account already exists with the specified email\.$/i
-        )
+        screen.getByText(/^指定したメールアドレスのアカウントはすでに存在します。$/i)
       ).toBeInTheDocument();
     });
   });
@@ -244,14 +242,16 @@ describe("Email/Password Signup Workflow", () => {
 
     // User submits
     const signupButton = screen.getByRole("button", {
-      name: /create account/i,
+      name: /アカウントを作成/i,
     });
     await user.click(signupButton);
 
     // Verify field-level rate limit message is displayed (not the toast)
     await waitFor(() => {
       expect(
-        screen.getByText(/^Too many requests\. Please try again later\.$/i)
+        screen.getByText(
+          /^リクエストが多すぎます。しばらくしてから再度お試しください。$/i
+        )
       ).toBeInTheDocument();
     });
   });
