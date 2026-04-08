@@ -8,6 +8,7 @@ import InputSelect from "@/refresh-components/inputs/InputSelect";
 import { useMemo, useState } from "react";
 import { SvgCalendar } from "@opal/icons";
 import { Section } from "@/layouts/general-layouts";
+import { t } from "@/lib/i18n";
 
 export interface InputDatePickerProps {
   name?: string;
@@ -72,7 +73,7 @@ export default function InputDatePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild id={name} name={name}>
         <Button disabled={disabled} prominence="secondary" icon={SvgCalendar}>
-          {selectedDate ? selectedDate.toLocaleDateString() : "Select Date"}
+          {selectedDate ? selectedDate.toLocaleDateString() : t("common.selectDate")}
         </Button>
       </Popover.Trigger>
       <Popover.Content>
@@ -102,7 +103,7 @@ export default function InputDatePicker({
                 setOpen(false);
               }}
             >
-              Today
+              {t("common.today")}
             </Button>
           </Section>
           <Calendar

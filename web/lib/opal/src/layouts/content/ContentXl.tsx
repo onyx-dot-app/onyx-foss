@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@opal/components/buttons/button/components";
+import { Button } from "@opal/components/buttons/Button/components";
 import type { ContainerSizeVariants } from "@opal/types";
 import SvgEdit from "@opal/icons/edit";
 import type { IconFunctionComponent, RichStr } from "@opal/types";

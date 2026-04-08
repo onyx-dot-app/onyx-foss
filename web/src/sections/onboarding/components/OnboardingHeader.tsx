@@ -11,6 +11,7 @@ import { SvgProgressCircle, SvgX } from "@opal/icons";
 import { Card } from "@/refresh-components/cards";
 import { Section } from "@/layouts/general-layouts";
 import { ContentAction } from "@opal/layouts";
+import { t } from "@/lib/i18n";
 
 interface OnboardingHeaderProps {
   state: OnboardingState;
@@ -54,8 +55,10 @@ const OnboardingHeader = React.memo(
               <Section flexDirection="row">
                 {!isWelcomeStep && (
                   <Text as="p" text03 mainUiBody>
-                    Step {onboardingState.stepIndex} of{" "}
-                    {onboardingState.totalSteps}
+                    {t("onboarding.stepOf", {
+                      current: onboardingState.stepIndex,
+                      total: onboardingState.totalSteps,
+                    })}
                   </Text>
                 )}
                 <Button

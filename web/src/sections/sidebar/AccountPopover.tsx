@@ -25,6 +25,7 @@ import { toast } from "@/hooks/useToast";
 import useAppFocus from "@/hooks/useAppFocus";
 import { useVectorDbEnabled } from "@/providers/SettingsProvider";
 import UserAvatar from "@/refresh-components/avatars/UserAvatar";
+import { t } from "@/lib/i18n";
 
 interface SettingsPopoverProps {
   onUserSettingsClick: () => void;
@@ -63,7 +64,7 @@ function SettingsPopover({
     logout()
       .then((response) => {
         if (!response?.ok) {
-          alert("Failed to logout");
+          alert(t("sidebar.failedToLogout"));
           return;
         }
 
@@ -79,7 +80,7 @@ function SettingsPopover({
       })
 
       .catch(() => {
-        toast.error("Failed to logout");
+        toast.error(t("sidebar.failedToLogout"));
       });
   };
 
@@ -93,7 +94,7 @@ function SettingsPopover({
               href="/app/settings"
               onClick={onUserSettingsClick}
             >
-              User Settings
+              {t("sidebar.userSettings")}
             </LineItem>
           </div>,
           <LineItem
@@ -101,7 +102,7 @@ function SettingsPopover({
             icon={SvgBell}
             onClick={onOpenNotifications}
           >
-            {`Notifications${
+            {`${t("sidebar.notifications")}${
               undismissedCount > 0 ? ` (${undismissedCount})` : ""
             }`}
           </LineItem>,
@@ -112,12 +113,12 @@ function SettingsPopover({
             target="_blank"
             rel="noopener noreferrer"
           >
-            Help & FAQ
+            {t("sidebar.helpFaq")}
           </LineItem>,
           null,
           showLogin && (
             <LineItem key="log-in" icon={SvgUser} onClick={handleLogin}>
-              Log in
+              {t("sidebar.logIn")}
             </LineItem>
           ),
           showLogout && (
@@ -127,7 +128,7 @@ function SettingsPopover({
               danger
               onClick={handleLogout}
             >
-              Log out
+              {t("sidebar.logOut")}
             </LineItem>
           ),
         ]}

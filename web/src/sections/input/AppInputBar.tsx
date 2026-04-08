@@ -60,6 +60,7 @@ import MicrophoneButton from "@/sections/input/MicrophoneButton";
 import Waveform from "@/components/voice/Waveform";
 import { useVoiceMode } from "@/providers/VoiceModeProvider";
 import { useVoiceStatus } from "@/hooks/useVoiceStatus";
+import { t } from "@/lib/i18n";
 
 const MIN_INPUT_HEIGHT = 44;
 const MAX_INPUT_HEIGHT = 200;
@@ -508,7 +509,7 @@ const AppInputBar = React.memo(
               <Button
                 disabled={disabled}
                 icon={SvgPlusCircle}
-                tooltip="Attach Files"
+                tooltip={t("app.attachFiles")}
                 interaction={open ? "hover" : "rest"}
                 prominence="tertiary"
               />
@@ -548,8 +549,8 @@ const AppInputBar = React.memo(
                           return currentTabUrl;
                         }
                       })()
-                    : "Reading tab..."
-                  : "Read this tab"}
+                    : t("app.readingTab")
+                  : t("app.readThisTab")}
               </SelectButton>
             ) : (
               showDeepResearch && (
@@ -561,7 +562,7 @@ const AppInputBar = React.memo(
                   state={deepResearchEnabled ? "selected" : "empty"}
                   foldable={!deepResearchEnabled}
                 >
-                  Deep Research
+                  {t("app.deepResearch")}
                 </SelectButton>
               )
             )}
@@ -621,9 +622,9 @@ const AppInputBar = React.memo(
               <Button
                 disabled
                 icon={SvgMicrophone}
-                aria-label="Set up voice"
+                aria-label={t("app.setupVoice")}
                 prominence="tertiary"
-                tooltip="Voice not configured. Set up in admin settings."
+                tooltip={t("app.voiceNotConfigured")}
               />
             ))}
 
@@ -755,12 +756,12 @@ const AppInputBar = React.memo(
                     aria-multiline={true}
                     placeholder={
                       isRecording
-                        ? "Listening..."
+                        ? t("app.listening")
                         : isVoicePlaybackActive
-                          ? "Onyx is speaking..."
+                          ? t("app.onyxSpeaking")
                           : isSearchMode
-                            ? "Search connected sources"
-                            : "How can I help you today?"
+                            ? t("app.searchConnectedSources")
+                            : t("app.howCanIHelp")
                     }
                     value={message}
                     onKeyDown={(event) => {
@@ -818,7 +819,7 @@ const AppInputBar = React.memo(
                         tabbingIconIndex === sortedFilteredPrompts.length
                       }
                     >
-                      Create New Prompt
+                      {t("app.createNewPrompt")}
                     </LineItem>,
                   ]}
                 </Popover.Menu>

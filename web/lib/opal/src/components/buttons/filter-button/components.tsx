@@ -10,7 +10,7 @@ import { SvgX } from "@opal/icons";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { iconWrapper } from "@opal/components/buttons/icon-wrapper";
 import { ChevronIcon } from "@opal/components/buttons/chevron";
-import { Button } from "@opal/components/buttons/button/components";
+import { Button } from "@opal/components/buttons/Button/components";
 
 // ---------------------------------------------------------------------------
 // Types

@@ -14,6 +14,7 @@ import IconButton from "@/refresh-components/buttons/IconButton";
 import { SvgCheckCircle, SvgEdit, SvgUser } from "@opal/icons";
 import { ContentAction } from "@opal/layouts";
 import { Hoverable } from "@opal/core";
+import { t } from "@/lib/i18n";
 
 export interface NameStepProps {
   state: OnboardingState;
@@ -48,15 +49,15 @@ const NameStep = React.memo(
       >
         <ContentAction
           icon={SvgUser}
-          title="What should Onyx call you?"
-          description="We will display this name in the app."
+          title={t("onboarding.whatShouldOnyxCallYou")}
+          description={t("onboarding.displayNameDescription")}
           sizePreset="main-ui"
           variant="section"
           paddingVariant="fit"
           rightChildren={
             <InputTypeIn
               ref={inputRef}
-              placeholder="Your name"
+              placeholder={t("onboarding.yourName")}
               value={userName || ""}
               onChange={(e) => updateName(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -97,7 +98,7 @@ const NameStep = React.memo(
           <div className="p-1 flex items-center gap-1">
             {/* TODO(@raunakab): migrate to opal Button once className/iconClassName is resolved */}
             <Hoverable.Item group="nameStep" variant="opacity-on-hover">
-              <IconButton internal icon={SvgEdit} tooltip="Edit" />
+              <IconButton internal icon={SvgEdit} tooltip={t("common.edit")} />
             </Hoverable.Item>
             <SvgCheckCircle
               className={cn(

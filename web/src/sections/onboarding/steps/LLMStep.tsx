@@ -20,6 +20,7 @@ import { ProviderIcon } from "@/app/admin/configuration/llm/ProviderIcon";
 import { SvgCheckCircle, SvgCpu, SvgExternalLink } from "@opal/icons";
 import { ContentAction } from "@opal/layouts";
 import { useLLMProviderOptions } from "@/lib/hooks/useLLMProviderOptions";
+import { t } from "@/lib/i18n";
 
 type LLMStepProps = {
   state: OnboardingState;
@@ -131,8 +132,8 @@ const LLMStepInner = ({
         >
           <ContentAction
             icon={SvgCpu}
-            title="Connect your LLM models"
-            description="Onyx supports both self-hosted models and popular providers."
+            title={t("onboarding.connectLlmModels")}
+            description={t("onboarding.llmSupportDescription")}
             sizePreset="main-ui"
             variant="section"
             paddingVariant="lg"
@@ -143,7 +144,7 @@ const LLMStepInner = ({
                 rightIcon={SvgExternalLink}
                 href="/admin/configuration/llm"
               >
-                View in Admin Panel
+                {t("onboarding.viewInAdminPanel")}
               </Button>
             }
           />
@@ -200,8 +201,8 @@ const LLMStepInner = ({
                 {/* Custom provider card */}
                 <div className="basis-[calc(50%-theme(spacing.1)/2)] grow">
                   <LLMProviderCard
-                    title="Custom LLM Provider"
-                    subtitle="LiteLLM Compatible APIs"
+                    title={t("onboarding.customLlmProvider")}
+                    subtitle={t("onboarding.liteLlmCompatibleApis")}
                     disabled={disabled}
                     isConnected={onboardingState.data.llmProviders?.some(
                       (provider) => provider === "custom"
@@ -225,19 +226,19 @@ const LLMStepInner = ({
           onboardingActions.goToStep(OnboardingStep.LlmSetup);
         }}
         aria-label="Edit LLM providers"
-      >
-        <div className="flex items-center gap-1">
-          <StackedProviderIcons
-            providers={onboardingState.data.llmProviders || []}
-          />
-          <Text as="p" text04 mainUiAction>
-            {onboardingState.data.llmProviders?.length || 0}{" "}
-            {(onboardingState.data.llmProviders?.length || 0) === 1
-              ? "model"
-              : "models"}{" "}
-            connected
-          </Text>
-        </div>
+        >
+          <div className="flex items-center gap-1">
+            <StackedProviderIcons
+              providers={onboardingState.data.llmProviders || []}
+            />
+            <Text as="p" text04 mainUiAction>
+              {onboardingState.data.llmProviders?.length || 0}{" "}
+              {(onboardingState.data.llmProviders?.length || 0) === 1
+                ? t("onboarding.model")
+                : t("onboarding.models")}{" "}
+              {t("onboarding.connected")}
+            </Text>
+          </div>
         <div className="p-1">
           <SvgCheckCircle className="w-4 h-4 stroke-status-success-05" />
         </div>
