@@ -8,38 +8,68 @@ set -euo pipefail
 #                    We remap dev to that UID -- fast and seamless.
 #
 # Rootless Docker:   Workspace appears as root-owned (UID 0) inside the
-#                    container due to user-namespace mapping.  We can't remap
-#                    dev to UID 0 (that's root), so we grant access with
-#                    POSIX ACLs instead.
+#                    container due to user-namespace mapping.  Requires
+#                    DEVCONTAINER_REMOTE_USER=root (set automatically by
+#                    ods dev up).  Container root IS the host user, so
+#                    bind-mounts and named volumes are symlinked into /root.
 
 WORKSPACE=/workspace
 TARGET_USER=dev
+REMOTE_USER="${SUDO_USER:-$TARGET_USER}"
 
 WS_UID=$(stat -c '%u' "$WORKSPACE")
 WS_GID=$(stat -c '%g' "$WORKSPACE")
 DEV_UID=$(id -u "$TARGET_USER")
 DEV_GID=$(id -g "$TARGET_USER")
 
-DEV_HOME=/home/"$TARGET_USER"
+# devcontainer.json bind-mounts and named volumes target /home/dev regardless
+# of remoteUser.  When running as root ($HOME=/root), Phase 1 bridges the gap
+# with symlinks from ACTIVE_HOME → MOUNT_HOME.
+MOUNT_HOME=/home/"$TARGET_USER"
 
-# Ensure directories that tools expect exist under ~dev.
-# ~/.local and ~/.cache are named Docker volumes -- ensure they are owned by dev.
-mkdir -p "$DEV_HOME"/.local/state "$DEV_HOME"/.local/share
-chown -R "$TARGET_USER":"$TARGET_USER" "$DEV_HOME"/.local
-chown -R "$TARGET_USER":"$TARGET_USER" "$DEV_HOME"/.cache
-
-# Copy host configs mounted as *.host into their real locations.
-# This gives the dev user owned copies without touching host originals.
-if [ -d "$DEV_HOME/.ssh.host" ]; then
-    cp -a "$DEV_HOME/.ssh.host" "$DEV_HOME/.ssh"
-    chmod 700 "$DEV_HOME/.ssh"
-    chmod 600 "$DEV_HOME"/.ssh/id_* 2>/dev/null || true
-    chown -R "$TARGET_USER":"$TARGET_USER" "$DEV_HOME/.ssh"
+if [ "$REMOTE_USER" = "root" ]; then
+    ACTIVE_HOME="/root"
+else
+    ACTIVE_HOME="$MOUNT_HOME"
 fi
-if [ -d "$DEV_HOME/.config/nvim.host" ]; then
-    mkdir -p "$DEV_HOME/.config"
-    cp -a "$DEV_HOME/.config/nvim.host" "$DEV_HOME/.config/nvim"
-    chown -R "$TARGET_USER":"$TARGET_USER" "$DEV_HOME/.config/nvim"
+
+# ── Phase 1: home directory setup ───────────────────────────────────
+
+# ~/.local and ~/.cache are named Docker volumes mounted under MOUNT_HOME.
+mkdir -p "$MOUNT_HOME"/.local/state "$MOUNT_HOME"/.local/share
+
+# When running as root, symlink bind-mounts and named volumes into /root
+# so that $HOME-relative tools (Claude Code, git, etc.) find them.
+if [ "$ACTIVE_HOME" != "$MOUNT_HOME" ]; then
+    for item in .claude .cache .local; do
+        [ -d "$MOUNT_HOME/$item" ] || continue
+        if [ -e "$ACTIVE_HOME/$item" ] && [ ! -L "$ACTIVE_HOME/$item" ]; then
+            echo "warning: replacing $ACTIVE_HOME/$item with symlink to $MOUNT_HOME/$item" >&2
+            rm -rf "$ACTIVE_HOME/$item"
+        fi
+        ln -sfn "$MOUNT_HOME/$item" "$ACTIVE_HOME/$item"
+    done
+    # Symlink files (not directories).
+    for file in .claude.json .gitconfig .zshrc.host; do
+        [ -f "$MOUNT_HOME/$file" ] && ln -sf "$MOUNT_HOME/$file" "$ACTIVE_HOME/$file"
+    done
+
+    # Nested mount: .config/nvim
+    if [ -d "$MOUNT_HOME/.config/nvim" ]; then
+        mkdir -p "$ACTIVE_HOME/.config"
+        if [ -e "$ACTIVE_HOME/.config/nvim" ] && [ ! -L "$ACTIVE_HOME/.config/nvim" ]; then
+            echo "warning: replacing $ACTIVE_HOME/.config/nvim with symlink" >&2
+            rm -rf "$ACTIVE_HOME/.config/nvim"
+        fi
+        ln -sfn "$MOUNT_HOME/.config/nvim" "$ACTIVE_HOME/.config/nvim"
+    fi
+fi
+
+# ── Phase 2: workspace access ───────────────────────────────────────
+
+# Root always has workspace access; Phase 1 handled home setup.
+if [ "$REMOTE_USER" = "root" ]; then
+    exit 0
 fi
 
 # Already matching -- nothing to do.
@@ -61,45 +91,17 @@ if [ "$WS_UID" != "0" ]; then
             echo "warning: failed to remap $TARGET_USER UID to $WS_UID" >&2
         fi
     fi
-    if ! chown -R "$TARGET_USER":"$TARGET_USER" /home/"$TARGET_USER" 2>&1; then
-        echo "warning: failed to chown /home/$TARGET_USER" >&2
+    if ! chown -R "$TARGET_USER":"$TARGET_USER" "$MOUNT_HOME" 2>&1; then
+        echo "warning: failed to chown $MOUNT_HOME" >&2
     fi
 else
     # ── Rootless Docker ──────────────────────────────────────────────
-    # Workspace is root-owned inside the container.  Grant dev access
-    # via POSIX ACLs (preserves ownership, works across the namespace
-    # boundary).
-    if command -v setfacl &>/dev/null; then
-        setfacl -Rm  "u:${TARGET_USER}:rwX" "$WORKSPACE"
-        setfacl -Rdm "u:${TARGET_USER}:rwX" "$WORKSPACE"   # default ACL for new files
-
-        # Git refuses to operate in repos owned by a different UID.
-        # Host gitconfig is mounted readonly as ~/.gitconfig.host.
-        # Create a real ~/.gitconfig that includes it plus container overrides.
-        printf '[include]\n\tpath = %s/.gitconfig.host\n[safe]\n\tdirectory = %s\n' \
-            "$DEV_HOME" "$WORKSPACE" > "$DEV_HOME/.gitconfig"
-        chown "$TARGET_USER":"$TARGET_USER" "$DEV_HOME/.gitconfig"
-
-        # If this is a worktree, the main .git dir is bind-mounted at its
-        # host absolute path. Grant dev access so git operations work.
-        GIT_COMMON_DIR=$(git -C "$WORKSPACE" rev-parse --git-common-dir 2>/dev/null || true)
-        if [ -n "$GIT_COMMON_DIR" ] && [ "$GIT_COMMON_DIR" != "$WORKSPACE/.git" ]; then
-            [ ! -d "$GIT_COMMON_DIR" ] && GIT_COMMON_DIR="$WORKSPACE/$GIT_COMMON_DIR"
-            if [ -d "$GIT_COMMON_DIR" ]; then
-                setfacl -Rm "u:${TARGET_USER}:rwX" "$GIT_COMMON_DIR"
-                setfacl -Rdm "u:${TARGET_USER}:rwX" "$GIT_COMMON_DIR"
-                git config -f "$DEV_HOME/.gitconfig" --add safe.directory "$(dirname "$GIT_COMMON_DIR")"
-            fi
-        fi
-
-        # Also fix bind-mounted dirs under ~dev that appear root-owned.
-        for dir in /home/"$TARGET_USER"/.claude; do
-            [ -d "$dir" ] && setfacl -Rm "u:${TARGET_USER}:rwX" "$dir" && setfacl -Rdm "u:${TARGET_USER}:rwX" "$dir"
-        done
-        [ -f /home/"$TARGET_USER"/.claude.json ] && \
-            setfacl -m "u:${TARGET_USER}:rw" /home/"$TARGET_USER"/.claude.json
-    else
-        echo "warning: setfacl not found; dev user may not have write access to workspace" >&2
-        echo "         install the 'acl' package or set remoteUser to root" >&2
-    fi
+    # Workspace is root-owned (UID 0) due to user-namespace mapping.
+    # The supported path is remoteUser=root (set DEVCONTAINER_REMOTE_USER=root),
+    # which is handled above.  If we reach here, the user is running as dev
+    # under rootless Docker without the override.
+    echo "error: rootless Docker detected but remoteUser is not root." >&2
+    echo "       Set DEVCONTAINER_REMOTE_USER=root before starting the container," >&2
+    echo "       or use 'ods dev up' which sets it automatically." >&2
+    exit 1
 fi

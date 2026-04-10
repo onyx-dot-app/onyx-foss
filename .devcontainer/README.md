@@ -14,12 +14,6 @@ A containerized development environment for working on Onyx.
 
 ## Usage
 
-### VS Code
-
-1. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-2. Open this repo in VS Code
-3. "Reopen in Container" when prompted
-
 ### CLI (`ods dev`)
 
 The [`ods` devtools CLI](../tools/ods/README.md) provides workspace-aware wrappers
@@ -39,24 +33,7 @@ ods dev exec npm test
 ods dev stop
 ```
 
-If you don't have `ods` installed, use the `devcontainer` CLI directly:
-
-```bash
-npm install -g @devcontainers/cli
-
-devcontainer up --workspace-folder .
-devcontainer exec --workspace-folder . zsh
-```
-
 ## Restarting the container
-
-### VS Code
-
-Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run:
-
-- **Dev Containers: Reopen in Container** — restarts the container without rebuilding
-
-### CLI
 
 ```bash
 # Restart the container
@@ -64,12 +41,6 @@ ods dev restart
 
 # Pull the latest published image and recreate
 ods dev rebuild
-```
-
-Or without `ods`:
-
-```bash
-devcontainer up --workspace-folder . --remove-existing-container
 ```
 
 ## Image
@@ -88,15 +59,19 @@ The `devcontainer` target is defined in `docker-bake.hcl` at the repo root.
 ## User & permissions
 
 The container runs as the `dev` user by default (`remoteUser` in devcontainer.json).
-An init script (`init-dev-user.sh`) runs at container start to ensure `dev` has
-read/write access to the bind-mounted workspace:
+An init script (`init-dev-user.sh`) runs at container start to ensure the active
+user has read/write access to the bind-mounted workspace:
 
 - **Standard Docker** — `dev`'s UID/GID is remapped to match the workspace owner,
   so file permissions work seamlessly.
 - **Rootless Docker** — The workspace appears as root-owned (UID 0) inside the
-  container due to user-namespace mapping. The init script grants `dev` access via
-  POSIX ACLs (`setfacl`), which adds a few seconds to the first container start on
-  large repos.
+  container due to user-namespace mapping. `ods dev up` auto-detects rootless Docker
+  and sets `DEVCONTAINER_REMOTE_USER=root` so the container runs as root — which
+  maps back to your host user via the user namespace. New files are owned by your
+  host UID and no ACL workarounds are needed.
+
+  To override the auto-detection, set `DEVCONTAINER_REMOTE_USER` before running
+  `ods dev up`.
 
 ## Docker socket
 
@@ -109,9 +84,7 @@ from inside. `ods dev` auto-detects the socket path and sets `DOCKER_SOCK`:
 | macOS (Docker Desktop)  | `~/.docker/run/docker.sock`    |
 | Linux (standard Docker) | `/var/run/docker.sock`         |
 
-To override, set `DOCKER_SOCK` before running `ods dev up`. When using the
-VS Code extension or `devcontainer` CLI directly (without `ods`), you must set
-`DOCKER_SOCK` yourself.
+To override, set `DOCKER_SOCK` before running `ods dev up`.
 
 ## Firewall
 

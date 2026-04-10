@@ -148,10 +148,53 @@ func worktreeGitMount(root string) (string, bool) {
 	return mount, true
 }
 
+// sshAgentMount returns a --mount flag value that forwards the host's SSH agent
+// socket into the container.  Returns ("", false) when SSH_AUTH_SOCK is unset or
+// the socket is not accessible.
+func sshAgentMount() (string, bool) {
+	sock := os.Getenv("SSH_AUTH_SOCK")
+	if sock == "" {
+		log.Debug("SSH_AUTH_SOCK not set — skipping SSH agent forwarding")
+		return "", false
+	}
+	if _, err := os.Stat(sock); err != nil {
+		log.Debugf("SSH_AUTH_SOCK=%s not accessible: %v", sock, err)
+		return "", false
+	}
+	mount := fmt.Sprintf("type=bind,source=%s,target=/tmp/ssh-agent.sock", sock)
+	log.Debugf("Forwarding SSH agent: %s", sock)
+	return mount, true
+}
+
+// ensureRemoteUser sets DEVCONTAINER_REMOTE_USER when rootless Docker is
+// detected.  Container root maps to the host user in rootless mode, so running
+// as root inside the container avoids the UID mismatch on new files.
+// Must be called after ensureDockerSock.
+func ensureRemoteUser() {
+	if os.Getenv("DEVCONTAINER_REMOTE_USER") != "" {
+		return
+	}
+
+	if runtime.GOOS == "linux" {
+		sock := os.Getenv("DOCKER_SOCK")
+		xdg := os.Getenv("XDG_RUNTIME_DIR")
+		// Heuristic: rootless Docker on Linux typically places its socket
+		// under $XDG_RUNTIME_DIR. If DOCKER_SOCK was set to a custom path
+		// outside XDG_RUNTIME_DIR, set DEVCONTAINER_REMOTE_USER=root manually.
+		if xdg != "" && strings.HasPrefix(sock, xdg) {
+			log.Debug("Rootless Docker detected — setting DEVCONTAINER_REMOTE_USER=root")
+			if err := os.Setenv("DEVCONTAINER_REMOTE_USER", "root"); err != nil {
+				log.Warnf("Failed to set DEVCONTAINER_REMOTE_USER: %v", err)
+			}
+		}
+	}
+}
+
 // runDevcontainer executes "devcontainer <action> --workspace-folder <root> [extraArgs...]".
 func runDevcontainer(action string, extraArgs []string) {
 	checkDevcontainerCLI()
 	ensureDockerSock()
+	ensureRemoteUser()
 
 	root, err := paths.GitRoot()
 	if err != nil {
@@ -160,6 +203,9 @@ func runDevcontainer(action string, extraArgs []string) {
 
 	args := []string{action, "--workspace-folder", root}
 	if mount, ok := worktreeGitMount(root); ok {
+		args = append(args, "--mount", mount)
+	}
+	if mount, ok := sshAgentMount(); ok {
 		args = append(args, "--mount", mount)
 	}
 	args = append(args, extraArgs...)
