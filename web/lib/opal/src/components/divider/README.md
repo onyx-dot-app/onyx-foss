@@ -10,7 +10,13 @@ The component uses a discriminated union with four variants. `title` and `descri
 
 ### Bare divider
 
-No props — renders a plain horizontal line.
+A plain line with no title or description.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `orientation` | `"horizontal" \| "vertical"` | `"horizontal"` | Direction of the line |
+| `paddingParallel` | `PaddingVariants` | `"sm"` | Padding along the line direction (0.5rem) |
+| `paddingPerpendicular` | `PaddingVariants` | `"xs"` | Padding perpendicular to the line (0.25rem) |
 
 ### Titled divider
 
@@ -40,8 +46,17 @@ No props — renders a plain horizontal line.
 ```tsx
 import { Divider } from "@opal/components";
 
-// Plain line
+// Plain horizontal line
 <Divider />
+
+// Vertical line
+<Divider orientation="vertical" />
+
+// No padding
+<Divider paddingParallel="fit" paddingPerpendicular="fit" />
+
+// Custom padding
+<Divider paddingParallel="lg" paddingPerpendicular="sm" />
 
 // With title
 <Divider title="Advanced" />

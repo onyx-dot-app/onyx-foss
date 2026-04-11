@@ -2,16 +2,25 @@
 
 import "@opal/components/divider/styles.css";
 import { useState, useCallback } from "react";
-import type { RichStr } from "@opal/types";
+import type { PaddingVariants, RichStr } from "@opal/types";
 import { Button, Text } from "@opal/components";
 import { SvgChevronRight } from "@opal/icons";
 import { Interactive } from "@opal/core";
+import { cn } from "@opal/utils";
+import { paddingXVariants, paddingYVariants } from "@opal/shared";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface DividerNeverFields {
+interface DividerSharedProps {
+  ref?: React.Ref<HTMLDivElement>;
+  title?: never;
+  description?: never;
+  foldable?: false;
+  orientation?: never;
+  paddingParallel?: never;
+  paddingPerpendicular?: never;
   open?: never;
   defaultOpen?: never;
   onOpenChange?: never;
@@ -19,36 +28,37 @@ interface DividerNeverFields {
 }
 
 /** Plain line — no title, no description. */
-interface DividerBareProps extends DividerNeverFields {
-  title?: never;
-  description?: never;
-  foldable?: false;
-  ref?: React.Ref<HTMLDivElement>;
-}
+type DividerBareProps = Omit<
+  DividerSharedProps,
+  "orientation" | "paddingParallel" | "paddingPerpendicular"
+> & {
+  /** Orientation of the line. Default: `"horizontal"`. */
+  orientation?: "horizontal" | "vertical";
+  /** Padding along the line direction. Default: `"sm"` (0.5rem). */
+  paddingParallel?: PaddingVariants;
+  /** Padding perpendicular to the line. Default: `"xs"` (0.25rem). */
+  paddingPerpendicular?: PaddingVariants;
+};
 
 /** Line with a title to the left. */
-interface DividerTitledProps extends DividerNeverFields {
+type DividerTitledProps = Omit<DividerSharedProps, "title"> & {
   title: string | RichStr;
-  description?: never;
-  foldable?: false;
-  ref?: React.Ref<HTMLDivElement>;
-}
+};
 
 /** Line with a description below. */
-interface DividerDescribedProps extends DividerNeverFields {
-  title?: never;
+type DividerDescribedProps = Omit<DividerSharedProps, "description"> & {
   /** Description rendered below the divider line. */
   description: string | RichStr;
-  foldable?: false;
-  ref?: React.Ref<HTMLDivElement>;
-}
+};
 
 /** Foldable — requires title, reveals children. */
-interface DividerFoldableProps {
+type DividerFoldableProps = Omit<
+  DividerSharedProps,
+  "title" | "foldable" | "open" | "defaultOpen" | "onOpenChange" | "children"
+> & {
   /** Title is required when foldable. */
   title: string | RichStr;
   foldable: true;
-  description?: never;
   /** Controlled open state. */
   open?: boolean;
   /** Uncontrolled default open state. */
@@ -57,8 +67,7 @@ interface DividerFoldableProps {
   onOpenChange?: (open: boolean) => void;
   /** Content revealed when open. */
   children?: React.ReactNode;
-  ref?: React.Ref<HTMLDivElement>;
-}
+};
 
 type DividerProps =
   | DividerBareProps
@@ -75,12 +84,39 @@ function Divider(props: DividerProps) {
     return <FoldableDivider {...props} />;
   }
 
-  const { ref } = props;
-  const title = "title" in props ? props.title : undefined;
-  const description = "description" in props ? props.description : undefined;
+  const {
+    ref,
+    title,
+    description,
+    orientation = "horizontal",
+    paddingParallel = "sm",
+    paddingPerpendicular = "xs",
+  } = props;
+
+  if (orientation === "vertical") {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "opal-divider-vertical",
+          paddingXVariants[paddingPerpendicular],
+          paddingYVariants[paddingParallel]
+        )}
+      >
+        <div className="opal-divider-line-vertical" />
+      </div>
+    );
+  }
 
   return (
-    <div ref={ref} className="opal-divider">
+    <div
+      ref={ref}
+      className={cn(
+        "opal-divider",
+        paddingXVariants[paddingParallel],
+        paddingYVariants[paddingPerpendicular]
+      )}
+    >
       <div className="opal-divider-row">
         {title && (
           <div className="opal-divider-title">
