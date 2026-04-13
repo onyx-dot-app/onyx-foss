@@ -14,7 +14,7 @@ import type { TagProps } from "@opal/components/tag/components";
 interface OrientationLayoutProps {
   name?: string;
   disabled?: boolean;
-  nonInteractive?: boolean;
+  withLabel?: boolean;
   children?: React.ReactNode;
   title: string | RichStr;
   /** Tag rendered inline beside the title (passed through to Content). */
@@ -52,7 +52,7 @@ export interface VerticalLayoutProps extends OrientationLayoutProps {
 function VerticalInputLayout({
   name,
   disabled,
-  nonInteractive,
+  withLabel = true,
   children,
   subDescription,
   title,
@@ -79,7 +79,7 @@ function VerticalInputLayout({
     </Section>
   );
 
-  if (nonInteractive) return content;
+  if (!withLabel) return content;
   return (
     <Label name={name} disabled={disabled}>
       {content}
@@ -127,7 +127,7 @@ export interface HorizontalLayoutProps extends OrientationLayoutProps {
 function HorizontalInputLayout({
   name,
   disabled,
-  nonInteractive,
+  withLabel = true,
   children,
   center,
   title,
@@ -160,7 +160,7 @@ function HorizontalInputLayout({
     </Section>
   );
 
-  if (nonInteractive) return content;
+  if (!withLabel) return content;
   return (
     <Label name={name} disabled={disabled}>
       {content}

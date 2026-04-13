@@ -314,7 +314,6 @@ function FileSizeLimitFields({
               ? `Max: ${maxAllowedUploadSizeMb} MB`
               : undefined
           }
-          nonInteractive
         >
           <NumericLimitField
             name="user_file_max_upload_size_mb"
@@ -326,10 +325,7 @@ function FileSizeLimitFields({
         </InputLayouts.Vertical>
       </div>
       <div className="flex-1">
-        <InputLayouts.Vertical
-          title="File Token Limit (thousand tokens)"
-          nonInteractive
-        >
+        <InputLayouts.Vertical title="File Token Limit (thousand tokens)">
           <NumericLimitField
             name="file_token_count_threshold_k"
             initialValue={initialTokenThresholdK}
@@ -531,7 +527,6 @@ function ChatPreferencesForm() {
             <InputLayouts.Vertical
               title="Team Name"
               subDescription="This is added to all chat sessions as additional context to provide a richer/customized experience."
-              nonInteractive
             >
               <InputTypeIn
                 placeholder="Enter team name"
@@ -551,7 +546,6 @@ function ChatPreferencesForm() {
             <InputLayouts.Vertical
               title="Team Context"
               subDescription="Users can also provide additional individual context in their personal settings."
-              nonInteractive
             >
               <InputTextArea
                 placeholder="Describe your team and how Onyx should behave."
@@ -609,7 +603,6 @@ function ChatPreferencesForm() {
                       title="Search Mode"
                       description="UI mode for quick document search across your organization."
                       disabled={uniqueSources.length === 0}
-                      nonInteractive
                     >
                       <Switch
                         checked={s.search_ui_enabled ?? false}
@@ -626,7 +619,7 @@ function ChatPreferencesForm() {
                 title="Multi-Model Generation"
                 tag={{ title: "beta", color: "blue" }}
                 description="Allow multiple models to generate responses in parallel in chat."
-                nonInteractive
+                withLabel={false}
               >
                 <Switch
                   checked={s.multi_model_chat_enabled ?? true}
@@ -638,7 +631,6 @@ function ChatPreferencesForm() {
               <InputLayouts.Horizontal
                 title="Deep Research"
                 description="Agentic research system that works across the web and connected sources. Uses significantly more tokens per query."
-                nonInteractive
               >
                 <Switch
                   checked={s.deep_research_enabled ?? true}
@@ -650,7 +642,6 @@ function ChatPreferencesForm() {
               <InputLayouts.Horizontal
                 title="Chat Auto-Scroll"
                 description="Automatically scroll to new content as chat generates response. Users can override this in their personal settings."
-                nonInteractive
               >
                 <Switch
                   checked={s.auto_scroll ?? false}
@@ -897,7 +888,6 @@ function ChatPreferencesForm() {
                   <InputLayouts.Horizontal
                     title="Keep Chat History"
                     description="Specify how long Onyx should retain chats in your organization."
-                    nonInteractive
                   >
                     <InputSelect
                       value={
@@ -964,7 +954,6 @@ function ChatPreferencesForm() {
                   <InputLayouts.Horizontal
                     title="Allow Anonymous Users"
                     description="Allow anyone to start chats without logging in. They do not see any other chats and cannot create agents or update settings."
-                    nonInteractive
                   >
                     <Switch
                       checked={s.anonymous_user_enabled ?? false}
@@ -977,7 +966,6 @@ function ChatPreferencesForm() {
                   <InputLayouts.Horizontal
                     title="Always Start with an Agent"
                     description="This removes the default chat. Users will always start in an agent, and new chats will be created in their last active agent. Set featured agents to help new users get started."
-                    nonInteractive
                   >
                     <Switch
                       id="disable_default_assistant"
