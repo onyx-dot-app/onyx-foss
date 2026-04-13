@@ -3,7 +3,7 @@
 import type { RichStr, WithoutStyles } from "@opal/types";
 import { resolveStr } from "@opal/components/text/InlineMarkdown";
 import Text from "@/refresh-components/texts/Text";
-import Separator from "@/refresh-components/Separator";
+import { Divider } from "@opal/components";
 import { SvgXOctagon, SvgAlertCircle } from "@opal/icons";
 import { useField, useFormikContext } from "formik";
 import { Section } from "@/layouts/general-layouts";
@@ -234,7 +234,7 @@ function ErrorTextLayout({ children, type = "error" }: ErrorTextLayoutProps) {
  * FieldSeparator - A horizontal rule with inline padding, used to visually separate field groups.
  */
 function FieldSeparator() {
-  return <Separator noPadding className="p-2" />;
+  return <Divider paddingParallel="sm" paddingPerpendicular="sm" />;
 }
 
 /**

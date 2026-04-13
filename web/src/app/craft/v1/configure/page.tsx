@@ -35,13 +35,12 @@ import {
 import { ConfirmEntityModal } from "@/components/modals/ConfirmEntityModal";
 import { getSourceMetadata } from "@/lib/sources";
 import { deleteConnector } from "@/app/craft/services/apiServices";
-import { Button } from "@opal/components";
+import { Button, Divider } from "@opal/components";
 import {
   OAUTH_STATE_KEY,
   getDemoDataEnabled,
   setDemoDataCookie,
 } from "@/app/craft/v1/constants";
-import Separator from "@/refresh-components/Separator";
 import Switch from "@/refresh-components/inputs/Switch";
 import SimpleTooltip from "@/refresh-components/SimpleTooltip";
 import NotAllowedModal from "@/app/craft/onboarding/components/NotAllowedModal";
@@ -487,7 +486,7 @@ export default function BuildConfigPage() {
                     </InputLayouts.Horizontal>
                   </div>
                 </Card>
-                <Separator />
+                <Divider />
                 <div className="w-full flex items-center justify-between">
                   <div className="flex flex-col gap-0.25">
                     <Text mainContentEmphasis text04>

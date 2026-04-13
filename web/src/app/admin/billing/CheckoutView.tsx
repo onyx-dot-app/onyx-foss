@@ -3,10 +3,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { Section } from "@/layouts/general-layouts";
 import * as InputLayouts from "@/layouts/input-layouts";
-import { Button } from "@opal/components";
+import { Button, Divider } from "@opal/components";
 import Text from "@/refresh-components/texts/Text";
 import Card from "@/refresh-components/cards/Card";
-import Separator from "@/refresh-components/Separator";
 import { SvgUsers, SvgCheck } from "@opal/icons";
 import { createCheckoutSession } from "@/lib/billing/svc";
 import { useUser } from "@/providers/UserProvider";
@@ -218,7 +217,7 @@ export default function CheckoutView({ onAdjustPlan }: CheckoutViewProps) {
             </Section>
           </InputLayouts.Horizontal>
 
-          <Separator noPadding />
+          <Divider paddingParallel="fit" paddingPerpendicular="fit" />
 
           {/* Seats */}
           <InputLayouts.Horizontal

@@ -9,7 +9,7 @@ import {
 } from "@/hooks/useLLMProviders";
 import { ThreeDotsLoader } from "@/components/Loading";
 import { Content, Card as CardLayout } from "@opal/layouts";
-import { Button, SelectCard, Text, Card } from "@opal/components";
+import { Button, Divider, SelectCard, Text, Card } from "@opal/components";
 import { Hoverable } from "@opal/core";
 import { SvgArrowExchange, SvgSettings, SvgTrash } from "@opal/icons";
 import * as SettingsLayouts from "@/layouts/settings-layouts";
@@ -23,7 +23,6 @@ import InputSelect from "@/refresh-components/inputs/InputSelect";
 import Message from "@/refresh-components/messages/Message";
 import ConfirmationModalLayout from "@/refresh-components/layouts/ConfirmationModalLayout";
 import { useCreateModal } from "@/refresh-components/contexts/ModalContext";
-import Separator from "@/refresh-components/Separator";
 import {
   LLMProviderName,
   LLMProviderView,
@@ -407,7 +406,7 @@ export default function LLMConfigurationPage() {
               </div>
             </GeneralLayouts.Section>
 
-            <Separator noPadding />
+            <Divider paddingParallel="fit" paddingPerpendicular="fit" />
           </>
         )}
 

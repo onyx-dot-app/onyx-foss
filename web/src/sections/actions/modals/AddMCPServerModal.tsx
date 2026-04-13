@@ -14,8 +14,7 @@ import {
   MCPServer,
 } from "@/lib/tools/interfaces";
 import { useModal } from "@/refresh-components/contexts/ModalContext";
-import Separator from "@/refresh-components/Separator";
-import { Button } from "@opal/components";
+import { Button, Divider } from "@opal/components";
 import { toast } from "@/hooks/useToast";
 import { ModalCreationInterface } from "@/refresh-components/contexts/ModalContext";
 import { SvgCheckCircle, SvgServer, SvgUnplug } from "@opal/icons";
@@ -166,7 +165,7 @@ export default function AddMCPServerModal({
                   />
                 </InputLayouts.Vertical>
 
-                <Separator noPadding />
+                <Divider paddingParallel="fit" paddingPerpendicular="fit" />
 
                 <InputLayouts.Vertical
                   name="server_url"

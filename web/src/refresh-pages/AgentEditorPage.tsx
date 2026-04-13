@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import * as SettingsLayouts from "@/layouts/settings-layouts";
 import * as GeneralLayouts from "@/layouts/general-layouts";
 import Button from "@/refresh-components/buttons/Button";
-import { Button as OpalButton } from "@opal/components";
+import { Button as OpalButton, Divider } from "@opal/components";
 import { Hoverable } from "@opal/core";
 import { FullPersona } from "@/app/admin/agents/interfaces";
 import { buildImgUrl } from "@/app/app/components/files/images/utils";
@@ -16,7 +16,6 @@ import InputTextAreaField from "@/refresh-components/form/InputTextAreaField";
 import InputTypeInElementField from "@/refresh-components/form/InputTypeInElementField";
 import InputDatePickerField from "@/refresh-components/form/InputDatePickerField";
 import Message from "@/refresh-components/messages/Message";
-import Separator from "@/refresh-components/Separator";
 import * as InputLayouts from "@/layouts/input-layouts";
 import { useFormikContext } from "formik";
 import LLMSelector from "@/components/llm/LLMSelector";
@@ -1289,7 +1288,10 @@ export default function AgentEditorPage({
                         </GeneralLayouts.Section>
                       </GeneralLayouts.Section>
 
-                      <Separator noPadding />
+                      <Divider
+                        paddingParallel="fit"
+                        paddingPerpendicular="fit"
+                      />
 
                       <GeneralLayouts.Section>
                         <InputLayouts.Vertical
@@ -1314,7 +1316,10 @@ export default function AgentEditorPage({
                         </InputLayouts.Vertical>
                       </GeneralLayouts.Section>
 
-                      <Separator noPadding />
+                      <Divider
+                        paddingParallel="fit"
+                        paddingPerpendicular="fit"
+                      />
 
                       <AgentKnowledgePane
                         enableKnowledge={values.enable_knowledge}
@@ -1359,7 +1364,10 @@ export default function AgentEditorPage({
                         vectorDbEnabled={vectorDbEnabled}
                       />
 
-                      <Separator noPadding />
+                      <Divider
+                        paddingParallel="fit"
+                        paddingPerpendicular="fit"
+                      />
 
                       <SimpleCollapsible>
                         <SimpleCollapsible.Header
@@ -1448,7 +1456,10 @@ export default function AgentEditorPage({
                               {/* render the separator if there is at least one mcp-server or open-api-tool */}
                               {(mcpServers.length > 0 ||
                                 openApiTools.length > 0) && (
-                                <Separator noPadding className="py-1" />
+                                <Divider
+                                  paddingPerpendicular="xs"
+                                  paddingParallel="fit"
+                                />
                               )}
 
                               {/* MCP tools */}
@@ -1483,7 +1494,10 @@ export default function AgentEditorPage({
                         </SimpleCollapsible.Content>
                       </SimpleCollapsible>
 
-                      <Separator noPadding />
+                      <Divider
+                        paddingParallel="fit"
+                        paddingPerpendicular="fit"
+                      />
 
                       <SimpleCollapsible>
                         <SimpleCollapsible.Header
@@ -1591,7 +1605,10 @@ export default function AgentEditorPage({
 
                       {existingAgent && (
                         <>
-                          <Separator noPadding />
+                          <Divider
+                            paddingParallel="fit"
+                            paddingPerpendicular="fit"
+                          />
 
                           <Card>
                             <InputLayouts.Horizontal

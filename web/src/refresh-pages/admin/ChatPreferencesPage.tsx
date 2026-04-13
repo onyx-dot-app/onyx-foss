@@ -11,7 +11,6 @@ import * as SettingsLayouts from "@/layouts/settings-layouts";
 import * as InputLayouts from "@/layouts/input-layouts";
 import { Section } from "@/layouts/general-layouts";
 import Card from "@/refresh-components/cards/Card";
-import Separator from "@/refresh-components/Separator";
 import SimpleCollapsible from "@/refresh-components/SimpleCollapsible";
 import SimpleTooltip from "@/refresh-components/SimpleTooltip";
 import SwitchField from "@/refresh-components/form/SwitchField";
@@ -47,7 +46,7 @@ import {
   PYTHON_TOOL_ID,
   OPEN_URL_TOOL_ID,
 } from "@/app/app/components/tools/constants";
-import { Button, Text, Card as OpalCard } from "@opal/components";
+import { Button, Divider, Text, Card as OpalCard } from "@opal/components";
 import Modal from "@/refresh-components/Modal";
 import Switch from "@/refresh-components/inputs/Switch";
 import useMcpServersForAgentEditor from "@/hooks/useMcpServersForAgentEditor";
@@ -580,7 +579,7 @@ function ChatPreferencesForm() {
             </Button>
           </InputLayouts.Horizontal>
 
-          <Separator noPadding />
+          <Divider paddingParallel="fit" paddingPerpendicular="fit" />
 
           {/* Features */}
           <Section gap={0.75}>
@@ -641,7 +640,7 @@ function ChatPreferencesForm() {
             </Card>
           </Section>
 
-          <Separator noPadding />
+          <Divider paddingParallel="fit" paddingPerpendicular="fit" />
 
           <Disabled disabled={values.disable_default_assistant}>
             <div>
@@ -823,7 +822,10 @@ function ChatPreferencesForm() {
                     {/* Separator between built-in tools and MCP/OpenAPI tools */}
                     {(mcpServersWithTools.length > 0 ||
                       openApiTools.length > 0) && (
-                      <Separator noPadding className="py-3" />
+                      <Divider
+                        paddingPerpendicular="sm"
+                        paddingParallel="fit"
+                      />
                     )}
 
                     {/* MCP Servers & OpenAPI Tools */}
@@ -862,7 +864,7 @@ function ChatPreferencesForm() {
             </div>
           </Disabled>
 
-          <Separator noPadding />
+          <Divider paddingParallel="fit" paddingPerpendicular="fit" />
 
           {/* Advanced Options */}
           <SimpleCollapsible defaultOpen={false}>

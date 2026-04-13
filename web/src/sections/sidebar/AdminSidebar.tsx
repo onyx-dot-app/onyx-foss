@@ -18,9 +18,8 @@ import { useUser } from "@/providers/UserProvider";
 import { UserRole } from "@/lib/types";
 import { usePaidEnterpriseFeaturesEnabled } from "@/components/settings/usePaidEnterpriseFeaturesEnabled";
 import { CombinedSettings } from "@/interfaces/settings";
-import { SidebarTab } from "@opal/components";
+import { Divider, SidebarTab } from "@opal/components";
 import InputTypeIn from "@/refresh-components/inputs/InputTypeIn";
-import Separator from "@/refresh-components/Separator";
 import Spacer from "@/refresh-components/Spacer";
 import { SvgArrowUpCircle, SvgSearch, SvgX } from "@opal/icons";
 import {
@@ -302,7 +301,7 @@ function AdminSidebarInner({
           );
         })}
 
-        {disabledGroups.length > 0 && <Separator noPadding className="px-2" />}
+        {disabledGroups.length > 0 && <Divider paddingPerpendicular="fit" />}
 
         {disabledGroups.map((group, groupIndex) => (
           <SidebarSection
@@ -322,7 +321,7 @@ function AdminSidebarInner({
       <SidebarLayouts.Footer>
         {!folded && (
           <>
-            <Separator noPadding className="px-2" />
+            <Divider paddingPerpendicular="fit" />
             <Spacer rem={0.5} />
           </>
         )}

@@ -7,10 +7,9 @@ import Text from "@/refresh-components/texts/Text";
 import * as InputLayouts from "@/layouts/input-layouts";
 import InputTextAreaField from "@/refresh-components/form/InputTextAreaField";
 import SimpleTooltip from "@/refresh-components/SimpleTooltip";
-import Separator from "@/refresh-components/Separator";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CopyIconButton from "@/refresh-components/buttons/CopyIconButton";
-import { Button } from "@opal/components";
+import { Button, Divider } from "@opal/components";
 import { Hoverable } from "@opal/core";
 import { MethodSpec, ToolSnapshot } from "@/lib/tools/interfaces";
 import {
@@ -279,7 +278,7 @@ function FormContent({
           </Hoverable.Root>
         </InputLayouts.Vertical>
 
-        <Separator noPadding />
+        <Divider paddingParallel="fit" paddingPerpendicular="fit" />
 
         {methodSpecs && methodSpecs.length > 0 ? (
           <>
@@ -297,7 +296,7 @@ function FormContent({
                 description="URL found in the schema. Only connect to servers you trust."
               />
             )}
-            <Separator noPadding />
+            <Divider paddingParallel="fit" paddingPerpendicular="fit" />
             <Section gap={0.5}>
               {methodSpecs.map((method) => (
                 <ToolItem
