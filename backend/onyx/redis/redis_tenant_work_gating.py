@@ -39,10 +39,9 @@ def mark_tenant_active(tenant_id: str) -> None:
     current timestamp as the score). Best-effort — a Redis failure is logged
     and swallowed so it never breaks a writer path.
 
-    Call sites:
-    - Top of each gated beat-task consumer when its "is there work?" query
-      returns a non-empty result.
-    - cc_pair create lifecycle hook.
+    Raw write; does not check the feature flag. Writer call sites should
+    use `maybe_mark_tenant_active` instead so the feature flag gates the
+    ZADD.
     """
     if not MULTI_TENANT:
         return
@@ -53,6 +52,23 @@ def mark_tenant_active(tenant_id: str) -> None:
         _client().zadd(_SET_KEY, mapping={tenant_id: _now_ms()})
     except Exception:
         logger.exception(f"mark_tenant_active failed: tenant_id={tenant_id}")
+
+
+def maybe_mark_tenant_active(tenant_id: str) -> None:
+    """Convenience wrapper for writer call sites: records the tenant only
+    when the feature flag is on. Fully defensive — never raises, so a Redis
+    outage or flag-read failure can't abort the calling task."""
+    try:
+        # Local import to avoid a module-load cycle: OnyxRuntime imports
+        # onyx.redis.redis_pool, so a top-level import here would wedge on
+        # certain startup paths.
+        from onyx.server.runtime.onyx_runtime import OnyxRuntime
+
+        if not OnyxRuntime.get_tenant_work_gating_enabled():
+            return
+        mark_tenant_active(tenant_id)
+    except Exception:
+        logger.exception(f"maybe_mark_tenant_active failed: tenant_id={tenant_id}")
 
 
 def get_active_tenants(ttl_seconds: int) -> set[str] | None:
