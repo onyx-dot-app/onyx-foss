@@ -1,5 +1,3 @@
-import csv
-import io
 from collections.abc import Iterable
 
 from pydantic import BaseModel
@@ -9,9 +7,14 @@ from onyx.indexing.chunking.section_chunker import AccumulatorState
 from onyx.indexing.chunking.section_chunker import ChunkPayload
 from onyx.indexing.chunking.section_chunker import SectionChunker
 from onyx.indexing.chunking.section_chunker import SectionChunkerOutput
+from onyx.indexing.chunking.tabular_section_chunker.sheet_descriptor import (
+    build_sheet_descriptor_chunks,
+)
 from onyx.natural_language_processing.utils import BaseTokenizer
 from onyx.natural_language_processing.utils import count_tokens
 from onyx.natural_language_processing.utils import split_text_by_tokens
+from onyx.utils.csv_utils import parse_csv_string
+from onyx.utils.csv_utils import ParsedRow
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
@@ -21,11 +24,6 @@ COLUMNS_MARKER = "Columns:"
 FIELD_VALUE_SEPARATOR = ", "
 ROW_JOIN = "\n"
 NEWLINE_TOKENS = 1
-
-
-class _ParsedRow(BaseModel):
-    header: list[str]
-    row: list[str]
 
 
 class _TokenizedText(BaseModel):
@@ -58,23 +56,6 @@ def format_columns_header(headers: list[str]) -> str:
             friendly = f'{header} ({header.replace("_", " ")})'
         parts.append(friendly)
     return f"{COLUMNS_MARKER} " + FIELD_VALUE_SEPARATOR.join(parts)
-
-
-def parse_section(section: Section) -> list[_ParsedRow]:
-    """Parse CSV into headers + rows. First non-empty row is the header;
-    blank rows are skipped."""
-    section_text = section.text or ""
-    if not section_text.strip():
-        return []
-
-    reader = csv.reader(io.StringIO(section_text))
-    non_empty_rows = [row for row in reader if any(cell.strip() for cell in row)]
-
-    if not non_empty_rows:
-        return []
-
-    header, *data_rows = non_empty_rows
-    return [_ParsedRow(header=header, row=row) for row in data_rows]
 
 
 def _row_to_pairs(headers: list[str], row: list[str]) -> list[tuple[str, str]]:
@@ -175,7 +156,7 @@ def _build_chunk_from_scratch(
 
 
 def parse_to_chunks(
-    rows: Iterable[_ParsedRow],
+    rows: Iterable[ParsedRow],
     sheet_header: str,
     tokenizer: BaseTokenizer,
     max_tokens: int,
@@ -233,8 +214,13 @@ def parse_to_chunks(
 
 
 class TabularChunker(SectionChunker):
-    def __init__(self, tokenizer: BaseTokenizer) -> None:
+    def __init__(
+        self,
+        tokenizer: BaseTokenizer,
+        ignore_metadata_chunks: bool = False,
+    ) -> None:
         self.tokenizer = tokenizer
+        self.ignore_metadata_chunks = ignore_metadata_chunks
 
     def chunk_section(
         self,
@@ -244,22 +230,36 @@ class TabularChunker(SectionChunker):
     ) -> SectionChunkerOutput:
         payloads = accumulator.flush_to_list()
 
-        parsed_rows = parse_section(section)
-        if not parsed_rows:
+        parsed_rows = list(parse_csv_string(section.text or ""))
+        sheet_header = section.heading or ""
+
+        chunk_texts: list[str] = []
+        if parsed_rows:
+            chunk_texts.extend(
+                parse_to_chunks(
+                    rows=parsed_rows,
+                    sheet_header=sheet_header,
+                    tokenizer=self.tokenizer,
+                    max_tokens=content_token_limit,
+                )
+            )
+
+        if not self.ignore_metadata_chunks:
+            chunk_texts.extend(
+                build_sheet_descriptor_chunks(
+                    section=section,
+                    tokenizer=self.tokenizer,
+                    max_tokens=content_token_limit,
+                )
+            )
+
+        if not chunk_texts:
             logger.warning(
                 f"TabularChunker: skipping unparseable section (link={section.link})"
             )
             return SectionChunkerOutput(
                 payloads=payloads, accumulator=AccumulatorState()
             )
-
-        sheet_header = section.heading or ""
-        chunk_texts = parse_to_chunks(
-            rows=parsed_rows,
-            sheet_header=sheet_header,
-            tokenizer=self.tokenizer,
-            max_tokens=content_token_limit,
-        )
 
         for i, text in enumerate(chunk_texts):
             payloads.append(
