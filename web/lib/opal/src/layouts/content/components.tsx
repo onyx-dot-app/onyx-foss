@@ -58,9 +58,9 @@ interface ContentBaseProps {
    * - `"fit"` — Shrink-wraps to content width
    * - `"full"` — Stretches to fill the parent's width
    *
-   * @default "fit"
+   * @default "full"
    */
-  widthVariant?: ExtremaSizeVariants;
+  width?: ExtremaSizeVariants;
 
   /**
    * Opt out of the automatic interactive color override.
@@ -137,7 +137,7 @@ function Content(props: ContentProps) {
   const {
     sizePreset = "headline",
     variant = "heading",
-    widthVariant = "full",
+    width = "full",
     nonInteractive,
     ref,
     ...rest
@@ -200,7 +200,7 @@ function Content(props: ContentProps) {
 
   return (
     <div
-      className={widthVariants[widthVariant]}
+      className={widthVariants[width]}
       data-opal-non-interactive={nonInteractive || undefined}
     >
       {layout}
