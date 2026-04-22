@@ -4,24 +4,24 @@
  * Tests logo icons to ensure they render correctly with proper accessibility
  * and support various display sizes.
  */
-import { SvgBifrost } from "@opal/logos";
+import { SvgBifrost, SvgGithub } from "@opal/logos";
 import { render } from "@tests/setup/test-utils";
-import { GithubIcon, GitbookIcon, ConfluenceIcon } from "./icons";
+import { GitbookIcon, ConfluenceIcon } from "./icons";
 
 describe("Logo Icons", () => {
-  test("renders with alt text", () => {
-    const { container } = render(<GithubIcon />);
-    const image = container.querySelector("img");
+  test("renders as an SVG element", () => {
+    const { container } = render(<SvgGithub />);
+    const svg = container.querySelector("svg");
 
-    expect(image).toBeInTheDocument();
-    expect(image).toHaveAttribute("alt");
+    expect(svg).toBeInTheDocument();
   });
 
   test("applies custom size", () => {
-    const { container } = render(<GithubIcon size={48} />);
-    const image = container.querySelector("img");
+    const { container } = render(<SvgGithub size={48} />);
+    const svg = container.querySelector("svg");
 
-    expect(image).toHaveStyle({ width: "48px", height: "48px" });
+    expect(svg).toHaveAttribute("width", "48");
+    expect(svg).toHaveAttribute("height", "48");
   });
 
   test("applies size adjustments", () => {
@@ -48,7 +48,7 @@ describe("Logo Icons", () => {
 
   test("accepts className and size props", () => {
     expect(() => {
-      render(<GithubIcon size={100} className="custom-class" />);
+      render(<SvgGithub size={100} className="custom-class" />);
     }).not.toThrow();
   });
 
