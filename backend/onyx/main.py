@@ -83,9 +83,7 @@ from onyx.server.features.hierarchy.api import router as hierarchy_router
 from onyx.server.features.input_prompt.api import (
     admin_router as admin_input_prompt_router,
 )
-from onyx.server.features.input_prompt.api import (
-    basic_router as input_prompt_router,
-)
+from onyx.server.features.input_prompt.api import basic_router as input_prompt_router
 from onyx.server.features.mcp.api import admin_router as mcp_admin_router
 from onyx.server.features.mcp.api import router as mcp_router
 from onyx.server.features.notifications.api import router as notification_router
@@ -127,9 +125,7 @@ from onyx.server.manage.users import router as user_router
 from onyx.server.manage.voice.api import admin_router as voice_admin_router
 from onyx.server.manage.voice.user_api import router as voice_router
 from onyx.server.manage.voice.websocket_api import router as voice_websocket_router
-from onyx.server.manage.web_search.api import (
-    admin_router as web_search_admin_router,
-)
+from onyx.server.manage.web_search.api import admin_router as web_search_admin_router
 from onyx.server.metrics.postgres_connection_pool import (
     setup_postgres_connection_pool_metrics,
 )
@@ -141,16 +137,12 @@ from onyx.server.middleware.rate_limiting import setup_auth_limiter
 from onyx.server.onyx_api.ingestion import router as onyx_api_router
 from onyx.server.pat.api import router as pat_router
 from onyx.server.query_and_chat.chat_backend import router as chat_router
-from onyx.server.query_and_chat.query_backend import (
-    admin_router as admin_query_router,
-)
+from onyx.server.query_and_chat.query_backend import admin_router as admin_query_router
 from onyx.server.query_and_chat.query_backend import basic_router as query_router
 from onyx.server.saml import router as saml_router
 from onyx.server.settings.api import admin_router as settings_admin_router
 from onyx.server.settings.api import basic_router as settings_router
-from onyx.server.token_rate_limits.api import (
-    router as token_rate_limit_settings_router,
-)
+from onyx.server.token_rate_limits.api import router as token_rate_limit_settings_router
 from onyx.server.utils import BasicAuthenticationError
 from onyx.setup import setup_multitenant_onyx
 from onyx.setup import setup_onyx
