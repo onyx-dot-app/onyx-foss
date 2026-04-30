@@ -14,6 +14,7 @@ from onyx.llm.models import SystemMessage
 from onyx.llm.models import TextContentPart
 from onyx.llm.models import UserMessage
 from onyx.llm.utils import llm_response_to_string
+from onyx.server.metrics.image_processing import track_image_summarization
 from onyx.tracing.flows import LLMFlow
 from onyx.tracing.llm_utils import llm_generation_span
 from onyx.tracing.llm_utils import record_llm_response
@@ -38,6 +39,7 @@ def prepare_image_bytes(image_data: bytes) -> str:
     return encoded_image
 
 
+@track_image_summarization
 def summarize_image_pipeline(
     llm: LLM,
     image_data: bytes,
