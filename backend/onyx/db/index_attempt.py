@@ -23,6 +23,8 @@ from onyx.db.models import ConnectorCredentialPair
 from onyx.db.models import IndexAttempt
 from onyx.db.models import IndexAttemptError
 from onyx.db.models import SearchSettings
+from onyx.redis.redis_docprocessing import RedisDocprocessing
+from onyx.redis.redis_pool import get_redis_client
 from onyx.server.documents.models import ConnectorCredentialPairIdentifier
 from onyx.utils.logger import setup_logger
 from onyx.utils.telemetry import optional_telemetry
@@ -286,6 +288,16 @@ def mark_attempt_succeeded(
                 "cc_pair_id": attempt.connector_credential_pair_id,
             },
         )
+        # TODO(@bo): in PR 2, cross-check DB terminal status before acting on
+        # stale counters in case cleanup() failed and left them behind.
+        try:
+            RedisDocprocessing(index_attempt_id, get_redis_client()).cleanup()
+        except Exception:
+            logger.debug(
+                "Failed to clean up docprocessing counters for attempt %s",
+                index_attempt_id,
+                exc_info=True,
+            )
         return attempt
     except Exception:
         db_session.rollback()
@@ -316,6 +328,16 @@ def mark_attempt_partially_succeeded(
                 "cc_pair_id": attempt.connector_credential_pair_id,
             },
         )
+        # TODO(@bo): in PR 2, cross-check DB terminal status before acting on
+        # stale counters in case cleanup() failed and left them behind.
+        try:
+            RedisDocprocessing(index_attempt_id, get_redis_client()).cleanup()
+        except Exception:
+            logger.debug(
+                "Failed to clean up docprocessing counters for attempt %s",
+                index_attempt_id,
+                exc_info=True,
+            )
         return attempt
     except Exception:
         db_session.rollback()
@@ -349,6 +371,16 @@ def mark_attempt_canceled(
                 "cc_pair_id": attempt.connector_credential_pair_id,
             },
         )
+        # TODO(@bo): in PR 2, cross-check DB terminal status before acting on
+        # stale counters in case cleanup() failed and left them behind.
+        try:
+            RedisDocprocessing(index_attempt_id, get_redis_client()).cleanup()
+        except Exception:
+            logger.debug(
+                "Failed to clean up docprocessing counters for attempt %s",
+                index_attempt_id,
+                exc_info=True,
+            )
     except Exception:
         db_session.rollback()
         raise
@@ -384,6 +416,16 @@ def mark_attempt_failed(
                 "cc_pair_id": attempt.connector_credential_pair_id,
             },
         )
+        # TODO(@bo): in PR 2, cross-check DB terminal status before acting on
+        # stale counters in case cleanup() failed and left them behind.
+        try:
+            RedisDocprocessing(index_attempt_id, get_redis_client()).cleanup()
+        except Exception:
+            logger.debug(
+                "Failed to clean up docprocessing counters for attempt %s",
+                index_attempt_id,
+                exc_info=True,
+            )
     except Exception:
         db_session.rollback()
         raise
