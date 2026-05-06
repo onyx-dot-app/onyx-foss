@@ -544,7 +544,7 @@ export function getDefaultLlmDescriptor(
     const provider = llmProviders.find((p) => p.id === defaultText.provider_id);
     if (provider) {
       return {
-        name: provider.name,
+        name: provider.name ?? "",
         provider: provider.provider,
         modelName: defaultText.model_name,
       };
@@ -559,7 +559,7 @@ export function getDefaultLlmDescriptor(
       (m) => m.is_visible
     );
     return {
-      name: firstLlmProvider.name,
+      name: firstLlmProvider.name ?? "",
       provider: firstLlmProvider.provider,
       modelName: firstModel?.name ?? "",
     };
@@ -589,7 +589,7 @@ export function getValidLlmDescriptorForProviders(
       if (provider) {
         return {
           modelName: modelName,
-          name: provider.name,
+          name: provider.name ?? "",
           provider: provider.provider,
         };
       }
@@ -612,7 +612,7 @@ export function getValidLlmDescriptorForProviders(
       if (matchingProvider) {
         return {
           ...model,
-          name: matchingProvider.name,
+          name: matchingProvider.name ?? "",
           provider: matchingProvider.provider,
         };
       }
@@ -626,7 +626,11 @@ export function getValidLlmDescriptorForProviders(
       );
 
       if (provider) {
-        return { ...model, provider: provider.provider, name: provider.name };
+        return {
+          ...model,
+          provider: provider.provider,
+          name: provider.name ?? "",
+        };
       }
     }
   }
@@ -743,11 +747,6 @@ export function useLlmManager(
         currentChatSession.current_alternate_model,
         llmProviders
       );
-    } else if (liveAgent?.llm_model_version_override) {
-      resolved = getValidLlmDescriptorForProviders(
-        liveAgent.llm_model_version_override,
-        llmProviders
-      );
     } else if (user?.preferences?.default_model) {
       resolved = getValidLlmDescriptorForProviders(
         user.preferences.default_model,
@@ -772,7 +771,6 @@ export function useLlmManager(
     llmProviders,
     defaultText,
     currentChatSession,
-    liveAgent?.llm_model_version_override,
     userHasManuallyOverriddenLLM,
     manualLlm,
     user?.preferences?.default_model,

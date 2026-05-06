@@ -226,7 +226,7 @@ describe("Custom LLM Provider Configuration Workflow", () => {
     ).toBeUndefined();
   });
 
-  test("updates an existing LLM provider", async () => {
+  test("updates an existing LLM provider without re-testing credentials when api key is unchanged", async () => {
     const user = setupUser({
       pointerEventsCheck: PointerEventsCheckLevel.Never,
     });
@@ -256,13 +256,7 @@ describe("Custom LLM Provider Configuration Workflow", () => {
       deployment_name: null,
     };
 
-    // Mock POST /api/admin/llm/test
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
-    } as Response);
-
-    // Mock PUT /api/admin/llm/provider (update, no is_creation param)
+    // Only one mock needed — credential test is skipped when api_key is unchanged
     fetchSpy.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ ...existingProvider }),
@@ -283,14 +277,6 @@ describe("Custom LLM Provider Configuration Workflow", () => {
     const submitButton = screen.getByRole("button", { name: /update/i });
     await user.click(submitButton);
 
-    // Verify test was called
-    await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        "/api/admin/llm/test",
-        expect.any(Object)
-      );
-    });
-
     // Verify update API was called (without is_creation param)
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -300,6 +286,12 @@ describe("Custom LLM Provider Configuration Workflow", () => {
         })
       );
     });
+
+    // Credential test should NOT have been called when only model name changed
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "/api/admin/llm/test",
+      expect.any(Object)
+    );
 
     // Verify success message says "updated"
     await waitFor(() => {

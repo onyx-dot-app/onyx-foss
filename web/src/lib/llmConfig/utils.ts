@@ -25,15 +25,19 @@ export function getFinalLLM(
     "";
 
   if (persona) {
-    // Map "provider override" to actual LLLMProvider
-    if (persona.llm_model_provider_override) {
-      const underlyingProvider = llmProviders.find(
-        (item: LLMProviderDescriptor) =>
-          item.name === persona.llm_model_provider_override
-      );
-      provider = underlyingProvider?.provider || provider;
+    if (persona.default_model_configuration_id != null) {
+      // Canonical path: resolve provider and model from the model config ID.
+      for (const p of llmProviders) {
+        const mc = p.model_configurations.find(
+          (m) => m.id === persona.default_model_configuration_id
+        );
+        if (mc) {
+          provider = p.provider;
+          model = mc.name;
+          break;
+        }
+      }
     }
-    model = persona.llm_model_version_override || model;
   }
 
   if (currentLlm) {
@@ -48,27 +52,20 @@ export function getProviderOverrideForPersona(
   liveAgent: MinimalPersonaSnapshot,
   llmProviders: LLMProviderDescriptor[]
 ): LlmDescriptor | null {
-  const overrideProvider = liveAgent.llm_model_provider_override;
-  const overrideModel = liveAgent.llm_model_version_override;
-
-  if (!overrideModel) {
-    return null;
-  }
-
-  const matchingProvider = llmProviders.find(
-    (provider) =>
-      (overrideProvider ? provider.name === overrideProvider : true) &&
-      provider.model_configurations
-        .map((modelConfiguration) => modelConfiguration.name)
-        .includes(overrideModel)
-  );
-
-  if (matchingProvider) {
-    return {
-      name: matchingProvider.name,
-      provider: matchingProvider.provider,
-      modelName: overrideModel,
-    };
+  // Canonical path: resolve from model configuration ID.
+  if (liveAgent.default_model_configuration_id != null) {
+    for (const provider of llmProviders) {
+      const mc = provider.model_configurations.find(
+        (m) => m.id === liveAgent.default_model_configuration_id
+      );
+      if (mc) {
+        return {
+          name: provider.name ?? "",
+          provider: provider.provider,
+          modelName: mc.name,
+        };
+      }
+    }
   }
 
   return null;
@@ -144,15 +141,12 @@ export function getDisplayName(
   agent: MinimalPersonaSnapshot,
   llmProviders: LLMProviderDescriptor[]
 ): string | undefined {
-  const llmDescriptor = getProviderOverrideForPersona(
-    agent,
-    llmProviders ?? []
-  );
-  const llmProvider = llmProviders?.find(
-    (llmProvider) => llmProvider.name === agent.llm_model_provider_override
-  );
-  const modelConfig = llmProvider?.model_configurations.find(
-    (modelConfig) => modelConfig.name === llmDescriptor?.modelName
-  );
-  return modelConfig?.display_name;
+  if (agent.default_model_configuration_id == null) return undefined;
+  for (const p of llmProviders ?? []) {
+    const mc = p.model_configurations.find(
+      (m) => m.id === agent.default_model_configuration_id
+    );
+    if (mc) return mc.display_name;
+  }
+  return undefined;
 }

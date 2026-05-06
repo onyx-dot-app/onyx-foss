@@ -54,22 +54,16 @@ import { getProvider } from "@/lib/llmConfig";
 
 // ─── DisplayNameField ────────────────────────────────────────────────────────
 
-export interface DisplayNameFieldProps {
-  disabled?: boolean;
-}
-export function DisplayNameField({ disabled = false }: DisplayNameFieldProps) {
+export function DisplayNameField() {
   return (
     <InputPadder>
       <InputVertical
         withLabel="name"
         title="Display Name"
+        suffix="optional"
         subDescription="Used to identify this provider in the app."
       >
-        <InputTypeInField
-          name="name"
-          placeholder="Display Name"
-          variant={disabled ? "disabled" : undefined}
-        />
+        <InputTypeInField name="name" placeholder="Display Name" />
       </InputVertical>
     </InputPadder>
   );
@@ -726,7 +720,7 @@ function ModalWrapperInner({
   } = getProvider(providerName);
 
   const title = llmProvider
-    ? markdown(`Configure *${llmProvider.name}*`)
+    ? markdown(`Configure *${llmProvider.name ?? providerProductName}*`)
     : `Set up ${providerProductName}`;
   const description =
     descriptionOverride ??
@@ -757,13 +751,7 @@ function ModalWrapperInner({
               icon={busy ? SimpleLoader : undefined}
               tooltip={disabledTooltip}
             >
-              {llmProvider?.name
-                ? busy
-                  ? "Updating"
-                  : "Update"
-                : busy
-                  ? "Connecting"
-                  : "Connect"}
+              {llmProvider ? "Update" : "Connect"}
             </Button>
           </Modal.Footer>
         </Form>
