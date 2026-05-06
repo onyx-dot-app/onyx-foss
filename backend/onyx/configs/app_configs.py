@@ -86,6 +86,17 @@ CACHE_BACKEND = CacheBackendType(
     os.environ.get("CACHE_BACKEND", CacheBackendType.REDIS)
 )
 
+# Cache query embeddings in the configured cache backend so identical queries
+# (across users / agentic sub-queries) don't re-hit the embedding provider.
+QUERY_EMBEDDING_CACHE_ENABLED = (
+    os.environ.get("QUERY_EMBEDDING_CACHE_ENABLED", "true").lower() == "true"
+)
+assert (
+    QUERY_EMBEDDING_CACHE_TTL_S := int(
+        os.environ.get("QUERY_EMBEDDING_CACHE_TTL_S", "900")
+    )
+) > 0, "QUERY_EMBEDDING_CACHE_TTL_S must be positive."
+
 # If set to true, will show extra/uncommon connectors in the "Other" category
 SHOW_EXTRA_CONNECTORS = os.environ.get("SHOW_EXTRA_CONNECTORS", "").lower() == "true"
 
