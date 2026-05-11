@@ -27,10 +27,7 @@ import { parseLlmDescriptor } from "@/lib/languageModels/utils";
 import { ChatSession } from "@/app/app/interfaces";
 import { Credential } from "./connectors/credentials";
 import { SettingsContext } from "@/providers/SettingsProvider";
-import {
-  MinimalPersonaSnapshot,
-  PersonaLabel,
-} from "@/app/admin/agents/interfaces";
+import { MinimalAgent, AgentLabel } from "@/lib/agents/types";
 import { DefaultModel, LLMProviderDescriptor } from "@/interfaces/llm";
 import { isAnthropic } from "@/lib/languageModels/svc";
 import { getSourceMetadataForSources } from "./sources";
@@ -252,7 +249,7 @@ export const useFederatedConnectors = () => {
 
 export const useLabels = () => {
   const { mutate } = useSWRConfig();
-  const { data: labels, error } = useSWR<PersonaLabel[]>(
+  const { data: labels, error } = useSWR<AgentLabel[]>(
     SWR_KEYS.personaLabels,
     errorHandlingFetcher
   );
@@ -261,7 +258,7 @@ export const useLabels = () => {
     return mutate(SWR_KEYS.personaLabels);
   };
 
-  const createLabel = async (name: string): Promise<PersonaLabel | null> => {
+  const createLabel = async (name: string): Promise<AgentLabel | null> => {
     const response = await fetch(SWR_KEYS.personaLabels, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -272,10 +269,10 @@ export const useLabels = () => {
       return null;
     }
 
-    const newLabel: PersonaLabel = await response.json();
+    const newLabel: AgentLabel = await response.json();
     mutate(
       SWR_KEYS.personaLabels,
-      (currentLabels: PersonaLabel[] | undefined) => [
+      (currentLabels: AgentLabel[] | undefined) => [
         ...(currentLabels || []),
         newLabel,
       ],
@@ -488,7 +485,7 @@ export interface LlmManager {
   updateModelOverrideBasedOnChatSession: (chatSession?: ChatSession) => void;
   imageFilesPresent: boolean;
   updateImageFilesPresent: (present: boolean) => void;
-  liveAgent: MinimalPersonaSnapshot | null;
+  liveAgent: MinimalAgent | null;
   maxTemperature: number;
   llmProviders: LLMProviderDescriptor[] | undefined;
   isLoadingProviders: boolean;
@@ -647,7 +644,7 @@ export function getValidLlmDescriptorForProviders(
 
 export function useLlmManager(
   currentChatSession?: ChatSession,
-  liveAgent?: MinimalPersonaSnapshot
+  liveAgent?: MinimalAgent
 ): LlmManager {
   const { user } = useUser();
 
