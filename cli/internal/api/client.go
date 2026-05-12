@@ -79,7 +79,7 @@ func wrapTimeoutError(err error) error {
 	return err
 }
 
-func (c *Client) doJSON(ctx context.Context, method, path string, reqBody any, result any) error {
+func (c *Client) doJSONWith(ctx context.Context, httpClient *http.Client, method, path string, reqBody any, result any) error {
 	var body io.Reader
 	if reqBody != nil {
 		data, err := json.Marshal(reqBody)
@@ -97,7 +97,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, reqBody any, r
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return wrapTimeoutError(err)
 	}
@@ -111,6 +111,23 @@ func (c *Client) doJSON(ctx context.Context, method, path string, reqBody any, r
 		return json.NewDecoder(resp.Body).Decode(result)
 	}
 	return nil
+}
+
+func (c *Client) doJSON(ctx context.Context, method, path string, reqBody any, result any) error {
+	return c.doJSONWith(ctx, c.httpClient, method, path, reqBody, result)
+}
+
+func (c *Client) doJSONLong(ctx context.Context, method, path string, reqBody any, result any) error {
+	return c.doJSONWith(ctx, c.longHTTPClient, method, path, reqBody, result)
+}
+
+// Search calls POST /api/search and returns the response.
+func (c *Client) Search(ctx context.Context, req models.SearchRequest) (*models.SearchResponse, error) {
+	var resp models.SearchResponse
+	if err := c.doJSONLong(ctx, "POST", "/search", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // TestConnection checks if the server is reachable and credentials are valid.
@@ -315,6 +332,7 @@ type ClientAPI interface {
 	GetBackendVersion(ctx context.Context) (string, error)
 	StopChatSession(ctx context.Context, sessionID string)
 	SendMessageStream(ctx context.Context, message string, chatSessionID *string, agentID int, parentMessageID *int, fileDescriptors []models.FileDescriptorPayload) <-chan models.StreamEvent
+	Search(ctx context.Context, req models.SearchRequest) (*models.SearchResponse, error)
 }
 
 var _ ClientAPI = (*Client)(nil)
