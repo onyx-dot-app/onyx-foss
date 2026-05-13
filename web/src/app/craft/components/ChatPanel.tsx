@@ -29,6 +29,7 @@ import { CRAFT_SEARCH_PARAM_NAMES } from "@/app/craft/services/searchParams";
 import { CRAFT_PATH } from "@/app/craft/v1/constants";
 import { toast } from "@/hooks/useToast";
 import InputBar, { InputBarHandle } from "@/app/craft/components/InputBar";
+import ScheduledRunBanner from "@/app/craft/components/ScheduledRunBanner";
 import BuildWelcome from "@/app/craft/components/BuildWelcome";
 import BuildMessageList from "@/app/craft/components/BuildMessageList";
 import SuggestionBubbles from "@/app/craft/components/SuggestionBubbles";
@@ -383,6 +384,10 @@ export default function BuildChatPanel({
           outputPanelOpen ? "w-1/2 pl-4" : "w-full"
         )}
       >
+        {/* Banner shown only when the session was started by a scheduled task. */}
+        <ScheduledRunBanner
+          sessionId={sessionId ?? existingSessionId ?? null}
+        />
         {/* Chat header */}
         <div className="flex flex-row items-center justify-between pl-4 pr-4 py-3 relative overflow-visible">
           <div className="flex flex-row items-center gap-2 max-w-[75%]">
@@ -435,7 +440,7 @@ export default function BuildChatPanel({
           )}
         </div>
 
-        {/* Input bar at bottom when session exists */}
+        {/* Input bar at bottom when session exists. */}
         {(hasSession || existingSessionId) && (
           <div className="px-4 pb-8 pt-4 relative">
             {/* Soft fade border at top */}

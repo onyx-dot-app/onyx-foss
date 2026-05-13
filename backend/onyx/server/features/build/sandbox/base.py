@@ -118,7 +118,7 @@ class SandboxManager(ABC):
         sandbox_id: UUID,
         session_id: UUID,
         llm_config: LLMProviderConfig,
-        nextjs_port: int,
+        nextjs_port: int | None,
         snapshot_path: str | None = None,
         user_name: str | None = None,
         user_role: str | None = None,
@@ -210,7 +210,7 @@ class SandboxManager(ABC):
         session_id: UUID,
         snapshot_storage_path: str,
         tenant_id: str,
-        nextjs_port: int,
+        nextjs_port: int | None,
         llm_config: LLMProviderConfig,
     ) -> None:
         """Restore a session workspace from a snapshot.
@@ -223,7 +223,8 @@ class SandboxManager(ABC):
             session_id: The session ID to restore
             snapshot_storage_path: Path to the snapshot in storage
             tenant_id: Tenant identifier for storage access
-            nextjs_port: Port number for the NextJS dev server
+            nextjs_port: Port number for the NextJS dev server, or None to
+                skip starting it (e.g. headless scheduled-task fires).
             llm_config: LLM provider configuration for opencode.json
 
         Raises:

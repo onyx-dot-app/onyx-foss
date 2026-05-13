@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from onyx.configs.constants import MessageType
 from onyx.db.enums import BuildSessionStatus
 from onyx.db.enums import SandboxStatus
+from onyx.db.enums import SessionOrigin
 from onyx.db.enums import SharingScope
 from onyx.db.models import Artifact
 from onyx.db.models import BuildMessage
@@ -32,6 +33,7 @@ def create_build_session__no_commit(
     user_id: UUID,
     db_session: Session,
     name: str | None = None,
+    origin: SessionOrigin = SessionOrigin.INTERACTIVE,
 ) -> BuildSession:
     """Create a new build session for the given user.
 
@@ -42,16 +44,25 @@ def create_build_session__no_commit(
         user_id: The user ID
         db_session: Database session
         name: Optional session name
+        origin: How the session was started. Defaults to INTERACTIVE
+            (user-driven via the Craft UI); the scheduled-tasks executor
+            passes SCHEDULED so the row is filtered out of the sidebar.
     """
     session = BuildSession(
         user_id=user_id,
         name=name,
         status=BuildSessionStatus.ACTIVE,
+        origin=origin,
     )
     db_session.add(session)
     db_session.flush()
 
-    logger.info("Created build session %s for user %s", session.id, user_id)
+    logger.info(
+        "Created build session %s for user %s (origin=%s)",
+        session.id,
+        user_id,
+        origin.value,
+    )
     return session
 
 
@@ -76,9 +87,13 @@ def get_user_build_sessions(
     db_session: Session,
     limit: int = 100,
 ) -> list[BuildSession]:
-    """Get all build sessions for a user that have at least one message.
+    """Get a user's interactive build sessions that have at least one message.
 
-    Excludes empty (pre-provisioned) sessions from the listing.
+    Sessions created by non-interactive callers (e.g. the scheduled-tasks
+    executor) are intentionally excluded from this listing so they don't
+    leak into the Craft sidebar. The covering composite index
+    ``ix_build_session_user_origin_created`` is built for this exact query
+    shape: ``(user_id, origin, created_at DESC)``.
     """
     # Subquery to check if session has any messages
     has_messages = exists().where(BuildMessage.session_id == BuildSession.id)
@@ -87,6 +102,7 @@ def get_user_build_sessions(
         db_session.query(BuildSession)
         .filter(
             BuildSession.user_id == user_id,
+            BuildSession.origin == SessionOrigin.INTERACTIVE,
             has_messages,  # Only sessions with messages
         )
         .order_by(desc(BuildSession.created_at))

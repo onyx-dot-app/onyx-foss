@@ -971,7 +971,7 @@ class KubernetesSandboxManager(SandboxManager):
         sandbox_id: UUID,
         session_id: UUID,
         llm_config: LLMProviderConfig,
-        nextjs_port: int,
+        nextjs_port: int | None,
         snapshot_path: str | None = None,
         user_name: str | None = None,
         user_role: str | None = None,
@@ -986,7 +986,8 @@ class KubernetesSandboxManager(SandboxManager):
         3. Write AGENTS.md
         4. Write opencode.json with LLM config
         5. Create org_info/ directory with user identity file (if user_work_area provided)
-        6. Start Next.js dev server
+        6. Start Next.js dev server (skipped when ``nextjs_port`` is None,
+           e.g. for headless scheduled-task fires that don't need a preview).
 
         Args:
             sandbox_id: The sandbox ID (must be provisioned)
@@ -1077,9 +1078,16 @@ else
 fi
 """
 
-        # Build NextJS startup script (npm install already done in outputs_setup)
-        nextjs_start_script = _build_nextjs_start_script(
-            session_path, nextjs_port, check_node_modules=False
+        # Build NextJS startup script (npm install already done in outputs_setup).
+        # Headless callers (scheduled tasks) pass nextjs_port=None and don't
+        # need a dev server — the agent's tools work without one and the
+        # preview iframe isn't attached.
+        nextjs_start_script = (
+            _build_nextjs_start_script(
+                session_path, nextjs_port, check_node_modules=False
+            )
+            if nextjs_port is not None
+            else ""
         )
 
         setup_script = f"""
@@ -1374,7 +1382,7 @@ echo "SNAPSHOT_CREATED"
         session_id: UUID,
         snapshot_storage_path: str,
         tenant_id: str,  # noqa: ARG002
-        nextjs_port: int,
+        nextjs_port: int | None,
         llm_config: LLMProviderConfig,
     ) -> None:
         """Download snapshot from S3 via AWS CLI, extract, regenerate config, and start NextJS.
@@ -1383,14 +1391,16 @@ echo "SNAPSHOT_CREATED"
         1. Download snapshot from S3 via aws s3 cp in the sandbox container
         2. Pipe directly to tar for extraction
         3. Regenerate configuration files (AGENTS.md, opencode.json)
-        4. Start the NextJS dev server
+        4. Start the NextJS dev server (skipped when ``nextjs_port`` is None,
+           e.g. for headless scheduled-task fires that don't attach a preview).
 
         Args:
             sandbox_id: The sandbox ID
             session_id: The session ID to restore
             snapshot_storage_path: Path to the snapshot in S3 (relative path)
             tenant_id: Tenant identifier for storage access
-            nextjs_port: Port number for the NextJS dev server
+            nextjs_port: Port number for the NextJS dev server, or None to
+                skip starting it.
             llm_config: LLM provider configuration for opencode.json
 
         Raises:
@@ -1437,21 +1447,24 @@ echo "SNAPSHOT_RESTORED"
                 nextjs_port=nextjs_port,
             )
 
-            # Start NextJS dev server (check node_modules since restoring from snapshot)
-            start_script = _build_nextjs_start_script(
-                safe_session_path, nextjs_port, check_node_modules=True
-            )
-            k8s_stream(
-                self._stream_core_api.connect_get_namespaced_pod_exec,
-                name=pod_name,
-                namespace=self._namespace,
-                container="sandbox",
-                command=["/bin/sh", "-c", start_script],
-                stderr=True,
-                stdin=False,
-                stdout=True,
-                tty=False,
-            )
+            # Start NextJS dev server (check node_modules since restoring
+            # from snapshot). Skipped when nextjs_port is None — headless
+            # callers (scheduled tasks) don't attach a preview.
+            if nextjs_port is not None:
+                start_script = _build_nextjs_start_script(
+                    safe_session_path, nextjs_port, check_node_modules=True
+                )
+                k8s_stream(
+                    self._stream_core_api.connect_get_namespaced_pod_exec,
+                    name=pod_name,
+                    namespace=self._namespace,
+                    container="sandbox",
+                    command=["/bin/sh", "-c", start_script],
+                    stderr=True,
+                    stdin=False,
+                    stdout=True,
+                    tty=False,
+                )
         except ApiException as e:
             raise RuntimeError(f"Failed to restore snapshot: {e}") from e
 
@@ -1460,7 +1473,7 @@ echo "SNAPSHOT_RESTORED"
         pod_name: str,
         session_path: str,
         llm_config: LLMProviderConfig,
-        nextjs_port: int,
+        nextjs_port: int | None,
     ) -> None:
         """Regenerate session configuration files after snapshot restore.
 
@@ -1472,7 +1485,9 @@ echo "SNAPSHOT_RESTORED"
             pod_name: The pod name to exec into
             session_path: Path to the session directory (already shlex.quoted)
             llm_config: LLM provider configuration
-            nextjs_port: Port for NextJS (used in AGENTS.md)
+            nextjs_port: Port for NextJS (used in AGENTS.md). None when the
+                dev server is intentionally skipped — the template renders
+                "Unknown" in that case.
         """
         agent_instructions = self._load_agent_instructions(
             provider=llm_config.provider,
