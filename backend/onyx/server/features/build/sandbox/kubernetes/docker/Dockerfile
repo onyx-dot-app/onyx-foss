@@ -68,16 +68,18 @@ RUN chown -R sandbox:sandbox /workspace/templates
 # Copy and install Python requirements into a venv
 COPY initial-requirements.txt /tmp/initial-requirements.txt
 RUN python3 -m venv /workspace/.venv && \
-    /workspace/.venv/bin/pip install --upgrade pip && \
-    /workspace/.venv/bin/pip install -r /tmp/initial-requirements.txt && \
-    rm /tmp/initial-requirements.txt && \
+    /workspace/.venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /workspace/.venv/bin/pip install --no-cache-dir -r /tmp/initial-requirements.txt && \
+    rm -rf /tmp/initial-requirements.txt /root/.cache/pip && \
     chown -R sandbox:sandbox /workspace/.venv
 
 # Add venv to PATH so python/pip use it by default
 ENV PATH="/workspace/.venv/bin:${PATH}"
 
 # Install pptxgenjs globally for creating presentations from scratch
-RUN npm install -g pptxgenjs
+RUN npm install -g pptxgenjs && \
+    npm cache clean --force && \
+    rm -rf /root/.npm
 
 # Install opencode CLI as sandbox user so it goes to their home directory
 USER sandbox
