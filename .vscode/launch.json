@@ -77,6 +77,24 @@
         "group": "1"
       },
       "stopAll": true
+    },
+    {
+      "name": "Celery (k8s)",
+      "configurations": [
+        "Celery primary (k8s)",
+        "Celery light (k8s)",
+        "Celery heavy (k8s)",
+        "Celery monitoring (k8s)",
+        "Celery user_file_processing (k8s)",
+        "Celery scheduled_tasks (k8s)",
+        "Celery docfetching (k8s)",
+        "Celery docprocessing (k8s)",
+        "Celery beat (k8s)"
+      ],
+      "presentation": {
+        "group": "1"
+      },
+      "stopAll": true
     }
   ],
   "configurations": [
@@ -297,7 +315,7 @@
         "--loglevel=INFO",
         "--hostname=light@%n",
         "-Q",
-        "vespa_metadata_sync,connector_deletion,doc_permissions_upsert,index_attempt_cleanup,opensearch_migration"
+        "vespa_metadata_sync,connector_deletion,doc_permissions_upsert,checkpoint_cleanup,index_attempt_cleanup,opensearch_migration"
       ],
       "presentation": {
         "group": "2",
@@ -328,7 +346,7 @@
         "--loglevel=INFO",
         "--hostname=heavy@%n",
         "-Q",
-        "connector_pruning,connector_doc_permissions_sync,connector_external_group_sync,csv_generation"
+        "connector_pruning,connector_doc_permissions_sync,connector_external_group_sync,csv_generation,sandbox"
       ],
       "presentation": {
         "group": "2",
@@ -578,7 +596,7 @@
         "--loglevel=INFO",
         "--hostname=light@%n",
         "-Q",
-        "vespa_metadata_sync,connector_deletion,doc_permissions_upsert,index_attempt_cleanup,opensearch_migration"
+        "vespa_metadata_sync,connector_deletion,doc_permissions_upsert,checkpoint_cleanup,index_attempt_cleanup,opensearch_migration"
       ],
       "presentation": {
         "group": "2",
@@ -611,7 +629,7 @@
         "--loglevel=INFO",
         "--hostname=heavy@%n",
         "-Q",
-        "connector_pruning,connector_doc_permissions_sync,connector_external_group_sync,csv_generation"
+        "connector_pruning,connector_doc_permissions_sync,connector_external_group_sync,csv_generation,sandbox"
       ],
       "presentation": {
         "group": "2",
