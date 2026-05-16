@@ -93,6 +93,20 @@ monitoring:
 codeInterpreter:
   enabled: false
 
+# ---- Craft / Sandbox ----
+
+configMap:
+  ENABLE_CRAFT: "true"
+  SANDBOX_API_SERVER_URL: "http://onyx-api-service.onyx.svc.cluster.local:8080"
+
+# ---- Secrets ----
+
+auth:
+  sandboxPushSecret:
+    enabled: true
+    values:
+      shared_secret: "dev-sandbox-push-secret-not-for-production"
+
 # ---- App pods ----
 #
 # Scaled to 0 since you run these locally via telepresence intercept.
