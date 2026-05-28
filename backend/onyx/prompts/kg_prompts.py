@@ -524,6 +524,69 @@ And here is the beginning of the call, including title and participants:
 """.strip()
 
 
+### CV/Resume extraction prompt
+
+CV_CHUNK_PREPROCESSING_PROMPT = """
+This is part of a CV/resume document. You need to extract structured information about the person's \
+professional profile using REIFIED ENTITIES — compound data (employment, skills with experience, projects) \
+must be modeled as intermediate entities, not as flat attributes.
+
+EXTRACTION RULES:
+
+1. PERSON — One per document. Extract the full name.
+
+2. EMPLOYMENT — One per job position listed. For each:
+   - Create an EMPLOYMENT entity with attributes: title (job title), start_year (integer YYYY), \
+end_year (integer YYYY or null if current/present).
+   - Create relationships: PERSON → HAS_EMPLOYMENT → EMPLOYMENT, and EMPLOYMENT → EMPLOYMENT_AT → COMPANY.
+   - Also create the COMPANY entity if not already extracted.
+
+3. PERSON_SKILL — One per skill mentioned. For each:
+   - Create a SKILL entity (canonical name).
+   - Create a PERSON_SKILL entity with attributes: years_experience (integer, estimate from employment \
+dates if not explicit), proficiency (one of: JUNIOR, MEDIOR, SENIOR).
+   - Create relationships: PERSON → HAS_PERSON_SKILL → PERSON_SKILL, and PERSON_SKILL → SKILL_OF → SKILL.
+   - Proficiency estimation when not explicitly stated:
+     * "expert", "lead", "architect", 6+ years → SENIOR
+     * Default for listed skills, 2-5 years → MEDIOR
+     * "familiar with", "basic", "exposure to", <2 years → JUNIOR
+
+4. CERTIFICATION — For each certification mentioned:
+   - Create a CERTIFICATION entity with attributes: name, issuing_authority, valid_until (YYYY or null), \
+language (e.g., EN).
+   - Create relationship: PERSON → HOLDS_CERT → CERTIFICATION.
+
+5. PROJECT — For named projects listed:
+   - Create a PROJECT entity with attributes: name, start_year, end_year.
+   - Create relationships: PERSON → WORKS_ON_PROJECT → PROJECT. \
+If a company is associated: PROJECT → PROJECT_AT → COMPANY. \
+If skills are mentioned: PROJECT → PROJECT_USES_SKILL → SKILL.
+
+6. ADDRESS — If a personal address is present:
+   - Create an ADDRESS entity with attributes: address1, city, zip, country.
+   - Create relationship: PERSON → LIVES_AT → ADDRESS.
+
+NORMALIZATION RULES:
+- Normalize skill names to canonical forms: "k8s" → "Kubernetes", "JS" → "JavaScript", \
+"ts" → "TypeScript", "react.js"/"reactjs" → "React", "node.js"/"nodejs" → "Node.js", \
+"amazon web services" → "AWS", "google cloud platform"/"gcp" → "GCP", "ci/cd" stays as "CI/CD".
+- Normalize certification names: "aws solutions architect" → "AWS Solutions Architect", \
+"certified kubernetes administrator" → "CKA", "project management professional" → "PMP".
+- Normalize company names: remove trailing Inc., Corp., Ltd., GmbH, s.r.o. for matching.
+- Dates: Convert all dates to YYYY integer format. "present"/"current"/"now" → null for end_year.
+- Compound skills like "Docker/Kubernetes" should be split into two separate SKILL entities.
+
+ENTITY ID FORMAT:
+- Entity id_name: ENTITY_TYPE::name (e.g., PERSON::John Doe, SKILL::Python, COMPANY::ACME Corp)
+- Reified entity id_name: use composite names: EMPLOYMENT::John Doe_ACME Corp_2020, \
+PERSON_SKILL::John Doe_Python
+
+---
+And here is the content:
+{content}
+""".strip()
+
+
 STRATEGY_GENERATION_PROMPT = f"""
 Now you need to decide what type of strategy to use to answer a given question, how ultimately \
 the answer should be formatted to match the user's expectation, and what an appropriate question \

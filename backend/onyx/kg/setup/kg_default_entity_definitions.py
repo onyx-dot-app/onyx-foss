@@ -369,6 +369,39 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
     }
 
 
+def get_default_relationship_types() -> list[dict[str, str]]:
+    """Default relationship types for the CV/resume reified entity model.
+
+    Each entry defines: source entity type → relationship name → target entity type.
+    """
+    return [
+        {"source": "PERSON",       "name": "LIVES_AT",          "target": "ADDRESS"},
+        {"source": "COMPANY",      "name": "LOCATED_AT",        "target": "ADDRESS"},
+        {"source": "PERSON",       "name": "HOLDS_CERT",        "target": "CERTIFICATION"},
+        {"source": "PERSON",       "name": "HAS_EMPLOYMENT",    "target": "EMPLOYMENT"},
+        {"source": "EMPLOYMENT",   "name": "EMPLOYMENT_AT",     "target": "COMPANY"},
+        {"source": "PERSON",       "name": "HAS_PERSON_SKILL",  "target": "PERSON_SKILL"},
+        {"source": "PERSON_SKILL", "name": "SKILL_OF",          "target": "SKILL"},
+        {"source": "PERSON",       "name": "WORKS_ON_PROJECT",  "target": "PROJECT"},
+        {"source": "PROJECT",      "name": "PROJECT_AT",        "target": "COMPANY"},
+        {"source": "PROJECT",      "name": "PROJECT_USES_SKILL","target": "SKILL"},
+    ]
+
+
+def populate_missing_default_relationship_types__commit(db_session: Session) -> None:
+    """Populates the database with default relationship types for CV extraction."""
+    from onyx.db.relationships import upsert_relationship_type
+
+    for rt in get_default_relationship_types():
+        upsert_relationship_type(
+            db_session=db_session,
+            source_entity_type=rt["source"],
+            relationship_type=rt["name"],
+            target_entity_type=rt["target"],
+        )
+    db_session.commit()
+
+
 def populate_missing_default_entity_types__commit(db_session: Session) -> None:
     """
     Populates the database with the missing default entity types.
