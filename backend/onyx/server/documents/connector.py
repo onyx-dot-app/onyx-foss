@@ -846,6 +846,8 @@ def update_connector_file_metadata(
         refresh_freq=connector.refresh_freq,
         prune_freq=connector.prune_freq,
         indexing_start=connector.indexing_start,
+        kg_processing_enabled=connector.kg_processing_enabled,
+        kg_coverage_days=connector.kg_coverage_days,
     )
 
     updated_connector = update_connector(connector_id, connector_base, db_session)
@@ -1044,6 +1046,8 @@ def update_connector_files(
         refresh_freq=connector.refresh_freq,
         prune_freq=connector.prune_freq,
         indexing_start=connector.indexing_start,
+        kg_processing_enabled=connector.kg_processing_enabled,
+        kg_coverage_days=connector.kg_coverage_days,
     )
 
     updated_connector = update_connector(connector_id, connector_base, db_session)
