@@ -182,21 +182,28 @@ def create_deletion_attempt_for_connector_id(
     #         detail=deletion_attempt_disallowed_reason,
     #     )
 
-    # mark as deleting
+    # Mark as deleting. This is durable and allows the periodic deletion beat
+    # to pick up the work even if immediate task submission fails.
     update_connector_credential_pair_from_id(
         db_session=db_session,
         cc_pair_id=cc_pair.id,
         status=ConnectorCredentialPairStatus.DELETING,
     )
-
+    cc_pair.deletion_failure_message = None
     db_session.commit()
 
     # run the beat task to pick up this deletion from the db immediately
-    client_app.send_task(
-        OnyxCeleryTask.CHECK_FOR_CONNECTOR_DELETION,
-        priority=OnyxCeleryPriority.HIGH,
-        kwargs={"tenant_id": tenant_id},
-    )
+    try:
+        client_app.send_task(
+            OnyxCeleryTask.CHECK_FOR_CONNECTOR_DELETION,
+            priority=OnyxCeleryPriority.HIGH,
+            kwargs={"tenant_id": tenant_id},
+        )
+    except Exception:
+        logger.exception(
+            "create_deletion_attempt_for_connector_id - immediate deletion check trigger failed; "
+            "deletion will be retried by periodic beat"
+        )
 
     logger.info(
         "create_deletion_attempt_for_connector_id - running check_for_connector_deletion: cc_pair=%s",

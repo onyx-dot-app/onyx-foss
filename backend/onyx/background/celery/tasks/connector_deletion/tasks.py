@@ -34,6 +34,7 @@ from onyx.db.connector_credential_pair import get_connector_credential_pairs
 from onyx.db.document import (
     delete_all_documents_by_connector_credential_pair__no_commit,
 )
+from onyx.db.document import delete_orphaned_kg_references__no_commit
 from onyx.db.document import get_document_ids_for_connector_credential_pair
 from onyx.db.document_set import delete_document_set_cc_pair_relationship__no_commit
 from onyx.db.engine.sql_engine import get_session_with_current_tenant
@@ -496,6 +497,7 @@ def monitor_connector_deletion_taskset(
 
             # delete orphan tags
             delete_orphan_tags__no_commit(db_session)
+            delete_orphaned_kg_references__no_commit(db_session)
 
             # Store IDs before potentially expiring cc_pair
             connector_id_to_delete = cc_pair.connector_id

@@ -41,7 +41,9 @@ from onyx.db.models import Credential
 from onyx.db.models import Document as DbDocument
 from onyx.db.models import DocumentByConnectorCredentialPair
 from onyx.db.models import KGEntity
+from onyx.db.models import KGEntityExtractionStaging
 from onyx.db.models import KGRelationship
+from onyx.db.models import KGRelationshipExtractionStaging
 from onyx.db.models import User
 from onyx.db.relationships import delete_from_kg_relationships__no_commit
 from onyx.db.relationships import (
@@ -934,6 +936,82 @@ def delete_all_documents_by_connector_credential_pair__no_commit(
         )
     )
     db_session.execute(stmt)
+
+
+def delete_orphaned_kg_references__no_commit(db_session: Session) -> None:
+    """Delete KG rows that reference documents that no longer exist.
+
+    A "surviving" entity is one that is still grounded in an existing document:
+    - Document-level entity: document_id IS NOT NULL and document still exists.
+    - Canonical entity (document_id IS NULL): has at least one document-level
+      child (via parent_key) whose document still exists.
+
+    All relationships and staging rows whose endpoints or source document are
+    no longer backed by surviving data are deleted first (to satisfy FK
+    constraints), then the orphaned entities themselves are removed.
+    """
+    existing_document_ids = select(DbDocument.id)
+
+    # Surviving doc-level entity id_names
+    surviving_doc_entity_ids = select(KGEntity.id_name).where(
+        KGEntity.document_id.is_not(None),
+        KGEntity.document_id.in_(existing_document_ids),
+    )
+
+    # Surviving canonical entity id_names (those still referenced by a surviving
+    # doc-level entity via parent_key)
+    surviving_canonical_entity_ids = select(KGEntity.parent_key).where(
+        KGEntity.document_id.is_not(None),
+        KGEntity.document_id.in_(existing_document_ids),
+        KGEntity.parent_key.is_not(None),
+    )
+
+    # Union: all entity id_names that should be kept
+    surviving_entity_ids = surviving_doc_entity_ids.union(surviving_canonical_entity_ids)
+
+    # Delete all relationships whose source document is gone OR whose
+    # source_node / target_node no longer has a surviving entity.
+    # Relationships must be deleted before entities to satisfy FK constraints.
+    db_session.query(KGRelationship).filter(
+        or_(
+            and_(
+                KGRelationship.source_document.is_not(None),
+                ~KGRelationship.source_document.in_(existing_document_ids),
+            ),
+            ~KGRelationship.source_node.in_(surviving_entity_ids),
+            ~KGRelationship.target_node.in_(surviving_entity_ids),
+        )
+    ).delete(synchronize_session=False)
+
+    db_session.query(KGRelationshipExtractionStaging).filter(
+        or_(
+            and_(
+                KGRelationshipExtractionStaging.source_document.is_not(None),
+                ~KGRelationshipExtractionStaging.source_document.in_(
+                    existing_document_ids
+                ),
+            ),
+            ~KGRelationshipExtractionStaging.source_node.in_(surviving_entity_ids),
+            ~KGRelationshipExtractionStaging.target_node.in_(surviving_entity_ids),
+        )
+    ).delete(synchronize_session=False)
+
+    # Delete orphaned doc-level entities
+    db_session.query(KGEntity).filter(
+        KGEntity.document_id.is_not(None),
+        ~KGEntity.document_id.in_(existing_document_ids),
+    ).delete(synchronize_session=False)
+
+    db_session.query(KGEntityExtractionStaging).filter(
+        KGEntityExtractionStaging.document_id.is_not(None),
+        ~KGEntityExtractionStaging.document_id.in_(existing_document_ids),
+    ).delete(synchronize_session=False)
+
+    # Delete orphaned canonical entities (no surviving doc-level children)
+    db_session.query(KGEntity).filter(
+        KGEntity.document_id.is_(None),
+        ~KGEntity.id_name.in_(surviving_canonical_entity_ids),
+    ).delete(synchronize_session=False)
 
 
 def delete_documents__no_commit(db_session: Session, document_ids: list[str]) -> None:
