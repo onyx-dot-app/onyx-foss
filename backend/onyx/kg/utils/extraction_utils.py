@@ -33,6 +33,7 @@ from onyx.llm.models import UserMessage
 from onyx.llm.utils import llm_response_to_string
 from onyx.prompts.kg_prompts import CALL_CHUNK_PREPROCESSING_PROMPT
 from onyx.prompts.kg_prompts import CALL_DOCUMENT_CLASSIFICATION_PROMPT
+from onyx.prompts.kg_prompts import CV_CHUNK_PREPROCESSING_PROMPT
 from onyx.prompts.kg_prompts import GENERAL_CHUNK_PREPROCESSING_PROMPT
 from onyx.prompts.kg_prompts import MASTER_EXTRACTION_PROMPT
 from onyx.tracing.flows import LLMFlow
@@ -41,6 +42,20 @@ from onyx.tracing.llm_utils import record_llm_response
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
+
+# Metadata tag key and value for CV/resume documents.
+# Set {"kg_doc_type": "cv"} in document metadata (via .onyx_metadata.json
+# or API) to route extraction through the CV-specific prompt.
+KG_DOC_TYPE_METADATA_KEY = "kg_doc_type"
+KG_DOC_TYPE_CV = "cv"
+
+
+def is_cv_document(chunks: list[KGChunkFormat]) -> bool:
+    """Check if any chunk in the batch has the CV metadata tag."""
+    for chunk in chunks:
+        if chunk.metadata and chunk.metadata.get(KG_DOC_TYPE_METADATA_KEY) == KG_DOC_TYPE_CV:
+            return True
+    return False
 
 
 def get_entity_types_str(active: bool | None = None) -> str:
@@ -481,6 +496,10 @@ def kg_deep_extract_chunks(
             participant_string=company_participants_str,
             account_participant_string=account_participants_str,
             vendor=kg_config_settings.KG_VENDOR,
+            content=content,
+        )
+    elif is_cv_document(chunk_batch):
+        llm_context = CV_CHUNK_PREPROCESSING_PROMPT.format(
             content=content,
         )
     else:
