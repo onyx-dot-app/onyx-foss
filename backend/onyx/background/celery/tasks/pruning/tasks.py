@@ -271,13 +271,36 @@ def check_for_pruning(self: Task, *, tenant_id: str) -> bool | None:
         # we want to run this less frequently than the overall task
         lock_beat.reacquire()
         if not r.exists(OnyxRedisSignals.BLOCK_KG_ORPHAN_CLEANUP):
-            try:
-                with get_session_with_current_tenant() as db_session:
-                    delete_orphaned_kg_references__no_commit(db_session)
-                    db_session.commit()
-            except Exception:
-                task_logger.exception("Exception while cleaning up orphaned KG references")
-            r.set(OnyxRedisSignals.BLOCK_KG_ORPHAN_CLEANUP, 1, ex=3600)
+            # Don't run orphan cleanup while KG extraction/clustering is in progress
+            # to prevent race condition where cleanup deletes entities mid-creation.
+            # Check both beat locks and manual pipeline lock.
+            kg_extraction_in_progress = r.exists(
+                OnyxRedisLocks.KG_EXTRACTION_BEAT_LOCK
+            )
+            kg_clustering_in_progress = r.exists(
+                OnyxRedisLocks.KG_CLUSTERING_BEAT_LOCK
+            )
+            # Manual KG pipeline (for debugging) also creates staging entities
+            manual_kg_pipeline_in_progress = r.exists("da_lock:manual_kg_pipeline")
+
+            if (
+                kg_extraction_in_progress
+                or kg_clustering_in_progress
+                or manual_kg_pipeline_in_progress
+            ):
+                task_logger.info(
+                    "Skipping KG orphan cleanup: KG extraction/clustering in progress"
+                )
+            else:
+                try:
+                    with get_session_with_current_tenant() as db_session:
+                        delete_orphaned_kg_references__no_commit(db_session)
+                        db_session.commit()
+                except Exception:
+                    task_logger.exception(
+                        "Exception while cleaning up orphaned KG references"
+                    )
+                r.set(OnyxRedisSignals.BLOCK_KG_ORPHAN_CLEANUP, 1, ex=3600)
 
         # we want to run this less frequently than the overall task
         lock_beat.reacquire()

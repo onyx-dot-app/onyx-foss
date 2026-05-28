@@ -80,6 +80,7 @@ from onyx.db.credentials import delete_service_account_credentials
 from onyx.db.credentials import fetch_credential_by_id_for_user
 from onyx.db.deletion_attempt import check_deletion_attempt_is_allowed
 from onyx.db.document import get_document_counts_for_all_cc_pairs
+from onyx.db.document import reset_connector_document_kg_stages
 from onyx.db.engine.sql_engine import get_session
 from onyx.db.enums import AccessType
 from onyx.db.enums import ConnectorCredentialPairStatus
@@ -2275,6 +2276,13 @@ def trigger_indexing_for_cc_pair(
         for credential_id in credential_ids
         if credential_id not in skipped_credentials
     ]
+
+    if from_beginning:
+        num_reset = reset_connector_document_kg_stages(db_session, connector_id)
+        logger.info(
+            f"trigger_indexing_for_cc_pair - reset KG stages for full reindex: "
+            f"connector={connector_id} documents_reset={num_reset}"
+        )
 
     num_triggers = 0
     for cc_pair in connector_credential_pairs:

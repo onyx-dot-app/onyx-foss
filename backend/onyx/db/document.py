@@ -42,6 +42,7 @@ from onyx.db.models import Document as DbDocument
 from onyx.db.models import DocumentByConnectorCredentialPair
 from onyx.db.models import KGEntity
 from onyx.db.models import KGEntityExtractionStaging
+from onyx.db.models import KGEntityType
 from onyx.db.models import KGRelationship
 from onyx.db.models import KGRelationshipExtractionStaging
 from onyx.db.models import User
@@ -1534,6 +1535,92 @@ def reset_all_document_kg_stages(db_session: Session) -> int:
         if hasattr(result, "rowcount")
         else 0
     )
+
+
+def reset_connector_document_kg_stages(
+    db_session: Session, connector_id: int
+) -> int:
+    """Reset KG state for all documents belonging to a connector so that the KG
+    beat task fully re-extracts and re-clusters them.
+
+    Specifically this:
+      1. Resets kg_stage → NOT_STARTED and clears kg_processing_time on the
+         document rows so the beat task picks them up again.
+      2. Deletes staging rows for those documents so that clustering produces
+         fresh normalized entities/relationships.
+      3. Deletes normalized kg_entity / kg_relationship rows whose document_id
+         is NULL (orphans left by merging) but whose entity type is grounded to
+         this connector's source.  These are unreachable by the per-document
+         delete that runs during normal re-extraction.
+
+    Called when a full reindex (from_beginning=True) is triggered.
+
+    Args:
+        db_session: The database session to use
+        connector_id: The connector whose documents should be reset
+
+    Returns:
+        int: Number of document rows whose kg_stage was reset
+    """
+    # Resolve the connector's source so we can scope orphan deletion by entity type
+    connector = db_session.get(Connector, connector_id)
+    if connector is None or not connector.kg_processing_enabled:
+        return 0
+
+    doc_ids: list[str] = list(
+        db_session.scalars(
+            select(DocumentByConnectorCredentialPair.id).where(
+                DocumentByConnectorCredentialPair.connector_id == connector_id
+            )
+        ).all()
+    )
+
+    if not doc_ids:
+        return 0
+
+    # 1. Clear staging so clustering re-runs from scratch
+    delete_from_kg_entities_extraction_staging__no_commit(db_session, doc_ids)
+    delete_from_kg_relationships_extraction_staging__no_commit(db_session, doc_ids)
+
+    # 2. Delete orphan normalized rows (document_id IS NULL) scoped to this
+    #    connector's entity types via grounded_source_name = connector.source
+    entity_type_ids: list[str] = list(
+        db_session.scalars(
+            select(KGEntityType.id_name).where(
+                KGEntityType.grounded_source_name == connector.source.value
+            )
+        ).all()
+    )
+    if entity_type_ids:
+        # Collect the id_names of orphan entities we will delete
+        orphan_entity_id_names: list[str] = list(
+            db_session.scalars(
+                select(KGEntity.id_name).where(
+                    KGEntity.entity_type_id_name.in_(entity_type_ids),
+                    KGEntity.document_id.is_(None),
+                )
+            ).all()
+        )
+        if orphan_entity_id_names:
+            # Delete all relationships referencing these entities as source OR target
+            db_session.query(KGRelationship).filter(
+                or_(
+                    KGRelationship.source_node.in_(orphan_entity_id_names),
+                    KGRelationship.target_node.in_(orphan_entity_id_names),
+                )
+            ).delete(synchronize_session=False)
+            db_session.query(KGEntity).filter(
+                KGEntity.id_name.in_(orphan_entity_id_names),
+            ).delete(synchronize_session=False)
+
+    # 3. Reset document kg_stage so extraction picks them up
+    stmt = (
+        update(DbDocument)
+        .where(DbDocument.id.in_(doc_ids))
+        .values(kg_stage=KGStage.NOT_STARTED, kg_processing_time=None)
+    )
+    result = db_session.execute(stmt)
+    return result.rowcount if hasattr(result, "rowcount") else 0
 
 
 def update_document_kg_stages(
