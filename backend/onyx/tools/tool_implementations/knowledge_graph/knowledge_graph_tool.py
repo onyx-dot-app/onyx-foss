@@ -1,8 +1,8 @@
 import time
 from typing import Any
 
-from langchain_core.messages import HumanMessage
-from langchain_core.messages import SystemMessage
+from onyx.llm.models import SystemMessage
+from onyx.llm.models import UserMessage
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -253,9 +253,11 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         )
 
         system_msg = (
-            "You are an expert at generating SQL queries against a knowledge graph.\n"
+            "You are an expert at generating PostgreSQL queries against a knowledge graph.\n"
             "Generate a single SELECT query. Wrap the SQL in <sql>...</sql> tags.\n"
-            "Only use the tables described in the schema below.\n\n"
+            "Only use the tables described in the schema below.\n"
+            "The database is PostgreSQL — use PostgreSQL syntax only (e.g. EXTRACT(YEAR FROM CURRENT_DATE), not strftime).\n"
+            "Do NOT explain your reasoning. Output ONLY the <sql>...</sql> block.\n\n"
             "CRITICAL RULES:\n"
             "1. Entity names are stored in lowercase. Use ILIKE (case-insensitive) for ALL name filters.\n"
             "2. The 'entity' column is a UUID-based internal id — NEVER filter on it by name.\n"
@@ -316,46 +318,69 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             f"/no_think"
         )
 
-        response = self._llm.invoke(
-            prompt=[
-                SystemMessage(content=system_msg),
-                HumanMessage(content=user_msg),
-            ],
-            timeout_override=KG_SQL_GENERATION_TIMEOUT,
-            max_tokens=KG_SQL_GENERATION_MAX_TOKENS,
-        )
+        prompt = [
+            SystemMessage(content=system_msg),
+            UserMessage(content=user_msg),
+        ]
 
-        # Some hybrid-reasoning models (Qwen3, DeepSeek R1) write the
-        # actual answer into the `reasoning_content` field and leave
-        # `content` empty. Try content first; if empty, fall back to
-        # reasoning_content. Then try to parse SQL from whichever has data.
-        msg = response.choice.message
-        content = msg.content if isinstance(msg.content, str) else ""
-        reasoning = ""
-        try:
-            reasoning = getattr(msg, "reasoning_content", "") or ""
-        except Exception:
-            reasoning = ""
-
-        # Try content first, then reasoning, then both concatenated
-        parsed = parse_sql_from_llm_response(content)
-        if parsed is None and reasoning:
-            parsed = parse_sql_from_llm_response(reasoning)
-        if parsed is None and (content or reasoning):
-            parsed = parse_sql_from_llm_response(f"{content}\n{reasoning}")
-
-        if parsed is None:
-            logger.warning(
-                "KG SQL parse FAILED for query %r.\n"
-                "  content (%d chars): %r\n"
-                "  reasoning_content (%d chars): %r",
-                query,
-                len(content),
-                content[:800],
-                len(reasoning),
-                reasoning[:800],
+        max_tokens = KG_SQL_GENERATION_MAX_TOKENS
+        # Thinking models (Gemma 4, Qwen3, DeepSeek R1, …) count reasoning
+        # tokens against max_tokens.  When the budget is too small the model
+        # exhausts it on reasoning and never writes the SQL into `content`.
+        # We detect this (reasoning present, content empty, parse failed) and
+        # retry once with a 4× budget so the model has room to finish.
+        for attempt in range(2):
+            response = self._llm.invoke(
+                prompt=prompt,
+                timeout_override=KG_SQL_GENERATION_TIMEOUT,
+                max_tokens=max_tokens,
             )
-        return parsed
+
+            msg = response.choice.message
+            content = msg.content if isinstance(msg.content, str) else ""
+            reasoning = ""
+            try:
+                reasoning = getattr(msg, "reasoning_content", "") or ""
+            except Exception:
+                reasoning = ""
+
+            # Try content first, then reasoning, then both concatenated
+            parsed = parse_sql_from_llm_response(content)
+            if parsed is None and reasoning:
+                parsed = parse_sql_from_llm_response(reasoning)
+            if parsed is None and (content or reasoning):
+                parsed = parse_sql_from_llm_response(f"{content}\n{reasoning}")
+
+            if parsed is not None:
+                return parsed
+
+            # Detect thinking-model budget exhaustion: reasoning is present
+            # but content is empty/missing — the model spent all tokens
+            # on chain-of-thought and never produced the final answer.
+            thinking_model_starved = reasoning and not content.strip()
+            if thinking_model_starved and attempt == 0:
+                max_tokens = max_tokens * 4
+                logger.info(
+                    "KG SQL parse failed (thinking model budget exhaustion "
+                    "detected). Retrying with max_tokens=%d",
+                    max_tokens,
+                )
+                continue
+
+            # Not a thinking-model issue or second attempt also failed
+            break
+
+        logger.warning(
+            "KG SQL parse FAILED for query %r.\n"
+            "  content (%d chars): %r\n"
+            "  reasoning_content (%d chars): %r",
+            query,
+            len(content),
+            content[:800],
+            len(reasoning),
+            reasoning[:800],
+        )
+        return None
 
     def _execute_with_retries(
         self,
@@ -498,7 +523,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         response = self._llm.invoke(
             prompt=[
                 SystemMessage(content=system_msg),
-                HumanMessage(content=user_msg),
+                UserMessage(content=user_msg),
             ],
             timeout_override=KG_SQL_GENERATION_TIMEOUT,
             max_tokens=KG_SQL_GENERATION_MAX_TOKENS,

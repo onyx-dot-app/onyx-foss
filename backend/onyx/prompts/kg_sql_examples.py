@@ -440,6 +440,66 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
             "AND (r_emp.target_entity_attributes->>'end_year' IS NULL)"
         ),
     },
+    # --- Complex multi-hop: project→company + employment→company + cert + duration.
+    # KEY PATTERNS THIS TEACHES:
+    #  1. Every alias MUST have its own relationship_type filter in WHERE.
+    #  2. Duration check uses COALESCE for ongoing employment (end_year NULL → now).
+    #     Do NOT use (end_year IS NULL) as a separate OR branch — that matches
+    #     ANY ongoing employment regardless of duration.
+    #  3. Each two-hop chain (Person→Employment→Company, Person→Project→Company)
+    #     is independent — do NOT join one chain's company to another chain's
+    #     employment.
+    {
+        "question": (
+            "Who worked on a project for Ministerstvo vnútra, works at Ditec "
+            "for at least 2 years, and holds an SOA certification?"
+        ),
+        "sql": (
+            "SELECT DISTINCT r_proj.source_entity_name, "
+            "r_cert.target_entity_name AS certification, "
+            "r_emp.target_entity_attributes->>'start_year' AS start_year, "
+            "r_proj.source_document "
+            "FROM relationship_table r_proj "
+            "JOIN relationship_table r_pco ON r_proj.target_entity = r_pco.source_entity "
+            "JOIN relationship_table r_emp ON r_proj.source_entity = r_emp.source_entity "
+            "JOIN relationship_table r_cemp ON r_emp.target_entity = r_cemp.source_entity "
+            "JOIN relationship_table r_cert ON r_proj.source_entity = r_cert.source_entity "
+            "WHERE r_proj.relationship_type = 'PERSON__works_on_project__PROJECT' "
+            "AND r_pco.relationship_type = 'PROJECT__project_at__COMPANY' "
+            "AND unaccent(r_pco.target_entity_name) ILIKE unaccent('%Ministerstvo vnútra%') "
+            "AND r_emp.relationship_type = 'PERSON__has_employment__EMPLOYMENT' "
+            "AND r_cemp.relationship_type = 'EMPLOYMENT__employment_at__COMPANY' "
+            "AND unaccent(r_cemp.target_entity_name) ILIKE unaccent('%Ditec%') "
+            "AND r_cert.relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
+            "AND unaccent(r_cert.target_entity_name) ILIKE unaccent('%SOA%') "
+            "AND (COALESCE(NULLIF(r_emp.target_entity_attributes->>'end_year','null')::int, "
+            "EXTRACT(YEAR FROM CURRENT_DATE)::int) "
+            "- NULLIF(r_emp.target_entity_attributes->>'start_year','null')::int) >= 2"
+        ),
+    },
+    # --- Complex multi-hop: employment→company + certification + skill.
+    # Same pattern as above but with a different combination of chains.
+    {
+        "question": (
+            "Who works at Oracle, has a Java certification, and knows Kubernetes?"
+        ),
+        "sql": (
+            "SELECT DISTINCT r_emp.source_entity_name, r_emp.source_document "
+            "FROM relationship_table r_emp "
+            "JOIN relationship_table r_co ON r_emp.target_entity = r_co.source_entity "
+            "JOIN relationship_table r_cert ON r_emp.source_entity = r_cert.source_entity "
+            "JOIN relationship_table r_ps ON r_emp.source_entity = r_ps.source_entity "
+            "JOIN relationship_table r_sk ON r_ps.target_entity = r_sk.source_entity "
+            "WHERE r_emp.relationship_type = 'PERSON__has_employment__EMPLOYMENT' "
+            "AND r_co.relationship_type = 'EMPLOYMENT__employment_at__COMPANY' "
+            "AND unaccent(r_co.target_entity_name) ILIKE unaccent('%Oracle%') "
+            "AND r_cert.relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
+            "AND unaccent(r_cert.target_entity_name) ILIKE unaccent('%Java%') "
+            "AND r_ps.relationship_type = 'PERSON__has_person_skill__PERSON_SKILL' "
+            "AND r_sk.relationship_type = 'PERSON_SKILL__skill_of__SKILL' "
+            "AND unaccent(r_sk.target_entity_name) ILIKE unaccent('%Kubernetes%')"
+        ),
+    },
     {
         "question": "Find people who have worked at more than 2 companies",
         "sql": (

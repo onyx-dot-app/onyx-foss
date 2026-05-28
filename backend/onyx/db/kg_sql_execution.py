@@ -218,20 +218,37 @@ def enforce_row_limit(sql: str, max_rows: int = 100) -> str:
 
 
 def parse_sql_from_llm_response(response: str) -> str | None:
-    """Extract SQL from <sql>...</sql> tags in an LLM response.
+    """Extract SQL from an LLM response.
+
+    Tries, in order:
+      1. ``<sql>...</sql>`` tags (preferred)
+      2. Markdown ```sql ... ``` fenced code blocks (common LLM default)
+      3. Markdown ``` ... ``` fenced code blocks without language tag
 
     Returns None if no valid SQL found.
     """
-    pattern = re.compile(r"<sql>(.*?)</sql>", re.DOTALL | re.IGNORECASE)
-    match = pattern.search(response)
-    if not match:
-        return None
+    # 1. <sql>...</sql>
+    match = re.search(r"<sql>(.*?)</sql>", response, re.DOTALL | re.IGNORECASE)
+    if match:
+        sql = match.group(1).strip()
+        if sql:
+            return sql
 
-    sql = match.group(1).strip()
-    if not sql:
-        return None
+    # 2. ```sql ... ```
+    match = re.search(r"```sql\s*\n(.*?)```", response, re.DOTALL)
+    if match:
+        sql = match.group(1).strip()
+        if sql:
+            return sql
 
-    return sql
+    # 3. ``` ... ``` (generic code block)
+    match = re.search(r"```\s*\n(.*?)```", response, re.DOTALL)
+    if match:
+        sql = match.group(1).strip()
+        if sql and sql.upper().startswith("SELECT"):
+            return sql
+
+    return None
 
 
 def replace_table_names(
