@@ -148,7 +148,9 @@ def create_views(
     CREATE OR REPLACE VIEW {kg_relationships_view_name} AS
     SELECT kgr.id_name as relationship,
            kgr.source_node as source_entity,
+           se.entity_type_id_name || '::' || se.name as source_entity_name,
            kgr.target_node as target_entity,
+           te.entity_type_id_name || '::' || te.name as target_entity_name,
            kgr.source_node_type as source_entity_type,
            kgr.target_node_type as target_entity_type,
            kgr.type as relationship_description,
@@ -170,6 +172,7 @@ def create_views(
         f"""
     CREATE OR REPLACE VIEW {kg_entity_view_name} AS
     SELECT kge.id_name as entity,
+           kge.entity_type_id_name || '::' || kge.name as entity_name,
            kge.entity_type_id_name as entity_type,
            kge.attributes as entity_attributes,
            kge.document_id as source_document,

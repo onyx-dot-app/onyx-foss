@@ -1220,7 +1220,24 @@ class KGEntityType(Base):
 
         try:
             return KGEntityTypeAttributes(**self.attributes)
-        except ValidationError:
+        except ValidationError as e:
+            # Falling back silently on invalid stored attributes hid a real
+            # bug for hours — CV reified-entity rows had broken
+            # metadata_attribute_conversion (values like `{}` instead of
+            # `{"name": "...", "keep": true}`), which made every extracted
+            # attribute silently drop. Surface the schema mismatch loudly
+            # so next time it shows up in logs on the first read.
+            logger.warning(
+                "KGEntityType %r has invalid attributes in DB — falling "
+                "back to empty schema. This usually means seeding ran "
+                "before the current schema was defined, or the stored "
+                "value was hand-edited to a broken form. Re-run "
+                "populate_or_update_default_entity_types__commit (or the "
+                "corresponding alembic migration) to repair. Underlying "
+                "ValidationError: %s",
+                self.id_name,
+                e,
+            )
             return KGEntityTypeAttributes()
 
     occurrences: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

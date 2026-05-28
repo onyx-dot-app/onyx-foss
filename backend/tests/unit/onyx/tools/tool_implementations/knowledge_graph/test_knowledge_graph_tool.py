@@ -25,10 +25,24 @@ def _make_tool(
     emitter = MagicMock()
     llm = MagicMock()
 
-    # LLM invoke returns a mock response with .choices[0].message.content
+    # The production code reads `response.choice.message.content`
+    # (singular "choice") and also falls back to `msg.reasoning_content`
+    # when content is empty (Qwen3 / DeepSeek R1 behavior). Explicitly
+    # set BOTH to concrete strings so auto-MagicMock doesn't return live
+    # mock objects that later crash regex-based parsers with
+    # "expected string or bytes-like object, got 'MagicMock'". Also set
+    # `.choices` for any older-style accessors.
+    mock_msg = MagicMock()
+    mock_msg.content = llm_response
+    mock_msg.reasoning_content = ""
+
+    mock_choice = MagicMock()
+    mock_choice.message = mock_msg
+
     mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = llm_response
+    mock_response.choice = mock_choice
+    mock_response.choices = [mock_choice]
+
     llm.invoke.return_value = mock_response
 
     user = MagicMock()
@@ -221,11 +235,24 @@ def test_run_calls_llm_with_query() -> None:
 
 
 def test_run_handles_no_sql_in_response() -> None:
-    """If LLM doesn't return SQL tags, run() should return a graceful error message."""
+    """If LLM doesn't return SQL tags, run() should return a structured
+    SQL_GEN_FAILED banner that signals a tool-side failure (not 'no data').
+
+    Originally this asserted for 'could not' in the response. That matched
+    the old "Could not generate SQL for this query." string. The response
+    has since been hardened to a KG_TOOL_RESULT: SQL_GEN_FAILED banner so
+    the answer-writing LLM can distinguish tool failures from empty results
+    and not tell the user 'the KG has no matching entries' when actually
+    SQL generation broke. Asserting on the banner marker locks in that
+    semantic instead of a surface phrase.
+    """
     from onyx.tools.models import ToolResponse
 
     tool = _make_tool(llm_response="I cannot generate SQL for this query.")
     result = _run_with_mocks(tool, query="something weird")
 
     assert isinstance(result, ToolResponse)
-    assert "could not" in result.llm_facing_response.lower()
+    assert "SQL_GEN_FAILED" in result.llm_facing_response
+    # The banner must explicitly warn the answer-writer NOT to confuse this
+    # with a 0-rows result — that's the hallucination class this guards.
+    assert "no data" in result.llm_facing_response.lower() or "misleading" in result.llm_facing_response.lower()

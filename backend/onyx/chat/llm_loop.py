@@ -912,6 +912,15 @@ def run_llm_loop(
             # in-flight citations
             # It can be cleaned up but not super trivial or worthwhile right now
             just_ran_web_search = False
+            logger.info(
+                "LLM cycle %d dispatching %d tool call(s) against final_tools=%s "
+                "(full tools=%s, tool_choice=%s)",
+                llm_cycle_count,
+                len(tool_calls),
+                [t.name for t in final_tools],
+                [t.name for t in tools],
+                tool_choice,
+            )
             parallel_tool_call_results = run_tool_calls(
                 tool_calls=tool_calls,
                 tools=final_tools,

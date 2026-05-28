@@ -138,6 +138,28 @@ beat_task_templates: list[dict] = [
         },
     },
     {
+        "name": "kg-extraction",
+        "task": OnyxCeleryTask.KG_EXTRACTION,
+        "schedule": timedelta(seconds=60),
+        "options": {
+            "priority": OnyxCeleryPriority.LOW,
+            "expires": BEAT_EXPIRES_DEFAULT,
+            "queue": OnyxCeleryQueues.PRIMARY,
+        },
+    },
+    {
+        "name": "kg-clustering",
+        "task": OnyxCeleryTask.KG_CLUSTERING,
+        # Offset by 30s from kg-extraction so they don't race for the
+        # shared tenant session pool on tick boundaries.
+        "schedule": timedelta(seconds=60),
+        "options": {
+            "priority": OnyxCeleryPriority.LOW,
+            "expires": BEAT_EXPIRES_DEFAULT,
+            "queue": OnyxCeleryQueues.PRIMARY,
+        },
+    },
+    {
         "name": "monitor-background-processes",
         "task": OnyxCeleryTask.MONITOR_BACKGROUND_PROCESSES,
         "schedule": timedelta(minutes=5),

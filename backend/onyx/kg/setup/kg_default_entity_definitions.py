@@ -311,7 +311,9 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
                 metadata_attribute_conversion={
                     "title": KGAttributeProperty(name="title", keep=True),
                     "start_year": KGAttributeProperty(name="start_year", keep=True),
+                    "start_month": KGAttributeProperty(name="start_month", keep=True),
                     "end_year": KGAttributeProperty(name="end_year", keep=True),
+                    "end_month": KGAttributeProperty(name="end_month", keep=True),
                 }
             ),
             grounding=KGGroundingType.GROUNDED,
@@ -342,7 +344,9 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
                 metadata_attribute_conversion={
                     "name": KGAttributeProperty(name="name", keep=True),
                     "start_year": KGAttributeProperty(name="start_year", keep=True),
+                    "start_month": KGAttributeProperty(name="start_month", keep=True),
                     "end_year": KGAttributeProperty(name="end_year", keep=True),
+                    "end_month": KGAttributeProperty(name="end_month", keep=True),
                 }
             ),
             grounding=KGGroundingType.GROUNDED,
@@ -353,7 +357,7 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
         "VENDOR": KGEntityTypeDefinition(
             description=f"The Vendor {vendor_name}, 'us'",
             grounding=KGGroundingType.GROUNDED,
-            active=True,
+            active=False,
             grounded_source_name=None,
         ),
         "EMPLOYEE": KGEntityTypeDefinition(
@@ -404,32 +408,66 @@ def populate_missing_default_relationship_types__commit(db_session: Session) -> 
 
 def populate_missing_default_entity_types__commit(db_session: Session) -> None:
     """
-    Populates the database with the missing default entity types.
+    Populates the database with missing default entity types AND syncs the
+    `attributes` column for existing rows back to the source-of-truth
+    definitions.
+
+    The original version skipped any entity type that already existed in the
+    DB. That worked for the initial seed, but it meant: when the default
+    definitions changed (e.g. adding metadata_attribute_conversion to CV
+    reified types), the existing rows kept their stale schema forever.
+    Symptom: every LLM-emitted attribute silently dropped because
+    `parsed_attributes` found zero keys in the stored conversion dict.
+
+    Current behavior: for each default type, INSERT if missing, and UPDATE
+    `attributes`/`description`/`grounding`/`active` if the row exists but
+    its `attributes` dump differs from the default. This keeps the DB in
+    sync with code on every call (admin reset, KG enable, chat-path call).
+    Name / grounded_source_name are stable identifiers and not re-synced.
     """
     kg_config_settings = get_kg_config_settings()
     validate_kg_settings(kg_config_settings)
 
     vendor_name = cast(str, kg_config_settings.KG_VENDOR)
 
-    existing_entity_types = {et.id_name for et in db_session.query(KGEntityType).all()}
+    existing_by_id: dict[str, KGEntityType] = {
+        et.id_name: et for et in db_session.query(KGEntityType).all()
+    }
 
     default_entity_types = get_default_entity_types(vendor_name=vendor_name)
     for entity_type_id_name, entity_type_definition in default_entity_types.items():
-        if entity_type_id_name in existing_entity_types:
-            continue
-
         grounded_source_name = (
             entity_type_definition.grounded_source_name.value
             if entity_type_definition.grounded_source_name
             else None
         )
-        kg_entity_type = KGEntityType(
-            id_name=entity_type_id_name,
-            description=entity_type_definition.description,
-            attributes=entity_type_definition.attributes.model_dump(),
-            grounding=entity_type_definition.grounding,
-            grounded_source_name=grounded_source_name,
-            active=entity_type_definition.active,
-        )
-        db_session.add(kg_entity_type)
+        expected_attributes = entity_type_definition.attributes.model_dump()
+
+        existing = existing_by_id.get(entity_type_id_name)
+        if existing is None:
+            kg_entity_type = KGEntityType(
+                id_name=entity_type_id_name,
+                description=entity_type_definition.description,
+                attributes=expected_attributes,
+                grounding=entity_type_definition.grounding,
+                grounded_source_name=grounded_source_name,
+                active=entity_type_definition.active,
+            )
+            db_session.add(kg_entity_type)
+            continue
+
+        # Row exists — sync the definitional columns if they drifted.
+        # `attributes` is the load-bearing one for extraction; the others
+        # are updated so admins can edit defaults in code without having
+        # to re-seed the DB.
+        if existing.attributes != expected_attributes:
+            existing.attributes = expected_attributes
+        if existing.description != entity_type_definition.description:
+            existing.description = entity_type_definition.description
+        if existing.grounding != entity_type_definition.grounding:
+            existing.grounding = entity_type_definition.grounding
+        if existing.grounded_source_name != grounded_source_name:
+            existing.grounded_source_name = grounded_source_name
+        # Do NOT touch `active` — admins can toggle it via the UI and we
+        # don't want startup sync to override their intent.
     db_session.commit()

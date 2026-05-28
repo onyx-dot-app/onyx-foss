@@ -33,8 +33,12 @@ from onyx.kg.utils.extraction_utils import kg_deep_extraction
 from onyx.kg.utils.extraction_utils import kg_implied_extraction
 from onyx.kg.utils.formatting_utils import extract_relationship_type_id
 from onyx.kg.utils.formatting_utils import get_entity_type
+from onyx.kg.utils.formatting_utils import split_entity_and_attributes
 from onyx.kg.utils.formatting_utils import split_entity_id
 from onyx.kg.utils.formatting_utils import split_relationship_id
+from onyx.kg.setup.kg_default_entity_definitions import (
+    get_default_relationship_types,
+)
 from onyx.kg.utils.lock_utils import extend_lock
 from onyx.utils.logger import setup_logger
 from onyx.utils.threadpool_concurrency import run_functions_tuples_in_parallel
@@ -42,9 +46,33 @@ from onyx.utils.threadpool_concurrency import run_functions_tuples_in_parallel
 logger = setup_logger()
 
 
-def _get_classification_extraction_instructions() -> dict[
-    str | None, dict[str, KGEntityTypeInstructions]
-]:
+def _get_canonical_relationship_type_id_names() -> frozenset[str]:
+    """Canonical set of SOURCE__verb__TARGET relationship type id_names.
+
+    Built from the default relationship definitions so there's a single
+    source of truth. Used by `_build_batch_data` to reject relationships
+    whose verb was hallucinated by the extraction LLM (e.g. emitting
+    `has_certification` instead of the canonical `holds_cert`).
+
+    Without this guard, the auto-registration path below silently turns
+    LLM hallucinations into new relationship types in the DB, fragmenting
+    the data across synonymous verbs and breaking downstream SQL queries
+    whose few-shot examples reference the canonical verbs only.
+    """
+    return frozenset(
+        f"{rt['source']}__{rt['name'].lower()}__{rt['target']}"
+        for rt in get_default_relationship_types()
+    )
+
+
+CANONICAL_RELATIONSHIP_TYPE_ID_NAMES: frozenset[str] = (
+    _get_canonical_relationship_type_id_names()
+)
+
+
+def _get_classification_extraction_instructions() -> (
+    dict[str | None, dict[str, KGEntityTypeInstructions]]
+):
     """
     Prepare the classification instructions for the given source.
     """
@@ -337,6 +365,12 @@ def kg_extraction(
             #     - kg_stage of the processed document
 
             documents_to_process = [x.id for x in unprocessed_document_batch]
+            # Map document_id → semantic_id for use in the CV person fallback below.
+            doc_semantic_id_map: dict[str, str] = {
+                doc.id: doc.semantic_id
+                for doc in unprocessed_document_batch
+                if doc.semantic_id
+            }
             batch_implied_extraction: dict[str, KGImpliedExtractionResults] = {}
             batch_deep_extraction_args: list[
                 tuple[str, KGEnhancedDocumentMetadata, KGImpliedExtractionResults]
@@ -396,12 +430,33 @@ def kg_extraction(
                 )
                 for arg in batch_deep_extraction_args
             ]
+            # Guardrail: cap wall-clock per batch and let partial results through.
+            # Without this, one stuck LLM call (e.g. huge concatenated CV under
+            # Option A hitting a model context/retry loop) hangs the whole beat
+            # tick forever. allow_failures=True + timeout returns None for the
+            # stuck thread, which this code already tolerates (sets intersection
+            # with `None` is a no-op downstream). Failed docs get retried on the
+            # next beat tick.
+            # CRITICAL: use the document IDs from batch_deep_extraction_args
+            # (only docs with deep_extraction=True), NOT documents_to_process
+            # (ALL docs in the batch). The old code zipped documents_to_process
+            # with the parallel results, which caused a mismatch when some
+            # docs in the batch had deep_extraction=False — extraction results
+            # for doc B got attributed to doc A's ID. This broke
+            # cv_person_overrides, entity-document bindings, and relationship
+            # attribution.
+            deep_extraction_doc_ids = [arg[0] for arg in batch_deep_extraction_args]
             batch_deep_extractions: dict[str, KGDocumentDeepExtractionResults] = {
                 document_id: result
                 for document_id, result in zip(
-                    documents_to_process,
-                    run_functions_tuples_in_parallel(batch_deep_extraction_func_calls),
+                    deep_extraction_doc_ids,
+                    run_functions_tuples_in_parallel(
+                        batch_deep_extraction_func_calls,
+                        allow_failures=True,
+                        timeout=180.0,
+                    ),
                 )
+                if result is not None
             }
 
             # Collect entities and relationships to upsert
@@ -409,30 +464,236 @@ def kg_extraction(
             batch_relationships: list[tuple[str, str]] = []
             entity_classification: dict[str, str] = {}
 
+            # For CV documents (whose document entity type is PERSON), the placeholder
+            # entity created from the document ID gets its name overridden by the DB
+            # trigger to the filename (e.g. "cv_kopacik.pdf"), while the LLM-extracted
+            # PERSON entity has the real name but no document_id. This creates duplicates
+            # and breaks SQL queries that filter on "document_id IS NOT NULL".
+            #
+            # Fix: when deep extraction produced exactly ONE PERSON entity for a
+            # PERSON-typed document, assign the document_id to that extracted entity
+            # instead of the filename-based placeholder. The placeholder is dropped.
+            cv_person_overrides: dict[str, str] = {}
+            for document_id, deep_result in batch_deep_extractions.items():
+                implied = batch_implied_extraction.get(document_id)
+                if implied is None:
+                    logger.debug(
+                        "cv_person_overrides: %s has no implied_extraction — skipping",
+                        document_id,
+                    )
+                    continue
+                if get_entity_type(implied.document_entity) != "PERSON":
+                    logger.debug(
+                        "cv_person_overrides: %s entity_type=%s (not PERSON) — skipping",
+                        document_id,
+                        get_entity_type(implied.document_entity),
+                    )
+                    continue
+
+                logger.info(
+                    "cv_person_overrides: %s (semantic=%s) — extracted %d entities, %d relationships. "
+                    "All entities: %r",
+                    document_id,
+                    doc_semantic_id_map.get(document_id, "?"),
+                    len(deep_result.deep_extracted_entities),
+                    len(deep_result.deep_extracted_relationships),
+                    [e for e in deep_result.deep_extracted_entities if get_entity_type(e) == "PERSON"],
+                )
+
+                person_entities = [
+                    e
+                    for e in deep_result.deep_extracted_entities
+                    if get_entity_type(e) == "PERSON"
+                ]
+                if len(person_entities) == 1:
+                    cv_person_overrides[document_id] = person_entities[0]
+                elif len(person_entities) > 1:
+                    # Multiple PERSON entities extracted — CVs typically have
+                    # ONE author but may mention colleagues/managers/clients.
+                    # Pick the PERSON that owns the most outgoing relationships
+                    # in this document's extraction. The CV author is the
+                    # source of every HAS_EMPLOYMENT / HOLDS_CERT /
+                    # HAS_PERSON_SKILL / WORKS_ON_PROJECT / LIVES_AT edge,
+                    # while incidental mentions have ~zero outgoing edges.
+                    #
+                    # Without this path, the cv_person_overrides dict stays
+                    # unset and the fallback at line ~494 assigns the
+                    # document_id to a filename placeholder like
+                    # `PERSON::cv_brandys.docx`, orphaning the real author
+                    # from the document — which made chat answers name
+                    # the filename instead of the person.
+                    outgoing_counts: dict[str, int] = {p: 0 for p in person_entities}
+                    for rel in deep_result.deep_extracted_relationships:
+                        rel_parts = split_relationship_id(rel)
+                        if len(rel_parts) != 3:
+                            continue
+                        src_raw = rel_parts[0]
+                        src_bare, _ = split_entity_and_attributes(src_raw)
+                        if src_bare in outgoing_counts:
+                            outgoing_counts[src_bare] += 1
+                    best = max(outgoing_counts, key=lambda p: outgoing_counts[p])
+                    if outgoing_counts[best] > 0:
+                        cv_person_overrides[document_id] = best
+                        logger.info(
+                            "CV %s had %d PERSON entities extracted; "
+                            "selecting %r as author (%d outgoing relationships)",
+                            document_id,
+                            len(person_entities),
+                            best,
+                            outgoing_counts[best],
+                        )
+                    else:
+                        logger.warning(
+                            "CV %s had %d PERSON entities extracted but none "
+                            "had outgoing relationships — cannot disambiguate "
+                            "the author. Falling back to filename placeholder. "
+                            "Candidates: %r",
+                            document_id,
+                            len(person_entities),
+                            person_entities,
+                        )
+
             for document_id, implied_metadata in batch_implied_extraction.items():
                 batch_entities += [
                     (None, entity) for entity in implied_metadata.implied_entities
                 ]
-                batch_entities.append((document_id, implied_metadata.document_entity))
+                # For CV documents with a single extracted person, use that entity
+                # (with its real name) as the document entity so document_id is
+                # attached to the real name rather than the filename-derived placeholder.
+                batch_entities.append(
+                    (
+                        document_id,
+                        cv_person_overrides.get(
+                            document_id,
+                            # Fallback: for PERSON-typed docs (CVs) where the LLM
+                            # didn't return exactly one PERSON entity, use the
+                            # document's semantic_id (filename) as the entity name.
+                            # The new trigger uses lower(NEW.name) for PERSON
+                            # entities, so this produces a readable filename like
+                            # "cv_smith.docx" instead of "file_connector__uuid".
+                            f"PERSON::{doc_semantic_id_map[document_id]}"
+                            if (
+                                get_entity_type(implied_metadata.document_entity)
+                                == "PERSON"
+                                and document_id in doc_semantic_id_map
+                            )
+                            else implied_metadata.document_entity,
+                        ),
+                    )
+                )
                 batch_relationships += [
                     (document_id, relationship)
                     for relationship in implied_metadata.implied_relationships
                 ]
 
             for document_id, deep_extraction_result in batch_deep_extractions.items():
+                overridden_entity = cv_person_overrides.get(document_id)
                 batch_entities += [
                     (None, entity)
                     for entity in deep_extraction_result.deep_extracted_entities
+                    # Skip the entity already added with document_id above to avoid
+                    # adding it a second time without the document_id.
+                    if entity != overridden_entity
                 ]
                 for relationship in deep_extraction_result.deep_extracted_relationships:
-                    source_entity, _, target_entity = split_relationship_id(
-                        relationship
+                    rel_parts = split_relationship_id(relationship)
+                    if len(rel_parts) != 3:
+                        logger.warning(
+                            "Unparseable relationship %r (got %d parts) — skipping",
+                            relationship,
+                            len(rel_parts),
+                        )
+                        continue
+                    source_entity_raw, verb, target_entity_raw = rel_parts
+
+                    # Repair: LLM sometimes formats relationships as the
+                    # relationship TYPE id_name with appended entity names:
+                    #   PROJECT__project_at__COMPANY::src_name__COMPANY::tgt_name
+                    # After regex split this gives:
+                    #   source = "PROJECT" (bare)
+                    #   verb   = "project_at"
+                    #   target = "COMPANY::src_name__COMPANY::tgt_name"
+                    # Detect this by checking if the source has no "::" AND
+                    # the target contains "__TYPE::" (a second entity ref).
+                    # Reconstruct by finding the last "__TYPE::" boundary in
+                    # the target — everything before it is the source entity
+                    # name (prefixed with a wrong type), everything after is
+                    # the real target entity.
+                    if "::" not in source_entity_raw and "::" in target_entity_raw:
+                        import re
+
+                        # Match the last __UPPER_TYPE:: boundary in the target
+                        last_type_boundary = list(
+                            re.finditer(r"__([A-Z][A-Z_]+)::", target_entity_raw)
+                        )
+                        if last_type_boundary:
+                            boundary = last_type_boundary[-1]
+                            # Extract source name from the part before the
+                            # boundary (it's prefixed with the wrong type).
+                            embedded_part = target_entity_raw[: boundary.start()]
+                            name_start = embedded_part.find("::")
+                            if name_start >= 0:
+                                source_name = embedded_part[name_start + 2 :]
+                            else:
+                                source_name = embedded_part
+                            source_entity_raw = (
+                                f"{source_entity_raw.upper()}::{source_name}"
+                            )
+
+                            # The real target is from the boundary onward.
+                            real_target_type = boundary.group(1)
+                            real_target_name = target_entity_raw[boundary.end() :]
+                            target_entity_raw = (
+                                f"{real_target_type}::{real_target_name}"
+                            )
+
+                            logger.info(
+                                "Repaired rel-type-as-prefix: %r → src=%r tgt=%r",
+                                relationship,
+                                source_entity_raw,
+                                target_entity_raw,
+                            )
+
+                    # Strip any `--[attr: value]` suffixes off the relationship
+                    # endpoints before the FK-sensitive paths below. The LLM is
+                    # instructed to put attributes only on the entities list,
+                    # but we defensively normalize here so that a stray attribute
+                    # suffix on a relationship endpoint doesn't create orphaned
+                    # IDs (e.g. `EMPLOYMENT::John_ACME--[title: CTO]`) that
+                    # FK-violate against the staging entity table.
+                    source_entity, _ = split_entity_and_attributes(source_entity_raw)
+                    target_entity, _ = split_entity_and_attributes(target_entity_raw)
+                    cleaned_relationship = (
+                        f"{source_entity}__{verb}__{target_entity}"
                     )
+                    # Bug fix: source_entity / target_entity here are full IDs
+                    # like "PERSON::Ing. Stupala", but active_entity_types holds
+                    # bare type names. Extract the type before checking.
                     if (
-                        source_entity in active_entity_types
-                        and target_entity in active_entity_types
+                        get_entity_type(source_entity) in active_entity_types
+                        and get_entity_type(target_entity) in active_entity_types
                     ):
-                        batch_relationships += [(document_id, relationship)]
+                        batch_relationships += [(document_id, cleaned_relationship)]
+                        # Auto-register entities referenced in relationships even if
+                        # the LLM forgot to list them under "entities". Without this,
+                        # the relationship upsert later FK-violates against the
+                        # staging entity table and is silently dropped. Duplicate
+                        # entries are safe — upsert_staging_entity is on-conflict.
+                        #
+                        # Skip bare-type endpoints (e.g. `PERSON` with no
+                        # `::name`). Those come from the LLM's bare-type
+                        # shorthand and can't be upserted as entities — the
+                        # entity loop would split_entity_id them to a single
+                        # part and log "Invalid entity". The relationship
+                        # loop later repairs these via _repair_endpoint()
+                        # (using cv_person_overrides) before the actual
+                        # relationship insert, so silently skipping here is
+                        # safe: relationships still land correctly, and we
+                        # avoid spamming ERROR logs with expected shorthand.
+                        if "::" in source_entity:
+                            batch_entities.append((None, source_entity))
+                        if "::" in target_entity:
+                            batch_entities.append((None, target_entity))
 
                 classification_result = deep_extraction_result.classification_result
                 if not classification_result:
@@ -443,8 +704,15 @@ def kg_extraction(
 
             # Populate the KG database with the extracted entities, relationships, and terms
             for potential_document_id, entity in batch_entities:
+                # Peel off any `--[key: value, ...]` suffix the LLM emitted.
+                # CV extraction (and any future reified-entity prompt) ships
+                # per-entity attributes inline via this syntax because the
+                # pipeline otherwise discards everything except the bare
+                # id. See split_entity_and_attributes for format details.
+                bare_entity, llm_attributes = split_entity_and_attributes(entity)
+
                 # verify the entity is valid
-                parts = split_entity_id(entity)
+                parts = split_entity_id(bare_entity)
                 if len(parts) != 2:
                     logger.error(
                         "Invalid entity %s in aggregated_kg_extractions.entities",
@@ -454,7 +722,7 @@ def kg_extraction(
 
                 entity_type, entity_name = parts
                 entity_type = entity_type.upper()
-                entity_name = entity_name.capitalize()
+                entity_name = entity_name.strip()
 
                 if entity_type not in active_entity_types:
                     continue
@@ -468,6 +736,16 @@ def kg_extraction(
                                 batch_metadata[potential_document_id].document_metadata
                                 or {}
                             )
+
+                        # Merge the LLM-provided attributes on top of any
+                        # document-level metadata. LLM values win on conflict
+                        # because they describe this specific entity rather
+                        # than the enclosing document.
+                        if llm_attributes:
+                            entity_attributes = {
+                                **entity_attributes,
+                                **llm_attributes,
+                            }
 
                         # only keep selected attributes (and translate the attribute names)
                         metadata_attributes = entity_metadata_conversion_instructions[
@@ -494,6 +772,23 @@ def kg_extraction(
                                 potential_document_id, db_session
                             )
 
+                        # Diagnostic: when the LLM emitted attrs for a
+                        # reified-type entity (EMPLOYMENT, CERTIFICATION, etc.)
+                        # but keep_attributes is empty after filtering, log
+                        # the reason. This surfaces cases where LLM attr
+                        # keys don't match metadata_attribute_conversion keys
+                        # for the type — which silently drops all attrs.
+                        if llm_attributes and not keep_attributes:
+                            logger.warning(
+                                "Entity %r had LLM attrs %r but all were "
+                                "filtered out. metadata_attribute_conversion "
+                                "keys for %s: %r",
+                                bare_entity,
+                                llm_attributes,
+                                entity_type,
+                                list(metadata_attributes.keys()),
+                            )
+
                         upserted_entity = upsert_staging_entity(
                             db_session=db_session,
                             name=entity_name,
@@ -503,6 +798,22 @@ def kg_extraction(
                             attributes=keep_attributes,
                             event_time=event_time,
                         )
+
+                        # Diagnostic: if we sent non-empty attrs but they
+                        # didn't persist to the returned row, the on_conflict
+                        # path is discarding them (an earlier insert already
+                        # established attributes and on_conflict only bumps
+                        # occurrences). This is the smoking gun for the
+                        # "attributes stay empty in DB" symptom.
+                        if keep_attributes and not upserted_entity.attributes:
+                            logger.warning(
+                                "Entity %r upserted with attrs %r but row "
+                                "now has empty attributes — prior insert "
+                                "with empty attrs is winning on_conflict.",
+                                bare_entity,
+                                keep_attributes,
+                            )
+
                         metadata_tracker.track_metadata(
                             entity_type, upserted_entity.attributes
                         )
@@ -523,6 +834,118 @@ def kg_extraction(
 
                 source_entity, relationship_type, target_entity = relationship_split
 
+                # Repair malformed endpoints. The LLM occasionally drops the
+                # `::name` suffix and emits just the bare entity type — e.g.
+                # `PERSON_SKILL__skill_of__SKILL::GDPR` instead of
+                # `PERSON_SKILL::Ivan Kopáčik_GDPR__skill_of__SKILL::GDPR`.
+                #
+                # Resolution strategy:
+                #   1. PERSON → cv_person_overrides (one person per CV)
+                #   2. Reified types (PERSON_SKILL, EMPLOYMENT, PROJECT) →
+                #      naming-convention lookup: entity name contains BOTH
+                #      the person name AND the other endpoint's name.
+                #   3. Simple types (COMPANY, ADDRESS) → unique-match in
+                #      batch_entities for this document.
+                def _repair_endpoint(
+                    endpoint: str, other_endpoint: str
+                ) -> str | None:
+                    if "::" in endpoint:
+                        return endpoint
+                    bare_type = endpoint.upper()
+
+                    # 1. PERSON shorthand → cv_person_overrides
+                    person = cv_person_overrides.get(document_id)
+                    if person and get_entity_type(person) == bare_type:
+                        repaired, _ = split_entity_and_attributes(person)
+                        return repaired
+
+                    # Collect all entities of this type from the batch.
+                    type_entities = [
+                        split_entity_and_attributes(ent)[0]
+                        for _, ent in batch_entities
+                        if "::" in ent
+                        and get_entity_type(ent) == bare_type
+                    ]
+
+                    # 2. Naming-convention lookup for reified types.
+                    #    PERSON_SKILL::Person_Skill, EMPLOYMENT::Person_Co_Year,
+                    #    PROJECT::Person_Name. The entity name contains both
+                    #    the CV person's name and the other endpoint's name.
+                    if (
+                        person
+                        and "::" in other_endpoint
+                        and bare_type
+                        in ("PERSON_SKILL", "EMPLOYMENT", "PROJECT")
+                    ):
+                        person_parts = split_entity_id(person)
+                        person_stem = (
+                            person_parts[1].lower() if len(person_parts) == 2 else ""
+                        )
+                        other_parts = split_entity_id(other_endpoint)
+                        other_stem = (
+                            other_parts[1].lower() if len(other_parts) == 2 else ""
+                        )
+
+                        if person_stem and other_stem:
+                            matches = [
+                                e
+                                for e in type_entities
+                                if person_stem
+                                in split_entity_id(e)[1].lower()
+                                and other_stem
+                                in split_entity_id(e)[1].lower()
+                            ]
+                            if len(matches) == 1:
+                                logger.debug(
+                                    "Repaired bare %s via naming convention → %r",
+                                    bare_type,
+                                    matches[0],
+                                )
+                                return matches[0]
+
+                            # Fallback: person-stem only (for EMPLOYMENT
+                            # where target is COMPANY but entity name uses
+                            # a different company form)
+                            if not matches:
+                                matches = [
+                                    e
+                                    for e in type_entities
+                                    if person_stem
+                                    in split_entity_id(e)[1].lower()
+                                    and other_stem.split()[0]
+                                    in split_entity_id(e)[1].lower()
+                                ]
+                                if len(matches) == 1:
+                                    return matches[0]
+
+                    # 3. Simple types: unique-match fallback.
+                    if len(type_entities) == 1:
+                        logger.debug(
+                            "Repaired bare %s via unique match → %r",
+                            bare_type,
+                            type_entities[0],
+                        )
+                        return type_entities[0]
+
+                    return None
+
+                repaired_source = _repair_endpoint(source_entity, target_entity)
+                repaired_target = _repair_endpoint(target_entity, source_entity)
+                if repaired_source is None or repaired_target is None:
+                    logger.warning(
+                        "Skipping relationship with unresolvable bare endpoint(s): "
+                        "%r (source=%r, target=%r, document=%s)",
+                        relationship,
+                        source_entity,
+                        target_entity,
+                        document_id,
+                    )
+                    continue
+                if repaired_source != source_entity or repaired_target != target_entity:
+                    source_entity = repaired_source
+                    target_entity = repaired_target
+                    relationship = f"{source_entity}__{relationship_type}__{target_entity}"
+
                 source_entity_type = get_entity_type(source_entity)
                 target_entity_type = get_entity_type(target_entity)
 
@@ -533,6 +956,71 @@ def kg_extraction(
                     continue
 
                 relationship_type_id_name = extract_relationship_type_id(relationship)
+
+                # Defense-in-depth: reject relationships whose verb isn't in
+                # the canonical set. The LLM sometimes hallucinates synonym
+                # verbs (e.g. `has_certification` instead of `holds_cert`),
+                # and the auto-registration path below would silently create
+                # a new relationship type for them — splitting data across
+                # synonymous verbs and breaking downstream SQL queries whose
+                # few-shots assume the canonical spelling.
+                #
+                # The canonical set is derived from get_default_relationship_types()
+                # so it stays in sync with the seed. If a legitimate new verb
+                # is needed, add it there (and to the CV_CHUNK_PREPROCESSING_PROMPT
+                # canonical list) rather than loosening this check.
+                if (
+                    relationship_type_id_name
+                    not in CANONICAL_RELATIONSHIP_TYPE_ID_NAMES
+                ):
+                    logger.warning(
+                        "Rejected non-canonical relationship type %r "
+                        "(from relationship %r). Canonical types: %s",
+                        relationship_type_id_name,
+                        relationship,
+                        sorted(CANONICAL_RELATIONSHIP_TYPE_ID_NAMES),
+                    )
+                    continue
+
+                # Defense-in-depth: ensure both endpoint entities exist in
+                # staging before the relationship insert. The earlier
+                # auto-registration path (lines ~559-560) and the entity loop
+                # above SHOULD have inserted them, but in practice we
+                # observe FK violations for relationships whose endpoints
+                # were never persisted — likely because the LLM emits
+                # inconsistent name forms (whitespace, separator, casing
+                # quirks) across the entities list and relationship strings,
+                # so the entity-loop normalization rejects one form while
+                # the relationship-loop normalization expects another.
+                # Upserting here with the relationship's own normalized
+                # endpoints guarantees the FK can resolve. Calls are no-ops
+                # for entities already present (on_conflict bumps occurrences
+                # only).
+                for endpoint_id in (source_entity, target_entity):
+                    endpoint_parts = split_entity_id(endpoint_id)
+                    if len(endpoint_parts) != 2:
+                        continue
+                    endpoint_type, endpoint_name = endpoint_parts
+                    endpoint_type = endpoint_type.upper()
+                    if endpoint_type not in active_entity_types:
+                        continue
+                    with get_session_with_current_tenant() as ep_session:
+                        try:
+                            upsert_staging_entity(
+                                db_session=ep_session,
+                                name=endpoint_name.strip(),
+                                entity_type=endpoint_type,
+                                document_id=None,
+                                occurrences=1,
+                                attributes={},
+                            )
+                            ep_session.commit()
+                        except Exception as e:
+                            logger.warning(
+                                "Failed to ensure relationship endpoint %r in staging: %s",
+                                endpoint_id,
+                                e,
+                            )
 
                 with get_session_with_current_tenant() as db_session:
                     try:

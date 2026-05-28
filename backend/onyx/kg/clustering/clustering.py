@@ -152,7 +152,9 @@ def _cluster_one_grounded_entity(
     """
     with get_session_with_current_tenant() as db_session:
         # get entity name and filtering conditions
-        if entity.document_id is not None:
+        if entity.document_id is not None and entity.entity_type_id_name != "PERSON":
+            # For document-level grounded entities (calls, tickets, etc.) the
+            # entity identity IS the document, so use the document's semantic_id.
             entity_name = cast(
                 str,
                 db_session.query(Document.semantic_id)
@@ -161,8 +163,10 @@ def _cluster_one_grounded_entity(
             ).lower()
             filtering = [KGEntity.document_id.is_(None)]
         else:
+            # For PERSON entities (CVs) the identity is the person's real name,
+            # not the filename. Use the staged entity name directly.
             entity_name = entity.name.lower()
-            filtering = []
+            filtering = [KGEntity.document_id.is_(None)] if entity.document_id is not None else []
 
         # skip those with numbers so we don't cluster version1 and version2, etc.
         similar_entities: list[KGEntity] = []
@@ -432,12 +436,38 @@ def kg_clustering(
         format(time_delta, ".2f"),
     )
 
-    # Delete the transferred objects from the staging tables
+    # Delete the transferred objects from the staging tables.
+    # Order matters for FK constraints:
+    #   1. Relationships first (they FK → entities AND relationship types)
+    #   2. Relationship types second
+    #   3. Entities last
+    #
+    # We must also delete relationships whose SOURCE or TARGET entity has
+    # been transferred, even if the relationship itself isn't marked
+    # transferred — otherwise the entity delete at step 3 FK-violates
+    # against orphaned relationship rows.
     try:
         with get_session_with_current_tenant() as db_session:
+            # Delete transferred relationships
             db_session.query(KGRelationshipExtractionStaging).filter(
                 KGRelationshipExtractionStaging.transferred.is_(True)
             ).delete(synchronize_session=False)
+
+            # Delete orphaned relationships whose endpoints were transferred
+            transferred_entity_ids = (
+                db_session.query(KGEntityExtractionStaging.id_name)
+                .filter(KGEntityExtractionStaging.transferred_id_name.is_not(None))
+                .subquery()
+            )
+            db_session.query(KGRelationshipExtractionStaging).filter(
+                KGRelationshipExtractionStaging.source_node.in_(
+                    transferred_entity_ids
+                )
+                | KGRelationshipExtractionStaging.target_node.in_(
+                    transferred_entity_ids
+                )
+            ).delete(synchronize_session=False)
+
             db_session.commit()
     except Exception as e:
         logger.error("Error deleting relationships: %s", e)

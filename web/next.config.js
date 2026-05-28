@@ -19,10 +19,13 @@ const cspHeader = `
 const nextConfig = {
   productionBrowserSourceMaps: false,
   output: "standalone",
-  // Hosts allowed to load Next.js dev resources (e.g. HMR) cross-origin.
-  // Needed when accessing the local dev server through a tunnel like ngrok.
-  allowedDevOrigins: ["cataract-brunette-icon.ngrok-free.dev"],
-  transpilePackages: ["@onyx-ai/opal"],
+  transpilePackages: ["@onyx/opal"],
+  // Pin the workspace root. Without this, Next 16 / Turbopack scans upward
+  // looking for the project root and picks the wrong directory because
+  // @onyx/opal lives outside node_modules.
+  turbopack: {
+    root: __dirname,
+  },
   typedRoutes: true,
   reactCompiler: true,
   images: {

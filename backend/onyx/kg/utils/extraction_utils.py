@@ -43,19 +43,153 @@ from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
 
-# Metadata tag key and value for CV/resume documents.
+# Metadata tag key and values for CV/resume documents.
 # Set {"kg_doc_type": "cv"} in document metadata (via .onyx_metadata.json
-# or API) to route extraction through the CV-specific prompt.
+# or API) to route extraction through the CV-specific prompt. Setting it to
+# "not_cv" is a hard veto that bypasses the content classifier entirely —
+# use it when you want to force a tagged document through GENERAL extraction.
 KG_DOC_TYPE_METADATA_KEY = "kg_doc_type"
 KG_DOC_TYPE_CV = "cv"
+KG_DOC_TYPE_NOT_CV = "not_cv"
+
+# LLM classification verdicts.
+_CV_VERDICT_CV = "CV"
+_CV_VERDICT_NOT_CV = "NOT_CV"
+_CV_VERDICT_AMBIGUOUS = "AMBIGUOUS"
+
+# How much of the document head the LLM sees. 4000 chars spans past
+# cover-page noise into the first real section headings.
+_CV_CLASSIFICATION_PROBE_CHARS = 4000
+
+
+def _head_content(chunks: list["KGChunkFormat"]) -> str:
+    """Concatenate chunks' content up to the probe char limit."""
+    buf: list[str] = []
+    remaining = _CV_CLASSIFICATION_PROBE_CHARS
+    for chunk in chunks:
+        if remaining <= 0:
+            break
+        chunk_text = chunk.content or ""
+        if len(chunk_text) > remaining:
+            buf.append(chunk_text[:remaining])
+            break
+        buf.append(chunk_text)
+        remaining -= len(chunk_text)
+    return "\n".join(buf)
+
+
+def _classify_cv_by_llm(chunks: list["KGChunkFormat"]) -> str:
+    """Classify a document as CV or NOT_CV using the default extraction LLM.
+
+    Single call per document. The prompt is deliberately terse to bound
+    token cost — the model only needs to pick CV or NOT_CV.
+
+    Returns _CV_VERDICT_CV, _CV_VERDICT_NOT_CV, or _CV_VERDICT_AMBIGUOUS
+    (on parse failure or LLM error).
+    """
+    from onyx.llm.factory import get_default_llm
+    from onyx.llm.models import UserMessage
+
+    head = _head_content(chunks)
+    if not head:
+        return _CV_VERDICT_AMBIGUOUS
+
+    doc_id = chunks[0].document_id if chunks else "<unknown>"
+
+    prompt = (
+        "Classify the following document excerpt as CV or NOT_CV.\n"
+        "CV = one person's résumé / curriculum vitae describing THEIR career, skills, "
+        "and certifications they HOLD.\n"
+        "NOT_CV = anything else: tender / procurement / contract / role-requirement / "
+        "project specification / policy / reference material. Requirements listing "
+        "certifications the role needs (e.g. 'min. PRINCE 2 Practitioner or PMP') is "
+        "NOT_CV — those are qualifications SOUGHT, not HELD.\n\n"
+        "Reply with exactly one word: CV or NOT_CV.\n\n"
+        "--- Document excerpt ---\n"
+        f"{head}"
+    )
+
+    try:
+        llm = get_default_llm()
+        response = llm.invoke(UserMessage(content=prompt))
+        content = response.choice.message.content
+        text = (content if isinstance(content, str) else "").strip().upper()
+        if text.startswith("NOT_CV") or text.startswith("NOT CV"):
+            logger.info("_classify_cv_by_llm(%s): NOT_CV", doc_id)
+            return _CV_VERDICT_NOT_CV
+        if text.startswith("CV"):
+            logger.info("_classify_cv_by_llm(%s): CV", doc_id)
+            return _CV_VERDICT_CV
+        logger.warning(
+            "_classify_cv_by_llm(%s): unparseable verdict %r — AMBIGUOUS",
+            doc_id,
+            text[:120],
+        )
+        return _CV_VERDICT_AMBIGUOUS
+    except Exception as e:
+        logger.warning(
+            "_classify_cv_by_llm(%s) failed: %s — AMBIGUOUS", doc_id, e
+        )
+        return _CV_VERDICT_AMBIGUOUS
 
 
 def is_cv_document(chunks: list[KGChunkFormat]) -> bool:
-    """Check if any chunk in the batch has the CV metadata tag."""
+    """Determine whether this chunk batch represents a CV.
+
+    Resolution order:
+      1. Explicit metadata veto (`kg_doc_type: not_cv`) → False.
+      2. LLM classification → honor CV / NOT_CV verdicts.
+      3. Fallback (LLM ambiguous or failed) → honor `kg_doc_type=cv`
+         tag if present, else False.
+    """
+    doc_id = chunks[0].document_id if chunks else "<unknown>"
+    metadata_tag: str | None = None
     for chunk in chunks:
-        if chunk.metadata and chunk.metadata.get(KG_DOC_TYPE_METADATA_KEY) == KG_DOC_TYPE_CV:
-            return True
-    return False
+        if not chunk.metadata:
+            continue
+        tag = chunk.metadata.get(KG_DOC_TYPE_METADATA_KEY)
+        if tag == KG_DOC_TYPE_NOT_CV:
+            logger.info(
+                "is_cv_document(%s): FALSE — hard veto via kg_doc_type=not_cv",
+                doc_id,
+            )
+            return False
+        if tag == KG_DOC_TYPE_CV:
+            metadata_tag = KG_DOC_TYPE_CV
+            break
+
+    llm_verdict = _classify_cv_by_llm(chunks)
+
+    if llm_verdict == _CV_VERDICT_CV:
+        logger.info(
+            "is_cv_document(%s): TRUE — LLM said CV (metadata_tag=%s)",
+            doc_id,
+            metadata_tag,
+        )
+        return True
+    if llm_verdict == _CV_VERDICT_NOT_CV:
+        if metadata_tag == KG_DOC_TYPE_CV:
+            logger.warning(
+                "is_cv_document(%s): LLM said NOT_CV despite kg_doc_type=cv tag. "
+                "Honoring LLM to avoid cross-extraction contamination.",
+                doc_id,
+            )
+        logger.info(
+            "is_cv_document(%s): FALSE — LLM said NOT_CV (metadata_tag=%s)",
+            doc_id,
+            metadata_tag,
+        )
+        return False
+
+    # LLM ambiguous or failed — fall back to the tag if present, else False.
+    final = metadata_tag == KG_DOC_TYPE_CV
+    logger.info(
+        "is_cv_document(%s): %s — LLM AMBIGUOUS, fallback to metadata_tag=%s",
+        doc_id,
+        final,
+        metadata_tag,
+    )
+    return final
 
 
 def get_entity_types_str(active: bool | None = None) -> str:
@@ -350,6 +484,14 @@ def kg_deep_extraction(
 ) -> KGDocumentDeepExtractionResults:
     """
     Perform deep extraction and classification on the document.
+
+    For CV documents we collapse all chunks into a single LLM call so the model
+    sees the whole résumé at once — this is the right invariant for "one
+    document == one subject person" and prevents name fragmentation / Unknown
+    entities across chunks (see Option A in plans/cv-kg-extraction-config.md).
+    Non-CV documents keep the per-chunk-batch flow. See the Open Issues list
+    in that plan for Option B (shared-subject identity across chunks) which
+    should replace this once CVs start exceeding the single-call context.
     """
     result = KGDocumentDeepExtractionResults(
         classification_result=None,
@@ -360,24 +502,87 @@ def kg_deep_extraction(
     entity_types_str = get_entity_types_str(active=True)
     relationship_types_str = get_relationship_types_str(active=True)
 
-    for i, chunk_batch in enumerate(
+    # Materialize every batch up front so we can inspect the full document
+    # before deciding on chunked-vs-single-call extraction.
+    chunk_batches = list(
         get_document_vespa_contents(document_id, index_name, tenant_id)
-    ):
-        # use first batch for classification
-        if i == 0 and metadata.classification_enabled:
-            if not metadata.classification_instructions:
-                raise ValueError(
-                    "Classification is enabled but no instructions are provided"
-                )
-            result.classification_result = kg_classify_document(
-                document_entity=implied_extraction.document_entity,
-                chunk_batch=chunk_batch,
-                implied_extraction=implied_extraction,
-                classification_instructions=metadata.classification_instructions,
-                kg_config_settings=kg_config_settings,
-            )
+    )
+    if not chunk_batches:
+        return result
 
-        # deep extract from this chunk batch
+    # Classification always uses the first batch (stable across both paths).
+    if metadata.classification_enabled:
+        if not metadata.classification_instructions:
+            raise ValueError(
+                "Classification is enabled but no instructions are provided"
+            )
+        result.classification_result = kg_classify_document(
+            document_entity=implied_extraction.document_entity,
+            chunk_batch=chunk_batches[0],
+            implied_extraction=implied_extraction,
+            classification_instructions=metadata.classification_instructions,
+            kg_config_settings=kg_config_settings,
+        )
+
+    # CV path: flatten all chunks into a single extraction call so PERSON and
+    # PERSON_SKILL edges stay consistent across the whole document.
+    all_chunks = [chunk for batch in chunk_batches for chunk in batch]
+    doc_is_cv = is_cv_document(all_chunks)
+
+    logger.info(
+        "kg_deep_extraction for %s: is_cv_document=%s, "
+        "total_chunks=%d, total_chars=%d",
+        document_id,
+        doc_is_cv,
+        len(all_chunks),
+        sum(len(c.content or "") for c in all_chunks),
+    )
+
+    if doc_is_cv:
+        single_batch_results = kg_deep_extract_chunks(
+            document_entity=implied_extraction.document_entity,
+            chunk_batch=all_chunks,
+            implied_extraction=implied_extraction,
+            kg_config_settings=kg_config_settings,
+            entity_types_str=entity_types_str,
+            relationship_types_str=relationship_types_str,
+            force_cv=True,
+        )
+        if single_batch_results is not None:
+            result.deep_extracted_entities.update(
+                single_batch_results.deep_extracted_entities
+            )
+            result.deep_extracted_relationships.update(
+                single_batch_results.deep_extracted_relationships
+            )
+        return result
+
+    # Non-CV file-connector docs: optionally skip extraction entirely. In the
+    # CV-focused FOSS deployment the file connector is used only for résumés,
+    # so anything that classifies as NOT_CV is almost certainly a mistagged
+    # tender / procurement / contract doc (e.g. CV_STUPALA_2.docx). Running
+    # GENERAL extraction over those produces misleading entities — fields
+    # that look like certifications or employments but are actually role
+    # requirements. Skipping is safer than polluting the KG. Flag-gated so
+    # deployments that DO want general extraction on file-connector docs can
+    # opt back in via env var.
+    from onyx.configs.kg_configs import KG_SKIP_EXTRACTION_FOR_NON_CV_FILES
+
+    if (
+        KG_SKIP_EXTRACTION_FOR_NON_CV_FILES
+        and all_chunks
+        and all_chunks[0].source_type == DocumentSource.FILE.value
+    ):
+        logger.info(
+            "Skipping KG extraction for non-CV file-connector document %s "
+            "(KG_SKIP_EXTRACTION_FOR_NON_CV_FILES=true). To restore general "
+            "extraction on non-CV files, set the env var to 'false'.",
+            document_id,
+        )
+        return result
+
+    # Default path: deep-extract per batch and union.
+    for chunk_batch in chunk_batches:
         chunk_batch_results = kg_deep_extract_chunks(
             document_entity=implied_extraction.document_entity,
             chunk_batch=chunk_batch,
@@ -385,6 +590,7 @@ def kg_deep_extraction(
             kg_config_settings=kg_config_settings,
             entity_types_str=entity_types_str,
             relationship_types_str=relationship_types_str,
+            force_cv=False,
         )
         if chunk_batch_results is not None:
             result.deep_extracted_entities.update(
@@ -474,6 +680,7 @@ def kg_deep_extract_chunks(
     kg_config_settings: KGConfigSettings,
     entity_types_str: str,
     relationship_types_str: str,
+    force_cv: bool | None = None,
 ) -> KGDocumentDeepExtractionResults | None:
     # currently, calls are treated differently
     # TODO: either treat some other documents differently too, or ideally all the same way
@@ -481,6 +688,13 @@ def kg_deep_extract_chunks(
     is_call = entity_type in (call_type.value for call_type in OnyxCallTypes)
 
     content = "\n".join(chunk.content for chunk in chunk_batch)
+
+    # Determine which prompt to use. `force_cv` is passed from the caller
+    # (kg_deep_extraction) which already ran `is_cv_document()` once on the
+    # full document. Re-running the classifier here was a bug: the second
+    # call could get a different answer (e.g. LLM classifier fails on retry)
+    # and silently route the document through the wrong prompt.
+    use_cv_prompt = force_cv if force_cv is not None else is_cv_document(chunk_batch)
 
     # prepare prompt
     if is_call:
@@ -498,19 +712,36 @@ def kg_deep_extract_chunks(
             vendor=kg_config_settings.KG_VENDOR,
             content=content,
         )
-    elif is_cv_document(chunk_batch):
+    elif use_cv_prompt:
         llm_context = CV_CHUNK_PREPROCESSING_PROMPT.format(
             content=content,
+        )
+        logger.info(
+            "kg_deep_extract_chunks: using CV prompt for %s (force_cv=%s)",
+            document_entity,
+            force_cv,
         )
     else:
         llm_context = GENERAL_CHUNK_PREPROCESSING_PROMPT.format(
             vendor=kg_config_settings.KG_VENDOR,
             content=content,
         )
+        logger.info(
+            "kg_deep_extract_chunks: using GENERAL prompt for %s (force_cv=%s)",
+            document_entity,
+            force_cv,
+        )
     prompt = MASTER_EXTRACTION_PROMPT.format(
         entity_types=entity_types_str,
         relationship_types=relationship_types_str,
     ).replace("---content---", llm_context)
+
+    # Qwen3 hybrid-reasoning models think by default. During extraction, the
+    # thinking phase burns the output token budget and often leaves `content`
+    # empty (with the JSON answer stranded in `reasoning_content`). The
+    # /no_think directive disables that path on Qwen; it's a no-op on other
+    # model families, so adding it is safe regardless of the current default.
+    prompt = prompt + "\n\n/no_think"
 
     # extract with LLM with Braintrust tracing
     llm = get_default_llm()
@@ -521,7 +752,30 @@ def kg_deep_extract_chunks(
         ) as span_generation:
             response = llm.invoke(prompt_msg)
             record_llm_response(span_generation, response)
-            raw_extraction_result = llm_response_to_string(response)
+            # Prefer `content`; fall back to `reasoning_content` for hybrid
+            # models (Qwen3, DeepSeek-R1) that may put their entire output
+            # in the reasoning field. `llm_response_to_string` raises on
+            # non-string content, so gate on that before using the fallback.
+            msg = response.choice.message
+            if isinstance(msg.content, str) and msg.content.strip():
+                raw_extraction_result = msg.content
+            else:
+                raw_extraction_result = getattr(msg, "reasoning_content", "") or ""
+                if raw_extraction_result:
+                    logger.info(
+                        "kg_deep_extraction: recovered %d chars from "
+                        "reasoning_content (content was empty) for document %s",
+                        len(raw_extraction_result),
+                        document_entity,
+                    )
+
+        if not raw_extraction_result.strip():
+            logger.warning(
+                "kg_deep_extraction: LLM returned empty response for document %s. "
+                "No entities/relationships will be extracted from this chunk batch.",
+                document_entity,
+            )
+            return None
 
         cleaned_response = (
             raw_extraction_result.replace("{{", "{")
@@ -534,12 +788,34 @@ def kg_deep_extract_chunks(
         last_bracket = cleaned_response.rfind("}")
         cleaned_response = cleaned_response[first_bracket : last_bracket + 1]
         parsed_result = json.loads(cleaned_response)
+
+        entities = set(parsed_result.get("entities", []))
+        relationships = set(parsed_result.get("relationships", []))
+
+        # Diagnostic: how many entities carry the `--[attr: value]` attribute
+        # block the CV prompt asks for? If this is 0, the LLM is ignoring the
+        # ATTRIBUTE SYNTAX section (either the prompt isn't landing with enough
+        # weight, or the model class can't follow multi-section directives).
+        # A sample of both attribute-bearing and bare entities is logged so we
+        # can inspect surface-form quirks without dumping the full list.
+        entities_with_attrs = [e for e in entities if "--[" in e and e.endswith("]")]
+        entities_bare = [e for e in entities if "--[" not in e]
+        logger.info(
+            "kg_deep_extraction for %s: %d entities (%d with --[attrs], %d bare), "
+            "%d relationships. Sample attr-entity: %r. Sample bare-entity: %r.",
+            document_entity,
+            len(entities),
+            len(entities_with_attrs),
+            len(entities_bare),
+            len(relationships),
+            next(iter(entities_with_attrs), None),
+            next(iter(entities_bare), None),
+        )
+
         return KGDocumentDeepExtractionResults(
             classification_result=None,
-            deep_extracted_entities=set(parsed_result.get("entities", [])),
-            deep_extracted_relationships={
-                rel.replace(" ", "_") for rel in parsed_result.get("relationships", [])
-            },
+            deep_extracted_entities=entities,
+            deep_extracted_relationships=relationships,
         )
     except Exception as e:
         failed_chunks = [chunk.chunk_id for chunk in chunk_batch]

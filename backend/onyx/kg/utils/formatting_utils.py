@@ -9,7 +9,9 @@ def format_entity_id(entity_id_name: str) -> str:
 
 
 def make_entity_id(entity_type: str, entity_name: str) -> str:
-    return f"{entity_type.upper()}::{entity_name.lower()}"
+    # Normalize underscores to spaces so "Ivan_Kopáčik" and "Ivan Kopáčik"
+    # always produce the same id_name regardless of LLM formatting choices.
+    return f"{entity_type.upper()}::{entity_name.replace('_', ' ').lower()}"
 
 
 def split_entity_id(entity_id_name: str) -> list[str]:
@@ -58,6 +60,57 @@ def get_attributes(entity_w_attributes: str) -> dict[str, str]:
     }
 
 
+def split_entity_and_attributes(entity_w_attributes: str) -> tuple[str, dict[str, str]]:
+    """
+    Safely split an entity string into (bare_entity_id, attributes).
+
+    Accepts both forms:
+      - Without attributes:    "TYPE::Name"           -> ("TYPE::Name", {})
+      - With attributes:       "TYPE::Name--[k: v]"   -> ("TYPE::Name", {"k": "v"})
+
+    Values surrounded by matching single or double quotes are unquoted so
+    that `--[name: "AWS Solutions Architect"]` parses to
+    `{"name": "AWS Solutions Architect"}`. Values without quotes are kept
+    as-is (trimmed of whitespace).
+
+    Unlike `get_attributes`, this helper never raises on missing `--`, so
+    it's safe to call on every entity the LLM emits without pre-inspection.
+    """
+    if "--" not in entity_w_attributes:
+        return entity_w_attributes, {}
+
+    bare, _, attr_tail = entity_w_attributes.partition("--")
+    bare = bare.strip()
+
+    match = re.search(r"\[(.*)\]", attr_tail)
+    if not match:
+        return bare, {}
+
+    attr_list_str = match.group(1).strip()
+    if not attr_list_str:
+        return bare, {}
+
+    attrs: dict[str, str | None] = {}
+    for attr in attr_list_str.split(","):
+        key, sep, value = attr.partition(":")
+        if not sep:
+            continue
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
+        if key:
+            # Drop unquoted `null` values entirely rather than storing
+            # the string "null". A missing key is equivalent to JSON null
+            # for JSONB queries (->>'key' returns SQL NULL either way),
+            # and avoids `COALESCE((attrs->>'end_year')::int, 2026)`
+            # crashing with "invalid input syntax for integer: 'null'".
+            if value.lower() == "null":
+                continue
+            attrs[key] = value
+    return bare, attrs
+
+
 def make_entity_w_attributes(entity: str, attributes: dict[str, str]) -> str:
     return f"{entity}--[{', '.join(f'{k}: {v}' for k, v in attributes.items())}]"
 
@@ -72,7 +125,29 @@ def make_relationship_id(
     return f"{format_entity_id(source_node)}__{relationship_type.lower()}__{format_entity_id(target_node)}"
 
 
+# Matches the first `__lowercase_verb__` in a relationship id_name.
+# Entity types use UPPER_CASE (with single `_`), so `__` followed by a
+# lowercase word followed by `__` is unambiguous as the verb separator.
+_VERB_RE = re.compile(r"__([a-z][a-z_]+?)__")
+
+
 def split_relationship_id(relationship_id_name: str) -> list[str]:
+    """Split a relationship id_name into [source, verb, target].
+
+    The naive ``split("__")`` breaks when the LLM emits bare source types
+    (e.g. ``PROJECT__project_at__COMPANY::Name``) because entity type names
+    like ``PERSON_SKILL`` contain single ``_`` that survive the split while
+    the missing ``::`` causes extra parts. The regex approach finds the
+    verb (always lowercase) and splits around it, producing exactly 3
+    parts regardless of how the LLM formatted the endpoints.
+    """
+    m = _VERB_RE.search(relationship_id_name)
+    if m:
+        return [
+            relationship_id_name[: m.start()],
+            m.group(1),
+            relationship_id_name[m.end() :],
+        ]
     return relationship_id_name.split("__")
 
 

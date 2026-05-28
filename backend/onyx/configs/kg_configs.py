@@ -67,6 +67,16 @@ KG_TIMEOUT_LLM_INITIAL_ANSWER_GENERATION: int = int(
     os.environ.get("KG_TIMEOUT_LLM_INITIAL_ANSWER_GENERATION", "45")
 )
 
+
+# When content classification rules a file-connector document NOT_CV (e.g. a
+# tender / procurement / contract document mistakenly tagged as a CV), skip
+# KG extraction for it entirely rather than running GENERAL_CHUNK_PREPROCESSING
+# over content that wasn't intended for this pipeline. Default is True for the
+# CV-focused FOSS deployment; set to "false" to restore general extraction.
+KG_SKIP_EXTRACTION_FOR_NON_CV_FILES: bool = (
+    os.environ.get("KG_SKIP_EXTRACTION_FOR_NON_CV_FILES", "true").lower() == "true"
+)
+
 KG_TIMEOUT_CONNECT_LLM_INITIAL_ANSWER_GENERATION: int = int(
     os.environ.get("KG_TIMEOUT_CONNECT_LLM_INITIAL_ANSWER_GENERATION", "15")
 )

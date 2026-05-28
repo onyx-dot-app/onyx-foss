@@ -72,8 +72,22 @@ def upsert_staging_relationship(
                 "occurrences": occurrences,
             }
         )
+        # Target the (source_node, target_node, type) UNIQUE constraint
+        # rather than the (id_name, source_document) PK. The staging table
+        # has BOTH constraints and targeting the PK alone leaves the UQ
+        # uncovered — two extractions of the same relationship from different
+        # `source_document`s (which normalize to the same source_node /
+        # target_node / type) get a fresh PK tuple, skip on_conflict, and
+        # then fail the UQ constraint with IntegrityError (logged but silently
+        # dropped by the caller's try/except).
+        #
+        # id_name is derived deterministically from (source, verb, target)
+        # via make_relationship_id + make_entity_id, so any UQ-level collision
+        # is necessarily also a PK-level collision — targeting the UQ handles
+        # both cases with one ON CONFLICT clause. First-writer wins the
+        # `source_document` attribution; subsequent writers bump occurrences.
         .on_conflict_do_update(
-            index_elements=["id_name", "source_document"],
+            constraint="uq_kg_relationship_extraction_staging_source_target_type",
             set_=dict(
                 occurrences=KGRelationshipExtractionStaging.occurrences + occurrences,
             ),

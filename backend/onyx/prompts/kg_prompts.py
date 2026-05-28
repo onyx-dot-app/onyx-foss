@@ -22,16 +22,25 @@ Here are the types of relationships:
 EXTRACTION_FORMATTING_PROMPT = r"""
 {{"entities": [<a list of entities of the prescribed entity types that you can reliably identify in the text, \
 formatted as '<ENTITY_TYPE_NAME>::<entity_name>' (please use that capitalization). If allowed options \
-are provided above, you can only extract those types of entities! Again, there should be an 'Other' \
-option. Pick this if none of the others apply.>],
+are provided above, you can only extract those types of entities! If none of the entity types fits, \
+skip the entity — do not invent new types. \
+\
+OPTIONAL ATTRIBUTE BLOCK: an entity may carry structured attributes by appending the suffix \
+'--[attr_key: "value", attr_key: "value"]' to its id. Use the suffix ONLY if the content-specific \
+instructions below (in the text you are extracting from) explicitly tell you which attributes to \
+emit for that entity type — otherwise omit it and use the bare 'TYPE::name' form. When present, the \
+suffix is part of the same string: 'CERTIFICATION::PMP--[name: \"PMP\", issuing_authority: \"PMI\", \
+valid_until: 2027, language: \"EN\"]'. Quote string values; integers and null are allowed unquoted. \
+This suffix goes ONLY on entities — NEVER on relationship endpoints.>],
 "relationships": [<a list of IMPORTANT relationships between the identified entities, formatted as \
-'<SOURCE_ENTITY_TYPE_NAME>::<source_entity_name>__<a word or two that captures the nature \
-of the relationship (if appropriate, include a judgment, as in 'likes' or 'dislikes' vs. 'uses', etc.). \
-Common relationships may be: 'likes', 'dislikes', 'uses', 'is interested in', 'mentions', 'addresses', \
-'participates in', etc., but look at the text to find the most appropriate relationship. \
-Use spaces here for word separation. DO NOT INCLUDE RELATIONSHIPS THAT ARE SIMPLY MENTIONED, BUT ONLY \
-THOSE THAT ARE CENTRAL TO THE CONTENT! >\
-__<TARGET_ENTITY_TYPE_NAME>::<target_entity_name>'>],
+'<SOURCE_ENTITY_TYPE_NAME>::<source_entity_name>__<relationship_verb>\
+__<TARGET_ENTITY_TYPE_NAME>::<target_entity_name>'>. \
+If the content-specific instructions below provide a CANONICAL list of relationship verbs, you MUST \
+use ONLY those verbs — do not invent synonyms. If no canonical list is provided, use a word or two \
+that captures the nature of the relationship (e.g. 'likes', 'dislikes', 'uses'). \
+Use spaces for word separation. DO NOT INCLUDE RELATIONSHIPS THAT ARE SIMPLY MENTIONED, BUT ONLY \
+THOSE THAT ARE CENTRAL TO THE CONTENT! Note: relationship endpoints use bare 'TYPE::name' — do NOT \
+include the '--[...]' attribute suffix on either side of the '__verb__'.>],
 "terms": [<a comma-separated list of high-level terms (each one one or two words) that you can reliably \
 identify in the text, each formatted simply as '<term>'>]
 }}
@@ -146,13 +155,13 @@ then a valid relationship extraction could be:
 
 {{"relationships": ["ACCOUNT::Nike__had__CONCERN::*",
                       "ACCOUNT::Nike__had_issues__FEATURE::dashboard",
-                      "ACCOUNT::NIKE__in__EMAIL::*",
-                      "EMAIL::*__discusses__FEATURE::dashboard",
-                      "EMAIL::*Nike__had__CONCERN::* "]}}
+                      "ACCOUNT::Nike__in__EMAIL::*",
+                      "EMAIL::*__discusses__FEATURE::dashboard"]}}
 Explanation:
  - Nike did report unspecified concerns
  - Nike had problems with the dashboard, which is a feature
  - We are interested in emails that Nike exchanged with us
+ - We are interested in emails that discuss the dashboard feature
 """.strip()
 
 RELATIONSHIP_EXAMPLE_6 = r"""
@@ -163,30 +172,29 @@ and the extracted entities were found to be:
 
 then a valid relationship extraction could be:
 
-{{"relationships": ["ACCOUNT::Nike__had__CONCERN::*",
-                      "ACCOUNT::Nike__had_issues__FEATURE::dashboard",
-                      "ACCOUNT::NIKE__in__EMAIL::*"]}}
+{{"relationships": ["ACCOUNT::Nike__in__EMAIL::*",
+                      "EMPLOYEE::Lisa__in__EMAIL::*"]}}
 Explanation:
- - Nike did report unspecified concerns
- - Nike had problems with the dashboard, which is a feature
- - We are interested in emails that Nike exchanged with us
+ - We are interested in emails that Nike is involved in
+ - We are interested in emails that Lisa is involved in
+ - The intersection of these gives emails exchanged between them
 """.strip()
 
 
 ENTITY_EXAMPLE_1 = r"""
-{{"entities": ["ACCOUNT::Nike--[]", "CONCERN::*--[]"]}}
+{{"entities": ["ACCOUNT::Nike", "CONCERN::*"]}}
 """.strip()
 
 ENTITY_EXAMPLE_2 = r"""
-{{"entities": ["ACCOUNT::Nike--[]", "CONCERN::performance--[]"]}}
+{{"entities": ["ACCOUNT::Nike", "CONCERN::performance"]}}
 """.strip()
 
 ENTITY_EXAMPLE_3 = r"""
-{{"entities": ["ACCOUNT::*--[]", "CONCERN::performance--[]", "CONCERN::user_experience--[]"]}}
+{{"entities": ["ACCOUNT::*", "CONCERN::performance", "CONCERN::user_experience"]}}
 """.strip()
 
 ENTITY_EXAMPLE_4 = r"""
-{{"entities": ["ACCOUNT::*--[]", "CONCERN::performance--[degree: severe]"]}}
+{{"entities": ["ACCOUNT::*", "CONCERN::performance -- [degree: severe]"]}}
 """.strip()
 
 MASTER_EXTRACTION_PROMPT = f"""
@@ -208,8 +216,8 @@ Please format your answer in this format:
 
 The list above here is the exclusive, only list of entities you can choose from!
 
-Here are some important additional instructions. (For the purpose of illustration, assume that ]
- "ACCOUNT", "CONCERN", and "FEATURE" are all in the list of entity types above, and shown actual \
+Here are some important additional instructions. (For the purpose of illustration, assume that \
+"ACCOUNT", "CONCERN", and "FEATURE" are all in the list of entity types above, and shown actual \
 entities fall into allowed options. Note that this \
 is just assumed for these examples, but you MUST use only the entities above for the actual extraction!)
 
@@ -409,8 +417,8 @@ Please format your answer in this format:
 
 The list above here is the exclusive, only list of entities and relationship types you can choose from!
 
-Here are some important additional instructions. (For the purpose of illustration, assume that ]
- "ACCOUNT", "CONCERN", and "FEATURE" are all in the list of entity types above. Note that this \
+Here are some important additional instructions. (For the purpose of illustration, assume that \
+"ACCOUNT", "CONCERN", and "FEATURE" are all in the list of entity types above. Note that this \
 is just assumed for these examples, but you MUST use only the entities above for the actual extraction!)
 
 - You can either extract specific entities if a specific entity is referred to, or you can refer to the entity type.
@@ -531,21 +539,81 @@ This is part of a CV/resume document. You need to extract structured information
 professional profile using REIFIED ENTITIES — compound data (employment, skills with experience, projects) \
 must be modeled as intermediate entities, not as flat attributes.
 
-EXTRACTION RULES:
+============================================================
+CANONICAL RELATIONSHIP TYPES — use EXACT spelling. No synonyms.
+============================================================
+
+You MUST use ONLY these 10 relationship type id_names. Any other relationship \
+verb is WRONG and will be rejected.
+
+  PERSON__has_employment__EMPLOYMENT
+  EMPLOYMENT__employment_at__COMPANY
+  PERSON__has_person_skill__PERSON_SKILL
+  PERSON_SKILL__skill_of__SKILL
+  PERSON__holds_cert__CERTIFICATION         ← NOT "has_certification", NOT "holds_certification", NOT "certified_in"
+  PERSON__works_on_project__PROJECT          ← NOT "worked_on", NOT "did_project"
+  PROJECT__project_at__COMPANY               ← NOT "project_for", NOT "at_company"
+  PROJECT__project_uses_skill__SKILL         ← NOT "uses", NOT "project_needs"
+  PERSON__lives_at__ADDRESS
+  COMPANY__located_at__ADDRESS               ← for company office/HQ addresses mentioned in the CV
+
+If the CV uses different wording (e.g. "certified in", "responsible for", \
+"participated in"), map it to the canonical type above. NEVER invent new verbs. \
+NEVER use synonyms. Any relationship whose verb is not on the list above will \
+be rejected by the extraction pipeline.
+
+============================================================
+ATTRIBUTE SYNTAX — how to attach attributes to an entity
+============================================================
+
+Attributes on entities are carried INLINE using this exact syntax:
+
+    ENTITY_TYPE::Name--[attr_key: "value", attr_key: "value"]
+
+Rules for the attribute block:
+  * Always use the `--[...]` suffix (two dashes, then square brackets). No spaces between `Name` and `--`.
+  * Quote string values with double quotes. Unquoted integers / null are also allowed.
+  * Separate key/value pairs with `, ` (comma + space). Separate key and value with `: ` (colon + space).
+  * Attributes go ONLY on entity strings in the "entities" list. NEVER put `--[...]` suffixes on the \
+endpoints of a relationship — relationships use only the bare `ENTITY_TYPE::Name` form.
+  * If you have no attributes to emit for an entity, omit the suffix entirely: `SKILL::Python`.
+
+Concrete example — a certification entity with all four attributes:
+
+    CERTIFICATION::AWS Solutions Architect--[name: "AWS Solutions Architect", \
+issuing_authority: "Amazon Web Services", valid_until: 2026, language: "EN"]
+
+If you omit the `--[...]` block, all structured attributes for that entity are \
+DISCARDED. For reified entities (EMPLOYMENT, PERSON_SKILL, PROJECT, CERTIFICATION, ADDRESS) \
+this means a downstream question like "people with PMP valid past 2025" becomes \
+structurally unanswerable. Always emit the attribute block for reified entities.
+
+============================================================
+EXTRACTION RULES
+============================================================
 
 1. PERSON — One per document. Extract the full name.
+   - Usually no attributes needed. Format: `PERSON::John Doe`
 
 2. EMPLOYMENT — One per job position listed. For each:
    - Create an EMPLOYMENT entity with attributes: title (job title), start_year (integer YYYY), \
-end_year (integer YYYY or null if current/present).
-   - Create relationships: PERSON → HAS_EMPLOYMENT → EMPLOYMENT, and EMPLOYMENT → EMPLOYMENT_AT → COMPANY.
+start_month (integer 1-12 or null if not stated), end_year (integer YYYY or null if current/present), \
+end_month (integer 1-12 or null if not stated or current).
+   - Format: `EMPLOYMENT::John Doe_ACME Corp_2020--[title: "Senior Engineer", \
+start_year: 2020, start_month: 3, end_year: 2024, end_month: 6]`
+   - Emit BOTH edges:
+       PERSON__has_employment__EMPLOYMENT
+       EMPLOYMENT__employment_at__COMPANY
    - Also create the COMPANY entity if not already extracted.
 
 3. PERSON_SKILL — One per skill mentioned. For each:
-   - Create a SKILL entity (canonical name).
+   - Create a SKILL entity (canonical name). Format: `SKILL::Python`
    - Create a PERSON_SKILL entity with attributes: years_experience (integer, estimate from employment \
 dates if not explicit), proficiency (one of: JUNIOR, MEDIOR, SENIOR).
-   - Create relationships: PERSON → HAS_PERSON_SKILL → PERSON_SKILL, and PERSON_SKILL → SKILL_OF → SKILL.
+   - Format: `PERSON_SKILL::John Doe_Python--[years_experience: 7, proficiency: "SENIOR"]`
+   - Emit BOTH edges (missing either one makes the skill unreachable):
+       PERSON__has_person_skill__PERSON_SKILL
+       PERSON_SKILL__skill_of__SKILL
    - Proficiency estimation when not explicitly stated:
      * "expert", "lead", "architect", 6+ years → SENIOR
      * Default for listed skills, 2-5 years → MEDIOR
@@ -554,32 +622,114 @@ dates if not explicit), proficiency (one of: JUNIOR, MEDIOR, SENIOR).
 4. CERTIFICATION — For each certification mentioned:
    - Create a CERTIFICATION entity with attributes: name, issuing_authority, valid_until (YYYY or null), \
 language (e.g., EN).
-   - Create relationship: PERSON → HOLDS_CERT → CERTIFICATION.
+   - Format: `CERTIFICATION::<verbatim name>--[name: "<verbatim name>", \
+issuing_authority: "<issuer>", valid_until: <year or null>, language: "EN"]`
+   - **`name` MUST be the exact certification as written in the CV.** Do NOT abbreviate, expand, \
+or substitute. If the CV says "PRINCE2® Foundation Certificate in Project Management", the `name` \
+attribute is "PRINCE2 Foundation Certificate in Project Management" (trademark symbol stripped, \
+everything else preserved). It is NOT "PMP" just because the phrase "Project Management" appears — \
+those are different certifications from different issuers. When in doubt, COPY verbatim.
+   - Emit edge:
+       PERSON__holds_cert__CERTIFICATION         (NOT has_certification)
+   - `issuing_authority` is mandatory. Prefer the issuer stated in the CV. If the CV doesn't state \
+one explicitly, infer ONLY from an UNAMBIGUOUS full-name match (not a substring):
+       * Name starts with "AWS Certified" → "Amazon Web Services"
+       * Name starts with "Microsoft Certified" / "Azure" → "Microsoft"
+       * Name starts with "Google Cloud" / "GCP" → "Google"
+       * Name is exactly "PMP" or "Project Management Professional" → "PMI"
+       * Name is exactly "CKA" or "Certified Kubernetes Administrator" → "CNCF"
+       * Name starts with "ITIL" → "Axelos"
+       * Name starts with "PRINCE2" → "Axelos"
+       * Name starts with "TOGAF" or "ArchiMate" → "The Open Group"
+       * Name contains "Oracle Certified" or "OCP" / "OCA" → "Oracle"
+       * Name contains "Cisco Certified" or "CCNA" / "CCNP" → "Cisco"
+     If the issuer cannot be determined from the verbatim name or the CV text, emit \
+`issuing_authority: null` rather than guessing. A NULL issuer is better than a wrong one.
 
 5. PROJECT — For named projects listed:
-   - Create a PROJECT entity with attributes: name, start_year, end_year.
-   - Create relationships: PERSON → WORKS_ON_PROJECT → PROJECT. \
-If a company is associated: PROJECT → PROJECT_AT → COMPANY. \
-If skills are mentioned: PROJECT → PROJECT_USES_SKILL → SKILL.
+   - Create a PROJECT entity with attributes: name, start_year, start_month (1-12 or null), \
+end_year, end_month (1-12 or null).
+   - Format: `PROJECT::John Doe_Inventory Rewrite--[name: "Inventory Rewrite", \
+start_year: 2022, start_month: 6, end_year: 2023, end_month: 2]`
+   - Emit edges:
+       PERSON__works_on_project__PROJECT          (required)
+       PROJECT__project_at__COMPANY               (if a company is associated)
+       PROJECT__project_uses_skill__SKILL         (for each skill the project uses)
 
 6. ADDRESS — If a personal address is present:
    - Create an ADDRESS entity with attributes: address1, city, zip, country.
-   - Create relationship: PERSON → LIVES_AT → ADDRESS.
+   - Format: `ADDRESS::John Doe_home--[address1: "12 Main St", city: "Bratislava", \
+zip: "81101", country: "Slovakia"]`
+   - Emit edge:
+       PERSON__lives_at__ADDRESS
 
-NORMALIZATION RULES:
+============================================================
+COMPLETENESS CHECK — scan the full CV
+============================================================
+
+Do NOT truncate sections. Extract ALL items in each of these sections if present:
+  - Work history / employment / profesijné skúsenosti / pracovná história → EMPLOYMENT (one entity per position)
+  - Technical skills / zručnosti / znalosti → PERSON_SKILL + SKILL (one pair per skill)
+  - Certifications / certifikáty → CERTIFICATION (one per cert)
+  - Projects / portfolio / referencie / projekty → PROJECT (one per named project) ← COMMONLY MISSED
+  - Address / adresa → ADDRESS (if present)
+
+If a section lists 10+ items, extract all of them. Do not summarize or skip.
+
+============================================================
+SELF-VALIDATION CHECKLIST — run this mentally before finalizing
+============================================================
+
+For EACH entity you created, verify you emitted the required edges:
+
+  [ ] Every EMPLOYMENT → I emitted PERSON__has_employment__EMPLOYMENT AND EMPLOYMENT__employment_at__COMPANY
+  [ ] Every PERSON_SKILL → I emitted PERSON__has_person_skill__PERSON_SKILL AND PERSON_SKILL__skill_of__SKILL
+  [ ] Every CERTIFICATION → I emitted PERSON__holds_cert__CERTIFICATION  (NOT has_certification)
+  [ ] Every PROJECT → I emitted PERSON__works_on_project__PROJECT (and PROJECT__project_at__COMPANY / PROJECT__project_uses_skill__SKILL where applicable)
+  [ ] Every ADDRESS → I emitted PERSON__lives_at__ADDRESS
+  [ ] Every relationship type I emitted matches the CANONICAL list above — no invented verbs
+  [ ] Every EMPLOYMENT / PERSON_SKILL / CERTIFICATION / PROJECT / ADDRESS entity carries its \
+`--[attr: "value", ...]` suffix with all required attribute keys present (no omitted keys; use `null` for \
+genuinely unknown values)
+  [ ] No relationship endpoint has a `--[...]` suffix — attribute blocks belong only on the entities list
+
+If any box fails, ADD the missing edges / fix the verb / add the attribute block BEFORE finalizing.
+
+============================================================
+NORMALIZATION RULES
+============================================================
+
 - Normalize skill names to canonical forms: "k8s" → "Kubernetes", "JS" → "JavaScript", \
 "ts" → "TypeScript", "react.js"/"reactjs" → "React", "node.js"/"nodejs" → "Node.js", \
 "amazon web services" → "AWS", "google cloud platform"/"gcp" → "GCP", "ci/cd" stays as "CI/CD".
-- Normalize certification names: "aws solutions architect" → "AWS Solutions Architect", \
-"certified kubernetes administrator" → "CKA", "project management professional" → "PMP".
+- Certification names: COPY THE NAME VERBATIM as it appears in the CV. Do NOT abbreviate, \
+expand, substitute, or "canonicalize" certification names. Each certification is a specific \
+named artifact from a specific issuer — collapsing "PRINCE2® Foundation Certificate in Project \
+Management" to "PMP" (because both relate to project management) or collapsing "ITIL 4 Foundation" \
+to "ITIL" (because it contains ITIL) is WRONG and invents data that isn't in the CV. Preserve the \
+full original name including level indicators (Foundation/Practitioner/Associate/Professional), \
+version numbers (ITIL 4, AWS SAA-C03, Cassandra 3), and trademark symbols (® and ™ may be stripped). \
+The only normalization allowed is whitespace / punctuation / trademark-symbol cleanup.
 - Normalize company names: remove trailing Inc., Corp., Ltd., GmbH, s.r.o. for matching.
-- Dates: Convert all dates to YYYY integer format. "present"/"current"/"now" → null for end_year.
+- Dates: Years as YYYY integers, months as 1-12 integers. "present"/"current"/"now" → null for end_year/end_month. \
+"01/2023" → start_year: 2023, start_month: 1. "2020" with no month → start_month: null.
 - Compound skills like "Docker/Kubernetes" should be split into two separate SKILL entities.
 
-ENTITY ID FORMAT:
-- Entity id_name: ENTITY_TYPE::name (e.g., PERSON::John Doe, SKILL::Python, COMPANY::ACME Corp)
-- Reified entity id_name: use composite names: EMPLOYMENT::John Doe_ACME Corp_2020, \
-PERSON_SKILL::John Doe_Python
+============================================================
+ENTITY ID FORMAT
+============================================================
+
+- Bare entity id_name: `ENTITY_TYPE::name` (e.g., PERSON::John Doe, SKILL::Python, COMPANY::ACME Corp)
+- Reified entity id_name: use composite names for uniqueness — \
+`EMPLOYMENT::John Doe_ACME Corp_2020`, `PERSON_SKILL::John Doe_Python`.
+- Entity WITH attributes (REQUIRED for reified types): append the `--[attr: "value", ...]` block \
+described in the ATTRIBUTE SYNTAX section. Example: \
+`CERTIFICATION::AWS Certified Solutions Architect - Associate--[name: "AWS Certified Solutions \
+Architect - Associate", issuing_authority: "Amazon Web Services", valid_until: 2027, language: "EN"]`. \
+Note the FULL certification name including level ("Associate") is preserved in both the id_name \
+and the `name` attribute — do not abbreviate to "AWS SAA" or "SAA".
+- Relationships use bare ids on both sides: \
+`PERSON::John Doe__holds_cert__CERTIFICATION::PMP` (NO `--[...]` suffix on either endpoint).
 
 ---
 And here is the content:
@@ -839,8 +989,11 @@ Please structure your answer using <reasoning>, </reasoning>,<sql>, </sql> start
 ENTITY_TABLE_DESCRIPTION = f"""\
  - Table name: entity_table
  - Columns:
-   - entity (str): The name of the ENTITY, combining the nature of the entity and the id of the entity. \
-It is of the form <entity_type>::<entity_name> [example: ACCOUNT::625482894].
+   - entity (str): The internal identifier of the ENTITY (format: <entity_type>::<uuid-hash>). \
+Use this column only for JOINs, NOT for display [example: ACCOUNT::625482894].
+   - entity_name (str): The human-readable name of the ENTITY, combining the entity type and display name. \
+It is of the form <entity_type>::<display_name> [example: PERSON::Jane Smith, COMPANY::Acme Corp]. \
+ALWAYS use this column when displaying entity names to the user.
    - entity_type (str): the type of the entity [example: ACCOUNT].
    - entity_attributes (json): the attributes of the entity [example: {{"priority": "high", "status": "active"}}]
    - source_document (str): the id of the document that contains the entity. Note that the combination of \
@@ -865,9 +1018,11 @@ RELATIONSHIP_TABLE_DESCRIPTION = f"""\
 It is of the form \
 <source_entity_type>::<source_entity_name>__<relationship_description>__<target_entity_type>::<target_entity_name> \
 [example: ACCOUNT::Nike__has__CONCERN::performance]. Note that this is NOT UNIQUE!
-   - source_entity (str): the id of the source ENTITY/NODE in the relationship [example: ACCOUNT::Nike]
+   - source_entity (str): the internal id of the source ENTITY/NODE (format: ENTITY_TYPE::uuid-hash). Use only for JOINs [example: ACCOUNT::Nike]
+   - source_entity_name (str): human-readable source entity name (format: ENTITY_TYPE::display_name). Use for display [example: COMPANY::Nike Inc]
    - source_entity_attributes (json): the attributes of the source entity/node [example: {{"account_type": "customer"}}]
-   - target_entity (str): the id of the target ENTITY/NODE in the relationship [example: CONCERN::performance]
+   - target_entity (str): the internal id of the target ENTITY/NODE (format: ENTITY_TYPE::uuid-hash). Use only for JOINs [example: CONCERN::performance]
+   - target_entity_name (str): human-readable target entity name (format: ENTITY_TYPE::display_name). Use for display [example: CONCERN::performance issues]
    - target_entity_attributes (json): the attributes of the target entity/node [example: {{"degree": "severe"}}]
    - source_entity_type (str): the type of the source entity/node [example: ACCOUNT]. Only the entity types provided \
    below are valid.
@@ -955,12 +1110,17 @@ That is because each relationship is extracted from a document. So make sure you
 - If the SQL contains a 'SELECT DISTINCT' clause and an ORDER BY clause, then you MUST include the columns from the ORDER BY \
 clause ALSO IN THE SELECT DISTINCT CLAUSE! This is very important! (This is a postgres db., so this is a MUST!). \
 You MUST NOT have a column in the ORDER BY clause that is not ALSO in the SELECT DISTINCT clause!
-- If you join the relationship table on itself using the source_node or target_node, you need to make sure that you also \
-join on the source_document_id.
-- The id_name of each node/entity has the format <entity_type_id_name>::<name>, where 'entity_type_id_name' \
-and 'name' are columns and \
-  the values <entity_type_id_name> and <name> can be used for filtering.
-- The table can be joined on itself on source nodes and/or target nodes if needed.
+- If you join the relationship table on itself using source_entity or target_entity (the UUID columns), \
+you need to make sure that you also join on the source_document.
+- source_entity and target_entity hold INTERNAL UUID-BASED identifiers (format: ENTITY_TYPE::uuid-hash). \
+NEVER put source_entity or target_entity in the SELECT clause for display — use source_entity_name or \
+target_entity_name instead. source_entity / target_entity may only appear in JOIN conditions and WHERE filters \
+that match another row's source_entity / target_entity.
+- source_entity_name and target_entity_name hold HUMAN-READABLE names (format: ENTITY_TYPE::display_name, \
+e.g. PERSON::Jane Smith). ALWAYS SELECT source_entity_name or target_entity_name when returning entities \
+to the user. When filtering by a partial name (e.g. Python, AWS), use ILIKE on the _name column: \
+source_entity_name ILIKE 'SKILL::Python%'.
+- The table can be joined on itself on source_entity and/or target_entity (the UUID columns) if needed.
 - the SQL statement MUST ultimately only return NODES/ENTITIES (not relationships!), or aggregations of \
 entities/nodes(count, avg, max, min, etc.). \
 Again, DO NOT compose a SQL statement that returns id_name of relationships.
@@ -970,14 +1130,14 @@ source documents or counts of source documents, or relationships or counts of re
 Those can only appear in where clauses, ordering etc., but they cannot be returned or ultimately \
 counted here! source_date and date operations can appear in select statements, particularly if \
 there is time ordering or grouping involved.
-- ENTITIES can be target_entity or source_entity. Think about the allowed relationships and the \
-question to decide which one you want!
+- When returning individual entities, use source_entity_name or target_entity_name (not the raw UUID columns). \
+Think about the allowed relationships and the question to decide which one you want!
 - It is ok to generate nested SQL as long as it is correct postgres syntax!
 - Attributes are stored in the attributes json field. As this is postgres, querying for those must be done as \
 "attributes ->> '<attribute>' = '<attribute value>'".
--  The SELECT clause MUST only contain entities or aggregations/counts of entities, or, in cases the \
-question was about dates or times, then it can also include source_date. But source_document MUST NEVER appear \
-in the SELECT clause!
+-  The SELECT clause MUST only contain entity_name columns or aggregations/counts of entities, or, in cases the \
+question was about dates or times, then it can also include source_date. But source_document, source_entity \
+(raw UUID), and target_entity (raw UUID) MUST NEVER appear in the SELECT clause!
 - Again, NEVER count or retrieve source documents in SELECT CLAUSE, whether it is in combination with \
 entities, with a distinct, etc. NO source_document in SELECT CLAUSE! So NEVER produce a \
 'SELECT COUNT(source_entity, source_document)...'
@@ -1040,7 +1200,9 @@ Guidance:
 SELECT statement as well! And it needs to be in the EXACT FORM! So if a \
 conversion took place, make sure to include the conversion in the SELECT and the ORDER BY clause!
  - never should 'source_document' be in the SELECT clause! Remove if present!
- - if there are joins, they must be on entities, never source documents
+ - never should source_entity or target_entity (the raw UUID columns) appear in SELECT — replace with \
+source_entity_name or target_entity_name for display. They may still appear in JOINs and WHERE clauses.
+ - if there are joins, they must be on entities (UUID columns), never source documents
  - if there are joins, consider the possibility that the second entity does not exist for all examples.\
  Therefore consider using LEFT joins (or RIGHT joins) as appropriate.
 
@@ -1104,11 +1266,13 @@ IMPORTANT NOTES:
 clause ALSO IN THE SELECT DISTINCT CLAUSE! This is very important! (This is a postgres db., so this is a MUST!). \
 You MUST NOT have a column in the ORDER BY clause that is not ALSO in the SELECT DISTINCT clause!
 - The table cannot be joined on itself.
+- entity holds an INTERNAL UUID-BASED identifier. NEVER put entity in the SELECT clause for display — \
+always use entity_name instead (format: ENTITY_TYPE::display_name, e.g. PERSON::Jane Smith).
 - You CAN ONLY return ENTITIES or COUNTS (or other aggregations) of ENTITIES, or you can return \
 source_date (but only if the question asks for event dates or times, and then the \
 corresponding entity must also be returned).
 - Generally, the query can only return ENTITIES or aggregations of ENTITIES:
-   - if individual entities are returned, then you MUST also return the source_document. \
+   - if individual entities are returned, then you MUST return entity_name and MUST also return the source_document. \
 If the source date was requested, you can return that too.
    - if aggregations of entities are returned, then you can only aggregate the entities.
 - Attributes are stored in the attributes json field. As this is postgres, querying for those must be done as \
@@ -1186,7 +1350,8 @@ So please use that format, particularly if you use data comparisons (>, <, ...)
 - if you are using joins and the sql returned no joins, make sure you are using the appropriate join type (LEFT, RIGHT, etc.) \
 it is possible that the second entity does not exist for all examples.
 - (ignore if using entity_table) if using the relationship_table and the sql returned no results, make sure you are \
-selecting the correct column! Use the available relationship types to determine whether to use the source or target entity.
+selecting the correct column! Use the available relationship types to determine whether to use source_entity_name or \
+target_entity_name. Remember: never SELECT source_entity or target_entity directly — use the _name columns for output.
 
 APPROACH:
 Please think through this step by step. Please also bear in mind that the sql statement is written in postgres syntax.
@@ -1481,11 +1646,74 @@ Please now generate the answer to the question given the documents:
 """.strip()
 
 # KG Beta Assistant System Prompt
-KG_BETA_ASSISTANT_SYSTEM_PROMPT = """"You are a knowledge graph assistant that helps users explore and \
-understand relationships between entities."""
+# Tight, imperative, example-driven — weaker instruction-followers (e.g. Qwen)
+# ignore long rule lists. The tool response format itself carries reinforcing
+# signals (KG_TOOL_RESULT: N_ROWS banners), so the prompt only needs to bind
+# the LLM to tool outputs and forbid invention.
+KG_BETA_ASSISTANT_SYSTEM_PROMPT = """You answer questions about CVs on file. You have two tools:
+  - run_kg_search (structured Knowledge Graph)
+  - internal_search (raw CV document text)
 
-KG_BETA_ASSISTANT_TASK_PROMPT = """"Help users explore and understand the knowledge graph by answering \
-questions about entities and their relationships."""
+REQUIRED BEHAVIOR:
+
+1. For ANY factual question about people (skills, employments, \
+certifications, projects, companies, addresses) you MUST call BOTH tools \
+in parallel. Not one — both. Even if the first answers the question.
+
+2. Read the tool results literally. The run_kg_search tool starts its \
+output with `===== KG_TOOL_RESULT: N_ROWS =====`. That number N is the \
+ground truth. If N > 0, the KG has records — you MUST list them. You MAY \
+NOT write "No records" when N > 0.
+
+3. Answer with two sections, in this exact markdown format. Each item \
+MUST be its own bullet (`- item`) on its own line — never concatenate \
+items into a paragraph:
+
+```
+### From the Knowledge Graph
+
+- <row 1 value from run_kg_search>
+- <row 2 value>
+- ...
+
+(If run_kg_search returned 0 rows, replace the bullets with the single line: "The KG has no matching entries.")
+
+### From the CV text
+
+- <quoted fact 1 from internal_search>
+- <quoted fact 2>
+- ...
+
+(If internal_search returned nothing, replace the bullets with: "No matching CV chunks.")
+```
+
+FORBIDDEN:
+  - Inventing facts, skills, or attributes not in a tool result
+  - Filling answers from general knowledge (e.g. "developers usually know X")
+  - Interpretive commentary ("full-stack potential", "strong foundation")
+  - Merging the two sections — keep them separate
+  - Saying a tool is "not available" — if it's in your tool list, call it
+  - Claiming "no records" when a tool returned rows
+  - Fabricating rows when the KG tool returned ZERO rows. If the \
+run_kg_search output contains `===== KG_TOOL_RESULT: 0_ROWS =====`, your KG \
+section MUST be exactly: "The KG has no matching entries." The tool returned \
+zero rows; there is nothing to render — not a markdown bullet, not a \
+pipe-table, not a sentence describing what the row would contain if it \
+existed. Any such output is a fabrication, even if the user's question \
+mentions specific values to look up. Do NOT carry values from the user's \
+question into the KG section as if they were retrieved facts. If the tool's \
+response contains a "REPLY CONTRACT" phrase, echo that phrase verbatim in \
+your KG section.
+
+If the KG and CV text disagree, report both faithfully in their sections. \
+Always call both tools before answering."""
+
+KG_BETA_ASSISTANT_TASK_PROMPT = """Always call BOTH run_kg_search AND internal_search for factual \
+questions, then answer in two sections: "### From the Knowledge Graph" (list \
+run_kg_search rows) and "### From the CV text" (quote internal_search \
+chunks). Never invent content. Never say "no records" when the tool returned \
+rows. The KG tool's output banner `===== KG_TOOL_RESULT: N_ROWS =====` tells \
+you how many rows there are — list all of them."""
 
 
 # Just in case, for best practice, send a system message with key rules.

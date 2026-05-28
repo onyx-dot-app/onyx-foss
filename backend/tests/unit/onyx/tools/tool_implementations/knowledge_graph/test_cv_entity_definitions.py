@@ -57,14 +57,16 @@ def test_reified_types_have_deep_extraction() -> None:
 
 
 def test_employment_has_correct_attributes() -> None:
-    """EMPLOYMENT should have title, start_year, end_year attributes."""
+    """EMPLOYMENT should have title, start/end year+month attributes."""
     from onyx.kg.setup.kg_default_entity_definitions import get_default_entity_types
 
     defaults = get_default_entity_types(vendor_name="TestCorp")
     attrs = defaults["EMPLOYMENT"].attributes.metadata_attribute_conversion
     assert "title" in attrs
     assert "start_year" in attrs
+    assert "start_month" in attrs
     assert "end_year" in attrs
+    assert "end_month" in attrs
 
 
 def test_person_skill_has_correct_attributes() -> None:
@@ -100,11 +102,13 @@ def test_address_has_correct_attributes() -> None:
 
 
 def test_project_has_correct_attributes() -> None:
-    """PROJECT should have name, start_year, end_year."""
+    """PROJECT should have name, start/end year+month."""
     from onyx.kg.setup.kg_default_entity_definitions import get_default_entity_types
 
     defaults = get_default_entity_types(vendor_name="TestCorp")
     attrs = defaults["PROJECT"].attributes.metadata_attribute_conversion
     assert "name" in attrs
     assert "start_year" in attrs
+    assert "start_month" in attrs
     assert "end_year" in attrs
+    assert "end_month" in attrs

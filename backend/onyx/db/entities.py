@@ -46,7 +46,7 @@ def upsert_staging_entity(
         KGEntityExtractionStaging: The created entity
     """
     entity_type = entity_type.upper()
-    name = name.title()
+    name = name.strip()
     id_name = make_entity_id(entity_type, name)
     attributes = attributes or {}
 
@@ -77,6 +77,19 @@ def upsert_staging_entity(
             index_elements=["id_name"],
             set_=dict(
                 occurrences=KGEntityExtractionStaging.occurrences + occurrences,
+                # Preserve document_id from the first insert that has one;
+                # don't overwrite a non-NULL value with NULL from a later
+                # insert without a document binding.
+                document_id=func.coalesce(
+                    KGEntityExtractionStaging.document_id, document_id
+                ),
+                # Merge attributes: existing attrs win on key conflict,
+                # but new keys are added. Use || (JSONB concat) so that a
+                # second insert with non-empty attrs doesn't silently lose
+                # them when the first insert had empty attrs.
+                attributes=KGEntityExtractionStaging.attributes.op("||")(
+                    literal(keep_attributes, JSONB)
+                ),
             ),
         )
         .returning(KGEntityExtractionStaging)
