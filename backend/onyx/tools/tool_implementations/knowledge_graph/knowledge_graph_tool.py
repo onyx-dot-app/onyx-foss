@@ -31,6 +31,10 @@ from onyx.tools.models import KnowledgeGraphToolOverrideKwargs
 from onyx.tools.models import ToolResponse
 from onyx.utils.logger import setup_logger
 
+from onyx.context.search.models import SearchDoc
+from onyx.context.search.models import SearchDocsResponse
+from onyx.db.models import DocumentSource
+
 logger = setup_logger()
 
 QUERY_FIELD = "query"
@@ -199,12 +203,19 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             logger.info("KG SQL (post-rewrite) executing: %s", sql)
 
             # 4. Execute with retries
-            result_str = self._execute_with_retries(
+            result_str, search_docs, citation_mapping = self._execute_with_retries(
                 sql, query, schema_description, view_names
             )
 
+            rich_response = None
+            if search_docs:
+                rich_response = SearchDocsResponse(
+                    search_docs=search_docs,
+                    citation_mapping=citation_mapping,
+                )
+
             return ToolResponse(
-                rich_response=None,
+                rich_response=rich_response,
                 llm_facing_response=result_str,
             )
 
@@ -352,7 +363,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         original_query: str,
         schema_description: str,
         view_names: Any,
-    ) -> str:
+    ) -> tuple[str, list[SearchDoc], dict[int, str]]:
         """Execute SQL with retry loop. On failure, feed error back to LLM."""
         last_error: str | None = None
 
@@ -364,7 +375,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                         original_query, schema_description, sql, last_error
                     )
                     if sql is None:
-                        return f"Could not fix the SQL query after {attempt} retries."
+                        return f"Could not fix the SQL query after {attempt} retries.", [], {}
 
                     validate_kg_sql(sql)
                     sql = replace_table_names(
@@ -439,7 +450,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                         "were retrieved facts. If you want to suggest next "
                         "steps (rephrasing, widening filters), do so AFTER "
                         "the REPLY CONTRACT phrase, clearly separated."
-                    )
+                    ), [], {}
 
                 return self._format_results(columns, rows)
 
@@ -458,9 +469,9 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                     last_error,
                 )
                 if attempt == MAX_RETRIES:
-                    return f"Knowledge graph query failed after {MAX_RETRIES + 1} attempts. Last error: {last_error}"
+                    return f"Knowledge graph query failed after {MAX_RETRIES + 1} attempts. Last error: {last_error}", [], {}
 
-        return "Knowledge graph query failed unexpectedly."
+        return "Knowledge graph query failed unexpectedly.", [], {}
 
     def _retry_sql_generation(
         self,
@@ -500,22 +511,13 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         self,
         columns: list[str],
         rows: list[Any],
-    ) -> str:
+    ) -> tuple[str, list[SearchDoc], dict[int, str]]:
         """Format SQL results as a markdown list the answer-writing LLM can echo.
 
-        Output shape:
-            ===== KG_TOOL_RESULT: N_ROWS =====
-            The knowledge graph returned N row(s). List each row as a
-            markdown bullet (`- <value>`) in your answer. Do NOT concatenate
-            rows into a single paragraph. Do NOT say 'no records'.
-
-            Columns: col1 | col2
-            - value1a | value1b
-            - value2a | value2b
-            ...
-
-        Markdown bullets cause LLMs to preserve one-per-line formatting
-        much more reliably than whitespace-separated lines.
+        Returns:
+            A tuple of (llm_facing_text, search_docs, citation_mapping).
+            The llm_facing_text uses [N] citation markers so the citation
+            processor can replace them with clickable links on the frontend.
         """
 
         # Resolve source_document IDs to filenames for display
@@ -552,14 +554,46 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                 except Exception:
                     pass  # Fall back to raw IDs
 
+        # Build citation mapping: assign a citation number per unique document
+        doc_id_to_citation: dict[str, int] = {}
+        citation_mapping: dict[int, str] = {}
+        search_docs: list[SearchDoc] = []
+        next_citation = 1
+
+        all_doc_ids = {
+            str(row[i])
+            for row in rows
+            for i in doc_col_indices
+            if row[i] is not None
+        } if doc_col_indices else set()
+
+        for doc_id in sorted(all_doc_ids):
+            doc_id_to_citation[doc_id] = next_citation
+            citation_mapping[next_citation] = doc_id
+            search_docs.append(
+                SearchDoc(
+                    document_id=doc_id,
+                    chunk_ind=0,
+                    semantic_identifier=doc_id_to_name.get(doc_id, doc_id),
+                    link=None,
+                    blurb="Knowledge Graph result",
+                    source_type=DocumentSource.FILE,
+                    boost=0,
+                    hidden=False,
+                    metadata={},
+                    match_highlights=[],
+                )
+            )
+            next_citation += 1
+
         def _clean(val: Any, col_idx: int) -> str:
             """Clean a cell value for display."""
             if val is None:
                 return ""
             s = str(val)
-            # Replace source_document IDs with filenames
-            if col_idx in doc_col_indices and s in doc_id_to_name:
-                return doc_id_to_name[s]
+            # Replace source_document IDs with citation markers
+            if col_idx in doc_col_indices and s in doc_id_to_citation:
+                return f"[{doc_id_to_citation[s]}]"
             # Strip leading TYPE:: prefix (e.g. "SKILL::python" → "python")
             if "::" in s:
                 prefix, rest = s.split("::", 1)
@@ -567,9 +601,9 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                     return rest
             return s
 
-        # Rename source_document column to "source_file" for clarity
+        # Rename source_document column to "source" for clarity
         display_columns = [
-            "source_file" if c == "source_document" else c
+            "source" if c == "source_document" else c
             for c in columns
         ]
 
@@ -579,8 +613,10 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         lines.append(
             f"The knowledge graph returned {n} row(s). Render each row "
             f"as its own markdown bullet (`- <value>`) in your answer. "
-            f"Do NOT concatenate the rows into a single paragraph. Do NOT "
-            f"say 'no records' — there are {n} records below."
+            f"Keep the [N] citation markers exactly as they appear — they "
+            f"will become clickable links. Do NOT concatenate the rows into "
+            f"a single paragraph. Do NOT say 'no records' — there are {n} "
+            f"records below."
         )
         lines.append("")
         lines.append(f"Columns: {' | '.join(display_columns)}")
@@ -593,4 +629,4 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                 cleaned.pop()
             lines.append(f"- {' | '.join(cleaned) if cleaned else '(empty)'}")
 
-        return "\n".join(lines)
+        return "\n".join(lines), search_docs, citation_mapping

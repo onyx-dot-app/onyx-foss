@@ -50,6 +50,7 @@ CITEABLE_TOOLS_NAMES: list[str] = [
     SearchTool.NAME,
     WebSearchTool.NAME,
     OpenURLTool.NAME,
+    KnowledgeGraphTool._NAME,
 ]
 
 
