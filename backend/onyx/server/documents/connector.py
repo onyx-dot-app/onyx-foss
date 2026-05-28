@@ -110,6 +110,7 @@ from onyx.server.documents.models import ConnectorBase
 from onyx.server.documents.models import ConnectorCredentialPairIdentifier
 from onyx.server.documents.models import ConnectorFileInfo
 from onyx.server.documents.models import ConnectorFilesResponse
+from onyx.server.documents.models import FileMetadataUpdateRequest
 from onyx.server.documents.models import ConnectorIndexingStatusLite
 from onyx.server.documents.models import ConnectorIndexingStatusLiteResponse
 from onyx.server.documents.models import ConnectorRequestSubmission
@@ -617,9 +618,59 @@ def _fetch_and_check_file_connector_cc_pair_permissions(
 def upload_files_api(
     files: list[UploadFile],
     unzip: bool = True,
+    metadata: str | None = Form(None),
     _: User = Depends(current_curator_or_admin_user),
 ) -> FileUploadResponse:
-    return upload_files(files, FileOrigin.CONNECTOR_FILE_UPLOAD, unzip=unzip)
+    upload_response = upload_files(
+        files, FileOrigin.CONNECTOR_FILE_UPLOAD, unzip=unzip
+    )
+
+    if not metadata:
+        return upload_response
+
+    try:
+        user_metadata: dict[str, Any] = json.loads(metadata)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid metadata JSON: {e}")
+
+    if not isinstance(user_metadata, dict):
+        raise HTTPException(
+            status_code=400, detail="metadata must be a JSON object"
+        )
+
+    file_store = get_default_file_store()
+
+    # Load existing zip-embedded metadata (if any) and merge with user-provided
+    merged_metadata: dict[str, Any] = {}
+    if upload_response.zip_metadata_file_id:
+        try:
+            metadata_io = file_store.read_file(
+                file_id=upload_response.zip_metadata_file_id, mode="b"
+            )
+            loaded = json.loads(metadata_io.read())
+            merged_metadata = (
+                {d["filename"]: d for d in loaded}
+                if isinstance(loaded, list)
+                else loaded
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load zip-embedded metadata: {e}")
+
+    # User-provided metadata takes precedence over zip-embedded metadata
+    merged_metadata.update(user_metadata)
+
+    new_metadata_file_id = file_store.save_file(
+        content=BytesIO(json.dumps(merged_metadata).encode("utf-8")),
+        display_name=ONYX_METADATA_FILENAME,
+        file_origin=FileOrigin.CONNECTOR_METADATA,
+        file_type="application/json",
+    )
+
+    return FileUploadResponse(
+        file_paths=upload_response.file_paths,
+        file_names=upload_response.file_names,
+        zip_metadata_file_id=new_metadata_file_id,
+    )
 
 
 @router.get("/admin/connector/{connector_id}/files", tags=PUBLIC_API_TAGS)
@@ -647,6 +698,9 @@ def list_connector_files(
 
     file_locations = connector.connector_specific_config.get("file_locations", [])
     file_names = connector.connector_specific_config.get("file_names", [])
+    zip_metadata_file_id = connector.connector_specific_config.get(
+        "zip_metadata_file_id"
+    )
 
     # Normalize file_names for backwards compatibility with legacy data
     file_names = _normalize_file_names_for_backwards_compatibility(
@@ -654,6 +708,23 @@ def list_connector_files(
     )
 
     file_store = get_default_file_store()
+
+    # Load metadata blob once for the whole connector
+    file_metadata_by_name: dict[str, Any] = {}
+    if zip_metadata_file_id:
+        try:
+            metadata_io = file_store.read_file(
+                file_id=zip_metadata_file_id, mode="b"
+            )
+            loaded = json.loads(metadata_io.read())
+            file_metadata_by_name = (
+                {d["filename"]: d for d in loaded}
+                if isinstance(loaded, list)
+                else loaded
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load connector metadata: {e}")
+
     files = []
 
     for file_id, file_name in zip(file_locations, file_names):
@@ -674,6 +745,7 @@ def list_connector_files(
                     file_name=file_name,
                     file_size=file_size,
                     upload_date=upload_date,
+                    metadata=file_metadata_by_name.get(file_name) or None,
                 )
             )
         except Exception as e:
@@ -683,10 +755,129 @@ def list_connector_files(
                 ConnectorFileInfo(
                     file_id=file_id,
                     file_name=file_name,
+                    metadata=file_metadata_by_name.get(file_name) or None,
                 )
             )
 
     return ConnectorFilesResponse(files=files)
+
+
+@router.patch("/admin/connector/{connector_id}/files/metadata", tags=PUBLIC_API_TAGS)
+def update_connector_file_metadata(
+    connector_id: int,
+    body: FileMetadataUpdateRequest,
+    user: User = Depends(current_curator_or_admin_user),
+    db_session: Session = Depends(get_session),
+) -> FileUploadResponse:
+    """
+    Update per-file metadata for existing files in a connector without re-uploading them.
+    Merges the provided metadata into the current metadata blob and triggers re-indexing.
+    """
+    connector = fetch_connector_by_id(connector_id, db_session)
+    if connector is None:
+        raise HTTPException(status_code=404, detail="Connector not found")
+
+    if connector.source != DocumentSource.FILE:
+        raise HTTPException(
+            status_code=400, detail="This endpoint only works with file connectors"
+        )
+
+    cc_pair = _fetch_and_check_file_connector_cc_pair_permissions(
+        connector_id=connector_id,
+        user=user,
+        db_session=db_session,
+        require_editable=True,
+    )
+
+    current_config = connector.connector_specific_config
+    current_zip_metadata_file_id = current_config.get("zip_metadata_file_id")
+
+    file_store = get_default_file_store()
+
+    # Load existing metadata
+    current_metadata: dict[str, Any] = {}
+    if current_zip_metadata_file_id:
+        try:
+            metadata_io = file_store.read_file(
+                file_id=current_zip_metadata_file_id, mode="b"
+            )
+            loaded = json.loads(metadata_io.read())
+            current_metadata = (
+                {d["filename"]: d for d in loaded}
+                if isinstance(loaded, list)
+                else loaded
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load existing metadata: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to load existing connector metadata",
+            )
+
+    # Merge: user-provided values override existing ones per filename
+    for filename, file_meta in body.file_metadata.items():
+        if filename in current_metadata:
+            current_metadata[filename].update(file_meta)
+        else:
+            current_metadata[filename] = file_meta
+
+    # Save merged metadata blob
+    new_metadata_file_id: str | None = None
+    if current_metadata:
+        new_metadata_file_id = file_store.save_file(
+            content=BytesIO(json.dumps(current_metadata).encode("utf-8")),
+            display_name=ONYX_METADATA_FILENAME,
+            file_origin=FileOrigin.CONNECTOR_METADATA,
+            file_type="application/json",
+        )
+
+    updated_config = {
+        **current_config,
+        "zip_metadata_file_id": new_metadata_file_id,
+    }
+    updated_config.pop("zip_metadata", None)
+
+    connector_base = ConnectorBase(
+        name=connector.name,
+        source=connector.source,
+        input_type=connector.input_type,
+        connector_specific_config=updated_config,
+        refresh_freq=connector.refresh_freq,
+        prune_freq=connector.prune_freq,
+        indexing_start=connector.indexing_start,
+    )
+
+    updated_connector = update_connector(connector_id, connector_base, db_session)
+    if updated_connector is None:
+        raise HTTPException(
+            status_code=500, detail="Failed to update connector configuration"
+        )
+
+    # Trigger re-indexing to pick up updated metadata
+    try:
+        tenant_id = get_current_tenant_id()
+        mark_ccpair_with_indexing_trigger(
+            cc_pair.id, IndexingMode.UPDATE, db_session
+        )
+        client_app.send_task(
+            OnyxCeleryTask.CHECK_FOR_INDEXING,
+            kwargs={"tenant_id": tenant_id},
+            priority=OnyxCeleryPriority.HIGH,
+        )
+        logger.info(
+            f"Marked cc_pair {cc_pair.id} for re-indexing after metadata update for connector {connector_id}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to trigger re-indexing after metadata update: {e}")
+
+    file_locations = updated_config.get("file_locations", [])
+    file_names = updated_config.get("file_names", [])
+
+    return FileUploadResponse(
+        file_paths=file_locations,
+        file_names=file_names,
+        zip_metadata_file_id=new_metadata_file_id,
+    )
 
 
 @router.post("/admin/connector/{connector_id}/files/update", tags=PUBLIC_API_TAGS)

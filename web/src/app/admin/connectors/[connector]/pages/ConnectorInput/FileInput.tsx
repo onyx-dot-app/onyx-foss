@@ -1,6 +1,7 @@
 import { useField } from "formik";
 import { FileUpload } from "@/components/admin/connectors/FileUpload";
 import CredentialSubText from "@/components/credentials/CredentialFields";
+import type { FileMetadata } from "@/components/admin/connectors/FileMetadataEditor";
 
 interface FileInputProps {
   name: string;
@@ -10,6 +11,7 @@ interface FileInputProps {
   multiple?: boolean;
   isZip?: boolean;
   hideError?: boolean;
+  onMetadataChange?: (metadata: Record<string, FileMetadata>) => void;
 }
 
 export default function FileInput({
@@ -20,6 +22,7 @@ export default function FileInput({
   multiple = true,
   isZip = false, // Default to false for multiple file uploads
   hideError = false,
+  onMetadataChange,
 }: FileInputProps) {
   const [field, meta, helpers] = useField(name);
 
@@ -52,6 +55,7 @@ export default function FileInput({
         }}
         multiple={!isZip && multiple} // Allow multiple files if not a zip
         accept={isZip ? ".zip" : undefined} // Only accept zip files if isZip is true
+        onMetadataChange={onMetadataChange}
       />
       {!hideError && meta.touched && meta.error && (
         <div className="text-red-500 text-sm mt-1">{meta.error}</div>

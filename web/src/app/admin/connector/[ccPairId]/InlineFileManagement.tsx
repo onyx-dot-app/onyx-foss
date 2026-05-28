@@ -13,6 +13,7 @@ import {
 import { Checkbox } from "@opal/components";
 import {
   updateConnectorFiles,
+  updateFileMetadata,
   type ConnectorFileInfo,
 } from "@/lib/fileConnector";
 import { toast } from "@/hooks/useToast";
@@ -30,6 +31,10 @@ import {
 } from "@opal/icons";
 import { formatBytes } from "@/lib/utils";
 import { timestampToReadableDate } from "@/lib/dateUtils";
+import {
+  FileMetadataEditor,
+  type FileMetadata,
+} from "@/components/admin/connectors/FileMetadataEditor";
 
 interface InlineFileManagementProps {
   connectorId: number;
@@ -48,6 +53,12 @@ export default function InlineFileManagement({
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Metadata editing state
+  const [metadataEditFile, setMetadataEditFile] =
+    useState<ConnectorFileInfo | null>(null);
+  const [pendingMetadata, setPendingMetadata] = useState<FileMetadata>({});
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false);
 
   const {
     data: filesResponse,
@@ -144,6 +155,33 @@ export default function InlineFileManagement({
     setFilesToAdd([]);
   };
 
+  const openMetadataEditor = (file: ConnectorFileInfo) => {
+    setMetadataEditFile(file);
+    setPendingMetadata((file.metadata as FileMetadata | undefined) ?? {});
+  };
+
+  const handleSaveMetadata = async () => {
+    if (!metadataEditFile) return;
+    setIsSavingMetadata(true);
+    try {
+      await updateFileMetadata(connectorId, {
+        [metadataEditFile.file_name]: pendingMetadata as Record<
+          string,
+          unknown
+        >,
+      });
+      toast.success("Metadata updated. Re-indexing triggered in the background.");
+      setMetadataEditFile(null);
+      refreshFiles();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update metadata"
+      );
+    } finally {
+      setIsSavingMetadata(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -220,9 +258,10 @@ export default function InlineFileManagement({
                 <TableRow>
                   {isEditing && <TableHead className="w-12"></TableHead>}
                   <TableHead>File Name</TableHead>
+                  <TableHead>Metadata</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Upload Date</TableHead>
-                  {isEditing && <TableHead className="w-12"></TableHead>}
+                  <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -231,6 +270,8 @@ export default function InlineFileManagement({
                   const isMarkedForRemoval = selectedFilesToRemove.has(
                     file.file_id
                   );
+                  const hasMetadata =
+                    file.metadata && Object.keys(file.metadata).length > 0;
                   return (
                     <TableRow
                       key={file.file_id}
@@ -266,6 +307,30 @@ export default function InlineFileManagement({
                       </TableCell>
                       <TableCell
                         className={
+                          isMarkedForRemoval ? "opacity-60" : ""
+                        }
+                      >
+                        {hasMetadata ? (
+                          <Text as="p" figureSmallValue className="text-text-500">
+                            {[
+                              (file.metadata as Record<string, unknown>).title
+                                ? `Title: ${(file.metadata as Record<string, unknown>).title}`
+                                : null,
+                              (file.metadata as Record<string, unknown>).link
+                                ? "Link ✓"
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "Set"}
+                          </Text>
+                        ) : (
+                          <Text as="p" figureSmallValue className="text-text-400">
+                            —
+                          </Text>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className={
                           isMarkedForRemoval ? "line-through opacity-60" : ""
                         }
                       >
@@ -280,7 +345,18 @@ export default function InlineFileManagement({
                           ? timestampToReadableDate(file.upload_date)
                           : "-"}
                       </TableCell>
-                      {isEditing && <TableCell></TableCell>}
+                      <TableCell>
+                        {!isMarkedForRemoval && (
+                          <Button
+                            prominence="tertiary"
+                            size="sm"
+                            icon={SvgEdit}
+                            onClick={() => openMetadataEditor(file)}
+                            tooltip="Edit metadata"
+                            title="Edit metadata"
+                          />
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -310,9 +386,10 @@ export default function InlineFileManagement({
                         New
                       </Text>
                     </TableCell>
+                    <TableCell>—</TableCell>
                     <TableCell>{formatBytes(file.size)}</TableCell>
                     <TableCell>-</TableCell>
-                    {isEditing && <TableCell></TableCell>}
+                    <TableCell></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -404,6 +481,49 @@ export default function InlineFileManagement({
             </Button>
             <Button disabled={isSaving} onClick={handleConfirmSave}>
               {isSaving ? "Saving..." : "Confirm & Save"}
+            </Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
+
+      {/* Metadata Edit Modal */}
+      <Modal
+        open={metadataEditFile !== null}
+        onOpenChange={(open) => {
+          if (!open) setMetadataEditFile(null);
+        }}
+      >
+        <Modal.Content width="md">
+          <Modal.Header
+            icon={SvgEdit}
+            title={`Edit Metadata: ${metadataEditFile?.file_name ?? ""}`}
+            description="Set title, link, owners, and custom tags for this file. Changes trigger re-indexing."
+          />
+          <Modal.Body>
+            {metadataEditFile && (
+              <FileMetadataEditor
+                fileName={metadataEditFile.file_name}
+                initialMetadata={
+                  (metadataEditFile.metadata as FileMetadata | undefined) ?? {}
+                }
+                onChange={(_fileName, meta) => setPendingMetadata(meta)}
+              />
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              disabled={isSavingMetadata}
+              prominence="secondary"
+              onClick={() => setMetadataEditFile(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={isSavingMetadata}
+              onClick={handleSaveMetadata}
+              icon={SvgCheck}
+            >
+              {isSavingMetadata ? "Saving..." : "Save Metadata"}
             </Button>
           </Modal.Footer>
         </Modal.Content>

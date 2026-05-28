@@ -720,10 +720,15 @@ class ConnectorFileInfo(BaseModel):
     file_name: str
     file_size: int | None = None
     upload_date: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class ConnectorFilesResponse(BaseModel):
     files: list[ConnectorFileInfo]
+
+
+class FileMetadataUpdateRequest(BaseModel):
+    file_metadata: dict[str, dict[str, Any]]
 
 
 class ObjectCreationIdResponse(BaseModel):

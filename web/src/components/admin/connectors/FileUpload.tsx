@@ -2,6 +2,11 @@ import { useFormikContext } from "formik";
 import { FC, useState } from "react";
 import React from "react";
 import Dropzone from "react-dropzone";
+import {
+  FileMetadataEditor,
+  type FileMetadata,
+} from "@/components/admin/connectors/FileMetadataEditor";
+import Text from "@/refresh-components/texts/Text";
 
 interface FileUploadProps {
   selectedFiles: File[];
@@ -10,6 +15,7 @@ interface FileUploadProps {
   name?: string;
   multiple?: boolean;
   accept?: string;
+  onMetadataChange?: (metadata: Record<string, FileMetadata>) => void;
 }
 
 export const FileUpload: FC<FileUploadProps> = ({
@@ -19,9 +25,25 @@ export const FileUpload: FC<FileUploadProps> = ({
   message,
   multiple = true,
   accept,
+  onMetadataChange,
 }) => {
   const [dragActive, setDragActive] = useState(false);
+  const [expandedFile, setExpandedFile] = useState<string | null>(null);
+  const [perFileMetadata, setPerFileMetadata] = useState<
+    Record<string, FileMetadata>
+  >({});
   const { setFieldValue } = useFormikContext();
+
+  const handleMetadataChange = (
+    fileName: string,
+    metadata: FileMetadata
+  ) => {
+    const updated = { ...perFileMetadata, [fileName]: metadata };
+    setPerFileMetadata(updated);
+    onMetadataChange?.(updated);
+    // Also store in Formik so parent forms can read it without prop threading
+    setFieldValue("file_metadata", updated);
+  };
 
   return (
     <div>
@@ -78,11 +100,38 @@ export const FileUpload: FC<FileUploadProps> = ({
           <h2 className="text-sm font-bold">
             Selected File{multiple ? "s" : ""}
           </h2>
-          <ul>
+          <ul className="space-y-1 mt-1">
             {selectedFiles.map((file) => (
-              <div key={file.name} className="flex">
-                <p className="text-sm mr-2">{file.name}</p>
-              </div>
+              <li key={file.name}>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm mr-2">{file.name}</p>
+                  <button
+                    type="button"
+                    className="text-xs text-accent hover:underline"
+                    onClick={() =>
+                      setExpandedFile(
+                        expandedFile === file.name ? null : file.name
+                      )
+                    }
+                  >
+                    {expandedFile === file.name
+                      ? "Hide metadata"
+                      : "Add metadata"}
+                  </button>
+                </div>
+                {expandedFile === file.name && (
+                  <div className="mt-2 ml-4">
+                    <Text as="p" figureSmallValue className="mb-2 text-text-500">
+                      Optional metadata for {file.name}
+                    </Text>
+                    <FileMetadataEditor
+                      fileName={file.name}
+                      initialMetadata={perFileMetadata[file.name] ?? {}}
+                      onChange={handleMetadataChange}
+                    />
+                  </div>
+                )}
+              </li>
             ))}
           </ul>
         </div>
@@ -90,3 +139,4 @@ export const FileUpload: FC<FileUploadProps> = ({
     </div>
   );
 };
+

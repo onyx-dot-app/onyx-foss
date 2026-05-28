@@ -378,7 +378,8 @@ export default function AddConnector({
               access_type,
               groups,
               kgProcessingEnabled,
-              kgCoverageDays
+              kgCoverageDays,
+              values.file_metadata
             );
             if (response) {
               onSuccess();

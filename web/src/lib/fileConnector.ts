@@ -3,6 +3,7 @@ export interface ConnectorFileInfo {
   file_name: string;
   file_size?: number;
   upload_date?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ConnectorFilesResponse {
@@ -42,6 +43,29 @@ export async function updateConnectorFiles(
     const error = await response.json();
     throw new Error(
       `Failed to update connector files (${response.status}): ${
+        error.detail || "Unknown error"
+      }`
+    );
+  }
+}
+
+export async function updateFileMetadata(
+  connectorId: number,
+  fileMetadata: Record<string, Record<string, unknown>>
+): Promise<void> {
+  const response = await fetch(
+    `/api/manage/admin/connector/${connectorId}/files/metadata`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_metadata: fileMetadata }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(
+      `Failed to update file metadata (${response.status}): ${
         error.detail || "Unknown error"
       }`
     );
