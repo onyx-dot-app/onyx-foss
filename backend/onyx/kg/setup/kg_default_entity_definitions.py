@@ -243,7 +243,8 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
             description="A person whose CV/resume is being processed.",
             attributes=KGEntityTypeAttributes(
                 metadata_attribute_conversion={
-                    "name": KGAttributeProperty(name="name", keep=True),
+                    "full_name": KGAttributeProperty(name="full_name", keep=True),
+                    "driving_license": KGAttributeProperty(name="driving_license", keep=True),
                 }
             ),
             grounding=KGGroundingType.GROUNDED,
@@ -353,6 +354,36 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
             grounded_source_name=DocumentSource.FILE,
             active=True,
         ),
+        "INSTITUTION": KGEntityTypeDefinition(
+            description="An educational institution (university, college, school).",
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "name": KGAttributeProperty(name="name", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "EDUCATION": KGEntityTypeDefinition(
+            description=(
+                "A degree or educational program completed (reified relationship). "
+                "Links PERSON to INSTITUTION with degree, field, and dates."
+            ),
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "degree": KGAttributeProperty(name="degree", keep=True),
+                    "field": KGAttributeProperty(name="field", keep=True),
+                    "start_year": KGAttributeProperty(name="start_year", keep=True),
+                    "start_month": KGAttributeProperty(name="start_month", keep=True),
+                    "end_year": KGAttributeProperty(name="end_year", keep=True),
+                    "end_month": KGAttributeProperty(name="end_month", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
         # --- End CV/Resume entity types ---
         "VENDOR": KGEntityTypeDefinition(
             description=f"The Vendor {vendor_name}, 'us'",
@@ -389,6 +420,8 @@ def get_default_relationship_types() -> list[dict[str, str]]:
         {"source": "PERSON",       "name": "WORKS_ON_PROJECT",  "target": "PROJECT"},
         {"source": "PROJECT",      "name": "PROJECT_AT",        "target": "COMPANY"},
         {"source": "PROJECT",      "name": "PROJECT_USES_SKILL","target": "SKILL"},
+        {"source": "PERSON",       "name": "HAS_EDUCATION",     "target": "EDUCATION"},
+        {"source": "EDUCATION",    "name": "EDUCATION_AT",      "target": "INSTITUTION"},
     ]
 
 

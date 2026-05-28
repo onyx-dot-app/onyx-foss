@@ -194,7 +194,15 @@ def transfer_relationship(
         source_node, relationship.type, target_node
     )
 
-    # Create the transferred relationship
+    # Create the transferred relationship.
+    # Two conflict paths:
+    #   1. PK (id_name, source_document) — same relationship from same doc → bump occurrences
+    #   2. Unique (source_node, target_node, type) — different staging id_names that map to
+    #      the same production triple after entity translation (e.g. duplicate project→company
+    #      edges from per-chunk extraction). We handle this by catching the IntegrityError
+    #      and falling back to an update on the existing row.
+    from sqlalchemy.exc import IntegrityError as SAIntegrityError
+
     stmt = (
         pg_insert(KGRelationship)
         .values(
@@ -217,7 +225,30 @@ def transfer_relationship(
         .returning(KGRelationship)
     )
 
-    new_relationship = db_session.execute(stmt).scalar()
+    try:
+        new_relationship = db_session.execute(stmt).scalar()
+    except SAIntegrityError:
+        # Hit the (source_node, target_node, type) unique constraint.
+        # The relationship already exists under a different id_name — just
+        # bump its occurrences and move on.
+        db_session.rollback()
+        db_session.query(KGRelationship).filter(
+            KGRelationship.source_node == source_node,
+            KGRelationship.target_node == target_node,
+            KGRelationship.type == relationship.type,
+        ).update(
+            {KGRelationship.occurrences: KGRelationship.occurrences + relationship.occurrences}
+        )
+        new_relationship = (
+            db_session.query(KGRelationship)
+            .filter(
+                KGRelationship.source_node == source_node,
+                KGRelationship.target_node == target_node,
+                KGRelationship.type == relationship.type,
+            )
+            .first()
+        )
+
     if new_relationship is None:
         raise RuntimeError(
             f"Failed to transfer relationship with id_name: {relationship.id_name}"

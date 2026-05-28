@@ -42,11 +42,11 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
     _NAME = "run_kg_search"
     _DESCRIPTION = (
         "Search the CV/resume knowledge graph for structured information about "
-        "people and their skills, employments, certifications, projects, and "
-        "addresses. Use this for queries that involve filtering, counting, or "
+        "people and their skills, employments, certifications, education, projects, "
+        "and addresses. Use this for queries that involve filtering, counting, or "
         "comparing attributes of people whose CVs are on file "
         "(e.g., 'who has Python skills', 'list people with AWS certification', "
-        "'who worked at ACME', 'show all people we have CVs for')."
+        "'who worked at ACME', 'who studied at MIT', 'show all people we have CVs for')."
     )
     _DISPLAY_NAME = "Knowledge Graph Search"
 

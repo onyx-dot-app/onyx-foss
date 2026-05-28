@@ -5,6 +5,8 @@ from redis.lock import Lock as RedisLock
 
 from onyx.configs.constants import CELERY_GENERIC_BEAT_LOCK_TIMEOUT
 from onyx.db.connector import get_kg_enabled_connectors
+from onyx.kg.extractions.cv_pipeline import extract_cv_document
+from onyx.kg.extractions.cv_pipeline import has_cv_metadata
 from onyx.db.document import get_document_updated_at
 from onyx.db.document import get_skipped_kg_documents
 from onyx.db.document import get_unprocessed_kg_document_batch_for_connector
@@ -289,17 +291,56 @@ def kg_extraction(
         # iterate over un-kg-processed documents in connector
         while True:
             # get a batch of unprocessed documents
+            _cov_start = kg_config_settings.KG_COVERAGE_START_DATE
+            _max_days = connector_coverage_days or kg_config_settings.KG_MAX_COVERAGE_DAYS
+            logger.info(
+                f"DEBUG: querying connector_id={connector_id}, "
+                f"coverage_start={_cov_start}, max_days={_max_days}"
+            )
             with get_session_with_current_tenant() as db_session:
+                # DEBUG: count all docs for this connector
+                from sqlalchemy import select as sa_select, func as sa_func
+                from onyx.db.models import DocumentByConnectorCredentialPair
+                _total = db_session.execute(
+                    sa_select(sa_func.count()).select_from(Document).join(
+                        DocumentByConnectorCredentialPair,
+                        Document.id == DocumentByConnectorCredentialPair.id,
+                    ).where(DocumentByConnectorCredentialPair.connector_id == connector_id)
+                ).scalar()
+                _not_started = db_session.execute(
+                    sa_select(sa_func.count()).select_from(Document).join(
+                        DocumentByConnectorCredentialPair,
+                        Document.id == DocumentByConnectorCredentialPair.id,
+                    ).where(
+                        DocumentByConnectorCredentialPair.connector_id == connector_id,
+                        Document.kg_stage == KGStage.NOT_STARTED,
+                    )
+                ).scalar()
+                # Also check raw distinct kg_stage values
+                from sqlalchemy import text as sa_text
+                _stages = db_session.execute(
+                    sa_text(
+                        "SELECT kg_stage, count(*) FROM document d "
+                        "JOIN document_by_connector_credential_pair dccp ON d.id = dccp.id "
+                        "WHERE dccp.connector_id = :cid GROUP BY kg_stage"
+                    ),
+                    {"cid": connector_id},
+                ).fetchall()
+                logger.info(
+                    f"DEBUG: connector {connector_id}: total_docs={_total}, "
+                    f"not_started={_not_started}, stages={_stages}"
+                )
+
                 unprocessed_document_batch = (
                     get_unprocessed_kg_document_batch_for_connector(
                         db_session,
                         connector_id,
-                        kg_coverage_start=kg_config_settings.KG_COVERAGE_START_DATE,
-                        kg_max_coverage_days=connector_coverage_days
-                        or kg_config_settings.KG_MAX_COVERAGE_DAYS,
+                        kg_coverage_start=_cov_start,
+                        kg_max_coverage_days=_max_days,
                         batch_size=processing_chunk_batch_size,
                     )
                 )
+                logger.info(f"DEBUG: got {len(unprocessed_document_batch)} unprocessed docs")
 
             if len(unprocessed_document_batch) == 0:
                 logger.info(
@@ -324,8 +365,46 @@ def kg_extraction(
                 connector_source,
             )
 
-            # mark docs in unprocessed_document_batch as EXTRACTING
+            # --- CV pipeline: process CV-tagged docs before entity type classification ---
+            cv_processed_ids: set[str] = set()
             for unprocessed_document in unprocessed_document_batch:
+                if has_cv_metadata(unprocessed_document):
+                    logger.info(
+                        f"Document {unprocessed_document.id} ({unprocessed_document.semantic_id}) "
+                        "has CV metadata — routing through CV extraction pipeline"
+                    )
+                    try:
+                        with get_session_with_current_tenant() as db_session:
+                            stats = extract_cv_document(
+                                db_session, unprocessed_document
+                            )
+                            update_document_kg_stage(
+                                db_session,
+                                unprocessed_document.id,
+                                KGStage.EXTRACTED,
+                            )
+                            db_session.commit()
+                        logger.info(
+                            f"CV pipeline done for {unprocessed_document.semantic_id}: {stats}"
+                        )
+                    except Exception:
+                        logger.exception(
+                            f"CV pipeline failed for {unprocessed_document.semantic_id}"
+                        )
+                        with get_session_with_current_tenant() as db_session:
+                            update_document_kg_stage(
+                                db_session,
+                                unprocessed_document.id,
+                                KGStage.NOT_STARTED,
+                            )
+                            db_session.commit()
+                    cv_processed_ids.add(unprocessed_document.id)
+
+            # mark remaining (non-CV) docs in unprocessed_document_batch as EXTRACTING
+            for unprocessed_document in unprocessed_document_batch:
+                if unprocessed_document.id in cv_processed_ids:
+                    continue
+
                 if batch_metadata[unprocessed_document.id].entity_type is None:
                     # info for after the connector has been processed
                     kg_stage = KGStage.SKIPPED
@@ -378,17 +457,19 @@ def kg_extraction(
 
             for unprocessed_document in unprocessed_document_batch:
                 if (
-                    unprocessed_document.id not in documents_to_process
+                    unprocessed_document.id in cv_processed_ids
+                    or unprocessed_document.id not in documents_to_process
                     or batch_metadata[unprocessed_document.id].entity_type is None
                     or batch_metadata[unprocessed_document.id].skip
                 ):
-                    with get_session_with_current_tenant() as db_session:
-                        update_document_kg_stage(
-                            db_session,
-                            unprocessed_document.id,
-                            KGStage.SKIPPED,
-                        )
-                        db_session.commit()
+                    if unprocessed_document.id not in cv_processed_ids:
+                        with get_session_with_current_tenant() as db_session:
+                            update_document_kg_stage(
+                                db_session,
+                                unprocessed_document.id,
+                                KGStage.SKIPPED,
+                            )
+                            db_session.commit()
                     continue
 
                 # 1. perform (implicit) KG 'extractions' on the documents that should be processed

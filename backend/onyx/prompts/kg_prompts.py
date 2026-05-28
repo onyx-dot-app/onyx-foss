@@ -543,7 +543,7 @@ must be modeled as intermediate entities, not as flat attributes.
 CANONICAL RELATIONSHIP TYPES — use EXACT spelling. No synonyms.
 ============================================================
 
-You MUST use ONLY these 10 relationship type id_names. Any other relationship \
+You MUST use ONLY these 12 relationship type id_names. Any other relationship \
 verb is WRONG and will be rejected.
 
   PERSON__has_employment__EMPLOYMENT
@@ -554,6 +554,8 @@ verb is WRONG and will be rejected.
   PERSON__works_on_project__PROJECT          ← NOT "worked_on", NOT "did_project"
   PROJECT__project_at__COMPANY               ← NOT "project_for", NOT "at_company"
   PROJECT__project_uses_skill__SKILL         ← NOT "uses", NOT "project_needs"
+  PERSON__has_education__EDUCATION           ← NOT "studied_at", NOT "has_degree"
+  EDUCATION__education_at__INSTITUTION       ← NOT "at_university", NOT "school_of"
   PERSON__lives_at__ADDRESS
   COMPANY__located_at__ADDRESS               ← for company office/HQ addresses mentioned in the CV
 
@@ -584,7 +586,7 @@ Concrete example — a certification entity with all four attributes:
 issuing_authority: "Amazon Web Services", valid_until: 2026, language: "EN"]
 
 If you omit the `--[...]` block, all structured attributes for that entity are \
-DISCARDED. For reified entities (EMPLOYMENT, PERSON_SKILL, PROJECT, CERTIFICATION, ADDRESS) \
+DISCARDED. For reified entities (EMPLOYMENT, PERSON_SKILL, PROJECT, EDUCATION, CERTIFICATION, ADDRESS) \
 this means a downstream question like "people with PMP valid past 2025" becomes \
 structurally unanswerable. Always emit the attribute block for reified entities.
 
@@ -646,7 +648,19 @@ one explicitly, infer ONLY from an UNAMBIGUOUS full-name match (not a substring)
      If the issuer cannot be determined from the verbatim name or the CV text, emit \
 `issuing_authority: null` rather than guessing. A NULL issuer is better than a wrong one.
 
-5. PROJECT — For named projects listed:
+5. EDUCATION — One per degree/educational program. For each:
+   - Create an INSTITUTION entity (university/school name). Format: `INSTITUTION::MIT`
+   - Create an EDUCATION entity with attributes: degree (e.g., "Bachelor of Science", "Ing.", "PhD"), \
+field (e.g., "Computer Science", "Electrical Engineering"), start_year (integer YYYY or null), \
+start_month (integer 1-12 or null), end_year (integer YYYY or null), end_month (integer 1-12 or null).
+   - Format: `EDUCATION::John Doe_MIT_2015--[degree: "Bachelor of Science", field: "Computer Science", \
+start_year: 2011, start_month: 9, end_year: 2015, end_month: 5]`
+   - Emit BOTH edges:
+       PERSON__has_education__EDUCATION
+       EDUCATION__education_at__INSTITUTION
+   - Also create the INSTITUTION entity if not already extracted.
+
+6. PROJECT — For named projects listed:
    - Create a PROJECT entity with attributes: name, start_year, start_month (1-12 or null), \
 end_year, end_month (1-12 or null).
    - Format: `PROJECT::John Doe_Inventory Rewrite--[name: "Inventory Rewrite", \
@@ -656,7 +670,7 @@ start_year: 2022, start_month: 6, end_year: 2023, end_month: 2]`
        PROJECT__project_at__COMPANY               (if a company is associated)
        PROJECT__project_uses_skill__SKILL         (for each skill the project uses)
 
-6. ADDRESS — If a personal address is present:
+7. ADDRESS — If a personal address is present:
    - Create an ADDRESS entity with attributes: address1, city, zip, country.
    - Format: `ADDRESS::John Doe_home--[address1: "12 Main St", city: "Bratislava", \
 zip: "81101", country: "Slovakia"]`
@@ -671,6 +685,7 @@ Do NOT truncate sections. Extract ALL items in each of these sections if present
   - Work history / employment / profesijné skúsenosti / pracovná história → EMPLOYMENT (one entity per position)
   - Technical skills / zručnosti / znalosti → PERSON_SKILL + SKILL (one pair per skill)
   - Certifications / certifikáty → CERTIFICATION (one per cert)
+  - Education / vzdelanie / études → EDUCATION + INSTITUTION (one pair per degree/program) ← COMMONLY MISSED
   - Projects / portfolio / referencie / projekty → PROJECT (one per named project) ← COMMONLY MISSED
   - Address / adresa → ADDRESS (if present)
 
@@ -685,10 +700,11 @@ For EACH entity you created, verify you emitted the required edges:
   [ ] Every EMPLOYMENT → I emitted PERSON__has_employment__EMPLOYMENT AND EMPLOYMENT__employment_at__COMPANY
   [ ] Every PERSON_SKILL → I emitted PERSON__has_person_skill__PERSON_SKILL AND PERSON_SKILL__skill_of__SKILL
   [ ] Every CERTIFICATION → I emitted PERSON__holds_cert__CERTIFICATION  (NOT has_certification)
+  [ ] Every EDUCATION → I emitted PERSON__has_education__EDUCATION AND EDUCATION__education_at__INSTITUTION
   [ ] Every PROJECT → I emitted PERSON__works_on_project__PROJECT (and PROJECT__project_at__COMPANY / PROJECT__project_uses_skill__SKILL where applicable)
   [ ] Every ADDRESS → I emitted PERSON__lives_at__ADDRESS
   [ ] Every relationship type I emitted matches the CANONICAL list above — no invented verbs
-  [ ] Every EMPLOYMENT / PERSON_SKILL / CERTIFICATION / PROJECT / ADDRESS entity carries its \
+  [ ] Every EMPLOYMENT / PERSON_SKILL / CERTIFICATION / EDUCATION / PROJECT / ADDRESS entity carries its \
 `--[attr: "value", ...]` suffix with all required attribute keys present (no omitted keys; use `null` for \
 genuinely unknown values)
   [ ] No relationship endpoint has a `--[...]` suffix — attribute blocks belong only on the entities list

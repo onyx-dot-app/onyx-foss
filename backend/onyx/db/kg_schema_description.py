@@ -13,7 +13,7 @@ from onyx.db.models import KGRelationshipType
 ENTITY_VIEW_COLUMNS = """Columns in entity_table:
   - entity (text): internal unique entity identifier (format: ENTITY_TYPE::uuid-hash) — use only for JOINs
   - entity_name (text): human-readable entity name (format: ENTITY_TYPE::display_name, e.g. PERSON::Jane Smith) — use this for display and output
-  - entity_type (text): the type of entity (e.g., PERSON, COMPANY, SKILL, CERTIFICATION)
+  - entity_type (text): the type of entity (e.g., PERSON, COMPANY, SKILL, CERTIFICATION, EDUCATION, INSTITUTION)
   - entity_attributes (jsonb): structured attributes for this entity
   - source_document (text): ID of the source document
   - source_date (timestamp): when the source document was last updated"""
@@ -47,6 +47,8 @@ DATA_MODEL_GUIDANCE = """Data model guidance:
     EMPLOYMENT    {start_year, end_year, title}      -- reified: links PERSON to COMPANY
     PERSON_SKILL  {years_experience, proficiency}    -- reified: links PERSON to SKILL
     PROJECT       {name, start_year, end_year}       -- reified: links PERSON to COMPANY+SKILL
+    INSTITUTION   {name}
+    EDUCATION     {degree, field, start_year, end_year}  -- reified: links PERSON to INSTITUTION
 
   Relationship types (format: SOURCE_TYPE__verb__TARGET_TYPE):
     PERSON__lives_at__ADDRESS
@@ -58,6 +60,8 @@ DATA_MODEL_GUIDANCE = """Data model guidance:
     PERSON__works_on_project__PROJECT
     PROJECT__project_at__COMPANY
     PROJECT__project_uses_skill__SKILL
+    PERSON__has_education__EDUCATION
+    EDUCATION__education_at__INSTITUTION
 
   QUERYING PATTERN — two-hop through reified entity:
     "Who has 5+ years Python?"

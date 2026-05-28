@@ -32,6 +32,8 @@ Entity types:
   EMPLOYMENT    {start_year, start_month, end_year, end_month, title}  -- reified: PERSON → EMPLOYMENT → COMPANY
   PERSON_SKILL  {years_experience, proficiency}      -- reified: PERSON → PERSON_SKILL → SKILL
   PROJECT       {name, start_year, start_month, end_year, end_month}  -- reified: PERSON → PROJECT → COMPANY/SKILL
+  INSTITUTION   {name}
+  EDUCATION     {degree, field, start_year, start_month, end_year, end_month}  -- reified: PERSON → EDUCATION → INSTITUTION
 
 Relationship types (SOURCE_TYPE__verb__TARGET_TYPE format):
   PERSON__lives_at__ADDRESS
@@ -43,6 +45,8 @@ Relationship types (SOURCE_TYPE__verb__TARGET_TYPE format):
   PERSON__works_on_project__PROJECT
   PROJECT__project_at__COMPANY
   PROJECT__project_uses_skill__SKILL
+  PERSON__has_education__EDUCATION
+  EDUCATION__education_at__INSTITUTION
 """
 
 from typing import TypedDict
@@ -343,6 +347,46 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
             "WHERE r1.relationship_type = 'PERSON__works_on_project__PROJECT' "
             "AND r2.relationship_type = 'PROJECT__project_at__COMPANY' "
             "AND unaccent(r2.target_entity_name) ILIKE unaccent('COMPANY::ACME Corp%')"
+        ),
+    },
+    # --- Two-hop through reified EDUCATION ---
+    {
+        "question": "Who studied at MIT?",
+        "sql": (
+            "SELECT DISTINCT r1.source_entity_name "
+            "FROM relationship_table r1 "
+            "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
+            "WHERE r1.relationship_type = 'PERSON__has_education__EDUCATION' "
+            "AND r2.relationship_type = 'EDUCATION__education_at__INSTITUTION' "
+            "AND unaccent(r2.target_entity_name) ILIKE unaccent('INSTITUTION::MIT%')"
+        ),
+    },
+    {
+        "question": "Who has a Master's degree?",
+        "sql": (
+            "SELECT DISTINCT r1.source_entity_name, "
+            "r1.target_entity_attributes->>'field' as field, "
+            "r2.target_entity_name as institution "
+            "FROM relationship_table r1 "
+            "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
+            "WHERE r1.relationship_type = 'PERSON__has_education__EDUCATION' "
+            "AND r2.relationship_type = 'EDUCATION__education_at__INSTITUTION' "
+            "AND r1.target_entity_attributes->>'degree' ILIKE '%Master%'"
+        ),
+    },
+    {
+        "question": "List all education for Jane Doe",
+        "sql": (
+            "SELECT DISTINCT r2.target_entity_name as institution, "
+            "r1.target_entity_attributes->>'degree' as degree, "
+            "r1.target_entity_attributes->>'field' as field, "
+            "r1.target_entity_attributes->>'start_year' as start_year, "
+            "r1.target_entity_attributes->>'end_year' as end_year "
+            "FROM relationship_table r1 "
+            "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
+            "WHERE r1.relationship_type = 'PERSON__has_education__EDUCATION' "
+            "AND r2.relationship_type = 'EDUCATION__education_at__INSTITUTION' "
+            "AND unaccent(r1.source_entity_name) ILIKE unaccent('%Jane Doe%')"
         ),
     },
     # --- Multi-faceted: combining cert + skill + employment ---
