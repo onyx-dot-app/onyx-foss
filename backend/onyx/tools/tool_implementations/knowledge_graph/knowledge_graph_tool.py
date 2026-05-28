@@ -618,7 +618,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             s = str(val)
             # Replace source_document IDs with citation markers
             if col_idx in doc_col_indices and s in doc_id_to_citation:
-                return f"[{doc_id_to_citation[s]}]"
+                return f"[[{doc_id_to_citation[s]}]]"
             # Strip leading TYPE:: prefix (e.g. "SKILL::python" → "python")
             if "::" in s:
                 prefix, rest = s.split("::", 1)
@@ -638,7 +638,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         lines.append(
             f"The knowledge graph returned {n} row(s). Render each row "
             f"as its own markdown bullet (`- <value>`) in your answer. "
-            f"Keep the [N] citation markers exactly as they appear — they "
+            f"Keep the [[N]] citation markers exactly as they appear — they "
             f"will become clickable links. Do NOT concatenate the rows into "
             f"a single paragraph. Do NOT say 'no records' — there are {n} "
             f"records below."
