@@ -118,6 +118,8 @@ def create_connector(
         refresh_freq=connector_data.refresh_freq,
         indexing_start=connector_data.indexing_start,
         prune_freq=connector_data.prune_freq,
+        kg_processing_enabled=connector_data.kg_processing_enabled,
+        kg_coverage_days=connector_data.kg_coverage_days,
     )
     db_session.add(connector)
     db_session.commit()
@@ -151,6 +153,8 @@ def update_connector(
         if connector_data.prune_freq is not None
         else DEFAULT_PRUNING_FREQ
     )
+    connector.kg_processing_enabled = connector_data.kg_processing_enabled
+    connector.kg_coverage_days = connector_data.kg_coverage_days
 
     db_session.commit()
     return connector

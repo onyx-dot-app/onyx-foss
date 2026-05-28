@@ -1685,21 +1685,7 @@ def update_connector_from_model(
             status_code=404, detail=f"Connector {connector_id} does not exist"
         )
 
-    return ConnectorSnapshot(
-        id=updated_connector.id,
-        name=updated_connector.name,
-        source=updated_connector.source,
-        input_type=updated_connector.input_type,
-        connector_specific_config=updated_connector.connector_specific_config,
-        refresh_freq=updated_connector.refresh_freq,
-        prune_freq=updated_connector.prune_freq,
-        credential_ids=[
-            association.credential.id for association in updated_connector.credentials
-        ],
-        indexing_start=updated_connector.indexing_start,
-        time_created=updated_connector.time_created,
-        time_updated=updated_connector.time_updated,
-    )
+    return ConnectorSnapshot.from_connector_db_model(updated_connector)
 
 
 @router.delete(

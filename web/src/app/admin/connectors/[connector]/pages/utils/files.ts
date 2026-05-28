@@ -8,7 +8,9 @@ export const submitFiles = async (
   selectedFiles: File[],
   name: string,
   access_type: string,
-  groups?: number[]
+  groups?: number[],
+  kgProcessingEnabled?: boolean,
+  kgCoverageDays?: number | null
 ) => {
   const formData = new FormData();
 
@@ -44,6 +46,8 @@ export const submitFiles = async (
     indexing_start: null,
     access_type: access_type,
     groups: groups,
+    kg_processing_enabled: kgProcessingEnabled ?? false,
+    kg_coverage_days: kgCoverageDays ?? null,
   });
   if (connectorErrorMsg || !connector) {
     toast.error(`Unable to create connector - ${connectorErrorMsg}`);

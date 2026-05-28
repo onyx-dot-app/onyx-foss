@@ -80,6 +80,8 @@ class ConnectorBase(BaseModel):
     refresh_freq: int | None = None
     prune_freq: int | None = None
     indexing_start: datetime | None = None
+    kg_processing_enabled: bool = False
+    kg_coverage_days: int | None = None
 
 
 class ConnectorUpdateRequest(ConnectorBase):
@@ -116,6 +118,8 @@ class ConnectorSnapshot(ConnectorBase):
             indexing_start=connector.indexing_start,
             time_created=connector.time_created,
             time_updated=connector.time_updated,
+            kg_processing_enabled=connector.kg_processing_enabled,
+            kg_coverage_days=connector.kg_coverage_days,
         )
 
 
