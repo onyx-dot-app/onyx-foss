@@ -472,9 +472,13 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
             "AND unaccent(r_cemp.target_entity_name) ILIKE unaccent('%Ditec%') "
             "AND r_cert.relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
             "AND unaccent(r_cert.target_entity_name) ILIKE unaccent('%SOA%') "
-            "AND (COALESCE(NULLIF(r_emp.target_entity_attributes->>'end_year','null')::int, "
-            "EXTRACT(YEAR FROM CURRENT_DATE)::int) "
-            "- NULLIF(r_emp.target_entity_attributes->>'start_year','null')::int) >= 2"
+            "AND r_emp.target_entity_attributes ? 'start_year' "
+            "AND ("
+            "(COALESCE(NULLIF(r_emp.target_entity_attributes->>'end_year','null')::int, EXTRACT(YEAR FROM CURRENT_DATE)::int) * 12 "
+            " + COALESCE(NULLIF(r_emp.target_entity_attributes->>'end_month','null')::int, EXTRACT(MONTH FROM CURRENT_DATE)::int)) "
+            "- (NULLIF(r_emp.target_entity_attributes->>'start_year','null')::int * 12 "
+            " + COALESCE(NULLIF(r_emp.target_entity_attributes->>'start_month','null')::int, 1))"
+            ") >= 24"
         ),
     },
     # --- Complex multi-hop: employment→company + certification + skill.
