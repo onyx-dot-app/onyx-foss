@@ -44,6 +44,8 @@ class StreamingType(Enum):
     TOOL_CALL_DEBUG = "tool_call_debug"
     TOOL_CALL_ARGUMENT_DELTA = "tool_call_argument_delta"
 
+    KG_TOOL_START = "kg_tool_start"
+
     MEMORY_TOOL_START = "memory_tool_start"
     MEMORY_TOOL_DELTA = "memory_tool_delta"
     MEMORY_TOOL_NO_ACCESS = "memory_tool_no_access"
@@ -160,6 +162,13 @@ class SearchToolStart(BaseObj):
     type: Literal["search_tool_start"] = StreamingType.SEARCH_TOOL_START.value
 
     is_internet_search: bool = False
+
+
+# Knowledge Graph tool is called and the UI block needs to start
+class KGToolStart(BaseObj):
+    type: Literal["kg_tool_start"] = StreamingType.KG_TOOL_START.value
+
+    query: str = ""
 
 
 # Queries coming through as the LLM determines what to search
