@@ -25,7 +25,8 @@
         "Celery docprocessing",
         "Celery user_file_processing",
         "Celery scheduled_tasks",
-        "Celery beat"
+        "Celery beat",
+        "Celery kg_processing"
       ],
       "presentation": {
         "group": "1"
@@ -71,7 +72,8 @@
         "Celery scheduled_tasks",
         "Celery docfetching",
         "Celery docprocessing",
-        "Celery beat"
+        "Celery beat",
+        "Celery kg_processing"
       ],
       "presentation": {
         "group": "1"
@@ -537,6 +539,38 @@
         "hidden": true
       },
       "consoleTitle": "Celery beat Console"
+    },
+    {
+      "name": "Celery kg_processing",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/scripts/dev_celery_reload.py",
+      "subProcess": true,
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "env": {
+        "LOG_LEVEL": "DEBUG",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONPATH": "."
+      },
+      "args": [
+        "-A",
+        "onyx.background.celery.versioned_apps.kg_processing",
+        "worker",
+        "--pool=threads",
+        "--concurrency=2",
+        "--prefetch-multiplier=1",
+        "--loglevel=INFO",
+        "--hostname=kg_processing@%n",
+        "-Q",
+        "kg_processing"
+      ],
+      "presentation": {
+        "group": "2",
+        "hidden": true
+      },
+      "consoleTitle": "Celery kg_processing Console",
+      "justMyCode": false
     },
     {
       "name": "Celery primary (k8s)",
