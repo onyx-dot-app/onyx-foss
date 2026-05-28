@@ -403,11 +403,10 @@ class TestPostgresBackedFileStore:
         with pytest.raises(RuntimeError, match="does not exist"):
             pg_file_store.read_file(f"{uuid.uuid4()}")
 
-    def test_read_file_record_nonexistent_raises(
+    def test_read_file_record_nonexistent_returns_none(
         self, pg_file_store: PostgresBackedFileStore
     ) -> None:
-        with pytest.raises(RuntimeError, match="does not exist"):
-            pg_file_store.read_file_record(f"{uuid.uuid4()}")
+        assert pg_file_store.read_file_record(f"{uuid.uuid4()}") is None
 
     # ── large file ─────────────────────────────────────────────────
 

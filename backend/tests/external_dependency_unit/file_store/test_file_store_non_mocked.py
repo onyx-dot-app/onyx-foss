@@ -509,8 +509,7 @@ class TestS3BackedFileStore:
         with pytest.raises(RuntimeError, match="does not exist or was deleted"):
             file_store.read_file(nonexistent_file_id)
 
-        with pytest.raises(RuntimeError, match="does not exist or was deleted"):
-            file_store.read_file_record(nonexistent_file_id)
+        assert file_store.read_file_record(nonexistent_file_id) is None
 
         # get_file_with_mime_type should return None for non-existent files
         result = file_store.get_file_with_mime_type(nonexistent_file_id)
@@ -681,8 +680,7 @@ class TestS3BackedFileStore:
                 )
 
         # Verify that the database record was not created due to rollback
-        with pytest.raises(RuntimeError, match="does not exist or was deleted"):
-            file_store.read_file_record(file_id)
+        assert file_store.read_file_record(file_id) is None
 
     def test_complex_jsonb_metadata(self, file_store: S3BackedFileStore) -> None:
         """Test PostgreSQL JSONB metadata handling with complex data structures"""

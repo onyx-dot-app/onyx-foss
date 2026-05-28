@@ -207,9 +207,9 @@ class PostgresBackedFileStore(FileStore):
 
     def read_file_record(
         self, file_id: str, db_session: Session | None = None
-    ) -> FileStoreModel:
+    ) -> FileStoreModel | None:
         with get_session_with_current_tenant_if_none(db_session) as session:
-            return get_filerecord_by_file_id(file_id=file_id, db_session=session)
+            return get_filerecord_by_file_id_optional(file_id=file_id, db_session=session)
 
     def get_file_size(
         self, file_id: str, db_session: Session | None = None
