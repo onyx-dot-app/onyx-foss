@@ -4558,6 +4558,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "retry" },
     { name = "sentry-sdk" },
+    { name = "sqlparse" },
     { name = "uvicorn" },
     { name = "voyageai" },
 ]
@@ -4736,6 +4737,7 @@ requires-dist = [
     { name = "pydantic", specifier = "==2.11.7" },
     { name = "retry", specifier = "==0.9.2" },
     { name = "sentry-sdk", specifier = "==2.14.0" },
+    { name = "sqlparse", specifier = ">=0.5.5" },
     { name = "uvicorn", specifier = "==0.35.0" },
     { name = "voyageai", specifier = "==0.2.3" },
 ]
@@ -7437,6 +7439,15 @@ wheels = [
 [package.optional-dependencies]
 asyncio = [
     { name = "greenlet" },
+]
+
+[[package]]
+name = "sqlparse"
+version = "0.5.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/76/437d71068094df0726366574cf3432a4ed754217b436eb7429415cf2d480/sqlparse-0.5.5.tar.gz", hash = "sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e", size = 120815, upload-time = "2025-12-19T07:17:45.073Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/49/4b/359f28a903c13438ef59ebeee215fb25da53066db67b305c125f1c6d2a25/sqlparse-0.5.5-py3-none-any.whl", hash = "sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba", size = 46138, upload-time = "2025-12-19T07:17:46.573Z" },
 ]
 
 [[package]]

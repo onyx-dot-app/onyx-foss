@@ -26,6 +26,7 @@ dependencies = [
     "agent-client-protocol>=0.7.1",
     "discord-py==2.4.0",
     "kubernetes==31.0.0",
+    "sqlparse>=0.5.5",
 ]
 
 [dependency-groups]
