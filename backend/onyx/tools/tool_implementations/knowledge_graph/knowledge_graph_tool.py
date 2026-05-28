@@ -84,11 +84,11 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
 
     @classmethod
     def is_available(cls, db_session: Session) -> bool:
-        """Available only if KG is enabled and exposed."""
+        """Available when KG is enabled."""
         from onyx.db.kg_config import get_kg_config_settings
 
         kg_configs = get_kg_config_settings()
-        return kg_configs.KG_ENABLED and kg_configs.KG_EXPOSED
+        return kg_configs.KG_ENABLED
 
     def tool_definition(self) -> dict:
         return {

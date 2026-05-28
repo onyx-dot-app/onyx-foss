@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 
 from onyx.db.models import Tool
+from onyx.tools.constants import KNOWLEDGE_GRAPH_TOOL_ID
 from onyx.tools.constants import MEMORY_TOOL_ID
 from onyx.tools.constants import OPEN_URL_TOOL_ID
 
@@ -41,6 +42,12 @@ TOOL_VISIBILITY_CONFIG: dict[str, ToolVisibilitySettings] = {
         agent_creation_selectable=False,
         default_enabled=False,
         expose_to_frontend=False,
+    ),
+    KNOWLEDGE_GRAPH_TOOL_ID: ToolVisibilitySettings(
+        chat_selectable=True,
+        agent_creation_selectable=True,
+        default_enabled=False,
+        expose_to_frontend=True,
     ),
     # Future tools can be added here with custom visibility rules
 }
