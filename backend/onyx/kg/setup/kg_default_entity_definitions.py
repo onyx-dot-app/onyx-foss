@@ -238,6 +238,118 @@ def get_default_entity_types(vendor_name: str) -> dict[str, KGEntityTypeDefiniti
             grounding=KGGroundingType.GROUNDED,
             grounded_source_name=DocumentSource.SALESFORCE,
         ),
+        # --- CV/Resume entity types (grounded to FILE source) ---
+        "PERSON": KGEntityTypeDefinition(
+            description="A person whose CV/resume is being processed.",
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "name": KGAttributeProperty(name="name", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "COMPANY": KGEntityTypeDefinition(
+            description="A company or organization mentioned in a CV.",
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "name": KGAttributeProperty(name="name", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "SKILL": KGEntityTypeDefinition(
+            description="A technical or professional skill (e.g., Python, Project Management).",
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "name": KGAttributeProperty(name="name", keep=True),
+                    "category": KGAttributeProperty(name="category", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "CERTIFICATION": KGEntityTypeDefinition(
+            description="A professional certification (e.g., AWS Solutions Architect, PMP, CKA).",
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "name": KGAttributeProperty(name="name", keep=True),
+                    "issuing_authority": KGAttributeProperty(name="issuing_authority", keep=True),
+                    "valid_until": KGAttributeProperty(name="valid_until", keep=True),
+                    "language": KGAttributeProperty(name="language", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "ADDRESS": KGEntityTypeDefinition(
+            description="A physical address.",
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "address1": KGAttributeProperty(name="address1", keep=True),
+                    "address2": KGAttributeProperty(name="address2", keep=True),
+                    "city": KGAttributeProperty(name="city", keep=True),
+                    "zip": KGAttributeProperty(name="zip", keep=True),
+                    "country": KGAttributeProperty(name="country", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "EMPLOYMENT": KGEntityTypeDefinition(
+            description=(
+                "A specific employment position at a company (reified relationship). "
+                "Links PERSON to COMPANY with job title and dates."
+            ),
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "title": KGAttributeProperty(name="title", keep=True),
+                    "start_year": KGAttributeProperty(name="start_year", keep=True),
+                    "end_year": KGAttributeProperty(name="end_year", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "PERSON_SKILL": KGEntityTypeDefinition(
+            description=(
+                "A person's proficiency in a specific skill (reified relationship). "
+                "Links PERSON to SKILL with years of experience and proficiency level."
+            ),
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "years_experience": KGAttributeProperty(name="years_experience", keep=True),
+                    "proficiency": KGAttributeProperty(name="proficiency", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        "PROJECT": KGEntityTypeDefinition(
+            description=(
+                "A project a person works on (reified relationship). "
+                "Links PERSON to COMPANY and SKILLs with dates."
+            ),
+            attributes=KGEntityTypeAttributes(
+                metadata_attribute_conversion={
+                    "name": KGAttributeProperty(name="name", keep=True),
+                    "start_year": KGAttributeProperty(name="start_year", keep=True),
+                    "end_year": KGAttributeProperty(name="end_year", keep=True),
+                }
+            ),
+            grounding=KGGroundingType.GROUNDED,
+            grounded_source_name=DocumentSource.FILE,
+            active=True,
+        ),
+        # --- End CV/Resume entity types ---
         "VENDOR": KGEntityTypeDefinition(
             description=f"The Vendor {vendor_name}, 'us'",
             grounding=KGGroundingType.GROUNDED,
