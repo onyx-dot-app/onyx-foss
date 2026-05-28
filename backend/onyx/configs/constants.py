@@ -94,6 +94,7 @@ POSTGRES_CELERY_WORKER_USER_FILE_PROCESSING_APP_NAME = (
     "celery_worker_user_file_processing"
 )
 POSTGRES_CELERY_WORKER_SCHEDULED_TASKS_APP_NAME = "celery_worker_scheduled_tasks"
+POSTGRES_CELERY_WORKER_KG_PROCESSING_APP_NAME = "celery_worker_kg_processing"
 POSTGRES_PERMISSIONS_APP_NAME = "permissions"
 POSTGRES_UNKNOWN_APP_NAME = "unknown"
 
@@ -445,6 +446,9 @@ class OnyxCeleryQueues:
     SCHEDULED_TASKS = "scheduled_tasks"
 
     OPENSEARCH_MIGRATION = "opensearch_migration"
+
+    # KG processing queue
+    KG_PROCESSING = "kg_processing"
 
 
 class OnyxRedisLocks:

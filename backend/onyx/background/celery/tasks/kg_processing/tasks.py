@@ -39,7 +39,7 @@ def _kg_enabled() -> bool:
 @shared_task(
     name=OnyxCeleryTask.KG_EXTRACTION,
     ignore_result=True,
-    queue=OnyxCeleryQueues.PRIMARY,
+    queue=OnyxCeleryQueues.KG_PROCESSING,
     bind=True,
 )
 def kg_extraction_task(self: Task, *, tenant_id: str) -> None:
@@ -80,7 +80,7 @@ def kg_extraction_task(self: Task, *, tenant_id: str) -> None:
 @shared_task(
     name=OnyxCeleryTask.KG_CLUSTERING,
     ignore_result=True,
-    queue=OnyxCeleryQueues.PRIMARY,
+    queue=OnyxCeleryQueues.KG_PROCESSING,
     bind=True,
 )
 def kg_clustering_task(self: Task, *, tenant_id: str) -> None:

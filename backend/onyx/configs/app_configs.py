@@ -642,6 +642,10 @@ CELERY_WORKER_SCHEDULED_TASKS_CONCURRENCY = int(
     os.environ.get("CELERY_WORKER_SCHEDULED_TASKS_CONCURRENCY") or 4
 )
 
+CELERY_WORKER_KG_PROCESSING_CONCURRENCY = int(
+    os.environ.get("CELERY_WORKER_KG_PROCESSING_CONCURRENCY") or 2
+)
+
 # The maximum number of tasks that can be queued up to sync to Vespa in a single pass
 VESPA_SYNC_MAX_TASKS = 8192
 

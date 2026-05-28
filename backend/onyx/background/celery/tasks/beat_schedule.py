@@ -144,7 +144,7 @@ beat_task_templates: list[dict] = [
         "options": {
             "priority": OnyxCeleryPriority.LOW,
             "expires": BEAT_EXPIRES_DEFAULT,
-            "queue": OnyxCeleryQueues.PRIMARY,
+            "queue": OnyxCeleryQueues.KG_PROCESSING,
         },
     },
     {
@@ -156,7 +156,7 @@ beat_task_templates: list[dict] = [
         "options": {
             "priority": OnyxCeleryPriority.LOW,
             "expires": BEAT_EXPIRES_DEFAULT,
-            "queue": OnyxCeleryQueues.PRIMARY,
+            "queue": OnyxCeleryQueues.KG_PROCESSING,
         },
     },
     {
