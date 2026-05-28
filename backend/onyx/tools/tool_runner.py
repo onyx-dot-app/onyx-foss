@@ -13,6 +13,8 @@ from onyx.server.query_and_chat.streaming_models import SectionEnd
 from onyx.tools.interface import Tool
 from onyx.tools.models import ChatFile
 from onyx.tools.models import ChatMinimalTextMessage
+from onyx.tools.models import ImageGenerationToolOverrideKwargs
+from onyx.tools.models import KnowledgeGraphToolOverrideKwargs
 from onyx.tools.models import OpenURLToolOverrideKwargs
 from onyx.tools.models import ParallelToolCallResponse
 from onyx.tools.models import PythonToolOverrideKwargs
@@ -27,6 +29,9 @@ from onyx.tools.tool_implementations.coding_agent.coding_agent_tool import (
 )
 from onyx.tools.tool_implementations.coding_agent.coding_agent_tool import (
     CodingAgentToolOverrideKwargs,
+)
+from onyx.tools.tool_implementations.knowledge_graph.knowledge_graph_tool import (
+    KnowledgeGraphTool,
 )
 from onyx.tools.tool_implementations.memory.memory_tool import MemoryTool
 from onyx.tools.tool_implementations.memory.memory_tool import MemoryToolOverrideKwargs
@@ -412,6 +417,11 @@ def run_tool_calls(
                     list(user_memory_context.memories) if user_memory_context else []
                 ),
                 chat_history=minimal_history,
+            )
+
+        elif isinstance(tool, KnowledgeGraphTool):
+            override_kwargs = KnowledgeGraphToolOverrideKwargs(
+                original_query=last_user_message,
             )
 
         tool_run_params.append((tool, tool_call, override_kwargs))
