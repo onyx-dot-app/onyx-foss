@@ -117,11 +117,13 @@ def ingest_cv_extraction(
             stats["skipped"] += 1
             continue
 
-        # Track the CV owner (PERSON entity gets document_id binding)
-        doc_id_for_entity = None
+        # Bind every CV entity to its source document so the orphan cleanup
+        # (delete_orphaned_kg_references__no_commit) doesn't wipe them.
+        # The clustering code (_cluster_one_grounded_entity) is patched to
+        # NOT rename CV entity types to the filename — only document-type
+        # entities (JIRA, calls) get that treatment.
         if onyx_type == "PERSON" and person_name is None:
             person_name = node_name
-            doc_id_for_entity = document_id
 
         try:
             nested = db_session.begin_nested()
@@ -130,7 +132,7 @@ def ingest_cv_extraction(
                     db_session=db_session,
                     name=node_name,
                     entity_type=onyx_type,
-                    document_id=doc_id_for_entity,
+                    document_id=document_id,
                     attributes=_clean_attributes(node_attrs),
                 )
                 nested.commit()
@@ -170,6 +172,7 @@ def ingest_cv_extraction(
                             db_session=db_session,
                             name=ename,
                             entity_type=onyx_type,
+                            document_id=document_id,
                         )
                         entity_ids.add(eid)
                         stats["entities"] += 1

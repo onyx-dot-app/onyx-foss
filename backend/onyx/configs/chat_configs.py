@@ -27,9 +27,11 @@ CONTEXT_CHUNKS_ABOVE = int(os.environ.get("CONTEXT_CHUNKS_ABOVE") or 1)
 CONTEXT_CHUNKS_BELOW = int(os.environ.get("CONTEXT_CHUNKS_BELOW") or 1)
 # Fairly long but this is to account for edge cases where the LLM pauses for much longer than usual
 # The alternative is to fail the request completely so this is intended to be fairly lenient.
-LLM_SOCKET_READ_TIMEOUT = int(
-    os.environ.get("LLM_SOCKET_READ_TIMEOUT") or "60"
-)  # 60 seconds
+LLM_SOCKET_READ_TIMEOUT = 300
+
+# int(
+#     os.environ.get("LLM_SOCKET_READ_TIMEOUT") or "60"
+# )  # 60 seconds
 # Weighting factor between vector and keyword Search; 1 for completely vector
 # search, 0 for keyword. Enforces a valid range of [0, 1]. A supplied value from
 # the env outside of this range will be clipped to the respective end of the

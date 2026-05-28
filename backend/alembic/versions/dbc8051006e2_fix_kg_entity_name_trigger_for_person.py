@@ -58,10 +58,14 @@ def upgrade() -> None:
                 name text;
                 cleaned_name text;
             BEGIN
-                -- For non-PERSON grounded entities the document IS the entity
-                -- (call, ticket, etc.), so use the document's semantic_id.
-                -- For PERSON entities the identity is the extracted real name.
-                IF NEW.document_id IS NOT NULL AND NEW.entity_type_id_name != 'PERSON' THEN
+                -- Only rename for document-type entities where the entity IS
+                -- the document (JIRA tickets, calls, PRs, etc.). All other
+                -- entity types (CV-extracted skills, companies, etc.) keep
+                -- their real extracted name even when document_id is set.
+                IF NEW.document_id IS NOT NULL AND NEW.entity_type_id_name IN (
+                    'LINEAR', 'JIRA', 'GITHUB_PR', 'GITHUB_ISSUE',
+                    'FIREFLIES', 'ACCOUNT', 'OPPORTUNITY'
+                ) THEN
                     SELECT lower(semantic_id) INTO name
                     FROM "{tenant_id}".document
                     WHERE id = NEW.document_id;
@@ -126,14 +130,18 @@ def upgrade() -> None:
                     cleaned_name = left(cleaned_name, {truncate_length});
                 END IF;
 
-                -- Set name and name trigrams for all non-PERSON entities
-                -- referencing this document (skip PERSON — they keep real names).
+                -- Only propagate the document name to document-type entities
+                -- (where the entity IS the document). CV-extracted entities
+                -- keep their real names.
                 UPDATE "{tenant_id}".kg_entity
                 SET
                     name = doc_name,
                     name_trigrams = {POSTGRES_DEFAULT_SCHEMA}.show_trgm(cleaned_name)
                 WHERE document_id = NEW.id
-                  AND entity_type_id_name != 'PERSON';
+                  AND entity_type_id_name IN (
+                    'LINEAR', 'JIRA', 'GITHUB_PR', 'GITHUB_ISSUE',
+                    'FIREFLIES', 'ACCOUNT', 'OPPORTUNITY'
+                  );
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql;

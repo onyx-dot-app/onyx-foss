@@ -150,9 +150,22 @@ def _cluster_one_grounded_entity(
     """
     Cluster a single grounded entity.
     """
+    # Entity types where the entity IS the document — for these, the name
+    # should be the document's semantic_id (e.g. "JIRA-123", not a UUID).
+    # This is an allow-list: any type NOT listed keeps its own staged name.
+    # New entity types (CV-extracted, future connectors) default to keeping
+    # their real name, which is the safe behavior.
+    _DOCUMENT_IS_ENTITY_TYPES = frozenset({
+        "LINEAR", "JIRA", "GITHUB_PR", "GITHUB_ISSUE",
+        "FIREFLIES", "ACCOUNT", "OPPORTUNITY",
+    })
+
     with get_session_with_current_tenant() as db_session:
         # get entity name and filtering conditions
-        if entity.document_id is not None and entity.entity_type_id_name != "PERSON":
+        if (
+            entity.document_id is not None
+            and entity.entity_type_id_name in _DOCUMENT_IS_ENTITY_TYPES
+        ):
             # For document-level grounded entities (calls, tickets, etc.) the
             # entity identity IS the document, so use the document's semantic_id.
             entity_name = cast(
@@ -163,8 +176,8 @@ def _cluster_one_grounded_entity(
             ).lower()
             filtering = [KGEntity.document_id.is_(None)]
         else:
-            # For PERSON entities (CVs) the identity is the person's real name,
-            # not the filename. Use the staged entity name directly.
+            # For all other entities (CV-extracted, etc.) the identity is
+            # the real name from extraction, not the filename.
             entity_name = entity.name.lower()
             filtering = [KGEntity.document_id.is_(None)] if entity.document_id is not None else []
 

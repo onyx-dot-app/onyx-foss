@@ -258,6 +258,12 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "   Bare list questions — 'show people', 'list people we have CVs for',\n"
             "   'who do we have CVs for', 'list companies' — map to a single SELECT on\n"
             "   entity_table filtered only by entity_type. No joins, no attribute filters.\n"
+            "8. ALWAYS include `source_document` in the SELECT clause. Every query result\n"
+            "   must be traceable to its source CV. This applies to all queries — person\n"
+            "   lists, cert lookups, skill searches, employment, education, projects.\n"
+            "9. When listing details for a specific person (their certs, skills, employment,\n"
+            "   education, projects), ALWAYS include relevant attributes from entity_attributes\n"
+            "   or target_entity_attributes (issuer, year, title, proficiency, degree, etc.).\n"
             "6. For 'has ALL of X AND Y (AND Z)' questions, prefer GROUP BY source_entity_name\n"
             "   with HAVING COUNT(DISTINCT target_entity) = N over multiplying self-joins.\n"
             "   2 joins + HAVING COUNT scales cleanly to any number of required items;\n"
@@ -273,9 +279,20 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "     often type plain ASCII ('Iro', 'Stupala', 'Kopacik').\n"
             "   Example: user asks about 'Iro' → WHERE unaccent(source_entity_name)\n"
             "   ILIKE unaccent('%Iro%') matches the entity whose name is 'iró'.\n"
-            "   COMPANY/SKILL/CERTIFICATION values: prefix-match with the type token\n"
-            "   (e.g. 'SKILL::Python%', 'CERTIFICATION::AWS%') is fine; wrap with\n"
-            "   unaccent() too if the value could contain diacritics.\n\n"
+            "   COMPANY/SKILL/CERTIFICATION lookups: ALWAYS use CONTAINS-match\n"
+            "   with unaccent on both sides — e.g. unaccent(target_entity_name)\n"
+            "   ILIKE unaccent('%Python%'), NOT 'SKILL::Python%'.\n"
+            "   Reasons: (a) cert names often have a vendor prefix before the\n"
+            "   keyword (e.g. 'arcitura certified soa professional' — searching\n"
+            "   'SOA%' misses it), (b) company names have legal suffixes (a.s.,\n"
+            "   s.r.o.), and (c) users type in their language's grammar which\n"
+            "   inflects names (Slovak 'v Ditecu' → nominative 'Ditec'; search\n"
+            "   for the ROOT form with %contains%).\n"
+            "10. SLOVAK/CZECH GRAMMAR: Users write in Slovak which inflects nouns.\n"
+            "    The KG stores nominative forms. Strip inflectional suffixes:\n"
+            "    'Ditecu/Diteci' → search 'Ditec', 'ministerstva' → 'ministerstv',\n"
+            "    'certifikáciu' → 'certifikáci'. When in doubt, use the shortest\n"
+            "    unambiguous stem with %contains%.\n\n"
             f"{schema_description}"
         )
 
@@ -501,17 +518,60 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         much more reliably than whitespace-separated lines.
         """
 
-        def _clean(val: Any) -> str:
-            """Strip ENTITY_TYPE:: prefix so skills/companies display without noise."""
+        # Resolve source_document IDs to filenames for display
+        doc_id_to_name: dict[str, str] = {}
+        doc_col_indices = [
+            i for i, c in enumerate(columns)
+            if c == "source_document"
+        ]
+        if doc_col_indices:
+            doc_ids = {
+                str(row[i])
+                for row in rows
+                for i in doc_col_indices
+                if row[i] is not None
+            }
+            if doc_ids:
+                try:
+                    from onyx.db.engine.sql_engine import (
+                        get_session_with_current_tenant,
+                    )
+                    from onyx.db.models import Document
+
+                    with get_session_with_current_tenant() as db_session:
+                        docs = (
+                            db_session.query(
+                                Document.id, Document.semantic_id
+                            )
+                            .filter(Document.id.in_(doc_ids))
+                            .all()
+                        )
+                        doc_id_to_name = {
+                            d.id: d.semantic_id for d in docs if d.semantic_id
+                        }
+                except Exception:
+                    pass  # Fall back to raw IDs
+
+        def _clean(val: Any, col_idx: int) -> str:
+            """Clean a cell value for display."""
             if val is None:
                 return ""
             s = str(val)
+            # Replace source_document IDs with filenames
+            if col_idx in doc_col_indices and s in doc_id_to_name:
+                return doc_id_to_name[s]
             # Strip leading TYPE:: prefix (e.g. "SKILL::python" → "python")
             if "::" in s:
                 prefix, rest = s.split("::", 1)
                 if prefix.isupper() and rest:
                     return rest
             return s
+
+        # Rename source_document column to "source_file" for clarity
+        display_columns = [
+            "source_file" if c == "source_document" else c
+            for c in columns
+        ]
 
         n = len(rows)
         lines: list[str] = []
@@ -523,10 +583,10 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             f"say 'no records' — there are {n} records below."
         )
         lines.append("")
-        lines.append(f"Columns: {' | '.join(columns)}")
+        lines.append(f"Columns: {' | '.join(display_columns)}")
 
         for row in rows[:MAX_RESULT_ROWS]:
-            cleaned = [_clean(val) for val in row]
+            cleaned = [_clean(val, i) for i, val in enumerate(row)]
             # Drop trailing empty values so single-column results don't get
             # a dangling " | " suffix
             while cleaned and cleaned[-1] == "":

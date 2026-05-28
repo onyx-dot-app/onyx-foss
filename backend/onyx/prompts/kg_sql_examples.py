@@ -61,14 +61,11 @@ class SQLExample(TypedDict):
 
 ENTITY_SQL_EXAMPLES: list[SQLExample] = [
     # --- CANONICAL "list all X" pattern.
-    # Paraphrases of this question ("show people", "list people with CVs",
-    # "who do we have CVs for") must all map to this simple entity_table query.
-    # Do NOT introduce relationship joins, certification filters, or other
-    # constraints for bare "list people" questions.
+    # Always include source_document so results link back to the source CV.
     {
         "question": "Show me all people we have CVs for",
         "sql": (
-            "SELECT DISTINCT entity_name "
+            "SELECT DISTINCT entity_name, source_document "
             "FROM entity_table "
             "WHERE entity_type = 'PERSON'"
         ),
@@ -76,15 +73,7 @@ ENTITY_SQL_EXAMPLES: list[SQLExample] = [
     {
         "question": "List people with CVs",
         "sql": (
-            "SELECT DISTINCT entity_name "
-            "FROM entity_table "
-            "WHERE entity_type = 'PERSON'"
-        ),
-    },
-    {
-        "question": "Who do we have CVs for?",
-        "sql": (
-            "SELECT DISTINCT entity_name "
+            "SELECT DISTINCT entity_name, source_document "
             "FROM entity_table "
             "WHERE entity_type = 'PERSON'"
         ),
@@ -109,7 +98,7 @@ ENTITY_SQL_EXAMPLES: list[SQLExample] = [
     {
         "question": "Find all certifications issued by Oracle",
         "sql": (
-            "SELECT DISTINCT entity_name, entity_attributes "
+            "SELECT DISTINCT entity_name, entity_attributes, source_document "
             "FROM entity_table "
             "WHERE entity_type = 'CERTIFICATION' "
             "AND entity_attributes->>'issuing_authority' ILIKE '%Oracle%'"
@@ -121,15 +110,6 @@ ENTITY_SQL_EXAMPLES: list[SQLExample] = [
             "SELECT DISTINCT entity_name "
             "FROM entity_table "
             "WHERE entity_type = 'SKILL'"
-        ),
-    },
-    {
-        "question": "Find all Python-related certifications",
-        "sql": (
-            "SELECT DISTINCT entity_name "
-            "FROM entity_table "
-            "WHERE entity_type = 'CERTIFICATION' "
-            "AND entity_name ILIKE '%Python%'"
         ),
     },
 ]
@@ -151,7 +131,7 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
         # appear anywhere in the cert name.
         "question": "Who holds a PostgreSQL certification?",
         "sql": (
-            "SELECT DISTINCT source_entity_name "
+            "SELECT DISTINCT source_entity_name, source_document "
             "FROM relationship_table "
             "WHERE relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
             "AND unaccent(target_entity_name) ILIKE unaccent('%PostgreSQL%')"
@@ -160,7 +140,7 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
     {
         "question": "Who holds an AWS certification?",
         "sql": (
-            "SELECT DISTINCT source_entity_name "
+            "SELECT DISTINCT source_entity_name, source_document "
             "FROM relationship_table "
             "WHERE relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
             "AND unaccent(target_entity_name) ILIKE unaccent('%AWS%')"
@@ -170,19 +150,39 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
         # Use %name% (contains) for PERSON lookups — the user types
         # "John Smith" but the KG may store "dr. john smith jr.",
         # "ing. john smith", etc. Honorifics and suffixes break prefix-match.
+        # Always include target_entity_attributes for certs — issuer, year,
+        # valid_until are stored there and make the output useful.
         "question": "List all certifications held by John Smith",
         "sql": (
-            "SELECT DISTINCT target_entity_name "
+            "SELECT DISTINCT target_entity_name, "
+            "target_entity_attributes->>'issuer' as issuer, "
+            "target_entity_attributes->>'year' as year, "
+            "source_document "
             "FROM relationship_table "
             "WHERE relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
             "AND unaccent(source_entity_name) ILIKE unaccent('%John Smith%')"
+        ),
+    },
+    {
+        # When asked "what certs does X have" — return name + attributes for detail.
+        # Include source_document so the frontend can link to the source CV.
+        "question": "What certifications does Gabriel Iró have?",
+        "sql": (
+            "SELECT DISTINCT target_entity_name, "
+            "target_entity_attributes->>'issuer' as issuer, "
+            "target_entity_attributes->>'year' as year, "
+            "source_document "
+            "FROM relationship_table "
+            "WHERE relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
+            "AND unaccent(source_entity_name) ILIKE unaccent('%Iró%') "
+            "ORDER BY year"
         ),
     },
     # --- Two-hop through reified EMPLOYMENT ---
     {
         "question": "Who works at ACME Corp?",
         "sql": (
-            "SELECT DISTINCT r1.source_entity_name "
+            "SELECT DISTINCT r1.source_entity_name, r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__has_employment__EMPLOYMENT' "
@@ -228,7 +228,7 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
     {
         "question": "Find all people who live in Prague",
         "sql": (
-            "SELECT DISTINCT source_entity_name "
+            "SELECT DISTINCT source_entity_name, source_document "
             "FROM relationship_table "
             "WHERE relationship_type = 'PERSON__lives_at__ADDRESS' "
             "AND target_entity_attributes->>'city' ILIKE 'Prague'"
@@ -238,7 +238,7 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
     {
         "question": "Who has Python skills?",
         "sql": (
-            "SELECT DISTINCT r1.source_entity_name "
+            "SELECT DISTINCT r1.source_entity_name, r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__has_person_skill__PERSON_SKILL' "
@@ -307,12 +307,30 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
         "sql": (
             "SELECT DISTINCT r2.target_entity_name as skill, "
             "r1.target_entity_attributes->>'years_experience' as years, "
-            "r1.target_entity_attributes->>'proficiency' as proficiency "
+            "r1.target_entity_attributes->>'proficiency' as proficiency, "
+            "r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__has_person_skill__PERSON_SKILL' "
             "AND r2.relationship_type = 'PERSON_SKILL__skill_of__SKILL' "
             "AND unaccent(r1.source_entity_name) ILIKE unaccent('%Jane Doe%')"
+        ),
+    },
+    # --- Employment detail for a person ---
+    {
+        "question": "Where has Jane Doe worked?",
+        "sql": (
+            "SELECT DISTINCT r2.target_entity_name as company, "
+            "r1.target_entity_attributes->>'title' as title, "
+            "r1.target_entity_attributes->>'start_year' as start_year, "
+            "r1.target_entity_attributes->>'end_year' as end_year, "
+            "r1.source_document "
+            "FROM relationship_table r1 "
+            "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
+            "WHERE r1.relationship_type = 'PERSON__has_employment__EMPLOYMENT' "
+            "AND r2.relationship_type = 'EMPLOYMENT__employment_at__COMPANY' "
+            "AND unaccent(r1.source_entity_name) ILIKE unaccent('%Jane Doe%') "
+            "ORDER BY start_year"
         ),
     },
     # --- Project queries ---
@@ -321,7 +339,8 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
         "sql": (
             "SELECT DISTINCT r1.target_entity_name as project, "
             "r1.target_entity_attributes->>'start_year' as start_year, "
-            "r1.target_entity_attributes->>'end_year' as end_year "
+            "r1.target_entity_attributes->>'end_year' as end_year, "
+            "r1.source_document "
             "FROM relationship_table r1 "
             "WHERE r1.relationship_type = 'PERSON__works_on_project__PROJECT' "
             "AND unaccent(r1.source_entity_name) ILIKE unaccent('%John Smith%')"
@@ -330,7 +349,7 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
     {
         "question": "Who works on projects that use Python?",
         "sql": (
-            "SELECT DISTINCT r1.source_entity_name "
+            "SELECT DISTINCT r1.source_entity_name, r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__works_on_project__PROJECT' "
@@ -339,21 +358,26 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
         ),
     },
     {
-        "question": "Who works on projects at ACME Corp?",
+        # "Who worked on projects for ministry X" — common CV query pattern.
+        # Uses %contains% on company name since ministry names vary.
+        "question": "Who worked on projects at Ministerstvo vnútra?",
         "sql": (
-            "SELECT DISTINCT r1.source_entity_name "
+            "SELECT DISTINCT r1.source_entity_name, "
+            "r1.target_entity_name as project, "
+            "r1.target_entity_attributes->>'start_year' as start_year, "
+            "r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__works_on_project__PROJECT' "
             "AND r2.relationship_type = 'PROJECT__project_at__COMPANY' "
-            "AND unaccent(r2.target_entity_name) ILIKE unaccent('COMPANY::ACME Corp%')"
+            "AND unaccent(r2.target_entity_name) ILIKE unaccent('%Ministerstvo vnútra%')"
         ),
     },
     # --- Two-hop through reified EDUCATION ---
     {
         "question": "Who studied at MIT?",
         "sql": (
-            "SELECT DISTINCT r1.source_entity_name "
+            "SELECT DISTINCT r1.source_entity_name, r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__has_education__EDUCATION' "
@@ -366,7 +390,8 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
         "sql": (
             "SELECT DISTINCT r1.source_entity_name, "
             "r1.target_entity_attributes->>'field' as field, "
-            "r2.target_entity_name as institution "
+            "r2.target_entity_name as institution, "
+            "r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__has_education__EDUCATION' "
@@ -381,7 +406,8 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
             "r1.target_entity_attributes->>'degree' as degree, "
             "r1.target_entity_attributes->>'field' as field, "
             "r1.target_entity_attributes->>'start_year' as start_year, "
-            "r1.target_entity_attributes->>'end_year' as end_year "
+            "r1.target_entity_attributes->>'end_year' as end_year, "
+            "r1.source_document "
             "FROM relationship_table r1 "
             "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
             "WHERE r1.relationship_type = 'PERSON__has_education__EDUCATION' "
@@ -396,7 +422,7 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
             "who currently work at ACME Corp"
         ),
         "sql": (
-            "SELECT DISTINCT r_cert.source_entity_name "
+            "SELECT DISTINCT r_cert.source_entity_name, r_cert.source_document "
             "FROM relationship_table r_cert "
             "JOIN relationship_table r_ps ON r_cert.source_entity = r_ps.source_entity "
             "JOIN relationship_table r_sk ON r_ps.target_entity = r_sk.source_entity "
