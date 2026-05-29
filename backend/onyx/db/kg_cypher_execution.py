@@ -171,12 +171,13 @@ def inject_cert_union(cypher: str) -> str:
 
     skill_term = skill_match.group(1)
 
-    # Extract the RETURN clause to mirror it in the UNION branch
-    return_match = re.search(r"(RETURN\s+.+)$", cypher, re.IGNORECASE | re.DOTALL)
-    if not return_match:
+    # Extract the LAST RETURN clause to mirror it in the UNION branch.
+    # Use rfind to handle queries with multiple MATCH/WITH/RETURN blocks.
+    return_idx = cypher.upper().rfind("RETURN")
+    if return_idx < 0:
         return cypher
 
-    return_clause = return_match.group(1)
+    return_clause = cypher[return_idx:]
     # Strip LIMIT if present — will be re-added later
     return_clause = re.sub(r"\s+LIMIT\s+\d+\s*$", "", return_clause, flags=re.IGNORECASE)
 
@@ -197,15 +198,8 @@ def inject_cert_union(cypher: str) -> str:
     cert_col = ", cert.name AS matched_certification"
     null_col = ", NULL AS matched_certification"
 
-    # Insert before the last column in each RETURN
-    # (append to the column list, before any trailing whitespace)
-    skill_return = re.sub(
-        r"(RETURN\s+.+)$",
-        lambda m: m.group(1).rstrip() + null_col,
-        cypher,
-        count=1,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
+    # Append NULL column to the LAST RETURN in the skill branch
+    skill_return = cypher[:return_idx] + return_clause.rstrip() + null_col
     cert_return = cert_return.rstrip() + cert_col
 
     cert_branch = (
