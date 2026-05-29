@@ -194,11 +194,22 @@ def sync_relationship(
     tgt_label = _label_for_type(target_type)
     neo4j_type = neo4j_rel_type(rel_verb)
 
+    # Create the relationship and append source_document to both
+    # endpoints' source_documents list (deduped). This ensures shared
+    # entities (COMPANY, SKILL, etc.) are traceable to their source CVs.
     query = (
         f"MATCH (s:{src_label} {{id_name: $src}}), "
         f"(t:{tgt_label} {{id_name: $tgt}}) "
         f"MERGE (s)-[r:{neo4j_type}]->(t) "
-        f"SET r.source_document = $doc"
+        f"SET r.source_document = $doc, "
+        f"    s.source_documents = CASE "
+        f"      WHEN s.source_documents IS NULL THEN [$doc] "
+        f"      WHEN NOT $doc IN s.source_documents THEN s.source_documents + $doc "
+        f"      ELSE s.source_documents END, "
+        f"    t.source_documents = CASE "
+        f"      WHEN t.source_documents IS NULL THEN [$doc] "
+        f"      WHEN NOT $doc IN t.source_documents THEN t.source_documents + $doc "
+        f"      ELSE t.source_documents END"
     )
     with driver.session(database=db) as session:
         session.run(query, src=source_node, tgt=target_node, doc=source_document)
@@ -231,22 +242,35 @@ def delete_entities(id_names: list[str], driver: Driver | None = None) -> int:
 def delete_relationships_for_documents(
     doc_ids: list[str], driver: Driver | None = None
 ) -> int:
-    """Delete all relationships sourced from the given documents."""
+    """Delete all relationships sourced from the given documents and
+    scrub the doc IDs from every node's ``source_documents`` list."""
     if not doc_ids:
         return 0
     driver = driver or get_neo4j_driver()
     db = get_neo4j_database()
 
-    query = (
-        "MATCH ()-[r]->() "
-        "WHERE r.source_document IN $docs "
-        "DELETE r "
-        "RETURN count(r) AS deleted"
-    )
     with driver.session(database=db) as session:
-        result = session.run(query, docs=doc_ids)
+        # 1. Delete the relationship edges
+        result = session.run(
+            "MATCH ()-[r]->() "
+            "WHERE r.source_document IN $docs "
+            "DELETE r "
+            "RETURN count(r) AS deleted",
+            docs=doc_ids,
+        )
         record = result.single()
-        return record["deleted"] if record else 0
+        deleted = record["deleted"] if record else 0
+
+        # 2. Remove the doc IDs from every node's source_documents list
+        session.run(
+            "MATCH (n) "
+            "WHERE n.source_documents IS NOT NULL "
+            "AND any(d IN $docs WHERE d IN n.source_documents) "
+            "SET n.source_documents = [x IN n.source_documents WHERE NOT x IN $docs]",
+            docs=doc_ids,
+        )
+
+        return deleted
 
 
 # ────────────────────────────────────────────────────────────

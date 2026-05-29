@@ -204,6 +204,101 @@ class TestSyncRelationship:
             assert "john" in names
 
 
+class TestSourceDocumentsPropagation:
+    def test_shared_entity_gets_source_documents(self, neo4j_driver: Driver) -> None:
+        """A shared COMPANY entity referenced from two CVs should have both source_documents."""
+        sync_entity("p1", "john", "PERSON", "doc_1", {}, driver=neo4j_driver)
+        sync_entity("p2", "jane", "PERSON", "doc_2", {}, driver=neo4j_driver)
+        sync_entity("e1", "john_acme", "EMPLOYMENT", None, {}, driver=neo4j_driver)
+        sync_entity("e2", "jane_acme", "EMPLOYMENT", None, {}, driver=neo4j_driver)
+        sync_entity("c1", "acme corp", "COMPANY", None, {}, driver=neo4j_driver)
+
+        sync_relationship("p1", "e1", "PERSON", "EMPLOYMENT", "has_employment", "doc_1", driver=neo4j_driver)
+        sync_relationship("e1", "c1", "EMPLOYMENT", "COMPANY", "employment_at", "doc_1", driver=neo4j_driver)
+        sync_relationship("p2", "e2", "PERSON", "EMPLOYMENT", "has_employment", "doc_2", driver=neo4j_driver)
+        sync_relationship("e2", "c1", "EMPLOYMENT", "COMPANY", "employment_at", "doc_2", driver=neo4j_driver)
+
+        db = get_neo4j_database()
+        with neo4j_driver.session(database=db) as s:
+            result = s.run(
+                "MATCH (c:Company {id_name: 'c1'}) RETURN c.source_documents AS docs"
+            ).single()
+            assert result is not None
+            docs = sorted(result["docs"])
+            assert docs == ["doc_1", "doc_2"]
+
+    def test_no_duplicates_on_repeated_sync(self, neo4j_driver: Driver) -> None:
+        """Syncing the same relationship twice should not duplicate source_documents."""
+        sync_entity("p1", "john", "PERSON", "doc_1", {}, driver=neo4j_driver)
+        sync_entity("s1", "python", "SKILL", None, {}, driver=neo4j_driver)
+        sync_entity("ps1", "john_python", "PERSON_SKILL", None, {}, driver=neo4j_driver)
+
+        sync_relationship("p1", "ps1", "PERSON", "PERSON_SKILL", "has_person_skill", "doc_1", driver=neo4j_driver)
+        sync_relationship("ps1", "s1", "PERSON_SKILL", "SKILL", "skill_of", "doc_1", driver=neo4j_driver)
+        # Sync again — should not create duplicates
+        sync_relationship("p1", "ps1", "PERSON", "PERSON_SKILL", "has_person_skill", "doc_1", driver=neo4j_driver)
+        sync_relationship("ps1", "s1", "PERSON_SKILL", "SKILL", "skill_of", "doc_1", driver=neo4j_driver)
+
+        db = get_neo4j_database()
+        with neo4j_driver.session(database=db) as s:
+            result = s.run(
+                "MATCH (s:Skill {id_name: 's1'}) RETURN s.source_documents AS docs"
+            ).single()
+            assert result is not None
+            assert result["docs"] == ["doc_1"]
+
+    def test_person_entity_also_gets_source_documents(self, neo4j_driver: Driver) -> None:
+        """Even the PERSON entity (which has document_id) should also get source_documents."""
+        sync_entity("p1", "john", "PERSON", "doc_1", {}, driver=neo4j_driver)
+        sync_entity("s1", "python", "SKILL", None, {}, driver=neo4j_driver)
+
+        sync_relationship("p1", "s1", "PERSON", "SKILL", "has_person_skill", "doc_1", driver=neo4j_driver)
+
+        db = get_neo4j_database()
+        with neo4j_driver.session(database=db) as s:
+            result = s.run(
+                "MATCH (p:Person {id_name: 'p1'}) RETURN p.source_documents AS docs, p.document_id AS doc_id"
+            ).single()
+            assert result is not None
+            assert result["doc_id"] == "doc_1"
+            assert result["docs"] == ["doc_1"]
+
+
+    def test_delete_document_scrubs_source_documents(self, neo4j_driver: Driver) -> None:
+        """Deleting a document's relationships should remove it from source_documents lists."""
+        sync_entity("p1", "john", "PERSON", "doc_1", {}, driver=neo4j_driver)
+        sync_entity("p2", "jane", "PERSON", "doc_2", {}, driver=neo4j_driver)
+        sync_entity("c1", "acme", "COMPANY", None, {}, driver=neo4j_driver)
+        sync_entity("e1", "john_acme", "EMPLOYMENT", None, {}, driver=neo4j_driver)
+        sync_entity("e2", "jane_acme", "EMPLOYMENT", None, {}, driver=neo4j_driver)
+
+        sync_relationship("p1", "e1", "PERSON", "EMPLOYMENT", "has_employment", "doc_1", driver=neo4j_driver)
+        sync_relationship("e1", "c1", "EMPLOYMENT", "COMPANY", "employment_at", "doc_1", driver=neo4j_driver)
+        sync_relationship("p2", "e2", "PERSON", "EMPLOYMENT", "has_employment", "doc_2", driver=neo4j_driver)
+        sync_relationship("e2", "c1", "EMPLOYMENT", "COMPANY", "employment_at", "doc_2", driver=neo4j_driver)
+
+        # Verify acme has both docs
+        db = get_neo4j_database()
+        with neo4j_driver.session(database=db) as s:
+            r = s.run("MATCH (c:Company {id_name: 'c1'}) RETURN c.source_documents AS docs").single()
+            assert r is not None
+            assert sorted(r["docs"]) == ["doc_1", "doc_2"]
+
+        # Delete doc_1's relationships
+        delete_relationships_for_documents(["doc_1"], driver=neo4j_driver)
+
+        # acme should only have doc_2 now
+        with neo4j_driver.session(database=db) as s:
+            r = s.run("MATCH (c:Company {id_name: 'c1'}) RETURN c.source_documents AS docs").single()
+            assert r is not None
+            assert r["docs"] == ["doc_2"]
+
+            # john should have empty list
+            r = s.run("MATCH (p:Person {id_name: 'p1'}) RETURN p.source_documents AS docs").single()
+            assert r is not None
+            assert r["docs"] == []
+
+
 class TestDeleteEntities:
     def test_deletes_with_relationships(self, neo4j_driver: Driver) -> None:
         sync_entity("p1", "john", "PERSON", "doc_1", {}, driver=neo4j_driver)
