@@ -13,9 +13,15 @@ from onyx.db.neo4j_client import get_neo4j_driver
 from onyx.db.neo4j_client import get_neo4j_database
 from onyx.db.neo4j_client import neo4j_health_check
 from onyx.db.neo4j_sync import (
+    _batch_create_entities,
+    _batch_create_relationships,
+    _flatten_attributes,
+    _label_for_type,
+    _strip_accents,
     delete_entities,
     delete_relationships_for_documents,
     ensure_indexes,
+    neo4j_rel_type,
     sync_entity,
     sync_relationship,
 )
@@ -28,7 +34,7 @@ _TEST_PREFIX = "test__"
 # Collect all test entity ids used across tests for cleanup
 _TEST_IDS = [
     "p1", "p2", "e1", "e2", "c1", "s1", "s2", "ps1", "ps2",
-    "cert1", "skill_1", "person_1", "emp_1",
+    "cert1", "skill_1", "person_1", "emp_1", "person_2",
 ]
 
 
@@ -363,3 +369,51 @@ class TestDeleteRelationshipsForDocuments:
                 "MATCH ({id_name: 'p1'})-[r:HAS_PERSON_SKILL]->() RETURN count(r) AS cnt"
             ).single()
             assert r2 is not None and r2["cnt"] == 1
+
+
+class TestBatchOperations:
+    def test_batch_create_entities(self, neo4j_driver: Driver) -> None:
+        db = get_neo4j_database()
+        ensure_indexes(neo4j_driver)
+
+        batch = [
+            {"id_name": "p1", "name": "john", "name_ascii": "john", "entity_type": "PERSON", "label": "Person"},
+            {"id_name": "p2", "name": "jane", "name_ascii": "jane", "entity_type": "PERSON", "label": "Person"},
+            {"id_name": "s1", "name": "python", "name_ascii": "python", "entity_type": "SKILL", "label": "Skill"},
+        ]
+        _batch_create_entities(neo4j_driver, db, batch)
+
+        with neo4j_driver.session(database=db) as s:
+            people = s.run("MATCH (p:Person) WHERE p.id_name IN ['p1','p2'] RETURN count(p) AS cnt").single()
+            assert people is not None and people["cnt"] == 2
+            skills = s.run("MATCH (s:Skill {id_name: 's1'}) RETURN s.name AS name").single()
+            assert skills is not None and skills["name"] == "python"
+
+    def test_batch_create_relationships_with_source_documents(self, neo4j_driver: Driver) -> None:
+        db = get_neo4j_database()
+        ensure_indexes(neo4j_driver)
+
+        # Create entities first
+        sync_entity("p1", "john", "PERSON", "doc_1", {}, driver=neo4j_driver)
+        sync_entity("e1", "john_acme", "EMPLOYMENT", None, {}, driver=neo4j_driver)
+        sync_entity("c1", "acme", "COMPANY", None, {}, driver=neo4j_driver)
+
+        batch_rels = [
+            {"src": "p1", "tgt": "e1", "src_label": "Person", "tgt_label": "Employment",
+             "rel_type": "HAS_EMPLOYMENT", "doc": "doc_1"},
+            {"src": "e1", "tgt": "c1", "src_label": "Employment", "tgt_label": "Company",
+             "rel_type": "EMPLOYMENT_AT", "doc": "doc_1"},
+        ]
+        _batch_create_relationships(neo4j_driver, db, batch_rels)
+
+        with neo4j_driver.session(database=db) as s:
+            # Verify traversal works
+            r = s.run(
+                "MATCH (p:Person {id_name: 'p1'})-[:HAS_EMPLOYMENT]->(e:Employment)"
+                "-[:EMPLOYMENT_AT]->(c:Company) RETURN c.name"
+            ).single()
+            assert r is not None and r["c.name"] == "acme"
+
+            # Verify source_documents propagated
+            r = s.run("MATCH (c:Company {id_name: 'c1'}) RETURN c.source_documents AS docs").single()
+            assert r is not None and "doc_1" in r["docs"]
