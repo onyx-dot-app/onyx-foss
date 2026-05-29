@@ -31,6 +31,7 @@ from onyx.document_index.vespa.kg_interactions import (
 from onyx.document_index.vespa.kg_interactions import update_kg_chunks_vespa_info
 from onyx.kg.models import KGGroundingType
 from onyx.kg.utils.formatting_utils import make_relationship_id
+from onyx.configs.kg_configs import KG_QUERY_BACKEND
 from onyx.kg.utils.lock_utils import extend_lock
 from onyx.utils.logger import setup_logger
 from onyx.utils.threadpool_concurrency import run_functions_tuples_in_parallel
@@ -232,6 +233,23 @@ def _cluster_one_grounded_entity(
 
         db_session.commit()
 
+    # Sync to Neo4j if enabled
+    if KG_QUERY_BACKEND == "neo4j":
+        try:
+            from onyx.db.neo4j_sync import sync_entity
+
+            sync_entity(
+                id_name=transferred_entity.id_name,
+                name=transferred_entity.name,
+                entity_type=transferred_entity.entity_type_id_name,
+                document_id=transferred_entity.document_id,
+                attributes=transferred_entity.attributes or {},
+            )
+        except Exception:
+            logger.warning(
+                "Neo4j sync failed for entity %s", transferred_entity.id_name
+            )
+
     return transferred_entity, update_vespa
 
 
@@ -304,12 +322,33 @@ def _transfer_one_relationship(
             return
 
         # transfer the relationship
-        transfer_relationship(
+        transferred = transfer_relationship(
             db_session=db_session,
             relationship=relationship,
             entity_translations=entity_translations,
         )
         db_session.commit()
+
+    # Sync to Neo4j if enabled
+    if KG_QUERY_BACKEND == "neo4j":
+        try:
+            from onyx.db.neo4j_sync import sync_relationship as neo4j_sync_rel
+
+            parts = transferred.relationship_type_id_name.split("__")
+            verb = parts[1] if len(parts) == 3 else transferred.type
+
+            neo4j_sync_rel(
+                source_node=transferred.source_node,
+                target_node=transferred.target_node,
+                source_type=transferred.source_node_type,
+                target_type=transferred.target_node_type,
+                rel_verb=verb,
+                source_document=transferred.source_document,
+            )
+        except Exception:
+            logger.warning(
+                "Neo4j sync failed for relationship %s", transferred.id_name
+            )
 
 
 def kg_clustering(
