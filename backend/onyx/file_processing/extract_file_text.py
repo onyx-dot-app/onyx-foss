@@ -480,6 +480,34 @@ def read_docx_file(
     return doc.markdown, []
 
 
+def read_doc_file(
+    file: IO[Any],
+    file_name: str = "",
+) -> str:
+    """Extract text from a legacy .doc file using mammoth."""
+    import mammoth
+
+    try:
+        result = mammoth.convert_to_markdown(to_bytesio(file))
+        if result.messages:
+            for msg in result.messages:
+                logger.debug("mammoth message for %s: %s", file_name, msg)
+        return result.value
+    except Exception as e:
+        logger.warning(
+            "Failed to extract .doc %s with mammoth: %s. "
+            "Attempting to read as text file.",
+            file_name or ".doc file",
+            e,
+        )
+        file.seek(0)
+        encoding = detect_encoding(file)
+        text_content_raw, _ = read_text_file(
+            file, encoding=encoding, ignore_onyx_metadata=False
+        )
+        return text_content_raw or ""
+
+
 def extract_pptx_images(pptx_bytes: IO[Any]) -> Iterator[tuple[bytes, str]]:
     """
     Given the bytes of a pptx file, extract all the images.
@@ -733,6 +761,7 @@ def extract_file_text(
     """
     extension_to_function: dict[str, Callable[[IO[Any]], str]] = {
         ".pdf": pdf_to_text,
+        ".doc": lambda f: read_doc_file(f, file_name),
         ".docx": lambda f: read_docx_file(f, file_name)[0],  # no images
         ".pptx": lambda f: pptx_to_text(f, file_name),
         ".xlsx": lambda f: xlsx_to_text(f, file_name),
@@ -864,6 +893,13 @@ def _extract_text_and_images(
     # Default processing
     try:
         extension = get_file_ext(file_name)
+        # Legacy .doc (binary Word format) — text only, no embedded images
+        if extension == ".doc":
+            text_content = read_doc_file(file, file_name)
+            return ExtractionResult(
+                text_content=text_content, embedded_images=[], metadata={}
+            )
+
         # docx example for embedded images
         if extension == ".docx":
             text_content, images = read_docx_file(

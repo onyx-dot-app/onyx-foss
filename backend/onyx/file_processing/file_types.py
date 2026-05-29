@@ -34,6 +34,7 @@ class OnyxMimeTypes:
     DOCUMENT_MIME_TYPES = {
         PDF_MIME_TYPE,
         WORD_PROCESSING_MIME_TYPE,
+        "application/msword",
         PRESENTATION_MIME_TYPE,
         "message/rfc822",
         "application/epub+zip",
@@ -77,6 +78,7 @@ class OnyxFileExtensions:
     }
     DOCUMENT_EXTENSIONS = {
         ".pdf",
+        ".doc",
         ".docx",
         ".pptx",
         ".eml",
