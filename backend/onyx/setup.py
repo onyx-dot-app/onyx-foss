@@ -306,6 +306,29 @@ def _ensure_kg_tool_on_default_persona(db_session: Session) -> None:
         db_session.commit()
         logger.notice("Added KG tool to default persona.")
 
+    # If Neo4j backend is enabled, ensure data is synced
+    from onyx.configs.kg_configs import KG_QUERY_BACKEND
+
+    if KG_QUERY_BACKEND == "neo4j":
+        from onyx.db.neo4j_client import neo4j_health_check
+
+        if neo4j_health_check():
+            from onyx.db.neo4j_sync import ensure_indexes
+            from onyx.db.neo4j_sync import full_sync
+
+            ensure_indexes()
+            result = full_sync()
+            logger.notice(
+                "Neo4j KG sync on startup: %d entities, %d relationships",
+                result["entities"],
+                result["relationships"],
+            )
+        else:
+            logger.warning(
+                "KG_QUERY_BACKEND=neo4j but Neo4j is not reachable — "
+                "skipping startup sync."
+            )
+
 
 def update_default_multipass_indexing(db_session: Session) -> None:
     docs_exist = check_docs_exist(db_session)

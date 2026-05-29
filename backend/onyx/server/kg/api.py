@@ -67,6 +67,20 @@ def reset_kg(
     return get_kg_entity_types(db_session=db_session)
 
 
+@admin_router.post("/neo4j-sync")
+def sync_kg_to_neo4j(
+    _: User = Depends(require_permission(Permission.FULL_ADMIN_PANEL_ACCESS)),
+) -> dict[str, int]:
+    """Full sync of KG data from PostgreSQL to Neo4j.
+
+    Wipes Neo4j and reloads all entities and relationships from the
+    normalized PG tables. Use after initial setup or to reconcile drift.
+    """
+    from onyx.db.neo4j_sync import full_sync
+
+    return full_sync()
+
+
 # configurations
 
 
