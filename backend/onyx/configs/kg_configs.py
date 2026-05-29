@@ -158,7 +158,7 @@ to answer questions"
 # Neo4j configuration for the graph query backend
 NEO4J_URI: str = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER: str = os.environ.get("NEO4J_USER", "neo4j")
-NEO4J_PASSWORD: str = os.environ.get("NEO4J_PASSWORD", "neo4j")
+NEO4J_PASSWORD: str = os.environ.get("NEO4J_PASSWORD", "neo4jpassword")
 NEO4J_DATABASE: str = os.environ.get("NEO4J_DATABASE", "neo4j")
 
 # "postgres" = current SQL self-join backend, "neo4j" = Cypher traversal backend

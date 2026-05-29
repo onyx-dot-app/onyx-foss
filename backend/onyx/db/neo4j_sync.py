@@ -1,0 +1,317 @@
+"""Synchronise KG data from PostgreSQL normalised tables to Neo4j.
+
+Neo4j is the query-time backend; PostgreSQL remains the source of truth for
+extraction and clustering.  This module provides:
+
+  * ``full_sync()``  – bootstrap / reconciliation: wipe Neo4j and reload
+  * ``sync_entity()`` / ``sync_relationship()`` – incremental upserts
+  * ``delete_entities()`` / ``delete_relationships()`` – cleanup on re-index
+
+All functions are safe to call from Celery worker threads.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from neo4j import Driver
+
+from onyx.db.neo4j_client import get_neo4j_database
+from onyx.db.neo4j_client import get_neo4j_driver
+from onyx.utils.logger import setup_logger
+
+logger = setup_logger()
+
+# ────────────────────────────────────────────────────────────
+# Known per-type attributes that should be flattened from the
+# JSONB `attributes` column onto first-class Neo4j properties.
+# Anything else stays in an `attributes` map property.
+# ────────────────────────────────────────────────────────────
+
+_FLATTEN_KEYS: dict[str, list[str]] = {
+    "PERSON": ["full_name", "email", "phone", "nationality"],
+    "EMPLOYMENT": ["title", "start_year", "start_month", "end_year", "end_month"],
+    "PERSON_SKILL": ["proficiency", "years_experience"],
+    "CERTIFICATION": ["issuer", "year", "valid_until", "language"],
+    "EDUCATION": ["degree", "field", "institution", "start_year", "end_year"],
+    "PROJECT": ["name", "start_year", "start_month", "end_year", "end_month"],
+    "ADDRESS": ["address1", "city", "zip", "country"],
+    "SKILL": ["category"],
+    "COMPANY": [],
+    "INSTITUTION": [],
+}
+
+# Attributes whose values should be stored as integers in Neo4j.
+_INT_ATTRS: frozenset[str] = frozenset(
+    {
+        "start_year",
+        "start_month",
+        "end_year",
+        "end_month",
+        "year",
+        "valid_until",
+        "years_experience",
+    }
+)
+
+
+def _flatten_attributes(
+    entity_type: str, attributes: dict[str, Any]
+) -> dict[str, Any]:
+    """Split JSONB attributes into flat properties + residual map."""
+    flat_keys = _FLATTEN_KEYS.get(entity_type, [])
+    flat: dict[str, Any] = {}
+    residual: dict[str, Any] = {}
+
+    for k, v in attributes.items():
+        if v is None or v == "null":
+            continue
+        if k in flat_keys:
+            if k in _INT_ATTRS:
+                try:
+                    flat[k] = int(v)
+                except (ValueError, TypeError):
+                    flat[k] = v
+            else:
+                flat[k] = v
+        else:
+            residual[k] = v
+
+    if residual:
+        import json
+
+        flat["attributes_json"] = json.dumps(residual, default=str)
+    return flat
+
+
+# ────────────────────────────────────────────────────────────
+# Index / constraint setup
+# ────────────────────────────────────────────────────────────
+
+_ENTITY_TYPES = list(_FLATTEN_KEYS.keys())
+
+_NEO4J_REL_TYPE_MAP: dict[str, str] = {
+    "has_employment": "HAS_EMPLOYMENT",
+    "employment_at": "EMPLOYMENT_AT",
+    "has_person_skill": "HAS_PERSON_SKILL",
+    "skill_of": "SKILL_OF",
+    "holds_cert": "HOLDS_CERT",
+    "works_on_project": "WORKS_ON_PROJECT",
+    "project_at": "PROJECT_AT",
+    "project_uses_skill": "PROJECT_USES_SKILL",
+    "has_education": "HAS_EDUCATION",
+    "education_at": "EDUCATION_AT",
+    "lives_at": "LIVES_AT",
+    "located_at": "LOCATED_AT",
+}
+
+
+def neo4j_rel_type(pg_verb: str) -> str:
+    """Map a PG relationship verb to a Neo4j relationship type."""
+    return _NEO4J_REL_TYPE_MAP.get(pg_verb, pg_verb.upper())
+
+
+def _label_for_type(entity_type: str) -> str:
+    """Convert entity type id_name to a Neo4j label (PascalCase)."""
+    # PERSON_SKILL → PersonSkill, COMPANY → Company
+    return "".join(part.capitalize() for part in entity_type.split("_"))
+
+
+def ensure_indexes(driver: Driver | None = None) -> None:
+    """Create uniqueness constraints and text indexes in Neo4j."""
+    driver = driver or get_neo4j_driver()
+    db = get_neo4j_database()
+
+    with driver.session(database=db) as session:
+        for et in _ENTITY_TYPES:
+            label = _label_for_type(et)
+            # Uniqueness on id_name
+            session.run(
+                f"CREATE CONSTRAINT IF NOT EXISTS "
+                f"FOR (n:{label}) REQUIRE n.id_name IS UNIQUE"
+            )
+            # Text index on name for case-insensitive search
+            session.run(
+                f"CREATE TEXT INDEX IF NOT EXISTS "
+                f"FOR (n:{label}) ON (n.name)"
+            )
+
+    logger.info("Neo4j indexes/constraints ensured for %d labels", len(_ENTITY_TYPES))
+
+
+# ────────────────────────────────────────────────────────────
+# Entity sync
+# ────────────────────────────────────────────────────────────
+
+
+def sync_entity(
+    id_name: str,
+    name: str,
+    entity_type: str,
+    document_id: str | None,
+    attributes: dict[str, Any],
+    source_document: str | None = None,
+    driver: Driver | None = None,
+) -> None:
+    """Upsert a single entity node into Neo4j."""
+    driver = driver or get_neo4j_driver()
+    db = get_neo4j_database()
+    label = _label_for_type(entity_type)
+
+    props: dict[str, Any] = {
+        "id_name": id_name,
+        "name": name,
+        "entity_type": entity_type,
+    }
+    if document_id:
+        props["document_id"] = document_id
+    if source_document:
+        props["source_document"] = source_document
+    props.update(_flatten_attributes(entity_type, attributes))
+
+    query = (
+        f"MERGE (n:{label} {{id_name: $id_name}}) "
+        f"SET n += $props"
+    )
+    with driver.session(database=db) as session:
+        session.run(query, id_name=id_name, props=props)
+
+
+def sync_relationship(
+    source_node: str,
+    target_node: str,
+    source_type: str,
+    target_type: str,
+    rel_verb: str,
+    source_document: str,
+    driver: Driver | None = None,
+) -> None:
+    """Upsert a single relationship edge into Neo4j."""
+    driver = driver or get_neo4j_driver()
+    db = get_neo4j_database()
+
+    src_label = _label_for_type(source_type)
+    tgt_label = _label_for_type(target_type)
+    neo4j_type = neo4j_rel_type(rel_verb)
+
+    query = (
+        f"MATCH (s:{src_label} {{id_name: $src}}), "
+        f"(t:{tgt_label} {{id_name: $tgt}}) "
+        f"MERGE (s)-[r:{neo4j_type}]->(t) "
+        f"SET r.source_document = $doc"
+    )
+    with driver.session(database=db) as session:
+        session.run(query, src=source_node, tgt=target_node, doc=source_document)
+
+
+# ────────────────────────────────────────────────────────────
+# Deletion
+# ────────────────────────────────────────────────────────────
+
+
+def delete_entities(id_names: list[str], driver: Driver | None = None) -> int:
+    """Delete entities and their relationships from Neo4j."""
+    if not id_names:
+        return 0
+    driver = driver or get_neo4j_driver()
+    db = get_neo4j_database()
+
+    query = (
+        "UNWIND $ids AS eid "
+        "MATCH (n {id_name: eid}) "
+        "DETACH DELETE n "
+        "RETURN count(n) AS deleted"
+    )
+    with driver.session(database=db) as session:
+        result = session.run(query, ids=id_names)
+        record = result.single()
+        return record["deleted"] if record else 0
+
+
+def delete_relationships_for_documents(
+    doc_ids: list[str], driver: Driver | None = None
+) -> int:
+    """Delete all relationships sourced from the given documents."""
+    if not doc_ids:
+        return 0
+    driver = driver or get_neo4j_driver()
+    db = get_neo4j_database()
+
+    query = (
+        "MATCH ()-[r]->() "
+        "WHERE r.source_document IN $docs "
+        "DELETE r "
+        "RETURN count(r) AS deleted"
+    )
+    with driver.session(database=db) as session:
+        result = session.run(query, docs=doc_ids)
+        record = result.single()
+        return record["deleted"] if record else 0
+
+
+# ────────────────────────────────────────────────────────────
+# Full sync (bootstrap / reconciliation)
+# ────────────────────────────────────────────────────────────
+
+
+def full_sync(driver: Driver | None = None) -> dict[str, int]:
+    """Wipe Neo4j and reload all entities + relationships from PostgreSQL.
+
+    Returns a dict with counts: {"entities": N, "relationships": M}.
+    """
+    from onyx.db.engine.sql_engine import get_session_with_current_tenant
+    from onyx.db.models import KGEntity
+    from onyx.db.models import KGRelationship
+
+    driver = driver or get_neo4j_driver()
+    db = get_neo4j_database()
+
+    # 1. Clear everything
+    with driver.session(database=db) as session:
+        session.run("MATCH (n) DETACH DELETE n")
+    logger.info("Neo4j: cleared all nodes and relationships")
+
+    # 2. Ensure indexes
+    ensure_indexes(driver)
+
+    # 3. Load entities
+    entity_count = 0
+    with get_session_with_current_tenant() as pg_session:
+        entities = pg_session.query(KGEntity).all()
+        for e in entities:
+            sync_entity(
+                id_name=e.id_name,
+                name=e.name,
+                entity_type=e.entity_type_id_name,
+                document_id=e.document_id,
+                attributes=e.attributes or {},
+                driver=driver,
+            )
+            entity_count += 1
+
+    logger.info("Neo4j: synced %d entities", entity_count)
+
+    # 4. Load relationships
+    rel_count = 0
+    with get_session_with_current_tenant() as pg_session:
+        relationships = pg_session.query(KGRelationship).all()
+        for r in relationships:
+            # Extract verb from relationship_type_id_name
+            # Format: SOURCE_TYPE__verb__TARGET_TYPE
+            parts = r.relationship_type_id_name.split("__")
+            verb = parts[1] if len(parts) == 3 else r.type
+
+            sync_relationship(
+                source_node=r.source_node,
+                target_node=r.target_node,
+                source_type=r.source_node_type,
+                target_type=r.target_node_type,
+                rel_verb=verb,
+                source_document=r.source_document,
+                driver=driver,
+            )
+            rel_count += 1
+
+    logger.info("Neo4j: synced %d relationships", rel_count)
+
+    return {"entities": entity_count, "relationships": rel_count}
