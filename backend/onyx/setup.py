@@ -9,6 +9,7 @@ from onyx.configs.app_configs import INTEGRATION_TESTS_MODE
 from onyx.configs.app_configs import MANAGED_VESPA
 from onyx.configs.app_configs import ONYX_DISABLE_VESPA
 from onyx.configs.app_configs import VESPA_NUM_ATTEMPTS_ON_STARTUP
+from onyx.configs.constants import DEFAULT_PERSONA_ID
 from onyx.configs.constants import KV_REINDEX_KEY
 from onyx.configs.embedding_configs import SUPPORTED_EMBEDDING_MODELS
 from onyx.configs.embedding_configs import SupportedEmbeddingModel
@@ -23,6 +24,7 @@ from onyx.db.connector_credential_pair import resync_cc_pair
 from onyx.db.credentials import create_initial_public_credential
 from onyx.db.document import check_docs_exist
 from onyx.db.enums import EmbeddingPrecision
+from onyx.db.models import Persona
 from onyx.db.index_attempt import cancel_indexing_attempts_past_model
 from onyx.db.index_attempt import expire_index_attempts
 from onyx.db.llm import fetch_default_llm_model
@@ -238,6 +240,7 @@ def setup_postgres(db_session: Session) -> None:
     create_initial_public_credential(db_session)
     create_initial_default_connector(db_session)
     associate_default_cc_pair(db_session)
+    _ensure_kg_tool_on_default_persona(db_session)
 
     if GEN_AI_API_KEY and fetch_default_llm_model(db_session) is None:
         # Only for dev flows
@@ -274,6 +277,34 @@ def setup_postgres(db_session: Session) -> None:
         update_default_provider(
             provider_id=new_llm_provider.id, model_name=llm_model, db_session=db_session
         )
+
+
+def _ensure_kg_tool_on_default_persona(db_session: Session) -> None:
+    """If KG is enabled, make sure the KG tool is attached to the default persona."""
+    from onyx.db.kg_config import get_kg_config_settings
+    from onyx.db.kg_config import is_kg_config_settings_enabled_valid
+    from onyx.db.tools import get_builtin_tool
+    from onyx.tools.tool_implementations.knowledge_graph.knowledge_graph_tool import (
+        KnowledgeGraphTool,
+    )
+
+    kg_config = get_kg_config_settings()
+    if not is_kg_config_settings_enabled_valid(kg_config):
+        return
+
+    try:
+        kg_tool = get_builtin_tool(db_session=db_session, tool_type=KnowledgeGraphTool)
+    except Exception:
+        return
+
+    default_persona = db_session.get(Persona, DEFAULT_PERSONA_ID)
+    if default_persona is None:
+        return
+
+    if kg_tool not in default_persona.tools:
+        default_persona.tools.append(kg_tool)
+        db_session.commit()
+        logger.notice("Added KG tool to default persona.")
 
 
 def update_default_multipass_indexing(db_session: Session) -> None:
