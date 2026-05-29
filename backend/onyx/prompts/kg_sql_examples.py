@@ -302,6 +302,28 @@ RELATIONSHIP_SQL_EXAMPLES: list[SQLExample] = [
             "HAVING COUNT(DISTINCT r2.target_entity) = 3"
         ),
     },
+    # --- "Experience in X" = skills OR certifications mentioning X.
+    # A certification in a technology (e.g. "Oracle Certified Professional")
+    # is evidence of experience, not just a listed skill. Always UNION both
+    # when the user asks about "experience", "knowledge", or "expertise" in X.
+    {
+        "question": "Who has experience with Oracle?",
+        "sql": (
+            "SELECT DISTINCT source_entity_name, source_document FROM ("
+            "SELECT r1.source_entity_name, r1.source_document "
+            "FROM relationship_table r1 "
+            "JOIN relationship_table r2 ON r1.target_entity = r2.source_entity "
+            "WHERE r1.relationship_type = 'PERSON__has_person_skill__PERSON_SKILL' "
+            "AND r2.relationship_type = 'PERSON_SKILL__skill_of__SKILL' "
+            "AND unaccent(r2.target_entity_name) ILIKE unaccent('%Oracle%') "
+            "UNION "
+            "SELECT source_entity_name, source_document "
+            "FROM relationship_table "
+            "WHERE relationship_type = 'PERSON__holds_cert__CERTIFICATION' "
+            "AND unaccent(target_entity_name) ILIKE unaccent('%Oracle%')"
+            ") combined"
+        ),
+    },
     {
         "question": "List all skills for Jane Doe",
         "sql": (

@@ -305,7 +305,15 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "    The KG stores nominative forms. Strip inflectional suffixes:\n"
             "    'Ditecu/Diteci' → search 'Ditec', 'ministerstva' → 'ministerstv',\n"
             "    'certifikáciu' → 'certifikáci'. When in doubt, use the shortest\n"
-            "    unambiguous stem with %contains%.\n\n"
+            "    unambiguous stem with %contains%.\n"
+            "11. EXPERIENCE/KNOWLEDGE/EXPERTISE queries: When the user asks about\n"
+            "    'experience', 'knowledge', 'expertise', or 'background' in a\n"
+            "    technology or domain, ALWAYS search BOTH skills AND certifications\n"
+            "    using a UNION. A certification mentioning a technology (e.g.\n"
+            "    'Oracle Certified Professional', 'ITIL Foundation') is strong\n"
+            "    evidence of experience. UNION the skill path\n"
+            "    (PERSON→PERSON_SKILL→SKILL) with the certification path\n"
+            "    (PERSON→CERTIFICATION) when filtering by technology name.\n\n"
             f"{schema_description}"
         )
 
