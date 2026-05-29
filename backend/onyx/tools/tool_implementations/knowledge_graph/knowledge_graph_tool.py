@@ -152,6 +152,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         from onyx.db.kg_cypher_execution import (
             enforce_cypher_row_limit,
             execute_cypher,
+            inject_acl_filter,
             KGCypherValidationError,
             parse_cypher_from_llm_response,
             validate_kg_cypher,
@@ -182,8 +183,9 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                 )
             logger.info("KG Cypher generated for query %r: %s", query, cypher)
 
-            # 3. Validate and enforce limits
+            # 3. Validate, inject ACL filter, enforce limits
             validate_kg_cypher(cypher)
+            cypher = inject_acl_filter(cypher)
             cypher = enforce_cypher_row_limit(cypher, max_rows=MAX_RESULT_ROWS)
             logger.info("KG Cypher (post-validate) executing: %s", cypher)
 
@@ -519,6 +521,9 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "7. For 'has ALL of X AND Y': use count(DISTINCT) + WITH + WHERE matched = N.\n"
             "8. NEVER use CREATE, DELETE, SET, MERGE, REMOVE, or DETACH.\n"
             "9. SLOVAK/CZECH: users write inflected forms. Use shortest unambiguous stem with CONTAINS.\n"
+            "10. ACL: ALWAYS add `WHERE p.document_id IN $allowed_docs` on the Person node\n"
+            "    in the FIRST MATCH clause. $allowed_docs is a pre-populated parameter with\n"
+            "    the user's accessible document IDs. For UNION queries, add it in EACH branch.\n"
         )
 
         user_msg = (

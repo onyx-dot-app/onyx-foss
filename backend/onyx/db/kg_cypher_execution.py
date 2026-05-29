@@ -78,6 +78,67 @@ def enforce_cypher_row_limit(cypher: str, max_rows: int = 100) -> str:
     return f"{cypher.rstrip().rstrip(';')} LIMIT {max_rows}"
 
 
+def inject_acl_filter(cypher: str) -> str:
+    """Inject ACL document filter into Cypher if not already present.
+
+    Every query must filter by ``$allowed_docs`` so users only see data
+    from documents they can access.  The LLM is instructed to include
+    this, but we inject it as a safety net when it forgets.
+
+    Strategy: find the Person variable in the first MATCH clause and add
+    ``WHERE <var>.document_id IN $allowed_docs``.  For UNION queries,
+    inject into each branch.
+    """
+    if "$allowed_docs" in cypher:
+        return cypher
+
+    # Split on UNION to handle each branch independently
+    branches = re.split(r"\bUNION\b", cypher, flags=re.IGNORECASE)
+    result_branches: list[str] = []
+
+    for branch in branches:
+        if "$allowed_docs" in branch:
+            result_branches.append(branch)
+            continue
+
+        # Find the Person variable: (p:Person) or (person:Person)
+        person_match = re.search(r"\((\w+):Person\b", branch)
+        if person_match:
+            var = person_match.group(1)
+            acl_clause = f"{var}.document_id IN $allowed_docs"
+
+            # Insert into existing WHERE clause or add one before WITH/RETURN
+            if re.search(r"\bWHERE\b", branch, re.IGNORECASE):
+                # Add to the FIRST WHERE clause after the Person MATCH
+                branch = re.sub(
+                    r"(\bWHERE\b)",
+                    rf"\1 {acl_clause} AND",
+                    branch,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+            else:
+                # No WHERE — insert before WITH or RETURN
+                branch = re.sub(
+                    r"\b(WITH|RETURN)\b",
+                    rf"WHERE {acl_clause} \1",
+                    branch,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+            result_branches.append(branch)
+        else:
+            # No Person node found — can't inject, pass through
+            logger.warning(
+                "ACL injection: no :Person node found in Cypher branch, "
+                "cannot inject document filter: %s",
+                branch.strip()[:200],
+            )
+            result_branches.append(branch)
+
+    return " UNION ".join(result_branches)
+
+
 def execute_cypher(
     cypher: str,
     allowed_doc_ids: set[str] | None = None,

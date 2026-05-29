@@ -4,6 +4,7 @@ import pytest
 
 from onyx.db.kg_cypher_execution import (
     enforce_cypher_row_limit,
+    inject_acl_filter,
     KGCypherValidationError,
     parse_cypher_from_llm_response,
     validate_kg_cypher,
@@ -119,3 +120,70 @@ class TestEnforceCypherRowLimit:
         cypher = "MATCH (p:Person) RETURN p.name"
         result = enforce_cypher_row_limit(cypher)
         assert result.endswith("LIMIT 100")
+
+
+class TestInjectAclFilter:
+    def test_injects_into_simple_query(self) -> None:
+        cypher = "MATCH (p:Person) RETURN p.name"
+        result = inject_acl_filter(cypher)
+        assert "$allowed_docs" in result
+        assert "p.document_id IN $allowed_docs" in result
+
+    def test_injects_into_existing_where(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
+            "WHERE toLower(c.name) CONTAINS 'aws' "
+            "RETURN p.name"
+        )
+        result = inject_acl_filter(cypher)
+        assert "p.document_id IN $allowed_docs AND" in result
+        assert result.count("WHERE") == 1
+
+    def test_skips_when_already_present(self) -> None:
+        cypher = (
+            "MATCH (p:Person) "
+            "WHERE p.document_id IN $allowed_docs "
+            "RETURN p.name"
+        )
+        result = inject_acl_filter(cypher)
+        # Should not double-inject
+        assert result.count("$allowed_docs") == 1
+
+    def test_handles_union_both_branches(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(:PersonSkill)"
+            "-[:SKILL_OF]->(s:Skill) "
+            "WHERE toLower(s.name) CONTAINS 'oracle' "
+            "RETURN DISTINCT p.name "
+            "UNION "
+            "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
+            "WHERE toLower(c.name) CONTAINS 'oracle' "
+            "RETURN DISTINCT p.name"
+        )
+        result = inject_acl_filter(cypher)
+        assert result.count("$allowed_docs") == 2
+
+    def test_handles_with_clause_query(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment) "
+            "WHERE toLower(e.title) CONTAINS 'dev' "
+            "WITH p "
+            "MATCH (p)-[:HOLDS_CERT]->(c:Certification) "
+            "RETURN p.name"
+        )
+        result = inject_acl_filter(cypher)
+        assert "p.document_id IN $allowed_docs" in result
+
+    def test_no_person_node_passes_through(self) -> None:
+        cypher = "MATCH (s:Skill) RETURN s.name"
+        result = inject_acl_filter(cypher)
+        # Can't inject without a Person node — passes through unchanged
+        assert result == cypher
+
+    def test_different_person_variable_name(self) -> None:
+        cypher = (
+            "MATCH (person:Person)-[:HOLDS_CERT]->(c:Certification) "
+            "RETURN person.name"
+        )
+        result = inject_acl_filter(cypher)
+        assert "person.document_id IN $allowed_docs" in result
