@@ -313,7 +313,16 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "    'Oracle Certified Professional', 'ITIL Foundation') is strong\n"
             "    evidence of experience. UNION the skill path\n"
             "    (PERSON→PERSON_SKILL→SKILL) with the certification path\n"
-            "    (PERSON→CERTIFICATION) when filtering by technology name.\n\n"
+            "    (PERSON→CERTIFICATION) when filtering by technology name.\n"
+            "12. MULTI-CHAIN JOINS: When combining independent chains (e.g.\n"
+            "    employment + skills for the same person), each chain must\n"
+            "    join back to the PERSON via source_entity. Example:\n"
+            "      r_emp.source_entity = PERSON (employment chain)\n"
+            "      r_sk.source_entity  = PERSON (skill chain)\n"
+            "    So the skill chain joins on r_emp.source_entity = r_sk.source_entity\n"
+            "    (both are PERSON), NOT on r_emp.target_entity (which is EMPLOYMENT).\n"
+            "    Wrong: JOIN r_sk ON r_emp.target_entity = r_sk.source_entity\n"
+            "    Right: JOIN r_sk ON r_emp.source_entity = r_sk.source_entity\n\n"
             f"{schema_description}"
         )
 
