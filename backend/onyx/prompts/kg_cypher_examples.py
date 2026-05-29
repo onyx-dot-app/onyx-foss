@@ -75,7 +75,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "question": "Who holds a PostgreSQL certification?",
         "cypher": (
             "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
-            "WHERE toLower(c.name) CONTAINS 'postgresql' "
+            "WHERE toLower(c.name_ascii) CONTAINS 'postgresql' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -83,8 +83,8 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "question": "List all certifications held by John Smith",
         "cypher": (
             "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
-            "WHERE toLower(p.name) CONTAINS 'john smith' "
-            "RETURN DISTINCT c.name AS certification, c.issuer AS issuer, "
+            "WHERE toLower(p.name_ascii) CONTAINS 'john smith' "
+            "RETURN DISTINCT p.name AS name, c.name AS certification, c.issuer AS issuer, "
             "p.document_id AS source_document"
         ),
     },
@@ -94,7 +94,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(c.name) CONTAINS 'acme corp' "
+            "WHERE toLower(c.name_ascii) CONTAINS 'acme corp' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -105,7 +105,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(c.name) CONTAINS 'acme corp' "
+            "WHERE toLower(c.name_ascii) CONTAINS 'acme corp' "
             "AND e.start_year IS NOT NULL "
             "AND ("
             "(coalesce(e.end_year, date().year) * 12 "
@@ -139,7 +139,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'python' "
+            "WHERE toLower(s.name_ascii) CONTAINS 'python' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -148,7 +148,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'python' "
+            "WHERE toLower(s.name_ascii) CONTAINS 'python' "
             "AND ps.years_experience >= 5 "
             "RETURN DISTINCT p.name AS name"
         ),
@@ -168,8 +168,8 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'docker' "
-            "   OR toLower(s.name) CONTAINS 'oracle' "
+            "WHERE toLower(s.name_ascii) CONTAINS 'docker' "
+            "   OR toLower(s.name_ascii) CONTAINS 'oracle' "
             "WITH p, count(DISTINCT s) AS matched "
             "WHERE matched = 2 "
             "RETURN p.name AS name"
@@ -181,11 +181,11 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'oracle' "
+            "WHERE toLower(s.name_ascii) CONTAINS 'oracle' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document "
             "UNION "
             "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
-            "WHERE toLower(c.name) CONTAINS 'oracle' "
+            "WHERE toLower(c.name_ascii) CONTAINS 'oracle' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -195,8 +195,8 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(p.name) CONTAINS 'jane doe' "
-            "RETURN DISTINCT c.name AS company, e.title AS title, "
+            "WHERE toLower(p.name_ascii) CONTAINS 'jane doe' "
+            "RETURN DISTINCT p.name AS name, c.name AS company, e.title AS title, "
             "e.start_year AS start_year, e.end_year AS end_year, "
             "p.document_id AS source_document "
             "ORDER BY start_year"
@@ -208,8 +208,8 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(p.name) CONTAINS 'jane doe' "
-            "RETURN DISTINCT s.name AS skill, "
+            "WHERE toLower(p.name_ascii) CONTAINS 'jane doe' "
+            "RETURN DISTINCT p.name AS name, s.name AS skill, "
             "ps.years_experience AS years, "
             "ps.proficiency AS proficiency, "
             "p.document_id AS source_document"
@@ -220,10 +220,12 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "question": "What projects has John Smith worked on?",
         "cypher": (
             "MATCH (p:Person)-[:WORKS_ON_PROJECT]->(proj:Project) "
-            "WHERE toLower(p.name) CONTAINS 'john smith' "
-            "RETURN DISTINCT proj.name AS project, "
+            "WHERE toLower(p.name_ascii) CONTAINS 'john smith' "
+            "OPTIONAL MATCH (proj)-[:PROJECT_AT]->(c:Company) "
+            "RETURN DISTINCT p.name AS name, proj.name AS project, c.name AS company, "
             "proj.start_year AS start_year, proj.end_year AS end_year, "
-            "p.document_id AS source_document"
+            "p.document_id AS source_document "
+            "ORDER BY proj.start_year"
         ),
     },
     {
@@ -231,7 +233,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:WORKS_ON_PROJECT]->(proj:Project)"
             "-[:PROJECT_USES_SKILL]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'python' "
+            "WHERE toLower(s.name_ascii) CONTAINS 'python' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -241,7 +243,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:HAS_EDUCATION]->(ed:Education)"
             "-[:EDUCATION_AT]->(inst:Institution) "
-            "WHERE toLower(inst.name) CONTAINS 'mit' "
+            "WHERE toLower(inst.name_ascii) CONTAINS 'mit' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -263,16 +265,16 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         ),
         "cypher": (
             "MATCH (p:Person)-[:HOLDS_CERT]->(cert:Certification) "
-            "WHERE toLower(cert.name) CONTAINS 'aws' "
+            "WHERE toLower(cert.name_ascii) CONTAINS 'aws' "
             "WITH p "
             "MATCH (p)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'python' "
+            "WHERE toLower(s.name_ascii) CONTAINS 'python' "
             "AND ps.years_experience >= 5 "
             "WITH p "
             "MATCH (p)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(c.name) CONTAINS 'acme corp' "
+            "WHERE toLower(c.name_ascii) CONTAINS 'acme corp' "
             "AND e.end_year IS NULL "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
@@ -289,7 +291,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
             "WITH p "
             "MATCH (p)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(c.name) CONTAINS 'ditec' "
+            "WHERE toLower(c.name_ascii) CONTAINS 'ditec' "
             "AND e.start_year IS NOT NULL "
             "AND ("
             "(coalesce(e.end_year, date().year) * 12 "
@@ -298,7 +300,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
             ") >= 24 "
             "WITH p "
             "MATCH (p)-[:HOLDS_CERT]->(cert:Certification) "
-            "WHERE toLower(cert.name) CONTAINS 'soa' "
+            "WHERE toLower(cert.name_ascii) CONTAINS 'soa' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },

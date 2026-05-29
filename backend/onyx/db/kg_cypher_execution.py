@@ -139,6 +139,78 @@ def inject_acl_filter(cypher: str) -> str:
     return " UNION ".join(result_branches)
 
 
+def inject_cert_union(cypher: str) -> str:
+    """If the query searches skills but not certifications, add a UNION
+    branch for certifications.
+
+    This is a safety net for "experience/knowledge" queries where the
+    LLM forgot the UNION.  A TOGAF certification is evidence of TOGAF
+    experience, but a skill-only query misses it.
+
+    Only triggers when:
+      1. The query has SKILL_OF (skill path) but no HOLDS_CERT
+      2. There's no existing UNION
+    """
+    upper = cypher.upper()
+    if "UNION" in upper:
+        return cypher
+    if "SKILL_OF" not in upper:
+        return cypher
+    if "HOLDS_CERT" in upper:
+        return cypher
+
+    # Extract the skill filter value from the skill path
+    # Pattern: toLower(s.name_ascii) CONTAINS 'xxx'
+    skill_match = re.search(
+        r"toLower\(\w+\.name_ascii\)\s+CONTAINS\s+'([^']+)'",
+        cypher,
+        re.IGNORECASE,
+    )
+    if not skill_match:
+        return cypher
+
+    skill_term = skill_match.group(1)
+
+    # Extract the RETURN clause to mirror it in the UNION branch
+    return_match = re.search(r"(RETURN\s+.+)$", cypher, re.IGNORECASE | re.DOTALL)
+    if not return_match:
+        return cypher
+
+    return_clause = return_match.group(1)
+    # Strip LIMIT if present — will be re-added later
+    return_clause = re.sub(r"\s+LIMIT\s+\d+\s*$", "", return_clause, flags=re.IGNORECASE)
+
+    # Build the cert branch: Person→HOLDS_CERT→Certification
+    # The RETURN clause may reference variables (c, e, s, ps, proj, etc.)
+    # that don't exist in the cert-only pattern. Replace them with NULL
+    # so the UNION column count matches.
+    cert_return = return_clause
+    # Find all var.property references and NULL-ify those whose var
+    # isn't p (Person) or cert (Certification)
+    cert_vars = {"p", "cert"}
+    cert_return = re.sub(
+        r"(\b(\w+)\.(\w+))",
+        lambda m: m.group(0) if m.group(2) in cert_vars else f"NULL",
+        cert_return,
+    )
+    # Also fix the AS aliases for NULLed columns — keep the alias
+    # e.g. "NULL AS company" not just "NULL"
+    # The regex above already preserves " AS xxx" after the property ref
+
+    cert_branch = (
+        f"MATCH (p:Person)-[:HOLDS_CERT]->(cert:Certification) "
+        f"WHERE toLower(cert.name_ascii) CONTAINS '{skill_term}' "
+        f"AND p.document_id IN $allowed_docs "
+        f"{cert_return}"
+    )
+
+    logger.info(
+        "inject_cert_union: added certification UNION branch for term '%s'",
+        skill_term,
+    )
+    return f"{cypher} UNION {cert_branch}"
+
+
 def execute_cypher(
     cypher: str,
     allowed_doc_ids: set[str] | None = None,

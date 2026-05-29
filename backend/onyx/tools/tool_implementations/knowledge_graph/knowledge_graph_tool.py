@@ -497,8 +497,13 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "HOLDS_CERT, WORKS_ON_PROJECT, PROJECT_AT, PROJECT_USES_SKILL, HAS_EDUCATION, "
             "EDUCATION_AT, LIVES_AT, LOCATED_AT\n\n"
             "RULES:\n"
-            "1. Names are stored lowercase. Use toLower() + CONTAINS for all name filters.\n"
-            "   Example: WHERE toLower(s.name) CONTAINS 'python'\n"
+            "1. Every string property has an `_ascii` variant with diacritics stripped.\n"
+            "   ALWAYS filter on the `_ascii` variant using toLower() + CONTAINS\n"
+            "   so that 'iro' matches 'gabriel iró', 'programator' matches 'Programátor'.\n"
+            "   Examples: WHERE toLower(s.name_ascii) CONTAINS 'python'\n"
+            "             WHERE toLower(e.title_ascii) CONTAINS 'programator'\n"
+            "             WHERE toLower(c.issuer_ascii) CONTAINS 'oracle'\n"
+            "   For RETURN/display, use the original property (name, title, issuer).\n"
             "2. Properties are flat on nodes (not nested). Access directly: e.start_year, e.title, "
             "ps.proficiency, c.issuer.\n"
             "3. For multi-chain queries (e.g. employment + skills for the same person), "
@@ -512,10 +517,28 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             "date().month)) - (e.start_year*12 + coalesce(e.start_month, 1)) >= N_months\n"
             "7. For 'has ALL of X AND Y': use count(DISTINCT) + WITH + WHERE matched = N.\n"
             "8. NEVER use CREATE, DELETE, SET, MERGE, REMOVE, or DETACH.\n"
-            "9. SLOVAK/CZECH: users write inflected forms. Use shortest unambiguous stem with CONTAINS.\n"
+            "9. SLOVAK/CZECH: The KG data is in Slovak/Czech. NEVER translate to English.\n"
+            "   'IT Architekt' stays 'architek' (not 'architect'), 'analytik' stays 'analytik'.\n"
+            "   Users write inflected forms. Use the shortest unambiguous stem with CONTAINS.\n"
+            "   Strip suffixes: 'architektom' → 'architek', 'analytikov' → 'analytik'.\n"
             "10. ACL: ALWAYS add `WHERE p.document_id IN $allowed_docs` on the Person node\n"
             "    in the FIRST MATCH clause. $allowed_docs is a pre-populated parameter with\n"
             "    the user's accessible document IDs. For UNION queries, add it in EACH branch.\n"
+            "11. ALWAYS include `p.name AS name` in the RETURN clause so the\n"
+            "    answer-writing LLM can confirm whose data it's showing.\n"
+            "12. MATCHED FILTER IN OUTPUT: When filtering by a skill, cert, company,\n"
+            "    project, or institution name, ALWAYS include that entity's name in\n"
+            "    the RETURN clause so the answer-writer can see WHY each row matched.\n"
+            "    Example: filtering by TOGAF cert → include cert.name AS certification.\n"
+            "13. RICH OUTPUT: Always include relevant attributes in the RETURN clause:\n"
+            "    - Employment: e.title, e.start_year, e.end_year\n"
+            "    - Projects: proj.start_year, proj.end_year, and OPTIONAL MATCH the company\n"
+            "      via (proj)-[:PROJECT_AT]->(c:Company) to include c.name\n"
+            "    - Skills: ps.proficiency, ps.years_experience\n"
+            "    - Certifications: c.issuer, c.year, c.valid_until\n"
+            "    - Education: ed.degree, ed.field, and the institution via EDUCATION_AT\n"
+            "    Use OPTIONAL MATCH for related entities that may not exist (e.g. company\n"
+            "    for a project) so the main result isn't filtered out.\n"
         )
 
         user_msg = (
@@ -672,7 +695,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                         "the REPLY CONTRACT phrase, clearly separated."
                     ), [], {}
 
-                return self._format_results(columns, rows)
+                return self._format_results(columns, rows, original_query)
 
             except Exception as e:
                 last_error = str(e)
@@ -738,6 +761,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             enforce_cypher_row_limit,
             execute_cypher,
             inject_acl_filter,
+            inject_cert_union,
             validate_kg_cypher,
         )
 
@@ -758,6 +782,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
 
                 validate_kg_cypher(cypher)
                 cypher = inject_acl_filter(cypher)
+                cypher = inject_cert_union(cypher)
                 cypher = enforce_cypher_row_limit(cypher, max_rows=MAX_RESULT_ROWS)
                 logger.info(
                     "KG Cypher attempt %d executing: %s", attempt + 1, cypher
@@ -787,7 +812,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                         'query. (Verified by Cypher that returned 0 rows.)"'
                     ), [], {}
 
-                return self._format_results(columns, rows)
+                return self._format_results(columns, rows, original_query)
 
             except Exception as e:
                 last_error = str(e)
@@ -852,6 +877,7 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         self,
         columns: list[str],
         rows: list[Any],
+        original_query: str = "",
     ) -> tuple[str, list[SearchDoc], dict[int, str]]:
         """Format SQL results as a markdown list the answer-writing LLM can echo.
 
@@ -951,6 +977,13 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
         n = len(rows)
         lines: list[str] = []
         lines.append(f"===== KG_TOOL_RESULT: {n}_ROWS =====")
+        if original_query:
+            lines.append(f"Original question: {original_query}")
+            lines.append(
+                "The rows below are the KG's answer to this question. "
+                "All rows matched the query filters — present them as "
+                "direct answers, do NOT claim 'not found'."
+            )
         lines.append(
             f"The knowledge graph returned {n} row(s). Render each row "
             f"as its own markdown bullet (`- <value>`) in your answer. "

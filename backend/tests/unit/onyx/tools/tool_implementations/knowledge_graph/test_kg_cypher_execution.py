@@ -5,6 +5,7 @@ import pytest
 from onyx.db.kg_cypher_execution import (
     enforce_cypher_row_limit,
     inject_acl_filter,
+    inject_cert_union,
     KGCypherValidationError,
     parse_cypher_from_llm_response,
     validate_kg_cypher,
@@ -187,3 +188,67 @@ class TestInjectAclFilter:
         )
         result = inject_acl_filter(cypher)
         assert "person.document_id IN $allowed_docs" in result
+
+
+class TestInjectCertUnion:
+    def test_adds_cert_branch_for_skill_query(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
+            "-[:SKILL_OF]->(s:Skill) "
+            "WHERE toLower(s.name_ascii) CONTAINS 'togaf' "
+            "AND p.document_id IN $allowed_docs "
+            "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
+        )
+        result = inject_cert_union(cypher)
+        assert "UNION" in result
+        assert "HOLDS_CERT" in result
+        assert "'togaf'" in result.split("UNION")[1]
+
+    def test_skips_when_cert_already_present(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
+            "WHERE toLower(c.name_ascii) CONTAINS 'togaf' "
+            "RETURN p.name"
+        )
+        result = inject_cert_union(cypher)
+        assert "UNION" not in result
+
+    def test_skips_when_union_already_present(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(:PersonSkill)"
+            "-[:SKILL_OF]->(s:Skill) "
+            "WHERE toLower(s.name_ascii) CONTAINS 'bpmn' "
+            "RETURN p.name "
+            "UNION "
+            "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
+            "WHERE toLower(c.name_ascii) CONTAINS 'bpmn' "
+            "RETURN p.name"
+        )
+        result = inject_cert_union(cypher)
+        assert result == cypher
+
+    def test_skips_when_no_skill_path(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment) "
+            "RETURN p.name"
+        )
+        result = inject_cert_union(cypher)
+        assert result == cypher
+
+    def test_preserves_complex_return(self) -> None:
+        cypher = (
+            "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
+            "-[:SKILL_OF]->(s:Skill) "
+            "WHERE toLower(s.name_ascii) CONTAINS 'oracle' "
+            "AND p.document_id IN $allowed_docs "
+            "WITH p "
+            "MATCH (p)-[:HAS_EMPLOYMENT]->(e:Employment)-[:EMPLOYMENT_AT]->(c:Company) "
+            "RETURN DISTINCT p.name AS name, c.name AS company, "
+            "p.document_id AS source_document"
+        )
+        result = inject_cert_union(cypher)
+        assert "UNION" in result
+        # The cert branch should mirror the RETURN clause
+        cert_part = result.split("UNION")[1]
+        assert "RETURN" in cert_part
+        assert "'oracle'" in cert_part

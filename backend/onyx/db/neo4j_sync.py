@@ -81,6 +81,16 @@ def _flatten_attributes(
         import json
 
         flat["attributes_json"] = json.dumps(residual, default=str)
+
+    # Add _ascii variants for string attributes that may contain diacritics
+    for k, v in list(flat.items()):
+        if (
+            isinstance(v, str)
+            and k not in ("attributes_json", "entity_type", "id_name")
+            and not k.endswith("_ascii")
+        ):
+            flat[f"{k}_ascii"] = _strip_accents(v)
+
     return flat
 
 
@@ -144,6 +154,17 @@ def ensure_indexes(driver: Driver | None = None) -> None:
 # ────────────────────────────────────────────────────────────
 
 
+def _strip_accents(s: str) -> str:
+    """Remove diacritics for accent-insensitive search in Neo4j."""
+    import unicodedata
+
+    return "".join(
+        c
+        for c in unicodedata.normalize("NFD", s)
+        if unicodedata.category(c) != "Mn"
+    )
+
+
 def sync_entity(
     id_name: str,
     name: str,
@@ -161,6 +182,7 @@ def sync_entity(
     props: dict[str, Any] = {
         "id_name": id_name,
         "name": name,
+        "name_ascii": _strip_accents(name),
         "entity_type": entity_type,
     }
     if document_id:
