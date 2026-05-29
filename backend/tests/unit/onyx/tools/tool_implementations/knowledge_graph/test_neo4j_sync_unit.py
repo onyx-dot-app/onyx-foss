@@ -7,6 +7,7 @@ mapping, and relationship type mapping.
 
 from onyx.db.neo4j_sync import _flatten_attributes
 from onyx.db.neo4j_sync import _label_for_type
+from onyx.db.neo4j_sync import _strip_accents
 from onyx.db.neo4j_sync import neo4j_rel_type
 
 
@@ -135,3 +136,45 @@ class TestFlattenAttributes:
         flat = _flatten_attributes("UNKNOWN_TYPE", attrs)
         assert "attributes_json" in flat
         assert "foo" not in flat
+
+    def test_ascii_variants_for_string_attrs(self) -> None:
+        attrs = {"title": "Programátor - analytik"}
+        flat = _flatten_attributes("EMPLOYMENT", attrs)
+        assert flat["title"] == "Programátor - analytik"
+        assert flat["title_ascii"] == "Programator - analytik"
+
+    def test_ascii_not_added_for_int_attrs(self) -> None:
+        attrs = {"start_year": "2020"}
+        flat = _flatten_attributes("EMPLOYMENT", attrs)
+        assert flat["start_year"] == 2020
+        assert "start_year_ascii" not in flat
+
+    def test_ascii_for_certification_issuer(self) -> None:
+        attrs = {"issuer": "Škola certifikácií", "year": "2023"}
+        flat = _flatten_attributes("CERTIFICATION", attrs)
+        assert flat["issuer_ascii"] == "Skola certifikacii"
+        assert "year_ascii" not in flat  # year is int
+
+    def test_ascii_for_address_city(self) -> None:
+        attrs = {"city": "Košice", "country": "Slovensko"}
+        flat = _flatten_attributes("ADDRESS", attrs)
+        assert flat["city_ascii"] == "Kosice"
+        assert flat["country_ascii"] == "Slovensko"  # no diacritics
+
+
+class TestStripAccents:
+    def test_slovak_names(self) -> None:
+        assert _strip_accents("gabriel iró") == "gabriel iro"
+        assert _strip_accents("miloš stúpala") == "milos stupala"
+        assert _strip_accents("ivan kopáčik") == "ivan kopacik"
+
+    def test_czech_chars(self) -> None:
+        assert _strip_accents("přírodovědecká") == "prirodovedecka"
+        assert _strip_accents("železnice") == "zeleznice"
+
+    def test_no_accents_unchanged(self) -> None:
+        assert _strip_accents("john doe") == "john doe"
+        assert _strip_accents("Python") == "Python"
+
+    def test_empty_string(self) -> None:
+        assert _strip_accents("") == ""
