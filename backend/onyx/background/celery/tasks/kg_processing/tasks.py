@@ -33,7 +33,16 @@ _LOCK_TIMEOUT = CELERY_GENERIC_BEAT_LOCK_TIMEOUT
 
 
 def _kg_enabled() -> bool:
-    return is_kg_config_settings_enabled_valid(get_kg_config_settings())
+    kg_config = get_kg_config_settings()
+    enabled = is_kg_config_settings_enabled_valid(kg_config)
+    if not enabled:
+        task_logger.info(
+            "KG not enabled/valid: KG_ENABLED=%s KG_VENDOR=%s KG_VENDOR_DOMAINS=%s",
+            kg_config.KG_ENABLED,
+            kg_config.KG_VENDOR,
+            kg_config.KG_VENDOR_DOMAINS,
+        )
+    return enabled
 
 
 @shared_task(
@@ -47,7 +56,7 @@ def kg_extraction_task(self: Task, *, tenant_id: str) -> None:
     CURRENT_TENANT_ID_CONTEXTVAR.set(tenant_id)
 
     if not _kg_enabled():
-        task_logger.debug("KG disabled for tenant; skipping extraction.")
+        task_logger.info("KG disabled/invalid for tenant %s; skipping extraction.", tenant_id)
         return
 
     r = get_redis_client()

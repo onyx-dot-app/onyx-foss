@@ -717,6 +717,9 @@ def upsert_documents(
         "doc_metadata": insert_stmt.excluded.doc_metadata,
         "parent_hierarchy_node_id": insert_stmt.excluded.parent_hierarchy_node_id,
         "file_id": insert_stmt.excluded.file_id,
+        # Reset KG state so re-indexed documents get re-extracted
+        "kg_stage": insert_stmt.excluded.kg_stage,
+        "kg_processing_time": None,
     }
     if includes_permissions:
         # Use COALESCE to preserve existing permissions when new values are NULL.
