@@ -1616,7 +1616,26 @@ def reset_connector_document_kg_stages(
                 KGEntity.id_name.in_(orphan_entity_id_names),
             ).delete(synchronize_session=False)
 
-    # 3. Reset document kg_stage so extraction picks them up
+    # 3. Clean up Neo4j if enabled
+    from onyx.configs.kg_configs import KG_QUERY_BACKEND
+
+    if KG_QUERY_BACKEND == "neo4j":
+        try:
+            from onyx.db.neo4j_sync import (
+                delete_entities as neo4j_delete_entities,
+                delete_relationships_for_documents as neo4j_delete_rels,
+            )
+
+            neo4j_delete_rels(doc_ids)
+            if orphan_entity_id_names:
+                neo4j_delete_entities(orphan_entity_id_names)
+        except Exception:
+            logger.warning(
+                "Neo4j cleanup failed during connector KG reset: connector=%s",
+                connector_id,
+            )
+
+    # 4. Reset document kg_stage so extraction picks them up
     stmt = (
         update(DbDocument)
         .where(DbDocument.id.in_(doc_ids))

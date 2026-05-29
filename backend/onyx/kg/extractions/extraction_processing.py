@@ -435,6 +435,24 @@ def kg_extraction(
                         delete_from_kg_entities__no_commit(
                             db_session, [unprocessed_document.id]
                         )
+
+                        # Clean up Neo4j if enabled
+                        from onyx.configs.kg_configs import KG_QUERY_BACKEND
+
+                        if KG_QUERY_BACKEND == "neo4j":
+                            try:
+                                from onyx.db.neo4j_sync import (
+                                    delete_relationships_for_documents,
+                                )
+
+                                delete_relationships_for_documents(
+                                    [unprocessed_document.id]
+                                )
+                            except Exception:
+                                logger.warning(
+                                    "Neo4j cleanup failed for doc %s",
+                                    unprocessed_document.id,
+                                )
                     db_session.commit()
 
             # Iterate over batches of unprocessed documents
