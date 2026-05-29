@@ -202,7 +202,13 @@ class TestInjectCertUnion:
         result = inject_cert_union(cypher)
         assert "UNION" in result
         assert "HOLDS_CERT" in result
-        assert "'togaf'" in result.split("UNION")[1]
+        cert_part = result.split("UNION")[1]
+        assert "'togaf'" in cert_part
+        # Cert branch shows what matched
+        assert "cert.name AS matched_certification" in cert_part
+        # Skill branch has matching NULL column
+        skill_part = result.split("UNION")[0]
+        assert "NULL AS matched_certification" in skill_part
 
     def test_skips_when_cert_already_present(self) -> None:
         cypher = (
@@ -248,7 +254,10 @@ class TestInjectCertUnion:
         )
         result = inject_cert_union(cypher)
         assert "UNION" in result
-        # The cert branch should mirror the RETURN clause
         cert_part = result.split("UNION")[1]
         assert "RETURN" in cert_part
         assert "'oracle'" in cert_part
+        # Unknown vars are NULLed
+        assert "NULL AS company" in cert_part
+        # Cert name is included
+        assert "cert.name AS matched_certification" in cert_part

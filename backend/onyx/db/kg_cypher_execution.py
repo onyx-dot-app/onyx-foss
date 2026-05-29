@@ -185,17 +185,28 @@ def inject_cert_union(cypher: str) -> str:
     # that don't exist in the cert-only pattern. Replace them with NULL
     # so the UNION column count matches.
     cert_return = return_clause
-    # Find all var.property references and NULL-ify those whose var
-    # isn't p (Person) or cert (Certification)
     cert_vars = {"p", "cert"}
     cert_return = re.sub(
-        r"(\b(\w+)\.(\w+))",
-        lambda m: m.group(0) if m.group(2) in cert_vars else f"NULL",
+        r"\b(\w+)\.(\w+)",
+        lambda m: m.group(0) if m.group(1) in cert_vars else "NULL",
         cert_return,
     )
-    # Also fix the AS aliases for NULLed columns — keep the alias
-    # e.g. "NULL AS company" not just "NULL"
-    # The regex above already preserves " AS xxx" after the property ref
+
+    # Add cert.name so the answer-writer can see WHY each row matched.
+    # Also add a matching NULL column to the skill branch for UNION compat.
+    cert_col = ", cert.name AS matched_certification"
+    null_col = ", NULL AS matched_certification"
+
+    # Insert before the last column in each RETURN
+    # (append to the column list, before any trailing whitespace)
+    skill_return = re.sub(
+        r"(RETURN\s+.+)$",
+        lambda m: m.group(1).rstrip() + null_col,
+        cypher,
+        count=1,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    cert_return = cert_return.rstrip() + cert_col
 
     cert_branch = (
         f"MATCH (p:Person)-[:HOLDS_CERT]->(cert:Certification) "
@@ -208,7 +219,7 @@ def inject_cert_union(cypher: str) -> str:
         "inject_cert_union: added certification UNION branch for term '%s'",
         skill_term,
     )
-    return f"{cypher} UNION {cert_branch}"
+    return f"{skill_return} UNION {cert_branch}"
 
 
 def execute_cypher(
