@@ -154,7 +154,6 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
             execute_cypher,
             inject_acl_filter,
             KGCypherValidationError,
-            parse_cypher_from_llm_response,
             validate_kg_cypher,
         )
         from onyx.db.kg_temp_view import get_allowed_document_ids
@@ -183,18 +182,11 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                 )
             logger.info("KG Cypher generated for query %r: %s", query, cypher)
 
-            # 3. Validate, inject ACL filter, enforce limits
-            validate_kg_cypher(cypher)
-            cypher = inject_acl_filter(cypher)
-            cypher = enforce_cypher_row_limit(cypher, max_rows=MAX_RESULT_ROWS)
-            logger.info("KG Cypher (post-validate) executing: %s", cypher)
-
-            # 4. Execute
-            columns, rows = execute_cypher(cypher, allowed_doc_ids=allowed_doc_ids)
-
-            # 5. Format results (reuse existing formatter)
-            result_str, search_docs, citation_mapping = self._format_results(
-                columns, rows
+            # 3. Execute with retries
+            result_str, search_docs, citation_mapping = (
+                self._execute_cypher_with_retries(
+                    cypher, query, allowed_doc_ids
+                )
             )
 
             rich_response = None
@@ -734,6 +726,127 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
 
         content = llm_response_to_string(response)
         return parse_sql_from_llm_response(content)
+
+    def _execute_cypher_with_retries(
+        self,
+        cypher: str,
+        original_query: str,
+        allowed_doc_ids: set[str],
+    ) -> tuple[str, list[SearchDoc], dict[int, str]]:
+        """Execute Cypher with retry loop. On failure, feed error back to LLM."""
+        from onyx.db.kg_cypher_execution import (
+            enforce_cypher_row_limit,
+            execute_cypher,
+            inject_acl_filter,
+            validate_kg_cypher,
+        )
+
+        last_error: str | None = None
+
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                if attempt > 0 and last_error:
+                    cypher = self._retry_cypher_generation(
+                        original_query, cypher, last_error
+                    )
+                    if cypher is None:
+                        return (
+                            f"Could not fix the Cypher query after {attempt} retries.",
+                            [],
+                            {},
+                        )
+
+                validate_kg_cypher(cypher)
+                cypher = inject_acl_filter(cypher)
+                cypher = enforce_cypher_row_limit(cypher, max_rows=MAX_RESULT_ROWS)
+                logger.info(
+                    "KG Cypher attempt %d executing: %s", attempt + 1, cypher
+                )
+
+                exec_start = time.monotonic()
+                columns, rows = execute_cypher(
+                    cypher, allowed_doc_ids=allowed_doc_ids
+                )
+                elapsed_ms = int((time.monotonic() - exec_start) * 1000)
+                logger.info(
+                    "KG Cypher attempt %d completed: %d rows in %d ms",
+                    attempt + 1,
+                    len(rows),
+                    elapsed_ms,
+                )
+
+                if not rows:
+                    return (
+                        "===== KG_TOOL_RESULT: 0_ROWS =====\n"
+                        "Query matched 0 rows. This does NOT mean the KG is "
+                        "empty — it means nothing matched the filters.\n\n"
+                        f"Executed Cypher:\n{cypher}\n\n"
+                        "REPLY CONTRACT — the KG section of your answer "
+                        "MUST be EXACTLY this phrase and nothing else:\n"
+                        '"The knowledge graph has no record matching your '
+                        'query. (Verified by Cypher that returned 0 rows.)"'
+                    ), [], {}
+
+                return self._format_results(columns, rows)
+
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(
+                    "KG Cypher execution attempt %d failed: %s",
+                    attempt + 1,
+                    last_error,
+                )
+                if attempt == MAX_RETRIES:
+                    return (
+                        f"Knowledge graph query failed after "
+                        f"{MAX_RETRIES + 1} attempts. Last error: {last_error}",
+                        [],
+                        {},
+                    )
+
+        return "Knowledge graph query failed unexpectedly.", [], {}
+
+    def _retry_cypher_generation(
+        self,
+        original_query: str,
+        failed_cypher: str,
+        error_message: str,
+    ) -> str | None:
+        """Ask the LLM to fix a failed Cypher query."""
+        from onyx.db.kg_cypher_execution import parse_cypher_from_llm_response
+
+        system_msg = (
+            "You are an expert at fixing Neo4j Cypher queries.\n"
+            "The previous query failed. Fix it and wrap the corrected "
+            "Cypher in <cypher>...</cypher> tags.\n"
+            "Do NOT explain — output ONLY the <cypher>...</cypher> block.\n\n"
+            "Common fixes:\n"
+            "- Property access: use n.property, not n['property']\n"
+            "- NULL checks: use IS NULL / IS NOT NULL, not = NULL\n"
+            "- String matching: use toLower(n.name) CONTAINS 'x', not ILIKE\n"
+            "- Aggregations: use WITH for intermediate aggregations before RETURN\n"
+            "- Date functions: use date().year, date().month (not EXTRACT)\n"
+        )
+
+        user_msg = (
+            f"Original question: {original_query}\n\n"
+            f"Failed Cypher:\n{failed_cypher}\n\n"
+            f"Error message:\n{error_message}\n\n"
+            "Please generate a corrected Cypher query.\n\n"
+            "/no_think"
+        )
+
+        response = self._llm.invoke(
+            prompt=[
+                SystemMessage(content=system_msg),
+                UserMessage(content=user_msg),
+            ],
+            timeout_override=KG_SQL_GENERATION_TIMEOUT,
+            max_tokens=KG_SQL_GENERATION_MAX_TOKENS,
+        )
+
+        content = llm_response_to_string(response)
+        return parse_cypher_from_llm_response(content)
 
     def _format_results(
         self,
