@@ -21,12 +21,21 @@ def neo4j_driver() -> Driver:
     return get_neo4j_driver()
 
 
+_TEST_IDS = [
+    "p1", "p2", "e1", "e2", "c1", "s1", "s2", "ps1", "ps2", "cert1",
+]
+
+
 @pytest.fixture(autouse=True)
 def seed_data(neo4j_driver: Driver) -> None:  # type: ignore[misc]
-    """Wipe and seed a small graph for testing."""
+    """Clean test nodes, then seed a small graph for testing."""
     db = get_neo4j_database()
     with neo4j_driver.session(database=db) as s:
-        s.run("MATCH (n) DETACH DELETE n")
+        s.run(
+            "UNWIND $ids AS eid "
+            "MATCH (n {id_name: eid}) DETACH DELETE n",
+            ids=_TEST_IDS,
+        )
 
     ensure_indexes(neo4j_driver)
 
@@ -60,11 +69,27 @@ def seed_data(neo4j_driver: Driver) -> None:  # type: ignore[misc]
     sync_relationship("p2", "ps2", "PERSON", "PERSON_SKILL", "has_person_skill", "doc_2", driver=neo4j_driver)
     sync_relationship("ps2", "s2", "PERSON_SKILL", "SKILL", "skill_of", "doc_2", driver=neo4j_driver)
 
+    yield
+
+    # Teardown: remove test nodes
+    with neo4j_driver.session(database=db) as s:
+        s.run(
+            "UNWIND $ids AS eid "
+            "MATCH (n {id_name: eid}) DETACH DELETE n",
+            ids=_TEST_IDS,
+        )
+
+
+_TEST_DOCS = {"doc_1", "doc_2"}
+
 
 class TestExecuteCypher:
     def test_simple_match(self) -> None:
         columns, rows = execute_cypher(
-            "MATCH (p:Person) RETURN p.name AS name ORDER BY name"
+            "MATCH (p:Person) "
+            "WHERE p.document_id IN $allowed_docs "
+            "RETURN p.name AS name ORDER BY name",
+            allowed_doc_ids=_TEST_DOCS,
         )
         assert columns == ["name"]
         names = [r[0] for r in rows]
@@ -75,8 +100,10 @@ class TestExecuteCypher:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(c.name) CONTAINS 'acme' "
-            "RETURN DISTINCT p.name AS name ORDER BY name"
+            "WHERE p.document_id IN $allowed_docs "
+            "AND toLower(c.name) CONTAINS 'acme' "
+            "RETURN DISTINCT p.name AS name ORDER BY name",
+            allowed_doc_ids=_TEST_DOCS,
         )
         names = [r[0] for r in rows]
         assert len(names) == 2
@@ -87,8 +114,10 @@ class TestExecuteCypher:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'python' "
-            "RETURN DISTINCT p.name AS name"
+            "WHERE p.document_id IN $allowed_docs "
+            "AND toLower(s.name) CONTAINS 'python' "
+            "RETURN DISTINCT p.name AS name",
+            allowed_doc_ids=_TEST_DOCS,
         )
         names = [r[0] for r in rows]
         assert names == ["john doe"]
@@ -96,8 +125,10 @@ class TestExecuteCypher:
     def test_certification_filter(self) -> None:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
-            "WHERE toLower(c.name) CONTAINS 'aws' "
-            "RETURN DISTINCT p.name AS name"
+            "WHERE p.document_id IN $allowed_docs "
+            "AND toLower(c.name) CONTAINS 'aws' "
+            "RETURN DISTINCT p.name AS name",
+            allowed_doc_ids=_TEST_DOCS,
         )
         assert [r[0] for r in rows] == ["john doe"]
 
@@ -106,12 +137,15 @@ class TestExecuteCypher:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE toLower(s.name) CONTAINS 'aws' "
+            "WHERE p.document_id IN $allowed_docs "
+            "AND toLower(s.name) CONTAINS 'aws' "
             "RETURN DISTINCT p.name AS name "
             "UNION "
             "MATCH (p:Person)-[:HOLDS_CERT]->(c:Certification) "
-            "WHERE toLower(c.name) CONTAINS 'aws' "
-            "RETURN DISTINCT p.name AS name"
+            "WHERE p.document_id IN $allowed_docs "
+            "AND toLower(c.name) CONTAINS 'aws' "
+            "RETURN DISTINCT p.name AS name",
+            allowed_doc_ids=_TEST_DOCS,
         )
         names = [r[0] for r in rows]
         assert "john doe" in names
@@ -121,12 +155,14 @@ class TestExecuteCypher:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "WHERE toLower(c.name) CONTAINS 'acme' "
+            "WHERE p.document_id IN $allowed_docs "
+            "AND toLower(c.name) CONTAINS 'acme' "
             "WITH p "
             "MATCH (p)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
             "WHERE toLower(s.name) CONTAINS 'python' "
-            "RETURN DISTINCT p.name AS name"
+            "RETURN DISTINCT p.name AS name",
+            allowed_doc_ids=_TEST_DOCS,
         )
         assert [r[0] for r in rows] == ["john doe"]
 
@@ -134,8 +170,10 @@ class TestExecuteCypher:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)"
             "-[:SKILL_OF]->(s:Skill) "
-            "WHERE ps.proficiency = 'SENIOR' "
-            "RETURN p.name AS name, s.name AS skill"
+            "WHERE p.document_id IN $allowed_docs "
+            "AND ps.proficiency = 'SENIOR' "
+            "RETURN p.name AS name, s.name AS skill",
+            allowed_doc_ids=_TEST_DOCS,
         )
         assert len(rows) == 1
         assert rows[0][0] == "john doe"
@@ -145,7 +183,9 @@ class TestExecuteCypher:
         columns, rows = execute_cypher(
             "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
-            "RETURN c.name AS company, count(DISTINCT p) AS headcount"
+            "WHERE p.document_id IN $allowed_docs "
+            "RETURN c.name AS company, count(DISTINCT p) AS headcount",
+            allowed_doc_ids=_TEST_DOCS,
         )
         assert len(rows) == 1
         assert rows[0][0] == "acme corp"

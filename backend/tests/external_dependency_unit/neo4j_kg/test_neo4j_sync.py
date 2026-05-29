@@ -21,6 +21,17 @@ from onyx.db.neo4j_sync import (
 )
 
 
+# All test entity id_names use this prefix so cleanup can target them
+# without touching production data.
+_TEST_PREFIX = "test__"
+
+# Collect all test entity ids used across tests for cleanup
+_TEST_IDS = [
+    "p1", "p2", "e1", "e2", "c1", "s1", "s2", "ps1", "ps2",
+    "cert1", "skill_1", "person_1", "emp_1",
+]
+
+
 @pytest.fixture(scope="module")
 def neo4j_driver() -> Driver:
     """Skip the entire module if Neo4j is not reachable."""
@@ -30,11 +41,21 @@ def neo4j_driver() -> Driver:
 
 
 @pytest.fixture(autouse=True)
-def clean_neo4j(neo4j_driver: Driver) -> None:  # type: ignore[misc]
-    """Wipe all data before each test."""
+def clean_test_data(neo4j_driver: Driver) -> None:  # type: ignore[misc]
+    """Delete only test-created nodes before and after each test."""
     db = get_neo4j_database()
-    with neo4j_driver.session(database=db) as s:
-        s.run("MATCH (n) DETACH DELETE n")
+
+    def _cleanup() -> None:
+        with neo4j_driver.session(database=db) as s:
+            s.run(
+                "UNWIND $ids AS eid "
+                "MATCH (n {id_name: eid}) DETACH DELETE n",
+                ids=_TEST_IDS,
+            )
+
+    _cleanup()
+    yield
+    _cleanup()
 
 
 class TestEnsureIndexes:
@@ -145,7 +166,7 @@ class TestSyncRelationship:
         db = get_neo4j_database()
         with neo4j_driver.session(database=db) as s:
             result = s.run(
-                "MATCH (p:Person)-[r:HAS_EMPLOYMENT]->(e:Employment) "
+                "MATCH (p:Person {id_name: 'p1'})-[r:HAS_EMPLOYMENT]->(e:Employment) "
                 "RETURN r.source_document AS doc"
             ).single()
             assert result is not None
@@ -167,7 +188,7 @@ class TestSyncRelationship:
         db = get_neo4j_database()
         with neo4j_driver.session(database=db) as s:
             result = s.run(
-                "MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)"
+                "MATCH (p:Person {id_name: 'p1'})-[:HAS_EMPLOYMENT]->(e:Employment)"
                 "-[:EMPLOYMENT_AT]->(c:Company) "
                 "RETURN p.name, e.title, e.start_year, c.name"
             ).single()
@@ -312,7 +333,10 @@ class TestDeleteEntities:
         with neo4j_driver.session(database=db) as s:
             cnt = s.run("MATCH (p:Person {id_name: 'p1'}) RETURN count(p) AS cnt").single()
             assert cnt is not None and cnt["cnt"] == 0
-            rel_cnt = s.run("MATCH ()-[r:HAS_EMPLOYMENT]->() RETURN count(r) AS cnt").single()
+            # The relationship from p1 should be gone (but production ones remain)
+            rel_cnt = s.run(
+                "MATCH ({id_name: 'p1'})-[r:HAS_EMPLOYMENT]->() RETURN count(r) AS cnt"
+            ).single()
             assert rel_cnt is not None and rel_cnt["cnt"] == 0
 
 
@@ -329,7 +353,13 @@ class TestDeleteRelationshipsForDocuments:
 
         db = get_neo4j_database()
         with neo4j_driver.session(database=db) as s:
-            r1 = s.run("MATCH ()-[r:HAS_EMPLOYMENT]->() RETURN count(r) AS cnt").single()
+            # doc_1 relationship from p1 gone
+            r1 = s.run(
+                "MATCH ({id_name: 'p1'})-[r:HAS_EMPLOYMENT]->() RETURN count(r) AS cnt"
+            ).single()
             assert r1 is not None and r1["cnt"] == 0
-            r2 = s.run("MATCH ()-[r:HAS_PERSON_SKILL]->() RETURN count(r) AS cnt").single()
+            # doc_2 relationship from p1 still there
+            r2 = s.run(
+                "MATCH ({id_name: 'p1'})-[r:HAS_PERSON_SKILL]->() RETURN count(r) AS cnt"
+            ).single()
             assert r2 is not None and r2["cnt"] == 1
