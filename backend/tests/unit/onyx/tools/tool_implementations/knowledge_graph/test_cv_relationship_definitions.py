@@ -27,8 +27,10 @@ def test_default_relationship_types_exist() -> None:
         ("PERSON", "WORKS_ON_PROJECT", "PROJECT"),
         ("PROJECT", "PROJECT_AT", "COMPANY"),
         ("PROJECT", "PROJECT_USES_SKILL", "SKILL"),
+        ("PERSON", "HAS_EDUCATION", "EDUCATION"),
+        ("EDUCATION", "EDUCATION_AT", "INSTITUTION"),
     ]
-    assert len(defaults) == 10
+    assert len(defaults) == 12
     for source, rel, target in expected:
         match = [
             d for d in defaults
