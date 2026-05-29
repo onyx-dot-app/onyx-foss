@@ -68,6 +68,38 @@ class TestCypherExamples:
                 )
 
 
+    def test_name_filters_use_ascii_variant(self) -> None:
+        """All name-based CONTAINS filters should use _ascii properties."""
+        import re
+        # Find all toLower(x.something) CONTAINS patterns
+        for ex in ENTITY_CYPHER_EXAMPLES + RELATIONSHIP_CYPHER_EXAMPLES:
+            filters = re.findall(
+                r"toLower\(\w+\.(\w+)\)\s+CONTAINS", ex["cypher"]
+            )
+            for prop in filters:
+                # name, issuer, degree are fine without _ascii only if
+                # they ARE the _ascii variant or a non-name field like degree
+                if prop == "degree":
+                    continue
+                assert prop.endswith("_ascii"), (
+                    f"Filter on '{prop}' should use '{prop}_ascii' in "
+                    f"example '{ex['question']}'"
+                )
+
+    def test_return_uses_original_name_not_ascii(self) -> None:
+        """RETURN clauses should display original names, not _ascii."""
+        import re
+        for ex in ENTITY_CYPHER_EXAMPLES + RELATIONSHIP_CYPHER_EXAMPLES:
+            # Find all "AS name" / "AS company" etc aliases
+            returns = re.findall(
+                r"(\w+\.\w+_ascii)\s+AS\s+\w+", ex["cypher"]
+            )
+            assert not returns, (
+                f"RETURN should use original property, not _ascii: "
+                f"{returns} in '{ex['question']}'"
+            )
+
+
 class TestFormatCypherExamples:
     def test_format_output(self) -> None:
         examples = [
