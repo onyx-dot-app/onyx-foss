@@ -547,6 +547,25 @@ services:
       timeout: 20s
       retries: 3
 
+  neo4j:
+    image: neo4j:2025-community
+    profiles: ["neo4j"]
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4jpassword}
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
+
   code-interpreter:
     image: onyxdotapp/code-interpreter:${CODE_INTERPRETER_IMAGE_TAG:-latest}
     command: ["bash", "./entrypoint.sh", "code-interpreter-api"]
@@ -595,3 +614,5 @@ volumes:
   file-system:
   # Persistent data for OpenSearch.
   opensearch-data:
+  # Persistent data for Neo4j KG query backend.
+  neo4j_data:
