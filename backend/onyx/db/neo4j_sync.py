@@ -300,9 +300,13 @@ def delete_relationships_for_documents(
 # ────────────────────────────────────────────────────────────
 
 
+_BATCH_SIZE = 500
+
+
 def full_sync(driver: Driver | None = None) -> dict[str, int]:
     """Wipe Neo4j and reload all entities + relationships from PostgreSQL.
 
+    Uses UNWIND batching for performance.
     Returns a dict with counts: {"entities": N, "relationships": M}.
     """
     from onyx.db.engine.sql_engine import get_session_with_current_tenant
@@ -320,44 +324,124 @@ def full_sync(driver: Driver | None = None) -> dict[str, int]:
     # 2. Ensure indexes
     ensure_indexes(driver)
 
-    # 3. Load entities
+    # 3. Load entities in batches via UNWIND
     entity_count = 0
     with get_session_with_current_tenant() as pg_session:
         entities = pg_session.query(KGEntity).all()
+
+        batch: list[dict[str, Any]] = []
         for e in entities:
-            sync_entity(
-                id_name=e.id_name,
-                name=e.name,
-                entity_type=e.entity_type_id_name,
-                document_id=e.document_id,
-                attributes=e.attributes or {},
-                driver=driver,
-            )
-            entity_count += 1
+            props = {
+                "id_name": e.id_name,
+                "name": e.name,
+                "name_ascii": _strip_accents(e.name),
+                "entity_type": e.entity_type_id_name,
+                "label": _label_for_type(e.entity_type_id_name),
+            }
+            if e.document_id:
+                props["document_id"] = e.document_id
+            props.update(_flatten_attributes(e.entity_type_id_name, e.attributes or {}))
+            batch.append(props)
+
+            if len(batch) >= _BATCH_SIZE:
+                _batch_create_entities(driver, db, batch)
+                entity_count += len(batch)
+                batch = []
+
+        if batch:
+            _batch_create_entities(driver, db, batch)
+            entity_count += len(batch)
 
     logger.info("Neo4j: synced %d entities", entity_count)
 
-    # 4. Load relationships
+    # 4. Load relationships in batches via UNWIND
+    # Also builds source_documents on endpoints.
     rel_count = 0
     with get_session_with_current_tenant() as pg_session:
         relationships = pg_session.query(KGRelationship).all()
+
+        batch_rels: list[dict[str, str]] = []
         for r in relationships:
-            # Extract verb from relationship_type_id_name
-            # Format: SOURCE_TYPE__verb__TARGET_TYPE
             parts = r.relationship_type_id_name.split("__")
             verb = parts[1] if len(parts) == 3 else r.type
 
-            sync_relationship(
-                source_node=r.source_node,
-                target_node=r.target_node,
-                source_type=r.source_node_type,
-                target_type=r.target_node_type,
-                rel_verb=verb,
-                source_document=r.source_document,
-                driver=driver,
+            batch_rels.append(
+                {
+                    "src": r.source_node,
+                    "tgt": r.target_node,
+                    "src_label": _label_for_type(r.source_node_type),
+                    "tgt_label": _label_for_type(r.target_node_type),
+                    "rel_type": neo4j_rel_type(verb),
+                    "doc": r.source_document,
+                }
             )
-            rel_count += 1
+
+            if len(batch_rels) >= _BATCH_SIZE:
+                _batch_create_relationships(driver, db, batch_rels)
+                rel_count += len(batch_rels)
+                batch_rels = []
+
+        if batch_rels:
+            _batch_create_relationships(driver, db, batch_rels)
+            rel_count += len(batch_rels)
 
     logger.info("Neo4j: synced %d relationships", rel_count)
 
     return {"entities": entity_count, "relationships": rel_count}
+
+
+def _batch_create_entities(
+    driver: Driver, db: str, batch: list[dict[str, Any]]
+) -> None:
+    """Create entities in batch using UNWIND.
+
+    Neo4j doesn't support dynamic labels in UNWIND, so we group by label.
+    """
+    from itertools import groupby
+
+    sorted_batch = sorted(batch, key=lambda x: x["label"])
+    for label, group in groupby(sorted_batch, key=lambda x: x["label"]):
+        items = list(group)
+        # Remove the 'label' key from props — it's used for the Cypher label
+        for item in items:
+            item.pop("label", None)
+        with driver.session(database=db) as session:
+            session.run(
+                f"UNWIND $items AS props "
+                f"MERGE (n:{label} {{id_name: props.id_name}}) "
+                f"SET n += props",
+                items=items,
+            )
+
+
+def _batch_create_relationships(
+    driver: Driver, db: str, batch: list[dict[str, str]]
+) -> None:
+    """Create relationships in batch.
+
+    Neo4j doesn't support dynamic rel types in UNWIND, so group by
+    (src_label, tgt_label, rel_type).
+    """
+    from itertools import groupby
+
+    key_fn = lambda x: (x["src_label"], x["tgt_label"], x["rel_type"])
+    sorted_batch = sorted(batch, key=key_fn)
+    for (src_label, tgt_label, rel_type), group in groupby(sorted_batch, key=key_fn):
+        items = [{"src": r["src"], "tgt": r["tgt"], "doc": r["doc"]} for r in group]
+        with driver.session(database=db) as session:
+            session.run(
+                f"UNWIND $items AS row "
+                f"MATCH (s:{src_label} {{id_name: row.src}}), "
+                f"(t:{tgt_label} {{id_name: row.tgt}}) "
+                f"MERGE (s)-[r:{rel_type}]->(t) "
+                f"SET r.source_document = row.doc, "
+                f"    s.source_documents = CASE "
+                f"      WHEN s.source_documents IS NULL THEN [row.doc] "
+                f"      WHEN NOT row.doc IN s.source_documents THEN s.source_documents + row.doc "
+                f"      ELSE s.source_documents END, "
+                f"    t.source_documents = CASE "
+                f"      WHEN t.source_documents IS NULL THEN [row.doc] "
+                f"      WHEN NOT row.doc IN t.source_documents THEN t.source_documents + row.doc "
+                f"      ELSE t.source_documents END",
+                items=items,
+            )
