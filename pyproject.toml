@@ -29,6 +29,7 @@ dependencies = [
     "sqlparse>=0.5.5",
     "kreuzberg>=4.9.7",
     "gliner>=0.2.24",
+    "neo4j>=6.2.0",
 ]
 
 [dependency-groups]
