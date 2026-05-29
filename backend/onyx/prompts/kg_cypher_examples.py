@@ -54,7 +54,7 @@ ENTITY_CYPHER_EXAMPLES: list[CypherExample] = [
         "question": "Find all certifications issued by Oracle",
         "cypher": (
             "MATCH (c:Certification) "
-            "WHERE toLower(c.issuer) CONTAINS 'oracle' "
+            "WHERE toLower(c.issuer_ascii) CONTAINS 'oracle' "
             "RETURN DISTINCT c.name AS name, c.issuer AS issuer"
         ),
     },
@@ -129,7 +129,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "question": "Find all people who live in Prague",
         "cypher": (
             "MATCH (p:Person)-[:LIVES_AT]->(a:Address) "
-            "WHERE toLower(a.city) = 'prague' "
+            "WHERE toLower(a.city_ascii) = 'prague' "
             "RETURN DISTINCT p.name AS name, p.document_id AS source_document"
         ),
     },
@@ -287,7 +287,7 @@ RELATIONSHIP_CYPHER_EXAMPLES: list[CypherExample] = [
         "cypher": (
             "MATCH (p:Person)-[:WORKS_ON_PROJECT]->(proj:Project)"
             "-[:PROJECT_AT]->(pc:Company) "
-            "WHERE toLower(pc.name) CONTAINS 'ministerstvo' "
+            "WHERE toLower(pc.name_ascii) CONTAINS 'ministerstvo' "
             "WITH p "
             "MATCH (p)-[:HAS_EMPLOYMENT]->(e:Employment)"
             "-[:EMPLOYMENT_AT]->(c:Company) "
