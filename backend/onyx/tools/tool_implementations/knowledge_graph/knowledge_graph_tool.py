@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from onyx.chat.emitter import Emitter
+from onyx.configs.kg_configs import KG_QUERY_BACKEND
 from onyx.configs.kg_configs import KG_SQL_GENERATION_MAX_TOKENS
 from onyx.configs.kg_configs import KG_SQL_GENERATION_TIMEOUT
 from onyx.db.kg_schema_description import build_full_schema_description
@@ -141,6 +142,86 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
                 llm_facing_response="No query provided to the knowledge graph tool.",
             )
 
+        if KG_QUERY_BACKEND == "neo4j":
+            return self._run_neo4j(query)
+        return self._run_postgres(query)
+
+    def _run_neo4j(self, query: str) -> ToolResponse:
+        """Execute the KG query against Neo4j using Cypher."""
+        from onyx.db.engine.sql_engine import get_session_with_current_tenant
+        from onyx.db.kg_cypher_execution import (
+            enforce_cypher_row_limit,
+            execute_cypher,
+            KGCypherValidationError,
+            parse_cypher_from_llm_response,
+            validate_kg_cypher,
+        )
+        from onyx.db.kg_temp_view import get_allowed_document_ids
+        from shared_configs.contextvars import get_current_tenant_id
+
+        tenant_id = get_current_tenant_id()
+
+        try:
+            # 1. Get allowed doc IDs for ACL
+            with get_session_with_current_tenant() as db_session:
+                allowed_doc_ids = get_allowed_document_ids(
+                    db_session, tenant_id, self._user.email
+                )
+
+            # 2. Generate Cypher via LLM
+            cypher = self._generate_cypher(query)
+            if cypher is None:
+                return ToolResponse(
+                    rich_response=None,
+                    llm_facing_response=(
+                        "===== KG_TOOL_RESULT: CYPHER_GEN_FAILED =====\n"
+                        "The Cypher-generation LLM call did not produce a parseable "
+                        "<cypher>...</cypher> block. Tell the user there was an internal "
+                        "error and ask them to rephrase."
+                    ),
+                )
+            logger.info("KG Cypher generated for query %r: %s", query, cypher)
+
+            # 3. Validate and enforce limits
+            validate_kg_cypher(cypher)
+            cypher = enforce_cypher_row_limit(cypher, max_rows=MAX_RESULT_ROWS)
+            logger.info("KG Cypher (post-validate) executing: %s", cypher)
+
+            # 4. Execute
+            columns, rows = execute_cypher(cypher, allowed_doc_ids=allowed_doc_ids)
+
+            # 5. Format results (reuse existing formatter)
+            result_str, search_docs, citation_mapping = self._format_results(
+                columns, rows
+            )
+
+            rich_response = None
+            if search_docs:
+                rich_response = SearchDocsResponse(
+                    search_docs=search_docs,
+                    citation_mapping=citation_mapping,
+                )
+
+            return ToolResponse(
+                rich_response=rich_response,
+                llm_facing_response=result_str,
+            )
+
+        except KGCypherValidationError as e:
+            logger.warning("KG Cypher validation failed: %s", e)
+            return ToolResponse(
+                rich_response=None,
+                llm_facing_response=f"The generated Cypher query was invalid: {e}",
+            )
+        except Exception as e:
+            logger.exception("KG tool error (neo4j)")
+            return ToolResponse(
+                rich_response=None,
+                llm_facing_response=f"Knowledge graph query failed: {e}",
+            )
+
+    def _run_postgres(self, query: str) -> ToolResponse:
+        """Execute the KG query against PostgreSQL using SQL (original path)."""
         from shared_configs.contextvars import get_current_tenant_id
 
         tenant_id = get_current_tenant_id()
@@ -389,6 +470,106 @@ class KnowledgeGraphTool(Tool[KnowledgeGraphToolOverrideKwargs]):
 
         logger.warning(
             "KG SQL parse FAILED for query %r.\n"
+            "  content (%d chars): %r\n"
+            "  reasoning_content (%d chars): %r",
+            query,
+            len(content),
+            content[:800],
+            len(reasoning),
+            reasoning[:800],
+        )
+        return None
+
+    def _generate_cypher(self, query: str) -> str | None:
+        """Use the LLM to generate Cypher from a natural language query."""
+        from onyx.db.kg_cypher_execution import parse_cypher_from_llm_response
+        from onyx.prompts.kg_cypher_examples import (
+            ENTITY_CYPHER_EXAMPLES,
+            format_cypher_examples,
+            RELATIONSHIP_CYPHER_EXAMPLES,
+        )
+
+        few_shot = format_cypher_examples(
+            ENTITY_CYPHER_EXAMPLES + RELATIONSHIP_CYPHER_EXAMPLES
+        )
+
+        system_msg = (
+            "You are an expert at generating Neo4j Cypher queries against a knowledge graph.\n"
+            "Generate a single read-only MATCH query. Wrap the Cypher in <cypher>...</cypher> tags.\n"
+            "Do NOT explain your reasoning. Output ONLY the <cypher>...</cypher> block.\n\n"
+            "NODE LABELS: Person, Employment, Company, Skill, PersonSkill, Certification, "
+            "Education, Institution, Project, Address\n\n"
+            "RELATIONSHIP TYPES: HAS_EMPLOYMENT, EMPLOYMENT_AT, HAS_PERSON_SKILL, SKILL_OF, "
+            "HOLDS_CERT, WORKS_ON_PROJECT, PROJECT_AT, PROJECT_USES_SKILL, HAS_EDUCATION, "
+            "EDUCATION_AT, LIVES_AT, LOCATED_AT\n\n"
+            "RULES:\n"
+            "1. Names are stored lowercase. Use toLower() + CONTAINS for all name filters.\n"
+            "   Example: WHERE toLower(s.name) CONTAINS 'python'\n"
+            "2. Properties are flat on nodes (not nested). Access directly: e.start_year, e.title, "
+            "ps.proficiency, c.issuer.\n"
+            "3. For multi-chain queries (e.g. employment + skills for the same person), "
+            "use WITH to carry the person variable between MATCH clauses:\n"
+            "   MATCH (p:Person)-[:HAS_EMPLOYMENT]->(e:Employment)-[:EMPLOYMENT_AT]->(c:Company)\n"
+            "   WHERE ... WITH p\n"
+            "   MATCH (p)-[:HAS_PERSON_SKILL]->(ps:PersonSkill)-[:SKILL_OF]->(s:Skill)\n"
+            "4. ALWAYS include source_document in output. Use p.document_id AS source_document.\n"
+            "5. For 'experience/knowledge/expertise' queries, UNION skill and certification paths.\n"
+            "6. Tenure calculation: (coalesce(e.end_year, date().year)*12 + coalesce(e.end_month, "
+            "date().month)) - (e.start_year*12 + coalesce(e.start_month, 1)) >= N_months\n"
+            "7. For 'has ALL of X AND Y': use count(DISTINCT) + WITH + WHERE matched = N.\n"
+            "8. NEVER use CREATE, DELETE, SET, MERGE, REMOVE, or DETACH.\n"
+            "9. SLOVAK/CZECH: users write inflected forms. Use shortest unambiguous stem with CONTAINS.\n"
+        )
+
+        user_msg = (
+            f"Here are some example queries and their Cypher:\n\n{few_shot}\n\n"
+            f"Now generate Cypher for this question:\n{query}\n\n"
+            f"/no_think"
+        )
+
+        prompt = [
+            SystemMessage(content=system_msg),
+            UserMessage(content=user_msg),
+        ]
+
+        max_tokens = KG_SQL_GENERATION_MAX_TOKENS
+        for attempt in range(2):
+            response = self._llm.invoke(
+                prompt=prompt,
+                timeout_override=KG_SQL_GENERATION_TIMEOUT,
+                max_tokens=max_tokens,
+            )
+
+            msg = response.choice.message
+            content = msg.content if isinstance(msg.content, str) else ""
+            reasoning = ""
+            try:
+                reasoning = getattr(msg, "reasoning_content", "") or ""
+            except Exception:
+                reasoning = ""
+
+            parsed = parse_cypher_from_llm_response(content)
+            if parsed is None and reasoning:
+                parsed = parse_cypher_from_llm_response(reasoning)
+            if parsed is None and (content or reasoning):
+                parsed = parse_cypher_from_llm_response(f"{content}\n{reasoning}")
+
+            if parsed is not None:
+                return parsed
+
+            thinking_model_starved = reasoning and not content.strip()
+            if thinking_model_starved and attempt == 0:
+                max_tokens = max_tokens * 4
+                logger.info(
+                    "KG Cypher parse failed (thinking model budget exhaustion). "
+                    "Retrying with max_tokens=%d",
+                    max_tokens,
+                )
+                continue
+            break
+
+        logger.warning(
+            "KG Cypher parse FAILED for query %r.\n"
             "  content (%d chars): %r\n"
             "  reasoning_content (%d chars): %r",
             query,

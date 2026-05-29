@@ -50,6 +50,93 @@ def get_user_view_names(
     )
 
 
+def get_allowed_document_ids(
+    db_session: Session,
+    tenant_id: str,
+    user_email: str,
+) -> set[str]:
+    """Return the set of document IDs the user can access for KG queries.
+
+    This runs the same 5-way UNION ACL query used by create_views() but
+    returns a plain Python set instead of creating temporary views. Used
+    by the Neo4j Cypher query path which passes allowed doc IDs as a
+    parameter instead of filtering via SQL views.
+    """
+    query = text(
+        f"""
+        WITH kg_used_docs AS (
+            SELECT document_id as kg_used_doc_id
+            FROM "{tenant_id}".kg_entity
+            WHERE document_id IS NOT NULL
+        ),
+        base_public_docs AS (
+            SELECT d.id as allowed_doc_id
+            FROM "{tenant_id}".document d
+            INNER JOIN kg_used_docs kud ON kud.kg_used_doc_id = d.id
+            WHERE d.is_public
+        ),
+        user_owned_and_public_docs AS (
+            SELECT d.id as allowed_doc_id
+            FROM "{tenant_id}".document_by_connector_credential_pair d
+            JOIN "{tenant_id}".credential c ON d.credential_id = c.id
+            JOIN "{tenant_id}".connector_credential_pair ccp ON
+                d.connector_id = ccp.connector_id AND
+                d.credential_id = ccp.credential_id
+            JOIN "{tenant_id}".user u ON c.user_id = u.id
+            INNER JOIN kg_used_docs kud ON kud.kg_used_doc_id = d.id
+            WHERE ccp.status != 'DELETING'
+            AND ccp.access_type != 'SYNC'
+            AND (u.email = :user_email or ccp.access_type::text = 'PUBLIC')
+        ),
+        user_group_accessible_docs AS (
+            SELECT d.id as allowed_doc_id
+            FROM "{tenant_id}".document_by_connector_credential_pair d
+            JOIN "{tenant_id}".connector_credential_pair ccp ON
+                d.connector_id = ccp.connector_id AND
+                d.credential_id = ccp.credential_id
+            JOIN "{tenant_id}".user_group__connector_credential_pair ugccp ON
+                ccp.id = ugccp.cc_pair_id
+            JOIN "{tenant_id}".user__user_group uug ON
+                uug.user_group_id = ugccp.user_group_id
+            JOIN "{tenant_id}".user u ON uug.user_id = u.id
+            INNER JOIN kg_used_docs kud ON kud.kg_used_doc_id = d.id
+            WHERE ccp.status != 'DELETING'
+            AND ccp.access_type != 'SYNC'
+            AND u.email = :user_email
+        ),
+        external_user_docs AS (
+            SELECT d.id as allowed_doc_id
+            FROM "{tenant_id}".document d
+            INNER JOIN kg_used_docs kud ON kud.kg_used_doc_id = d.id
+            WHERE :user_email = ANY(external_user_emails)
+        ),
+        external_group_docs AS (
+            SELECT d.id as allowed_doc_id
+            FROM "{tenant_id}".document d
+            INNER JOIN kg_used_docs kud ON kud.kg_used_doc_id = d.id
+            JOIN "{tenant_id}".user__external_user_group_id ueg
+                ON ueg.external_user_group_id = ANY(d.external_user_group_ids)
+            JOIN "{tenant_id}".user u ON ueg.user_id = u.id
+            WHERE u.email = :user_email
+        )
+        SELECT DISTINCT allowed_doc_id FROM (
+            SELECT allowed_doc_id FROM base_public_docs
+            UNION
+            SELECT allowed_doc_id FROM user_owned_and_public_docs
+            UNION
+            SELECT allowed_doc_id FROM user_group_accessible_docs
+            UNION
+            SELECT allowed_doc_id FROM external_user_docs
+            UNION
+            SELECT allowed_doc_id FROM external_group_docs
+        ) combined_docs
+        """
+    ).bindparams(user_email=user_email)
+
+    rows = db_session.execute(query).fetchall()
+    return {row[0] for row in rows}
+
+
 def create_views(
     db_session: Session,
     tenant_id: str,
