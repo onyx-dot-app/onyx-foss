@@ -32,12 +32,14 @@ import SkillPreviewModal from "@/sections/modals/SkillPreviewModal";
 import type { BuiltinSkill, CustomSkill } from "@/lib/skills/types";
 import LineItem from "@/refresh-components/buttons/LineItem";
 import { setSkillEnabled } from "@/lib/skills/api";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function SkillsPage() {
+  const t = useTranslations("skills");
   const router = useRouter();
   const { data, error, isLoading, refresh } = useUserSkills();
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,36 +175,36 @@ export default function SkillsPage() {
     <SettingsLayouts.Root data-testid="SkillsPage/container">
       <SettingsLayouts.Header
         icon={SvgBlocks}
-        title="Skills"
-        description="Capability bundles your Craft agent can reach for. This page shows built-in skills, skills shared with you, and your own personal skills."
+        title={t("title")}
+        description={t("description")}
         rightChildren={
           <Popover open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
             <Popover.Trigger asChild>
-              <Button icon={SvgPlus}>Create skill</Button>
+              <Button icon={SvgPlus}>{t("createSkill")}</Button>
             </Popover.Trigger>
             <Popover.Content align="end" sideOffset={4} width="xl">
               <Popover.Menu>
                 <LineItem
                   icon={SvgEdit}
-                  description="Write the instructions and add supporting files in Onyx."
+                  description={t("startFromScratchDescription")}
                   wrapDescription
                   onClick={() => {
                     setCreateMenuOpen(false);
                     router.push("/craft/v1/skills/new" as Route);
                   }}
                 >
-                  Start from scratch
+                  {t("startFromScratch")}
                 </LineItem>
                 <LineItem
                   icon={SvgUploadCloud}
-                  description="Import a SKILL.md file, ZIP file, or skill folder."
+                  description={t("uploadSkillDescription")}
                   wrapDescription
                   onClick={() => {
                     setCreateMenuOpen(false);
                     setCreateOpen(true);
                   }}
                 >
-                  Upload a skill
+                  {t("uploadSkill")}
                 </LineItem>
               </Popover.Menu>
             </Popover.Content>
@@ -211,7 +213,7 @@ export default function SkillsPage() {
       >
         <InputTypeIn
           ref={searchInputRef}
-          placeholder="Search skills..."
+          placeholder={t("searchPlaceholder")}
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           searchIcon
@@ -224,8 +226,8 @@ export default function SkillsPage() {
         {error && !isLoading && (
           <MessageCard
             variant="error"
-            title="Failed to load skills"
-            description="Check the console for details and try refreshing the page."
+            title={t("failedToLoad")}
+            description={t("failedToLoadDescription")}
           />
         )}
 
@@ -236,20 +238,20 @@ export default function SkillsPage() {
                 illustration={SvgNoResult}
                 title={
                   items.length === 0
-                    ? "No skills available"
-                    : "No matching skills"
+                    ? t("noSkillsAvailable")
+                    : t("noMatchingSkills")
                 }
                 description={
                   items.length === 0
-                    ? "No custom skills have been shared with you yet, and no built-ins are configured."
-                    : "Try a different search."
+                    ? t("noSkillsDescription")
+                    : t("noMatchDescription")
                 }
               />
             ) : (
               <>
                 <section className="flex flex-col gap-2">
                   <Text font="secondary-body" color="text-03">
-                    Browse skills
+                    {t("browseSkills")}
                   </Text>
                   <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
                     {visibleItems.map((item) => (
@@ -266,7 +268,7 @@ export default function SkillsPage() {
                 </section>
                 <TextSeparator
                   count={visibleItems.length}
-                  text={visibleItems.length === 1 ? "Skill" : "Skills"}
+                  text={visibleItems.length === 1 ? t("skill") : t("skills")}
                 />
               </>
             )}

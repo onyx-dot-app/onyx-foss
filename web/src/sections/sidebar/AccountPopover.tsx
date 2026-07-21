@@ -32,6 +32,8 @@ import UserAvatar from "@/refresh-components/avatars/UserAvatar";
 import { useNotificationSummary } from "@/hooks/useNotifications";
 import { SvgOnyxLogo } from "@opal/logos";
 import { markdown } from "@opal/utils";
+import { useTranslations } from "next-intl";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface SettingsPopoverProps {
   onUserSettingsClick: () => void;
@@ -44,6 +46,7 @@ function SettingsPopover({
   onOpenNotifications,
   undismissedCount,
 }: SettingsPopoverProps) {
+  const t = useTranslations("accountPopover");
   const { user } = useUser();
   const settings = useSettings();
   const enterpriseSettings = settings.enterprise;
@@ -67,7 +70,7 @@ function SettingsPopover({
     logout()
       .then((response) => {
         if (!response?.ok) {
-          alert("Failed to logout");
+          alert(t("failedToLogout"));
           return;
         }
 
@@ -81,7 +84,7 @@ function SettingsPopover({
       })
 
       .catch(() => {
-        toast.error("Failed to logout");
+        toast.error(t("failedToLogout"));
       });
   };
 
@@ -98,7 +101,7 @@ function SettingsPopover({
             variant="section"
             rounding="sm"
             icon={SvgSliders}
-            title="Settings"
+            title={t("settings")}
             href="/app/settings"
             onClick={onUserSettingsClick}
           />
@@ -109,7 +112,7 @@ function SettingsPopover({
           variant="section"
           rounding="sm"
           icon={SvgBell}
-          title="Notifications"
+          title={t("notifications")}
           onClick={onOpenNotifications}
           rightChildren={
             undismissedCount ? (
@@ -123,7 +126,7 @@ function SettingsPopover({
           variant="section"
           rounding="sm"
           icon={SvgHelpCircle}
-          title="Help & FAQ"
+          title={t("helpFaq")}
           href="https://docs.onyx.app"
           target="_blank"
         />,
@@ -149,7 +152,7 @@ function SettingsPopover({
             variant="section"
             rounding="sm"
             icon={SvgUser}
-            title="Log in"
+            title={t("logIn")}
             onClick={handleLogin}
           />
         ),
@@ -161,7 +164,7 @@ function SettingsPopover({
             color="danger"
             rounding="sm"
             icon={SvgLogOut}
-            title="Log Out"
+            title={t("logOut")}
             onClick={handleLogout}
           />
         ),
@@ -179,6 +182,9 @@ function SettingsPopover({
               }](https://docs.onyx.app/changelog)`
             )}
           />
+        </div>,
+        <div key="language-switcher" className="p-2">
+          <LanguageSwitcher />
         </div>,
       ]}
     </PopoverMenu>

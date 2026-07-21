@@ -8,6 +8,7 @@ import { NEXT_PUBLIC_FORGOT_PASSWORD_ENABLED } from "@/lib/constants";
 import { useSendAuthRequiredMessage } from "@/lib/extension/hooks";
 import Text from "@/refresh-components/texts/Text";
 import { Button, MessageCard } from "@opal/components";
+import { useTranslations } from "next-intl";
 
 interface LoginPageProps {
   authUrl: string | null;
@@ -27,6 +28,7 @@ export default function LoginPage({
   isFirstUser,
 }: LoginPageProps) {
   useSendAuthRequiredMessage();
+  const t = useTranslations("auth.login");
 
   // Honor any existing nextUrl; only default to new team flow for first users with no nextUrl
   const effectiveNextUrl =
@@ -39,7 +41,7 @@ export default function LoginPage({
       {verified && (
         <MessageCard
           variant="success"
-          title="Your email has been verified! Please sign in to continue."
+          title={t("emailVerified")}
         />
       )}
       {authTypeMetadata?.multiTenant === true && (
@@ -51,7 +53,7 @@ export default function LoginPage({
               <div className="flex flex-row items-center w-full gap-2">
                 <div className="flex-1 border-t border-text-01" />
                 <Text as="p" text03 mainUiMuted>
-                  or
+                  {t("or")}
                 </Text>
                 <div className="flex-1 border-t border-text-01" />
               </div>
@@ -63,7 +65,7 @@ export default function LoginPage({
             nextUrl={effectiveNextUrl}
           />
           {NEXT_PUBLIC_FORGOT_PASSWORD_ENABLED && (
-            <Button href="/auth/forgot-password">Reset Password</Button>
+            <Button href="/auth/forgot-password">{t("resetPassword")}</Button>
           )}
         </div>
       )}
@@ -85,7 +87,7 @@ export default function LoginPage({
               <div className="flex flex-row items-center w-full gap-2">
                 <div className="flex-1 border-t border-text-01" />
                 <Text as="p" text03 mainUiMuted>
-                  or
+                  {t("or")}
                 </Text>
                 <div className="flex-1 border-t border-text-01" />
               </div>
@@ -97,7 +99,7 @@ export default function LoginPage({
 
       {!hidePageRedirect && (
         <p className="text-center mt-4">
-          Don&apos;t have an account?{" "}
+          {t("noAccount")}{" "}
           <span
             onClick={() => {
               if (typeof window !== "undefined" && window.top) {
@@ -108,7 +110,7 @@ export default function LoginPage({
             }}
             className="text-link font-medium cursor-pointer"
           >
-            Create an account
+            {t("createAccount")}
           </span>
         </p>
       )}

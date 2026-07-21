@@ -80,6 +80,7 @@ import { dismissNotification } from "@/lib/notifications/api";
 import AccountPopover from "@/sections/sidebar/AccountPopover";
 import ChatSearchCommandMenu from "@/sections/sidebar/ChatSearchCommandMenu";
 import { useQueryController } from "@/providers/QueryControllerProvider";
+import { useTranslations } from "next-intl";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -120,6 +121,7 @@ function RecentsSection({
   isLoadingMore,
   onLoadMore,
 }: RecentsSectionProps) {
+  const t = useTranslations("appSidebar");
   const { setNodeRef, isOver } = useDroppable({
     id: DRAG_TYPES.RECENTS,
     data: {
@@ -162,10 +164,10 @@ function RecentsSection({
         isOver && "bg-background-tint-03"
       )}
     >
-      <SidebarLayouts.Section title="Recents">
+      <SidebarLayouts.Section title={t("recents")}>
         {chatSessions.length === 0 ? (
           <Text as="p" text01 className="px-3">
-            Try sending a message! Your chat history will appear here.
+            {t("emptyChatHistory")}
           </Text>
         ) : (
           <>
@@ -197,6 +199,7 @@ function RecentsSection({
 }
 
 export default function AppSidebar() {
+  const t = useTranslations("appSidebar");
   const { folded } = useSidebarState();
   const router = useRouter();
   const combinedSettingsData = useSettings();
@@ -547,11 +550,11 @@ export default function AppSidebar() {
           selected={activeSidebarTab.isMoreAgents()}
           variant={folded ? "sidebar-heavy" : "sidebar-light"}
         >
-          {visibleAgents.length === 0 ? "Explore Agents" : "More Agents"}
+          {visibleAgents.length === 0 ? t("exploreAgents") : t("moreAgents")}
         </SidebarTab>
       </div>
     ),
-    [folded, activeSidebarTab, visibleAgents]
+    [folded, t, activeSidebarTab, visibleAgents]
   );
   const newProjectButton = useMemo(
     () => (
@@ -562,10 +565,10 @@ export default function AppSidebar() {
         folded={folded}
         variant={folded ? "sidebar-heavy" : "sidebar-light"}
       >
-        New Project
+        {t("newProject")}
       </SidebarTab>
     ),
-    [folded, createProjectModal.toggle, createProjectModal.isOpen]
+    [folded, t, createProjectModal.toggle, createProjectModal.isOpen]
   );
   const handleShowBuildIntro = useCallback(() => {
     setShowIntroAnimation(true);
@@ -584,7 +587,7 @@ export default function AppSidebar() {
             icon={SvgSettings}
             folded={folded}
           >
-            {isAdmin ? "Admin Panel" : "Curator Panel"}
+            {isAdmin ? t("adminPanel") : t("curatorPanel")}
           </SidebarTab>
         )}
         <AccountPopover
@@ -595,7 +598,7 @@ export default function AppSidebar() {
         />
       </div>
     ),
-    [folded, isAdmin, isCurator, handleShowBuildIntro, isOnyxCraftEnabled]
+    [folded, t, isAdmin, isCurator, handleShowBuildIntro, isOnyxCraftEnabled]
   );
 
   return (
@@ -681,7 +684,7 @@ export default function AppSidebar() {
                 collisionDetection={closestCenter}
                 onDragEnd={handleAgentDragEnd}
               >
-                <SidebarLayouts.Section title="Agents">
+                <SidebarLayouts.Section title={t("agents")}>
                   <SortableContext
                     items={visibleAgentIds}
                     strategy={verticalListSortingStrategy}
@@ -706,13 +709,13 @@ export default function AppSidebar() {
               >
                 {/* Projects */}
                 <SidebarLayouts.Section
-                  title="Projects"
+                  title={t("projects")}
                   action={
                     <OpalButton
                       icon={SvgFolderPlus}
                       prominence="tertiary"
                       size="sm"
-                      tooltip="New Project"
+                      tooltip={t("newProjectTooltip")}
                       onClick={() => createProjectModal.toggle(true)}
                     />
                   }

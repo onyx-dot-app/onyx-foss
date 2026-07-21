@@ -68,12 +68,14 @@ import { useTierAtLeast } from "@/hooks/useTierAtLeast";
 import { Tier } from "@/lib/settings/types";
 import { useAppDocumentTitle, useCustomFooterContent } from "@/lib/app/hooks";
 import { useFullWidthChat } from "@/providers/FullWidthChatProvider";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Header
 // ---------------------------------------------------------------------------
 
 function Header() {
+  const t = useTranslations("appChrome");
   const appFocus = useAppFocus();
   const businessTier = useTierAtLeast(Tier.BUSINESS);
   const { state, setAppMode } = useQueryController();
@@ -186,7 +188,7 @@ function Header() {
       setDeleteModalOpen(false);
     } catch (error) {
       console.error("Failed to delete chat:", error);
-      showErrorNotification("Failed to delete chat. Please try again.");
+      showErrorNotification(t("failedToDeleteChat"));
     }
   }, [
     currentChatSession,
@@ -214,7 +216,7 @@ function Header() {
         );
       } catch (error) {
         console.error("Failed to export chat:", error);
-        showErrorNotification("Failed to export chat. Please try again.");
+        showErrorNotification(t("failedToExportChat"));
       }
     },
     [currentChatSession]
@@ -247,7 +249,7 @@ function Header() {
           sizePreset="main-ui"
           rounding="sm"
           icon={SvgChevronLeft}
-          title="Export As…"
+          title={t("export.title")}
           onClick={noProp(() => setShowExportOptions(false))}
         />,
         <Popover.Close asChild key="export-plaintext">
@@ -255,7 +257,7 @@ function Header() {
             sizePreset="main-ui"
             rounding="sm"
             icon={SvgFileText}
-            title="Plaintext"
+            title={t("export.plaintext")}
             onClick={noProp(() => handleExport("text"))}
           />
         </Popover.Close>,
@@ -264,7 +266,7 @@ function Header() {
             sizePreset="main-ui"
             rounding="sm"
             icon={SvgHash}
-            title="Markdown"
+            title={t("export.markdown")}
             onClick={noProp(() => handleExport("markdown"))}
           />
         </Popover.Close>,
@@ -276,7 +278,7 @@ function Header() {
           sizePreset="main-ui"
           rounding="sm"
           icon={SvgFolderIn}
-          title="Move to Project"
+          title={t("actions.moveToProject")}
           onClick={noProp(() => setShowMoveOptions(true))}
         />,
         <LineItemButton
@@ -284,7 +286,7 @@ function Header() {
           sizePreset="main-ui"
           rounding="sm"
           icon={SvgDownload}
-          title="Export As…"
+          title={t("actions.exportAs")}
           onClick={noProp(() => setShowExportOptions(true))}
         />,
         null,
@@ -294,7 +296,7 @@ function Header() {
           rounding="sm"
           color="danger"
           icon={SvgTrash}
-          title="Delete"
+          title={t("actions.delete")}
           onClick={noProp(() => setDeleteConfirmationModalOpen(true))}
         />,
       ];
@@ -339,17 +341,16 @@ function Header() {
 
       {deleteModalOpen && (
         <ConfirmationModalLayout
-          title="Delete Chat"
+          title={t("deleteChat.title")}
           icon={SvgTrash}
           onClose={() => setDeleteModalOpen(false)}
           submit={
             <Button variant="danger" onClick={handleDeleteChat}>
-              Delete
+              {t("deleteChat.delete")}
             </Button>
           }
         >
-          Are you sure you want to delete this chat? This action cannot be
-          undone.
+          {t("deleteChat.confirmMessage")}
         </ConfirmationModalLayout>
       )}
 
@@ -384,14 +385,14 @@ function Header() {
                     >
                       <Popover.Trigger asChild>
                         <OpenButton
-                          aria-label="Change app mode"
+                          aria-label={t("modes.changeMode")}
                           icon={
                             effectiveMode === "search"
                               ? SvgSearchMenu
                               : SvgBubbleText
                           }
                         >
-                          {effectiveMode === "search" ? "Search" : "Chat"}
+                          {effectiveMode === "search" ? t("modes.search") : t("modes.chat")}
                         </OpenButton>
                       </Popover.Trigger>
                       <Popover.Content align="start" width="lg">
@@ -403,8 +404,8 @@ function Header() {
                             state={
                               effectiveMode === "search" ? "selected" : "empty"
                             }
-                            title="Search"
-                            description="Quick search for documents"
+                            title={t("modes.search")}
+                            description={t("modes.searchDescription")}
                             onClick={noProp(() => {
                               setAppMode("search");
                               setModePopoverOpen(false);
@@ -417,8 +418,8 @@ function Header() {
                             state={
                               effectiveMode === "chat" ? "selected" : "empty"
                             }
-                            title="Chat"
-                            description="Conversation and research"
+                            title={t("modes.chat")}
+                            description={t("modes.chatDescription")}
                             onClick={noProp(() => {
                               setAppMode("chat");
                               setModePopoverOpen(false);
@@ -466,13 +467,13 @@ function Header() {
                       onClick={() => setShowShareModal(true)}
                       aria-label="share-chat-button"
                     >
-                      Share
+                      {t("actions.share")}
                     </Button>
                     <Button
                       icon={fullWidthChat ? SvgFitWidth : SvgFullWidth}
                       prominence="tertiary"
                       onClick={toggleFullWidthChat}
-                      tooltip={fullWidthChat ? "Fit width" : "Full width"}
+                      tooltip={fullWidthChat ? t("actions.fitWidth") : t("actions.fullWidth")}
                       aria-label="Toggle full width chat"
                       aria-pressed={fullWidthChat}
                     />

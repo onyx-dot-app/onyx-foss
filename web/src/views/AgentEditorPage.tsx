@@ -104,6 +104,7 @@ import { ValidSources } from "@/lib/types";
 import { useSettings } from "@/lib/settings/hooks";
 import { useUser } from "@/providers/UserProvider";
 import { useDraft, draftKey } from "@/hooks/useDraft";
+import { useTranslations } from "next-intl";
 
 interface AgentIconEditorProps {
   existingAgent?: FullAgent | null;
@@ -547,6 +548,7 @@ export default function AgentEditorPage({
   agent: existingAgent,
   refreshAgent,
 }: AgentEditorPageProps) {
+  const t = useTranslations("agentEditor");
   const router = useRouter();
   const appRouter = useAppRouter();
   const { refresh: refreshAgents } = useAgents();
@@ -1047,7 +1049,7 @@ export default function AgentEditorPage({
 
     try {
       await deleteAgent(existingAgent.id);
-      toast.success("Agent deleted successfully");
+      toast.success(t("deleteAgent.success"));
       deleteAgentModal.toggle(false);
       await refreshAgents();
       router.push("/app/agents");
@@ -1290,20 +1292,19 @@ export default function AgentEditorPage({
                   {deleteAgentModal.isOpen && (
                     <ConfirmationModalLayout
                       icon={SvgTrash}
-                      title="Delete Agent"
+                      title={t("deleteAgent.title")}
                       submit={
                         <Button variant="danger" onClick={handleDeleteAgent}>
-                          Delete Agent
+                          {t("deleteAgent.title")}
                         </Button>
                       }
                       onClose={() => deleteAgentModal.toggle(false)}
                     >
                       <GeneralLayouts.Section alignItems="start" gap={0.5}>
                         <Text>
-                          Anyone using this agent will no longer be able to
-                          access it. Deletion cannot be undone.
+                          {t("deleteAgent.warning")}
                         </Text>
-                        <Text>Are you sure you want to delete this agent?</Text>
+                        <Text>{t("deleteAgent.confirm")}</Text>
                       </GeneralLayouts.Section>
                     </ConfirmationModalLayout>
                   )}
@@ -1313,7 +1314,7 @@ export default function AgentEditorPage({
                   <SettingsLayouts.Root>
                     <SettingsLayouts.Header
                       icon={SvgOnyxOctagon}
-                      title={existingAgent ? "Edit Agent" : "Create Agent"}
+                      title={existingAgent ? t("editAgent") : t("createAgent")}
                       rightChildren={
                         <div className="flex gap-2">
                           <Button
@@ -1321,18 +1322,18 @@ export default function AgentEditorPage({
                             type="button"
                             onClick={() => router.back()}
                           >
-                            Cancel
+                            {t("cancel")}
                           </Button>
                           <Tooltip
                             tooltip={
                               isSubmitting
-                                ? "Saving changes..."
+                                ? t("savingChanges")
                                 : !isValid
-                                  ? "Please fix the errors in the form before saving."
+                                  ? t("pleaseFixErrors")
                                   : !dirty
-                                    ? "No changes have been made."
+                                    ? t("noChanges")
                                     : hasUploadingFiles
-                                      ? "Please wait for files to finish uploading."
+                                      ? t("waitForFiles")
                                       : undefined
                             }
                             side="bottom"
@@ -1346,7 +1347,7 @@ export default function AgentEditorPage({
                               }
                               type="submit"
                             >
-                              {existingAgent ? "Save" : "Create"}
+                              {existingAgent ? t("save") : t("create")}
                             </Button>
                           </Tooltip>
                         </div>
@@ -1371,21 +1372,21 @@ export default function AgentEditorPage({
                         alignItems="start"
                       >
                         <GeneralLayouts.Section>
-                          <InputVertical withLabel="name" title="Name">
+                          <InputVertical withLabel="name" title={t("name")}>
                             <InputTypeInField
                               name="name"
-                              placeholder="Name your agent"
+                              placeholder={t("namePlaceholder")}
                             />
                           </InputVertical>
 
                           <InputVertical
                             withLabel="description"
-                            title="Description"
-                            suffix="optional"
+                            title={t("description")}
+                            suffix={t("optional")}
                           >
                             <InputTextAreaField
                               name="description"
-                              placeholder="What does this agent do?"
+                              placeholder={t("descriptionPlaceholder")}
                             />
                           </InputVertical>
                         </GeneralLayouts.Section>
@@ -1393,7 +1394,7 @@ export default function AgentEditorPage({
                         <GeneralLayouts.Section width="fit">
                           <InputVertical
                             withLabel="agent_avatar"
-                            title="Agent Avatar"
+                            title={t("agentAvatar")}
                           >
                             <AgentIconEditor existingAgent={existingAgent} />
                           </InputVertical>
@@ -1408,13 +1409,13 @@ export default function AgentEditorPage({
                       <GeneralLayouts.Section>
                         <InputVertical
                           withLabel="instructions"
-                          title="Instructions"
-                          suffix="optional"
-                          description="Add instructions to tailor the response for this agent."
+                          title={t("instructions")}
+                          suffix={t("optional")}
+                          description={t("instructionsDescription")}
                         >
                           <InputTextAreaField
                             name="instructions"
-                            placeholder="Think step by step and show reasoning for complex problems. Use specific examples. Emphasize action items, and leave blanks for the human to fill in when you have unknown. Use a polite enthusiastic tone."
+                            placeholder={t("instructionsPlaceholder")}
                             rightSection={
                               <InsertUserVariableMenu fieldName="instructions" />
                             }
@@ -1423,9 +1424,9 @@ export default function AgentEditorPage({
 
                         <InputVertical
                           withLabel="starter_messages"
-                          title="Conversation Starters"
-                          description="Example messages that help users understand what this agent can do and how to interact with it effectively."
-                          suffix="optional"
+                          title={t("conversationStarters")}
+                          description={t("conversationStartersDescription")}
+                          suffix={t("optional")}
                         >
                           <AgentStarterMessages />
                         </InputVertical>
@@ -1490,15 +1491,15 @@ export default function AgentEditorPage({
                         height="auto"
                       >
                         <Content
-                          title="Share Agent"
+                          title={t("shareAgent")}
                           sizePreset="main-content"
                           variant="section"
                         />
                         <Card border="solid" rounding="lg">
                           <GeneralLayouts.Section>
                             <InputHorizontal
-                              title="Share This Agent"
-                              description="with other users, groups, or everyone in your organization."
+                              title={t("shareThisAgent")}
+                              description={t("shareThisAgentDescription")}
                               center
                             >
                               <Button
@@ -1506,15 +1507,15 @@ export default function AgentEditorPage({
                                 icon={shareStatusIcon}
                                 onClick={() => shareAgentModal.toggle(true)}
                               >
-                                Share
+                                {t("share")}
                               </Button>
                             </InputHorizontal>
                             {canUpdateFeaturedStatus && (
                               <>
                                 <InputHorizontal
                                   withLabel="is_featured"
-                                  title="Feature This Agent"
-                                  description="Show this agent at the top of the explore agents list and automatically pin it to the sidebar for new users with access."
+                                  title={t("featureThisAgent")}
+                                  description={t("featureThisAgentDescription")}
                                 >
                                   <SwitchField name="is_featured" />
                                 </InputHorizontal>
@@ -1581,8 +1582,8 @@ export default function AgentEditorPage({
 
                       <SimpleCollapsible>
                         <SimpleCollapsible.Header
-                          title="Actions"
-                          description="Tools and capabilities available for this agent to use."
+                          title={t("actions.title")}
+                          description={t("actions.description")}
                         />
                         <SimpleCollapsible.Content>
                           <GeneralLayouts.Section
@@ -1596,8 +1597,8 @@ export default function AgentEditorPage({
                               <Card border="solid" rounding="lg">
                                 <InputHorizontal
                                   withLabel="image_generation"
-                                  title="Image Generation"
-                                  description="Generate and manipulate images using AI-powered tools."
+                                  title={t("actions.imageGeneration")}
+                                  description={t("actions.imageGenerationDescription")}
                                   disabled={!isImageGenerationAvailable}
                                 >
                                   <SwitchField
@@ -1612,8 +1613,8 @@ export default function AgentEditorPage({
                               <Card border="solid" rounding="lg">
                                 <InputHorizontal
                                   withLabel="web_search"
-                                  title="Web Search"
-                                  description="Search the web for real-time information and up-to-date results."
+                                  title={t("actions.webSearch")}
+                                  description={t("actions.webSearchDescription")}
                                   disabled={!webSearchTool}
                                 >
                                   <SwitchField
@@ -1628,8 +1629,8 @@ export default function AgentEditorPage({
                               <Card border="solid" rounding="lg">
                                 <InputHorizontal
                                   withLabel="open_url"
-                                  title="Open URL"
-                                  description="Fetch and read content from web URLs."
+                                  title={t("actions.openUrl")}
+                                  description={t("actions.openUrlDescription")}
                                   disabled={!openURLTool}
                                 >
                                   <SwitchField
@@ -1644,8 +1645,8 @@ export default function AgentEditorPage({
                               <Card border="solid" rounding="lg">
                                 <InputHorizontal
                                   withLabel="code_interpreter"
-                                  title="Code Interpreter"
-                                  description="Generate and run code."
+                                  title={t("actions.codeInterpreter")}
+                                  description={t("actions.codeInterpreterDescription")}
                                   disabled={!codeInterpreterTool}
                                 >
                                   <SwitchField
@@ -1660,8 +1661,8 @@ export default function AgentEditorPage({
                               <Card border="solid" rounding="lg">
                                 <InputHorizontal
                                   withLabel="coding_agent"
-                                  title="Coding Agent"
-                                  description="Investigate a GitHub repository and answer questions about its code."
+                                  title={t("actions.codingAgent")}
+                                  description={t("actions.codingAgentDescription")}
                                   disabled={!codingAgentTool}
                                 >
                                   <SwitchField

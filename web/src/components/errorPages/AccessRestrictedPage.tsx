@@ -12,6 +12,7 @@ import { useSettings } from "@/lib/settings/hooks";
 import { ApplicationStatus } from "@/lib/settings/types";
 import Text from "@/refresh-components/texts/Text";
 import { SvgLock } from "@opal/icons";
+import { useTranslations } from "next-intl";
 
 const linkClassName = "text-action-link-05 hover:text-action-link-06 underline";
 
@@ -40,6 +41,7 @@ export default function AccessRestricted() {
   const [error, setError] = useState<string | null>(null);
   const { data: license } = useLicense();
   const settings = useSettings();
+  const t = useTranslations("accessRestricted");
 
   const isSeatLimitExceeded =
     settings.application_status === ApplicationStatus.SEAT_LIMIT_EXCEEDED;
@@ -52,16 +54,16 @@ export default function AccessRestricted() {
       used_seats != null && seat_count != null
         ? ` (${used_seats} users / ${seat_count} seats)`
         : "";
-    return `Your organization has exceeded its licensed seat count${counts}. Access is restricted until the number of users is reduced or your license is upgraded.`;
+    return t("seatLimitExceeded", { counts });
   }
 
   const initialModalMessage = isSeatLimitExceeded
     ? getSeatLimitMessage()
     : showRenewalMessage
       ? NEXT_PUBLIC_CLOUD_ENABLED
-        ? "Your access to Onyx has been temporarily suspended due to a lapse in your subscription."
-        : "Your access to Onyx has been temporarily suspended due to a lapse in your license."
-      : "An Enterprise license is required to use Onyx. Your data is protected and will be available once a license is activated.";
+        ? t("cloudSuspended")
+        : t("licenseSuspended")
+      : t("noLicense");
 
   const handleResubscribe = async () => {
     setIsLoading(true);
@@ -75,7 +77,7 @@ export default function AccessRestricted() {
       window.location.href = url;
     } catch (error) {
       console.error("Error creating resubscription session:", error);
-      setError("Error opening resubscription page. Please try again later.");
+      setError(t("errorResubscription"));
       setIsLoading(false);
     }
   };
@@ -83,7 +85,7 @@ export default function AccessRestricted() {
   return (
     <ErrorPageLayout>
       <div className="flex items-center gap-2">
-        <Text headingH2>Access Restricted</Text>
+        <Text headingH2>{t("title")}</Text>
         <SvgLock className="stroke-status-error-05 w-6 h-6" />
       </div>
 
@@ -92,15 +94,15 @@ export default function AccessRestricted() {
       {isSeatLimitExceeded ? (
         <>
           <Text text03>
-            If you are an administrator, you can manage users on the{" "}
+            {t("manageUsers")}{" "}
             <Link className={linkClassName} href="/admin/users">
-              User Management
+              {t("userManagement")}
             </Link>{" "}
-            page or upgrade your license on the{" "}
+            {t("upgradeOrReduce")}{" "}
             <Link className={linkClassName} href="/admin/billing">
-              Admin Billing
+              {t("adminBilling")}
             </Link>{" "}
-            page.
+            {t("billingPage")}
           </Text>
 
           <div className="flex flex-row gap-2">
@@ -110,26 +112,19 @@ export default function AccessRestricted() {
                 window.location.reload();
               }}
             >
-              Log out
+              {t("logOut")}
             </Button>
           </div>
         </>
       ) : NEXT_PUBLIC_CLOUD_ENABLED ? (
         <>
-          <Text text03>
-            To reinstate your access and continue benefiting from Onyx&apos;s
-            powerful features, please update your payment information.
-          </Text>
+          <Text text03>{t("updatePayment")}</Text>
 
-          <Text text03>
-            If you&apos;re an admin, you can manage your subscription by
-            clicking the button below. For other users, please reach out to your
-            administrator to address this matter.
-          </Text>
+          <Text text03>{t("adminResubscribe")}</Text>
 
           <div className="flex flex-row gap-2">
             <Button disabled={isLoading} onClick={handleResubscribe}>
-              {isLoading ? "Loading..." : "Resubscribe"}
+              {isLoading ? t("loading") : t("resubscribe")}
             </Button>
             <Button
               prominence="secondary"
@@ -138,7 +133,7 @@ export default function AccessRestricted() {
                 window.location.reload();
               }}
             >
-              Log out
+              {t("logOut")}
             </Button>
           </div>
 
@@ -147,22 +142,19 @@ export default function AccessRestricted() {
       ) : (
         <>
           <Text text03>
-            {hadPreviousLicense
-              ? "To reinstate your access and continue using Onyx, please contact your system administrator to renew your license."
-              : "To get started, please contact your system administrator to obtain an Enterprise license."}
+            {hadPreviousLicense ? t("renewLicense") : t("getStartedLicense")}
           </Text>
 
           <Text text03>
-            If you are the administrator, please visit the{" "}
+            {t("adminBillingLink")}{" "}
             <Link className={linkClassName} href="/admin/billing">
-              Admin Billing
+              {t("adminBillingPage")}
             </Link>{" "}
-            page to {hadPreviousLicense ? "renew" : "activate"} your license,
-            sign up through Stripe or reach out to{" "}
+            {hadPreviousLicense ? t("renewPage") : t("activatePage")}{" "}
             <a className={linkClassName} href="mailto:support@onyx.app">
               support@onyx.app
             </a>{" "}
-            for billing assistance.
+            {t("billingAssistance")}
           </Text>
 
           <div className="flex flex-row gap-2">
@@ -172,21 +164,21 @@ export default function AccessRestricted() {
                 window.location.reload();
               }}
             >
-              Log out
+              {t("logOut")}
             </Button>
           </div>
         </>
       )}
 
       <Text text03>
-        Need help? Join our{" "}
+        {t("needHelp")}{" "}
         <InlineExternalLink
           className={linkClassName}
           href="https://discord.gg/4NA5SbzrWb"
         >
-          Discord community
+          {t("discordCommunity")}
         </InlineExternalLink>{" "}
-        for support.
+        {t("forSupport")}
       </Text>
     </ErrorPageLayout>
   );
