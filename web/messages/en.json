@@ -233,5 +233,95 @@
     "exitAdminPanel": "Exit Admin Panel",
     "tierTooltipEnterprise": "This feature is available on the [Enterprise version of Onyx](/admin/billing) only.",
     "tierTooltipBusiness": "This feature is available on the [Business or Enterprise version of Onyx](/admin/billing) only."
+  },
+  "settings": {
+    "title": "Settings",
+    "selectSection": "Select a section",
+    "tabs": {
+      "general": "General",
+      "chatPreferences": "Chat Preferences",
+      "accountsAccess": "Accounts & Access",
+      "connectors": "Connectors"
+    }
+  },
+  "appChrome": {
+    "deleteChat": {
+      "title": "Delete Chat",
+      "delete": "Delete",
+      "confirmMessage": "Are you sure you want to delete this chat? This action cannot be undone."
+    },
+    "export": {
+      "title": "Export As…",
+      "plaintext": "Plaintext",
+      "markdown": "Markdown"
+    },
+    "actions": {
+      "moveToProject": "Move to Project",
+      "exportAs": "Export As…",
+      "delete": "Delete",
+      "share": "Share",
+      "fitWidth": "Fit width",
+      "fullWidth": "Full width"
+    },
+    "modes": {
+      "search": "Search",
+      "chat": "Chat",
+      "searchDescription": "Quick search for documents",
+      "chatDescription": "Conversation and research",
+      "changeMode": "Change app mode"
+    },
+    "failedToDeleteChat": "Failed to delete chat. Please try again.",
+    "failedToExportChat": "Failed to export chat. Please try again."
+  },
+  "agents": {
+    "title": "Agents",
+    "description": "Customize AI behavior and knowledge for you and your team's use cases.",
+    "newAgent": "New Agent",
+    "searchPlaceholder": "Search agents...",
+    "tabs": {
+      "all": "All Agents",
+      "your": "Your Agents"
+    },
+    "noAgentsFound": "No Agents found",
+    "sections": {
+      "featured": "Featured Agents",
+      "featuredDescription": "Curated by your team",
+      "all": "All Agents",
+      "agent": "Agent",
+      "agents": "Agents"
+    }
+  },
+  "appSidebar": {
+    "recents": "Recents",
+    "projects": "Projects",
+    "agents": "Agents",
+    "newProject": "New Project",
+    "newProjectTooltip": "New Project",
+    "exploreAgents": "Explore Agents",
+    "moreAgents": "More Agents",
+    "adminPanel": "Admin Panel",
+    "curatorPanel": "Curator Panel",
+    "emptyChatHistory": "Try sending a message! Your chat history will appear here."
+  },
+  "chatButton": {
+    "share": "Share",
+    "rename": "Rename",
+    "moveToProject": "Move to Project",
+    "removeFrom": "Remove from {projectName}",
+    "delete": "Delete",
+    "searchProjects": "Search Projects",
+    "deleteChat": {
+      "title": "Delete Chat",
+      "delete": "Delete",
+      "confirmMessage": "Are you sure you want to delete this chat? This action cannot be undone."
+    }
+  },
+  "accountPopover": {
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "helpFaq": "Help & FAQ",
+    "logIn": "Log in",
+    "logOut": "Log Out",
+    "failedToLogout": "Failed to logout"
   }
 }

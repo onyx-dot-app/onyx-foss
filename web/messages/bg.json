@@ -233,5 +233,95 @@
     "exitAdminPanel": "Изход от администраторски панел",
     "tierTooltipEnterprise": "Тази функция е достъпна само в [корпоративната версия на Onyx](/admin/billing).",
     "tierTooltipBusiness": "Тази функция е достъпна само в [бизнес или корпоративната версия на Onyx](/admin/billing)."
+  },
+  "settings": {
+    "title": "Настройки",
+    "selectSection": "Изберете раздел",
+    "tabs": {
+      "general": "Общи",
+      "chatPreferences": "Предпочитания за чат",
+      "accountsAccess": "Акаунти и достъп",
+      "connectors": "Конектори"
+    }
+  },
+  "appChrome": {
+    "deleteChat": {
+      "title": "Изтриване на чат",
+      "delete": "Изтрий",
+      "confirmMessage": "Сигурни ли сте, че искате да изтриете този чат? Това действие не може да бъде отменено."
+    },
+    "export": {
+      "title": "Експортирай като…",
+      "plaintext": "Обикновен текст",
+      "markdown": "Markdown"
+    },
+    "actions": {
+      "moveToProject": "Премести в проект",
+      "exportAs": "Експортирай като…",
+      "delete": "Изтрий",
+      "share": "Сподели",
+      "fitWidth": "Съобрази ширина",
+      "fullWidth": "Пълна ширина"
+    },
+    "modes": {
+      "search": "Търсене",
+      "chat": "Чат",
+      "searchDescription": "Бързо търсене на документи",
+      "chatDescription": "Разговор и изследване",
+      "changeMode": "Промени режима на приложението"
+    },
+    "failedToDeleteChat": "Неуспешно изтриване на чат. Моля, опитайте отново.",
+    "failedToExportChat": "Неуспешно експортиране на чат. Моля, опитайте отново."
+  },
+  "agents": {
+    "title": "Агенти",
+    "description": "Персонализирайте поведението и знанието на AI за вашите и екипните случаи на употреба.",
+    "newAgent": "Нов агент",
+    "searchPlaceholder": "Търси агенти...",
+    "tabs": {
+      "all": "Всички агенти",
+      "your": "Вашите агенти"
+    },
+    "noAgentsFound": "Няма намерени агенти",
+    "sections": {
+      "featured": "Препоръчани агенти",
+      "featuredDescription": "Подбрани от вашия екип",
+      "all": "Всички агенти",
+      "agent": "Агент",
+      "agents": "Агенти"
+    }
+  },
+  "appSidebar": {
+    "recents": "Последни",
+    "projects": "Проекти",
+    "agents": "Агенти",
+    "newProject": "Нов проект",
+    "newProjectTooltip": "Нов проект",
+    "exploreAgents": "Разгледай агенти",
+    "moreAgents": "Още агенти",
+    "adminPanel": "Административен панел",
+    "curatorPanel": "Панел на куратора",
+    "emptyChatHistory": "Изпратете съобщение! Историята на чатовете ви ще се появи тук."
+  },
+  "chatButton": {
+    "share": "Сподели",
+    "rename": "Преименувай",
+    "moveToProject": "Премести в проект",
+    "removeFrom": "Премахни от {projectName}",
+    "delete": "Изтрий",
+    "searchProjects": "Търси проекти",
+    "deleteChat": {
+      "title": "Изтриване на чат",
+      "delete": "Изтрий",
+      "confirmMessage": "Сигурни ли сте, че искате да изтриете този чат? Това действие не може да бъде отменено."
+    }
+  },
+  "accountPopover": {
+    "settings": "Настройки",
+    "notifications": "Известия",
+    "helpFaq": "Помощ и ЧЗВ",
+    "logIn": "Влезте",
+    "logOut": "Излезте",
+    "failedToLogout": "Неуспешно излизане"
   }
 }

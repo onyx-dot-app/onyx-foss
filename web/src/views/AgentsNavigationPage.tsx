@@ -13,6 +13,7 @@ import { Button, InputTypeIn, Tabs } from "@opal/components";
 import { SvgOnyxOctagon, SvgPlus } from "@opal/icons";
 import useOnMount from "@/hooks/useOnMount";
 import { useAgentsFilters } from "@/sections/agents/AgentsFilters";
+import { useTranslations } from "next-intl";
 
 interface AgentsSectionProps {
   title: string;
@@ -45,6 +46,7 @@ function AgentsSection({ title, description, agents }: AgentsSectionProps) {
 }
 
 export default function AgentsNavigationPage() {
+  const t = useTranslations("agents");
   const { agents } = useAgents();
   const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
@@ -95,15 +97,15 @@ export default function AgentsNavigationPage() {
     >
       <SettingsLayouts.Header
         icon={SvgOnyxOctagon}
-        title="Agents"
-        description="Customize AI behavior and knowledge for you and your team's use cases."
+        title={t("title")}
+        description={t("description")}
         rightChildren={
           <Button
             href="/app/agents/create"
             icon={SvgPlus}
             aria-label="AgentsPage/new-agent-button"
           >
-            New Agent
+            {t("newAgent")}
           </Button>
         }
       >
@@ -112,7 +114,7 @@ export default function AgentsNavigationPage() {
             <div className="flex-2">
               <InputTypeIn
                 ref={searchInputRef}
-                placeholder="Search agents..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 searchIcon
@@ -124,8 +126,8 @@ export default function AgentsNavigationPage() {
                 onValueChange={(value) => setActiveTab(value as "all" | "your")}
               >
                 <Tabs.List>
-                  <Tabs.Trigger value="all">All Agents</Tabs.Trigger>
-                  <Tabs.Trigger value="your">Your Agents</Tabs.Trigger>
+                  <Tabs.Trigger value="all">{t("tabs.all")}</Tabs.Trigger>
+                  <Tabs.Trigger value="your">{t("tabs.your")}</Tabs.Trigger>
                 </Tabs.List>
               </Tabs>
             </div>
@@ -142,19 +144,19 @@ export default function AgentsNavigationPage() {
             className="w-full h-full flex flex-col items-center justify-center py-12"
             text03
           >
-            No Agents found
+            {t("noAgentsFound")}
           </Text>
         ) : (
           <>
             <AgentsSection
-              title="Featured Agents"
-              description="Curated by your team"
+              title={t("sections.featured")}
+              description={t("sections.featuredDescription")}
               agents={featuredAgents}
             />
-            <AgentsSection title="All Agents" agents={allAgents} />
+            <AgentsSection title={t("sections.all")} agents={allAgents} />
             <TextSeparator
               count={agentCount}
-              text={agentCount === 1 ? "Agent" : "Agents"}
+              text={agentCount === 1 ? t("sections.agent") : t("sections.agents")}
             />
           </>
         )}

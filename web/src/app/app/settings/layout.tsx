@@ -9,6 +9,7 @@ import InputSelect from "@/refresh-components/inputs/InputSelect";
 import { useUser } from "@/providers/UserProvider";
 import { useIsMultiTenant } from "@/lib/auth/hooks";
 import { Section } from "@/layouts/general-layouts";
+import { useTranslations } from "next-intl";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,18 +25,19 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const { user } = useUser();
   const isMultiTenant = useIsMultiTenant();
+  const t = useTranslations("settings");
 
   const showPasswordSection = Boolean(user?.password_configured);
   const showTokensSection = isMultiTenant !== null;
   const showAccountsAccessTab = showPasswordSection || showTokensSection;
 
   const tabs: SettingsTab[] = [
-    { href: "/app/settings/general", label: "General" },
-    { href: "/app/settings/chat-preferences", label: "Chat Preferences" },
+    { href: "/app/settings/general", label: t("tabs.general") },
+    { href: "/app/settings/chat-preferences", label: t("tabs.chatPreferences") },
     ...(showAccountsAccessTab
-      ? [{ href: "/app/settings/accounts-access", label: "Accounts & Access" }]
+      ? [{ href: "/app/settings/accounts-access", label: t("tabs.accountsAccess") }]
       : []),
-    { href: "/app/settings/connectors", label: "Connectors" },
+    { href: "/app/settings/connectors", label: t("tabs.connectors") },
   ];
 
   // Derive the trigger label from the pathname directly. InputSelect normally
@@ -46,7 +48,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <SettingsLayouts.Root width="lg">
-      <SettingsLayouts.Header icon={SvgSliders} title="Settings" divider />
+      <SettingsLayouts.Header icon={SvgSliders} title={t("title")} divider />
 
       <SettingsLayouts.Body>
         <Section
@@ -67,7 +69,7 @@ export default function Layout({ children }: LayoutProps) {
                 router.push(href as Route, { scroll: false })
               }
             >
-              <InputSelect.Trigger placeholder="Select a section">
+              <InputSelect.Trigger placeholder={t("selectSection")}>
                 {activeTab && (
                   <Text font="main-ui-body" color="text-04" nowrap>
                     {activeTab.label}
