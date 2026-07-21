@@ -3,6 +3,7 @@
 import { useState } from "react";
 import InputSelect from "@/refresh-components/inputs/InputSelect";
 import { Label } from "@/components/Field";
+import { useTranslations } from "next-intl";
 
 interface ReferralSourceSelectorProps {
   defaultValue?: string;
@@ -12,19 +13,20 @@ export default function ReferralSourceSelector({
   defaultValue,
 }: ReferralSourceSelectorProps) {
   const [referralSource, setReferralSource] = useState(defaultValue);
+  const t = useTranslations("auth.referralSource");
 
   const referralOptions = [
-    { value: "search", label: "Search Engine (Google/Bing)" },
-    { value: "friend", label: "Friend/Colleague" },
-    { value: "linkedin", label: "LinkedIn" },
-    { value: "twitter", label: "Twitter" },
-    { value: "hackernews", label: "HackerNews" },
-    { value: "reddit", label: "Reddit" },
-    { value: "youtube", label: "YouTube" },
-    { value: "podcast", label: "Podcast" },
-    { value: "blog", label: "Article/Blog" },
-    { value: "ads", label: "Advertisements" },
-    { value: "other", label: "Other" },
+    { value: "search", label: t("options.search") },
+    { value: "friend", label: t("options.friend") },
+    { value: "linkedin", label: t("options.linkedin") },
+    { value: "twitter", label: t("options.twitter") },
+    { value: "hackernews", label: t("options.hackernews") },
+    { value: "reddit", label: t("options.reddit") },
+    { value: "youtube", label: t("options.youtube") },
+    { value: "podcast", label: t("options.podcast") },
+    { value: "blog", label: t("options.blog") },
+    { value: "ads", label: t("options.ads") },
+    { value: "other", label: t("options.other") },
   ];
 
   const handleChange = (value: string) => {
@@ -40,10 +42,10 @@ export default function ReferralSourceSelector({
   return (
     <div className="w-full gap-y-2 flex flex-col">
       <Label className="text-text-950" small={false}>
-        How did you hear about us?
+        {t("label")}
       </Label>
       <InputSelect value={referralSource} onValueChange={handleChange}>
-        <InputSelect.Trigger placeholder="Select an option" />
+        <InputSelect.Trigger placeholder={t("placeholder")} />
 
         <InputSelect.Content>
           {referralOptions.map((option) => (

@@ -1,0 +1,181 @@
+{
+  "common": {
+    "or": "or",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "filter": "Filter",
+    "settings": "Settings",
+    "logout": "Log out",
+    "login": "Log in",
+    "signup": "Sign up",
+    "language": "Language",
+    "selectLanguage": "Select language",
+    "english": "English",
+    "bulgarian": "Bulgarian"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome to {appName}",
+      "subtitle": "Your open source AI platform for work",
+      "or": "or",
+      "resetPassword": "Reset Password",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create an account",
+      "emailVerified": "Your email has been verified! Please sign in to continue."
+    },
+    "signup": {
+      "completeSignup": "Complete your sign up",
+      "createAccount": "Create account",
+      "getStarted": "Get started with Onyx",
+      "or": "or"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@yourcompany.com",
+      "submitButton": "Reset Password",
+      "backToLogin": "[Back to Login](/auth/login)",
+      "successMessage": "Password reset email sent. Please check your inbox.",
+      "errorFallback": "An error occurred. Please try again."
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "newPasswordLabel": "New Password",
+      "newPasswordPlaceholder": "Enter your new password",
+      "confirmPasswordLabel": "Confirm New Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
+      "submitButton": "Reset Password",
+      "backToLogin": "[Back to Login](/auth/login)",
+      "successMessage": "Password reset successfully. Redirecting to login...",
+      "invalidToken": "Invalid or missing reset token.",
+      "passwordRequired": "Password is required",
+      "passwordsMustMatch": "Passwords must match",
+      "confirmPasswordRequired": "Confirm Password is required",
+      "errorFallback": "An error occurred during password reset.",
+      "unexpectedError": "An unexpected error occurred. Please try again."
+    },
+    "verifyEmail": {
+      "verifying": "Verifying your email...",
+      "missingToken": "Missing verification token. Try requesting a new verification email.",
+      "failedVerification": "Failed to verify your email - {errorDetail}. Please try requesting a new verification email.",
+      "getNewEmail": "Get new verification email"
+    },
+    "waitingOnVerification": {
+      "notVerifiedMessage": "Hey, *{email}*, it looks like you haven't verified your email yet.\nCheck your inbox for an email from us to get started!",
+      "noEmail": "If you don't see anything, click",
+      "requestNew": "here",
+      "toRequestNew": "to request a new email.",
+      "newEmailSent": "A new verification email has been sent!",
+      "failedToSend": "Failed to send a new verification email - {errorDetail}"
+    },
+    "error": {
+      "title": "Authentication Error",
+      "subtitle": "There was a problem with your login attempt.",
+      "possibleIssues": "Possible Issues:",
+      "incorrectCredentials": "Incorrect or expired login credentials",
+      "systemDisruption": "Temporary authentication system disruption",
+      "accessRestrictions": "Account access restrictions or permissions",
+      "returnToLogin": "Return to Login Page",
+      "contactCloud": "If you continue to experience problems, please reach out to the Onyx team at",
+      "contactAdmin": "If you continue to experience problems, please reach out to your system administrator for assistance.",
+      "errorCodes": {
+        "access_denied": "Access was denied by your identity provider.",
+        "login_required": "You need to log in with your identity provider first.",
+        "consent_required": "Your identity provider requires consent before continuing.",
+        "interaction_required": "Additional interaction with your identity provider is required.",
+        "invalid_scope": "The requested permissions are not available.",
+        "server_error": "Your identity provider encountered an error. Please try again.",
+        "temporarily_unavailable": "Your identity provider is temporarily unavailable. Please try again later."
+      }
+    },
+    "createAccount": {
+      "title": "Account Not Found",
+      "description": "We couldn't find your account in our records. To access Onyx, you need to either:",
+      "beInvited": "Be invited to an existing Onyx team",
+      "createNew": "Create a new Onyx team",
+      "createOrg": "Create New Organization",
+      "differentEmail": "Have an account with a different email?",
+      "signIn": "Sign in"
+    },
+    "join": {
+      "title": "Re-authenticate to join team",
+      "or": "or"
+    },
+    "impersonate": {
+      "title": "Impersonate User",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@yourcompany.com",
+      "apiKeyLabel": "API Key",
+      "apiKeyPlaceholder": "Enter API Key",
+      "submitButton": "Impersonate User",
+      "adminNote": "Note: This feature is only available for @onyx.app administrators",
+      "failed": "Failed to impersonate user",
+      "invalidEmail": "Invalid email",
+      "required": "Required"
+    },
+    "referralSource": {
+      "label": "How did you hear about us?",
+      "placeholder": "Select an option",
+      "options": {
+        "search": "Search Engine (Google/Bing)",
+        "friend": "Friend/Colleague",
+        "linkedin": "LinkedIn",
+        "twitter": "Twitter",
+        "hackernews": "HackerNews",
+        "reddit": "Reddit",
+        "youtube": "YouTube",
+        "podcast": "Podcast",
+        "blog": "Article/Blog",
+        "ads": "Advertisements",
+        "other": "Other"
+      }
+    }
+  },
+  "accessRestricted": {
+    "title": "Access Restricted",
+    "seatLimitExceeded": "Your organization has exceeded its licensed seat count{counts}. Access is restricted until the number of users is reduced or your license is upgraded.",
+    "cloudSuspended": "Your access to Onyx has been temporarily suspended due to a lapse in your subscription.",
+    "licenseSuspended": "Your access to Onyx has been temporarily suspended due to a lapse in your license.",
+    "noLicense": "An Enterprise license is required to use Onyx. Your data is protected and will be available once a license is activated.",
+    "manageUsers": "If you are an administrator, you can manage users on the",
+    "userManagement": "User Management",
+    "adminBilling": "Admin Billing",
+    "upgradeOrReduce": "page or upgrade your license on the",
+    "billingPage": "page.",
+    "updatePayment": "To reinstate your access and continue benefiting from Onyx's powerful features, please update your payment information.",
+    "adminResubscribe": "If you're an admin, you can manage your subscription by clicking the button below. For other users, please reach out to your administrator to address this matter.",
+    "resubscribe": "Resubscribe",
+    "loading": "Loading...",
+    "logOut": "Log out",
+    "errorResubscription": "Error opening resubscription page. Please try again later.",
+    "renewLicense": "To reinstate your access and continue using Onyx, please contact your system administrator to renew your license.",
+    "getStartedLicense": "To get started, please contact your system administrator to obtain an Enterprise license.",
+    "adminBillingLink": "If you are the administrator, please visit the",
+    "adminBillingPage": "Admin Billing",
+    "renewPage": "page to renew your license, sign up through Stripe or reach out to",
+    "activatePage": "page to activate your license, sign up through Stripe or reach out to",
+    "billingAssistance": "for billing assistance.",
+    "needHelp": "Need help? Join our",
+    "discordCommunity": "Discord community",
+    "forSupport": "for support."
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "bg": "Bulgarian (Български)"
+  }
+}

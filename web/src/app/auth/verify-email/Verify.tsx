@@ -8,6 +8,7 @@ import { RequestNewVerificationEmail } from "../waiting-on-verification/RequestN
 import { User } from "@/lib/types";
 import { Logo } from "@/lib/app/components";
 import { NEXT_PUBLIC_CLOUD_ENABLED } from "@/lib/constants";
+import { useTranslations } from "next-intl";
 
 export interface VerifyProps {
   user: User | null;
@@ -15,6 +16,7 @@ export interface VerifyProps {
 
 export default function Verify({ user }: VerifyProps) {
   const searchParams = useSearchParams();
+  const t = useTranslations("auth.verifyEmail");
 
   const [error, setError] = useState("");
 
@@ -23,9 +25,7 @@ export default function Verify({ user }: VerifyProps) {
     const firstUser =
       searchParams?.get("first_user") === "true" && NEXT_PUBLIC_CLOUD_ENABLED;
     if (!token) {
-      setError(
-        "Missing verification token. Try requesting a new verification email."
-      );
+      setError(t("missingToken"));
       return;
     }
 
@@ -51,11 +51,9 @@ export default function Verify({ user }: VerifyProps) {
       } catch (e) {
         console.error("Failed to parse verification error response:", e);
       }
-      setError(
-        `Failed to verify your email - ${errorDetail}. Please try requesting a new verification email.`
-      );
+      setError(t("failedVerification", { errorDetail }));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   useEffect(() => {
     verify();
@@ -68,7 +66,7 @@ export default function Verify({ user }: VerifyProps) {
         {!error ? (
           <>
             <Spacer rem={0.5} />
-            <Text as="p">Verifying your email...</Text>
+            <Text as="p">{t("verifying")}</Text>
           </>
         ) : (
           <div>
@@ -80,7 +78,7 @@ export default function Verify({ user }: VerifyProps) {
                 <RequestNewVerificationEmail email={user.email}>
                   {/* TODO(@raunakab): migrate to @opal/components Text */}
                   <p className="text-sm mt-2 text-link">
-                    Get new verification email
+                    {t("getNewEmail")}
                   </p>
                 </RequestNewVerificationEmail>
               </div>

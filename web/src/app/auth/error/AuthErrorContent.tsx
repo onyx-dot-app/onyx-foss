@@ -5,42 +5,52 @@ import Text from "@/refresh-components/texts/Text";
 import { Button } from "@opal/components";
 
 import { NEXT_PUBLIC_CLOUD_ENABLED } from "@/lib/constants";
+import { useTranslations } from "next-intl";
 
-// Maps raw IdP/OAuth error codes to user-friendly messages.
-// If the message is a known code, we replace it; otherwise show it as-is.
-const ERROR_CODE_MESSAGES: Record<string, string> = {
-  access_denied: "Access was denied by your identity provider.",
-  login_required: "You need to log in with your identity provider first.",
-  consent_required:
-    "Your identity provider requires consent before continuing.",
-  interaction_required:
-    "Additional interaction with your identity provider is required.",
-  invalid_scope: "The requested permissions are not available.",
-  server_error:
-    "Your identity provider encountered an error. Please try again.",
-  temporarily_unavailable:
-    "Your identity provider is temporarily unavailable. Please try again later.",
-};
+type ErrorCodeKey =
+  | "access_denied"
+  | "login_required"
+  | "consent_required"
+  | "interaction_required"
+  | "invalid_scope"
+  | "server_error"
+  | "temporarily_unavailable";
 
-function resolveMessage(raw: string | null): string | null {
-  if (!raw) return null;
-  return ERROR_CODE_MESSAGES[raw] ?? raw;
-}
+const KNOWN_ERROR_CODES: ErrorCodeKey[] = [
+  "access_denied",
+  "login_required",
+  "consent_required",
+  "interaction_required",
+  "invalid_scope",
+  "server_error",
+  "temporarily_unavailable",
+];
 
 interface AuthErrorContentProps {
   message: string | null;
 }
 
 function AuthErrorContent({ message: rawMessage }: AuthErrorContentProps) {
+  const t = useTranslations("auth.error");
+
+  function resolveMessage(raw: string | null): string | null {
+    if (!raw) return null;
+    if (KNOWN_ERROR_CODES.includes(raw as ErrorCodeKey)) {
+      return t(`errorCodes.${raw as ErrorCodeKey}`);
+    }
+    return raw;
+  }
+
   const message = resolveMessage(rawMessage);
+
   return (
     <AuthFlowContainer>
       <div className="flex flex-col items-center gap-4">
         <Text headingH2 text05>
-          Authentication Error
+          {t("title")}
         </Text>
         <Text mainContentBody text03>
-          There was a problem with your login attempt.
+          {t("subtitle")}
         </Text>
         {/* TODO: Error card component */}
         <div className="w-full rounded-12 border border-status-error-05 bg-status-error-00 p-4">
@@ -51,36 +61,35 @@ function AuthErrorContent({ message: rawMessage }: AuthErrorContentProps) {
           ) : (
             <div className="flex flex-col gap-2 px-4">
               <Text mainContentEmphasis className="text-status-error-05">
-                Possible Issues:
+                {t("possibleIssues")}
               </Text>
               <Text as="li" mainContentBody className="text-status-error-05">
-                Incorrect or expired login credentials
+                {t("incorrectCredentials")}
               </Text>
               <Text as="li" mainContentBody className="text-status-error-05">
-                Temporary authentication system disruption
+                {t("systemDisruption")}
               </Text>
               <Text as="li" mainContentBody className="text-status-error-05">
-                Account access restrictions or permissions
+                {t("accessRestrictions")}
               </Text>
             </div>
           )}
         </div>
 
         <Button href="/auth/login" width="full">
-          Return to Login Page
+          {t("returnToLogin")}
         </Button>
 
         <Text mainContentBody text04>
           {NEXT_PUBLIC_CLOUD_ENABLED ? (
             <>
-              If you continue to experience problems, please reach out to the
-              Onyx team at{" "}
+              {t("contactCloud")}{" "}
               <a href="mailto:support@onyx.app" className="text-action-link-05">
                 support@onyx.app
               </a>
             </>
           ) : (
-            "If you continue to experience problems, please reach out to your system administrator for assistance."
+            t("contactAdmin")
           )}
         </Text>
       </div>

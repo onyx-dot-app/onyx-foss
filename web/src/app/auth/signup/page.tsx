@@ -9,6 +9,7 @@ import ReferralSourceSelector from "./ReferralSourceSelector";
 import AuthErrorDisplay from "@/components/auth/AuthErrorDisplay";
 import Text from "@/refresh-components/texts/Text";
 import { cn } from "@opal/utils";
+import { getTranslations } from "next-intl/server";
 
 const Page = async (props: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -55,6 +56,8 @@ const Page = async (props: {
     authUrl = await getAuthUrlSS(authTypeMetadata.multiTenant, null);
   }
 
+  const t = await getTranslations("auth.signup");
+
   return (
     <AuthFlowContainer authState="signup">
       <AuthErrorDisplay searchParams={searchParams} />
@@ -69,10 +72,10 @@ const Page = async (props: {
         >
           <div className="w-full">
             <Text as="p" headingH2 text05>
-              {cloud ? "Complete your sign up" : "Create account"}
+              {cloud ? t("completeSignup") : t("createAccount")}
             </Text>
             <Text as="p" text03>
-              Get started with Onyx
+              {t("getStarted")}
             </Text>
           </div>
           {cloud && authUrl && (
@@ -81,7 +84,7 @@ const Page = async (props: {
               <div className="flex items-center w-full my-4">
                 <div className="grow border-t border-border-01" />
                 <Text as="p" mainUiMuted text03 className="mx-2">
-                  or
+                  {t("or")}
                 </Text>
                 <div className="grow border-t border-border-01" />
               </div>

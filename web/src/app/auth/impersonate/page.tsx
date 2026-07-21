@@ -10,14 +10,16 @@ import { toast } from "@opal/layouts";
 import { TextFormField } from "@/components/Field";
 import { Button } from "@opal/components";
 import Text from "@/refresh-components/texts/Text";
-
-const ImpersonateSchema = Yup.object().shape({
-  email: Yup.string().email("Invalid email").required("Required"),
-  apiKey: Yup.string().required("Required"),
-});
+import { useTranslations } from "next-intl";
 
 export default function ImpersonatePage() {
   const router = useRouter();
+  const t = useTranslations("auth.impersonate");
+
+  const ImpersonateSchema = Yup.object().shape({
+    email: Yup.string().email(t("invalidEmail")).required(t("required")),
+    apiKey: Yup.string().required(t("required")),
+  });
 
   const handleImpersonate = async (
     values: { email: string; apiKey: string },
@@ -36,7 +38,7 @@ export default function ImpersonatePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        toast.error(errorData.detail || "Failed to impersonate user");
+        toast.error(errorData.detail || t("failed"));
         helpers.setSubmitting(false);
       } else {
         helpers.setSubmitting(false);
@@ -44,7 +46,7 @@ export default function ImpersonatePage() {
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to impersonate user"
+        error instanceof Error ? error.message : t("failed")
       );
       helpers.setSubmitting(false);
     }
@@ -55,7 +57,7 @@ export default function ImpersonatePage() {
       <div className="flex flex-col w-full justify-center">
         <div className="w-full flex flex-col items-center justify-center">
           <Text as="p" headingH3 className="mb-6 text-center">
-            Impersonate User
+            {t("title")}
           </Text>
         </div>
 
@@ -69,19 +71,19 @@ export default function ImpersonatePage() {
               <TextFormField
                 name="email"
                 type="email"
-                label="Email"
-                placeholder="email@yourcompany.com"
+                label={t("emailLabel")}
+                placeholder={t("emailPlaceholder")}
               />
 
               <TextFormField
                 name="apiKey"
                 type="password"
-                label="API Key"
-                placeholder="Enter API Key"
+                label={t("apiKeyLabel")}
+                placeholder={t("apiKeyPlaceholder")}
               />
 
               <Button disabled={isSubmitting} type="submit" width="full">
-                Impersonate User
+                {t("submitButton")}
               </Button>
             </Form>
           )}
@@ -92,7 +94,9 @@ export default function ImpersonatePage() {
           mainUiMuted
           text03
           className="mt-4 text-center px-4"
-        >{`Note: This feature is only available for @onyx.app administrators`}</Text>
+        >
+          {t("adminNote")}
+        </Text>
       </div>
     </AuthFlowContainer>
   );
