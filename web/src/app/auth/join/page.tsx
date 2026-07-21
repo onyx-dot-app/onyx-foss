@@ -30,12 +30,15 @@ const Page = async (props: {
   let authTypeMetadata: AuthTypeMetadata | null = null;
   let currentUser: User | null = null;
   try {
-    [authTypeMetadata, currentUser] = await Promise.all([
-      getAuthTypeMetadataSS(),
-      getCurrentUserSS(),
-    ]);
+    authTypeMetadata = await getAuthTypeMetadataSS();
   } catch (e) {
-    console.log(`Some fetch failed for the login page - ${e}`);
+    console.log(`Auth metadata fetch failed for the join page - ${e}`);
+  }
+
+  try {
+    currentUser = await getCurrentUserSS();
+  } catch (e) {
+    console.log(`Current user fetch failed for the join page - ${e}`);
   }
 
   // if user is already logged in, take them to the main app page

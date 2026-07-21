@@ -7,6 +7,7 @@ import pytest
 from onyx.chat import llm_step as llm_step_module
 from onyx.chat.llm_step import _extract_tool_call_kickoffs
 from onyx.chat.llm_step import _increment_turns
+from onyx.chat.llm_step import _looks_like_text_tool_call_payload
 from onyx.chat.llm_step import _parse_tool_args_to_dict
 from onyx.chat.llm_step import _resolve_tool_arguments
 from onyx.chat.llm_step import _XmlToolCallContentFilter
@@ -257,6 +258,24 @@ class TestExtractToolCallsFromResponseText:
         assert tool_calls[0].tool_args == {
             "queries": ["Onyx documentation", "Onyx docs", "Onyx platform"]
         }
+
+    def test_extracts_plaintext_tool_call_line(self) -> None:
+        response_text = '[Tool Call] name=internal_search id=6a0b1c2d args={"queries": ["usd eur rate today"]}'
+        tool_calls = extract_tool_calls_from_response_text(
+            response_text=response_text,
+            tool_definitions=self._tool_defs(),
+            placement=self._placement(),
+        )
+        assert len(tool_calls) == 1
+        assert tool_calls[0].tool_name == "internal_search"
+        assert tool_calls[0].tool_args == {"queries": ["usd eur rate today"]}
+
+    def test_detects_plaintext_tool_call_payload(self) -> None:
+        payload = (
+            '[Tool Call] name=internal_search id=abc123 args={"queries": ["alpha"]}'
+        )
+        assert _looks_like_text_tool_call_payload(payload) is True
+        assert _looks_like_text_tool_call_payload("regular answer") is False
 
     def test_ignores_unknown_tool_in_xml_style_invoke(self) -> None:
         response_text = """

@@ -8,6 +8,86 @@ chmod +x start.sh
 ./start.sh
 ==========================================================================================
 
+# One-time setup (run once)
+
+Open terminal:
+cd ~/projects/QYBE
+
+Ensure Craft resources exist:
+docker network inspect onyx_craft_sandbox >/dev/null 2>&1 || docker network create onyx_craft_sandbox
+docker volume inspect sandbox_proxy_ca >/dev/null 2>&1 || docker volume create sandbox_proxy_ca
+
+Ensure persistent Ollama exists:
+docker volume inspect ollama_data >/dev/null 2>&1 || docker volume create ollama_data
+docker rm -f ollama >/dev/null 2>&1 || true
+docker run -d --name ollama -p 11434:11434 -v ollama_data:/root/.ollama ollama/ollama
+
+Pull your model once:
+docker exec -it ollama ollama pull gemma4:12b
+docker exec -it ollama ollama list
+
+# Daily start (Docker stack with Craft)
+
+Terminal A:
+cd ~/projects/QYBE
+ENABLE_CRAFT=true docker compose
+--env-file .env
+-p qybe
+-f docker-compose.yml
+-f docker-compose.dev.yml
+-f docker-compose.craft.yml
+up -d --wait --remove-orphans
+
+Verify:
+docker compose
+--env-file .env
+-p qybe
+-f docker-compose.yml
+-f docker-compose.dev.yml
+-f docker-compose.craft.yml
+ps
+
+Recommended for active frontend development (hot reload from your local code)
+
+Terminal B:
+cd ~/projects/QYBE
+source "$HOME/.local/bin/env"
+source .venv/bin/activate
+export PATH="$HOME/.bun/bin:$PATH"
+INTERNAL_URL=http://127.0.0.1:8080 uv run --with onyx-devtools ods web dev
+Notes:
+
+Keep Docker api_server/background running in Terminal A.
+Use Terminal B for frontend edits and immediate reload.
+
+# Daily stop
+
+Stop local frontend (if running): Ctrl+C in Terminal B
+Stop Docker stack:
+cd ~/projects/QYBE
+docker compose
+--env-file .env
+-p qybe
+-f docker-compose.yml
+-f docker-compose.dev.yml
+-f docker-compose.craft.yml
+down
+
+
+# Optional full cleanup (containers + data volumes)
+
+Use only when you want a fresh reset:
+cd ~/projects/QYBE
+docker compose
+--env-file .env
+-p qybe
+-f docker-compose.yml
+-f docker-compose.dev.yml
+-f docker-compose.craft.yml
+down -v
+
+==========================================================================================
+
 This file is a development runbook for starting, stopping, testing, committing, and synchronizing QYBE.
 
 ## Core rules

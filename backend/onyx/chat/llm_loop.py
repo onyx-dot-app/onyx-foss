@@ -12,6 +12,7 @@ from onyx.chat.citation_processor import CitationMode
 from onyx.chat.citation_processor import DynamicCitationProcessor
 from onyx.chat.citation_utils import update_citation_processor_from_tool_response
 from onyx.chat.emitter import Emitter
+from onyx.chat.llm_step import _looks_like_text_tool_call_payload
 from onyx.chat.llm_step import _looks_like_xml_tool_call_payload
 from onyx.chat.llm_step import extract_tool_calls_from_response_text
 from onyx.chat.llm_step import run_llm_step
@@ -177,10 +178,16 @@ def _try_fallback_tool_extraction(
         or _looks_like_xml_tool_call_payload(llm_step_result.raw_answer)
         or _looks_like_xml_tool_call_payload(llm_step_result.reasoning)
     )
+    text_tool_call_text_detected = no_tool_calls and (
+        _looks_like_text_tool_call_payload(llm_step_result.answer)
+        or _looks_like_text_tool_call_payload(llm_step_result.raw_answer)
+        or _looks_like_text_tool_call_payload(llm_step_result.reasoning)
+    )
     should_try_fallback = (
         (tool_choice == ToolChoiceOptions.REQUIRED and no_tool_calls)
         or reasoning_but_no_answer_or_tools
         or xml_tool_call_text_detected
+        or text_tool_call_text_detected
     )
 
     if not should_try_fallback:

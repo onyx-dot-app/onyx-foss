@@ -1188,6 +1188,31 @@ class TestFallbackToolExtraction:
         }
         assert result.tool_calls[0].placement == Placement(turn_index=10)
 
+    def test_extracts_plaintext_tool_call_from_answer_when_auto(self) -> None:
+        llm_step_result = LlmStepResult(
+            reasoning=None,
+            answer=(
+                "[Tool Call] name=internal_search id=6a0b1c2d "
+                'args={"queries": ["usd eur rate today"]}'
+            ),
+            tool_calls=None,
+        )
+
+        result, attempted = _try_fallback_tool_extraction(
+            llm_step_result=llm_step_result,
+            tool_choice=ToolChoiceOptions.AUTO,
+            fallback_extraction_attempted=False,
+            tool_defs=self._tool_defs(),
+            turn_index=11,
+        )
+
+        assert attempted is True
+        assert result.tool_calls is not None
+        assert len(result.tool_calls) == 1
+        assert result.tool_calls[0].tool_name == "internal_search"
+        assert result.tool_calls[0].tool_args == {"queries": ["usd eur rate today"]}
+        assert result.tool_calls[0].placement == Placement(turn_index=11)
+
     def test_does_not_attempt_fallback_for_auto_without_tool_call_hints(self) -> None:
         llm_step_result = LlmStepResult(
             reasoning=None,

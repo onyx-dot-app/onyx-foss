@@ -74,6 +74,9 @@ _XML_PARAMETER_RE = re.compile(
     r"<parameter\b(?P<attrs>[^>]*)>(?P<value>.*?)</parameter>",
     re.IGNORECASE | re.DOTALL,
 )
+_TEXT_TOOL_CALL_LINE_RE = re.compile(
+    r"^\s*\[Tool Call\]\s+name=(?P<name>[^\s]+)\s+id=(?P<id>[^\s]+)\s+args=(?P<args>\{.*\})\s*$"
+)
 _FUNCTION_CALLS_OPEN_MARKER = "<function_calls"
 _FUNCTION_CALLS_CLOSE_MARKER = "</function_calls>"
 
@@ -140,6 +143,47 @@ class _XmlToolCallContentFilter:
         return remaining
 
 
+class _PlainTextToolCallContentFilter:
+    """Streaming filter that strips plain-text [Tool Call] lines from content."""
+
+    def __init__(self) -> None:
+        self._pending = ""
+
+    def process(self, content: str) -> str:
+        if not content:
+            return ""
+
+        self._pending += content
+        lines = self._pending.splitlines(keepends=True)
+
+        if lines and not lines[-1].endswith(("\n", "\r")):
+            self._pending = lines.pop()
+        else:
+            self._pending = ""
+
+        output_parts: list[str] = []
+        for line in lines:
+            if _is_text_tool_call_line(line):
+                continue
+            output_parts.append(line)
+
+        return "".join(output_parts)
+
+    def flush(self) -> str:
+        remaining = self._pending
+        self._pending = ""
+
+        if not remaining or _is_text_tool_call_line(remaining):
+            return ""
+
+        return remaining
+
+
+def _is_text_tool_call_line(line: str) -> bool:
+    line_no_newline = line.strip("\r\n")
+    return bool(_TEXT_TOOL_CALL_LINE_RE.match(line_no_newline.strip()))
+
+
 def _matching_open_marker_prefix_len(text: str) -> int:
     """Return longest suffix of text that matches prefix of "<function_calls"."""
     max_len = min(len(text), len(_FUNCTION_CALLS_OPEN_MARKER) - 1)
@@ -186,6 +230,16 @@ def _looks_like_xml_tool_call_payload(text: str | None) -> bool:
         return False
     lowered = text.lower()
     return "<function_calls" in lowered and "<invoke" in lowered
+
+
+def _looks_like_text_tool_call_payload(text: str | None) -> bool:
+    """Detect plain-text '[Tool Call] name=... id=... args=...' payloads."""
+    if not text:
+        return False
+    for line in text.splitlines():
+        if _is_text_tool_call_line(line):
+            return True
+    return False
 
 
 def _try_parse_json_string(value: Any) -> Any:
@@ -480,6 +534,15 @@ def extract_tool_calls_from_response_text(
         prev_tool_call = matched_tool_call
 
     # Some providers/models emit XML-style function calls instead of JSON objects.
+    # Some providers/models also emit plain-text lines like:
+    # [Tool Call] name=open_url id=abc args={"urls": ["..."]}
+    if not matched_tool_calls:
+        matched_tool_calls = _extract_text_tool_calls_from_response_text(
+            response_text=response_text,
+            tool_name_to_def=tool_name_to_def,
+        )
+
+    # Keep XML extraction as a final fallback behind JSON/plain-text extraction.
     # Keep this as a fallback behind JSON extraction to preserve current behavior.
     if not matched_tool_calls:
         matched_tool_calls = _extract_xml_tool_calls_from_response_text(
@@ -508,6 +571,38 @@ def extract_tool_calls_from_response_text(
     )
 
     return tool_calls
+
+
+def _extract_text_tool_calls_from_response_text(
+    response_text: str,
+    tool_name_to_def: dict[str, dict],
+) -> list[tuple[str, dict[str, Any]]]:
+    """Extract plain-text tool calls from lines containing '[Tool Call]' markers."""
+    matched_tool_calls: list[tuple[str, dict[str, Any]]] = []
+
+    for line in response_text.splitlines():
+        line_match = _TEXT_TOOL_CALL_LINE_RE.match(line.strip())
+        if not line_match:
+            continue
+
+        tool_name = sanitize_string(line_match.group("name"))
+        if tool_name not in tool_name_to_def:
+            continue
+
+        raw_args = sanitize_string(line_match.group("args"))
+        try:
+            parsed_args = json.loads(raw_args)
+        except json.JSONDecodeError:
+            continue
+
+        if not isinstance(parsed_args, dict):
+            continue
+
+        # Parse nested JSON-like string values where applicable.
+        cleaned_args = {k: _try_parse_json_string(v) for k, v in parsed_args.items()}
+        matched_tool_calls.append((tool_name, cleaned_args))
+
+    return matched_tool_calls
 
 
 def _extract_xml_tool_calls_from_response_text(
@@ -1142,6 +1237,10 @@ def run_llm_step_pkt_generator(
     empty_chunk_count = 0
     finish_reasons: set[str] = set()
     xml_tool_call_content_filter = _XmlToolCallContentFilter()
+    text_tool_call_content_filter = _PlainTextToolCallContentFilter()
+    should_strip_text_tool_calls = tool_choice != ToolChoiceOptions.NONE and bool(
+        tool_definitions
+    )
 
     processor_state: Any = None
 
@@ -1349,6 +1448,10 @@ def run_llm_step_pkt_generator(
                 # filtered and, in deep-research REQUIRED mode, routed as reasoning.
                 accumulated_raw_answer += delta.content
                 filtered_content = xml_tool_call_content_filter.process(delta.content)
+                if should_strip_text_tool_calls and filtered_content:
+                    filtered_content = text_tool_call_content_filter.process(
+                        filtered_content
+                    )
                 if filtered_content:
                     yield from _emit_content_chunk(filtered_content)
 
@@ -1367,8 +1470,17 @@ def run_llm_step_pkt_generator(
 
         # Flush any tail text buffered while checking for split "<function_calls" markers.
         filtered_content_tail = xml_tool_call_content_filter.flush()
+        if should_strip_text_tool_calls and filtered_content_tail:
+            filtered_content_tail = text_tool_call_content_filter.process(
+                filtered_content_tail
+            )
         if filtered_content_tail:
             yield from _emit_content_chunk(filtered_content_tail)
+
+        if should_strip_text_tool_calls:
+            filtered_text_tail = text_tool_call_content_filter.flush()
+            if filtered_text_tail:
+                yield from _emit_content_chunk(filtered_text_tail)
 
         # Flush custom token processor to get any final tool calls
         if custom_token_processor:
@@ -1423,6 +1535,7 @@ def run_llm_step_pkt_generator(
             and not accumulated_answer.strip()
             and accumulated_raw_answer.strip()
             and not _looks_like_xml_tool_call_payload(accumulated_raw_answer)
+            and not _looks_like_text_tool_call_payload(accumulated_raw_answer)
         ):
             logger.warning(
                 "Answer empty after content/citation processing; recovering raw "
