@@ -14,8 +14,10 @@ import GroupsList from "./GroupsList";
 import AdminListHeader from "@/sections/admin/AdminListHeader";
 import { IllustrationContent } from "@opal/layouts";
 import SvgNoResult from "@opal/illustrations/no-result";
+import { useTranslations } from "next-intl";
 
 function GroupsPage() {
+  const t = useTranslations("adminGroups");
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -28,11 +30,11 @@ function GroupsPage() {
   return (
     <SettingsLayouts.Root>
       <div data-testid="groups-page-heading">
-        <SettingsLayouts.Header icon={SvgUsers} title="Groups" divider>
+        <SettingsLayouts.Header icon={SvgUsers} title={t("title")} divider>
           <MessageCard
             variant="info"
-            title="Upcoming changes to permissions"
-            description="Onyx is transitioning to group-based permissions, enabling more flexible access control through configurable permissions per group. We recommend reviewing your group structure to prepare for this update."
+            title={t("upcomingChanges")}
+            description={t("upcomingChangesDescription")}
             rightChildren={
               <Button
                 icon={SvgExternalLink}
@@ -44,7 +46,7 @@ function GroupsPage() {
                   )
                 }
               >
-                Learn more
+                {t("learnMore")}
               </Button>
             }
           />
@@ -56,10 +58,10 @@ function GroupsPage() {
           hasItems={!isLoading && !error && (groups?.length ?? 0) > 0}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          placeholder="Search groups..."
-          emptyStateText="Create groups to organize users and manage access."
+          placeholder={t("searchPlaceholder")}
+          emptyStateText={t("emptyState")}
           onAction={() => router.push("/admin/groups/create" as Route)}
-          actionLabel="New Group"
+          actionLabel={t("newGroup")}
         />
 
         {isLoading && <SvgSimpleLoader />}
@@ -67,8 +69,8 @@ function GroupsPage() {
         {error && (
           <IllustrationContent
             illustration={SvgNoResult}
-            title="Failed to load groups."
-            description="Please check the console for more details."
+            title={t("failedToLoad")}
+            description={t("failedToLoadDescription")}
           />
         )}
 

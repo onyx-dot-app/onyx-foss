@@ -14,6 +14,7 @@ import type { StatusFilter } from "./interfaces";
 import UsersSummary from "./UsersSummary";
 import UsersTable from "./UsersTable";
 import InviteUsersModal from "./InviteUsersModal";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Users page content
@@ -65,23 +66,24 @@ function UsersContent() {
 // ---------------------------------------------------------------------------
 
 export default function UsersPage() {
+  const t = useTranslations("adminUsers");
   const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
     <SettingsLayouts.Root width="lg">
       <SettingsLayouts.Header
-        title="Users & Requests"
+        title={t("title")}
         icon={SvgUser}
         rightChildren={
           <Button icon={SvgUserPlus} onClick={() => setInviteOpen(true)}>
-            Invite Users
+            {t("inviteUsers")}
           </Button>
         }
       >
         <MessageCard
           variant="info"
-          title="Upcoming changes to permissions"
-          description="Onyx is transitioning to group-based permissions for more granular access control. Curator and Global Curator roles will be replaced by configurable group permissions. We recommend reviewing current role assignments to ensure a smooth transition."
+          title={t("upcomingChanges")}
+          description={t("upcomingChangesDescription")}
           rightChildren={
             <Button
               icon={SvgExternalLink}
@@ -93,7 +95,7 @@ export default function UsersPage() {
                 )
               }
             >
-              Learn more
+              {t("learnMore")}
             </Button>
           }
         />

@@ -510,5 +510,23 @@
     "userFilesDescription": "All files selected for this agent",
     "foldExpand": "Fold",
     "unfoldExpand": "Expand"
+  },
+  "adminUsers": {
+    "title": "Users & Requests",
+    "inviteUsers": "Invite Users",
+    "upcomingChanges": "Upcoming changes to permissions",
+    "upcomingChangesDescription": "Onyx is transitioning to group-based permissions for more granular access control. Curator and Global Curator roles will be replaced by configurable group permissions. We recommend reviewing current role assignments to ensure a smooth transition.",
+    "learnMore": "Learn more"
+  },
+  "adminGroups": {
+    "title": "Groups",
+    "upcomingChanges": "Upcoming changes to permissions",
+    "upcomingChangesDescription": "Onyx is transitioning to group-based permissions, enabling more flexible access control through configurable permissions per group. We recommend reviewing your group structure to prepare for this update.",
+    "learnMore": "Learn more",
+    "searchPlaceholder": "Search groups...",
+    "emptyState": "Create groups to organize users and manage access.",
+    "newGroup": "New Group",
+    "failedToLoad": "Failed to load groups.",
+    "failedToLoadDescription": "Please check the console for more details."
   }
 }
