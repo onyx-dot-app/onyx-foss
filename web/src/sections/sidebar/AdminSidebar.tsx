@@ -24,6 +24,7 @@ import AccountPopover from "@/sections/sidebar/AccountPopover";
 import { renderSidebarLogo } from "@/lib/sidebar/utils";
 import { useShowLogoWhenFolded } from "@/lib/sidebar/hooks";
 import { markdown } from "@opal/utils";
+import { useTranslations } from "next-intl";
 
 const SECTIONS = {
   UNLABELED: null,
@@ -197,6 +198,60 @@ export default function AdminSidebar() {
   const showLogoWhenFolded = useShowLogoWhenFolded();
   const searchRef = useRef<HTMLInputElement>(null);
   const [focusSearch, setFocusSearch] = useState(false);
+  const t = useTranslations("adminNav");
+
+  // Maps the English sidebarLabel from ADMIN_ROUTES to a translated string.
+  const routeNameMap: Record<string, string> = {
+    "Existing Connectors": t("routes.existingConnectors"),
+    "Add Connector": t("routes.addConnector"),
+    "Document Sets": t("routes.documentSets"),
+    Explorer: t("routes.explorer"),
+    Feedback: t("routes.feedback"),
+    Agents: t("routes.agents"),
+    "Slack Integration": t("routes.slackIntegration"),
+    "Discord Integration": t("routes.discordIntegration"),
+    "Language Models": t("routes.llmModels"),
+    "Web Search": t("routes.webSearch"),
+    "Image Generation": t("routes.imageGeneration"),
+    Voice: t("routes.voice"),
+    "Code Interpreter": t("routes.codeInterpreter"),
+    "Chat Preferences": t("routes.chatPreferences"),
+    "Custom Analytics": t("routes.customAnalytics"),
+    Access: t("routes.craftAccess"),
+    Apps: t("routes.craftApps"),
+    Instructions: t("routes.craftInstructions"),
+    "MCP Actions": t("routes.mcpActions"),
+    "OpenAPI Actions": t("routes.openapiActions"),
+    "API Keys": t("routes.apiKeys"),
+    Users: t("routes.users"),
+    Groups: t("routes.groups"),
+    SCIM: t("routes.scim"),
+    Tracing: t("routes.tracing"),
+    "Usage Statistics": t("routes.usage"),
+    "Spending Limits": t("routes.tokenRateLimits"),
+    "Query History": t("routes.queryHistory"),
+    "Appearance & Theming": t("routes.theme"),
+    "Security & Hardening": t("routes.securityHardening"),
+    "SSO Providers": t("routes.ssoProviders"),
+    "Service Accounts": t("routes.serviceAccounts"),
+    "Plans & Billing": t("routes.billing"),
+    "Upgrade Plan": t("routes.upgradePlan"),
+    "OAuth Test": t("routes.oauthTest"),
+    "Debug Logs": t("routes.debugLogs"),
+    "Hook Extensions": t("routes.hooks"),
+    "Standard Answers": t("routes.standardAnswers"),
+    "Federated Sources": t("routes.federatedSources"),
+  };
+
+  const sectionNameMap: Record<string, string> = {
+    Craft: t("sections.craft"),
+    "Agents & Actions": t("sections.agentsAndActions"),
+    "Documents & Knowledge": t("sections.documentsAndKnowledge"),
+    Integrations: t("sections.integrations"),
+    Permissions: t("sections.permissions"),
+    Organization: t("sections.organization"),
+    Usage: t("sections.usage"),
+  };
 
   useEffect(() => {
     if (focusSearch && !folded && searchRef.current) {
@@ -260,14 +315,14 @@ export default function AdminSidebar() {
               setFocusSearch(true);
             }}
           >
-            Search
+            {t("search")}
           </SidebarTab>
         ) : (
           <InputTypeIn
             ref={searchRef}
             variant="internal"
             searchIcon
-            placeholder="Search..."
+            placeholder={t("search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             clearButton
@@ -278,7 +333,13 @@ export default function AdminSidebar() {
       <SidebarLayouts.Body scrollKey="admin-sidebar">
         {enabledGroups.map((group, groupIndex) => (
           <React.Fragment key={groupIndex}>
-            <SidebarLayouts.Section title={group.section ?? undefined}>
+            <SidebarLayouts.Section
+              title={
+                group.section
+                  ? (sectionNameMap[group.section] ?? group.section)
+                  : undefined
+              }
+            >
               {group.items.map(({ link, icon, name }) => (
                 <SidebarTab
                   key={link}
@@ -286,7 +347,7 @@ export default function AdminSidebar() {
                   href={link}
                   selected={pathname.startsWith(link)}
                 >
-                  {name}
+                  {routeNameMap[name] ?? name}
                 </SidebarTab>
               ))}
             </SidebarLayouts.Section>
@@ -302,7 +363,14 @@ export default function AdminSidebar() {
         )}
         {disabledGroups.map((group, groupIndex) => (
           <React.Fragment key={`disabled-${groupIndex}`}>
-            <SidebarLayouts.Section title={group.section ?? undefined} disabled>
+            <SidebarLayouts.Section
+              title={
+                group.section
+                  ? (sectionNameMap[group.section] ?? group.section)
+                  : undefined
+              }
+              disabled
+            >
               {group.items.map(({ link, icon, name, requiredTier }) => (
                 <SidebarTab
                   key={link}
@@ -310,11 +378,11 @@ export default function AdminSidebar() {
                   icon={icon}
                   tooltip={markdown(
                     requiredTier === Tier.ENTERPRISE
-                      ? "This feature is available on the [Enterprise version of Onyx](/admin/billing) only."
-                      : "This feature is available on the [Business or Enterprise version of Onyx](/admin/billing) only."
+                      ? t("tierTooltipEnterprise")
+                      : t("tierTooltipBusiness")
                   )}
                 >
-                  {name}
+                  {routeNameMap[name] ?? name}
                 </SidebarTab>
               ))}
             </SidebarLayouts.Section>
@@ -330,7 +398,7 @@ export default function AdminSidebar() {
           variant="sidebar-light"
           folded={folded}
         >
-          Exit Admin Panel
+          {t("exitAdminPanel")}
         </SidebarTab>
         <AccountPopover folded={folded} />
       </SidebarLayouts.Footer>
