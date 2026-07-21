@@ -47,6 +47,8 @@ def test_load_settings_uses_model_defaults_when_no_stored_value(
         settings.file_token_count_threshold_k
         == DEFAULT_FILE_TOKEN_COUNT_THRESHOLD_K_VECTOR_DB
     )
+    assert settings.ee_features_enabled is True
+    assert settings.tier.value == "enterprise"
 
 
 def test_load_settings_uses_high_token_default_when_vector_db_disabled(

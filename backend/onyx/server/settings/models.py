@@ -52,15 +52,11 @@ class Settings(BaseModel):
     search_ui_enabled: bool | None = True
     auto_detect_search_filters: bool | None = True
 
-    # Whether EE features are unlocked for use.
-    # Depends on license status: True when the user has a valid license
-    # (ACTIVE, GRACE_PERIOD, PAYMENT_REMINDER), False when there's no license
-    # or the license is expired (GATED_ACCESS).
-    # This controls UI visibility of EE features (user groups, analytics, RBAC, etc.).
-    ee_features_enabled: bool = False
+    # QYBE defaults to enterprise access for all users.
+    ee_features_enabled: bool = True
 
-    # Resolved per-tenant tier for ENTERPRISE-only feature gating in the FE.
-    tier: Tier = Tier.COMMUNITY
+    # Enterprise-by-default tier used by frontend gating hooks.
+    tier: Tier = Tier.ENTERPRISE
 
     temperature_override_enabled: bool | None = False
     auto_scroll: bool | None = False

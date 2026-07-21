@@ -70,12 +70,17 @@ from onyx.server.auth.captcha_api import LoginCaptchaMiddleware
 from onyx.server.auth.captcha_api import router as captcha_router
 from onyx.server.auth.mobile import router as mobile_auth_router
 from onyx.server.auth_check import check_router_auth
+from onyx.server.billing.api import admin_router as billing_admin_router
+from onyx.server.billing.api import license_router
+from onyx.server.billing.api import tenant_router as billing_tenant_router
 from onyx.server.documents.cc_pair import router as cc_pair_router
 from onyx.server.documents.connector import router as connector_router
 from onyx.server.documents.credential import router as credential_router
 from onyx.server.documents.document import router as document_router
 from onyx.server.documents.standard_oauth import router as standard_oauth_router
 from onyx.server.documents.targeted_reindex import router as targeted_reindex_router
+from onyx.server.enterprise_settings.api import admin_router as enterprise_admin_router
+from onyx.server.enterprise_settings.api import router as enterprise_router
 from onyx.server.features.admin_banner.api import admin_router as admin_banner_router
 from onyx.server.features.build.api import admin_router as build_admin_router
 from onyx.server.features.build.api import router as build_router
@@ -551,6 +556,8 @@ def get_application(lifespan_override: Lifespan | None = None) -> FastAPI:
     include_router_with_global_prefix_prepended(application, onyx_api_router)
     include_router_with_global_prefix_prepended(application, settings_router)
     include_router_with_global_prefix_prepended(application, settings_admin_router)
+    include_router_with_global_prefix_prepended(application, enterprise_router)
+    include_router_with_global_prefix_prepended(application, enterprise_admin_router)
     include_router_with_global_prefix_prepended(application, security_admin_router)
     include_router_with_global_prefix_prepended(application, sso_admin_router)
     include_router_with_global_prefix_prepended(application, llm_admin_router)
@@ -577,6 +584,9 @@ def get_application(lifespan_override: Lifespan | None = None) -> FastAPI:
         application, token_rate_limit_settings_router
     )
     include_router_with_global_prefix_prepended(application, api_key_router)
+    include_router_with_global_prefix_prepended(application, billing_admin_router)
+    include_router_with_global_prefix_prepended(application, license_router)
+    include_router_with_global_prefix_prepended(application, billing_tenant_router)
     include_router_with_global_prefix_prepended(application, standard_oauth_router)
     include_router_with_global_prefix_prepended(application, federated_router)
     include_router_with_global_prefix_prepended(application, mcp_router)
