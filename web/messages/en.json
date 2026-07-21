@@ -171,7 +171,9 @@
     "billingAssistance": "for billing assistance.",
     "needHelp": "Need help? Join our",
     "discordCommunity": "Discord community",
-    "forSupport": "for support."
+    "forSupport": "for support.",
+    "adminPolicyRestricted": "Access to this section is currently restricted by an administrator policy.",
+    "deploymentDetails": "page for deployment configuration and access details."
   },
   "languageSwitcher": {
     "label": "Language",

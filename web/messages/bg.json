@@ -171,7 +171,9 @@
     "billingAssistance": "за помощ при таксуването.",
     "needHelp": "Нуждаете се от помощ? Присъединете се към нашата",
     "discordCommunity": "Discord общност",
-    "forSupport": "за поддръжка."
+    "forSupport": "за поддръжка.",
+    "adminPolicyRestricted": "Достъпът до този раздел в момента е ограничен от администраторска политика.",
+    "deploymentDetails": "за конфигурацията на внедряването и подробности за достъпа."
   },
   "languageSwitcher": {
     "label": "Език",
