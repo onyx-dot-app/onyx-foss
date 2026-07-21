@@ -72,6 +72,7 @@ import { Tooltip } from "@opal/components";
 import { useCloudSubscription } from "@/hooks/useCloudSubscription";
 import { useSmoothStreaming } from "@/hooks/useSmoothStreaming";
 import { findModelConfigId } from "@/lib/languageModels/options";
+import { useTranslations } from "next-intl";
 
 interface PAT {
   id: number;
@@ -231,15 +232,16 @@ function PATModal({
   onCreate,
   createdToken,
 }: PATModalProps) {
+  const t = useTranslations("userSettings");
   if (createdToken?.token) {
     return (
       <Modal open onOpenChange={(open) => !open && onClose()}>
         <Modal.Content width="sm" height="sm">
           <Modal.Header
-            title="Access Token"
+            title={t("accessToken.title")}
             icon={SvgKey}
             onClose={onClose}
-            description="Save this token before continuing. It won't be shown again."
+            description={t("accessToken.saveWarning")}
           />
           <Modal.Body>
             <Code showCopyButton={false}>{createdToken.token}</Code>
@@ -251,7 +253,7 @@ function PATModal({
                   getCopyText={() => createdToken.token}
                   prominence="primary"
                 >
-                  Copy Token
+                  {t("accessToken.copyToken")}
                 </CopyButton>
               }
             />
@@ -264,8 +266,8 @@ function PATModal({
   return (
     <ConfirmationModalLayout
       icon={SvgKey}
-      title="Create Access Token"
-      description="All API requests using this token will inherit your access permissions and be attributed to you as an individual."
+      title={t("accessToken.createTitle")}
+      description={t("accessToken.description")}
       onClose={onClose}
       submit={
         <Button
@@ -276,14 +278,14 @@ function PATModal({
           }
           onClick={onCreate}
         >
-          {isCreating ? "Creating Token..." : "Create Token"}
+          {isCreating ? t("accessToken.creating") : t("accessToken.create")}
         </Button>
       }
     >
       <Section gap={1}>
-        <InputVertical title="Token Name" withLabel>
+        <InputVertical title={t("accessToken.tokenName")} withLabel>
           <InputTypeIn
-            placeholder="Name your token"
+            placeholder={t("accessToken.namePlaceholder")}
             value={newTokenName}
             onChange={(e) => setNewTokenName(e.target.value)}
             variant={isCreating ? "disabled" : undefined}
@@ -291,7 +293,7 @@ function PATModal({
           />
         </InputVertical>
         <InputVertical
-          title="Expires in"
+          title={t("accessToken.expiresIn")}
           subDescription={
             expirationDays === "null"
               ? undefined
@@ -301,10 +303,12 @@ function PATModal({
                     expiryDate.getUTCDate() + parseInt(expirationDays)
                   );
                   expiryDate.setUTCHours(23, 59, 59, 999);
-                  return `This token will expire at: ${expiryDate
-                    .toISOString()
-                    .replace("T", " ")
-                    .replace(".999Z", " UTC")}`;
+                  return t("accessToken.expiresDescription", {
+                    date: expiryDate
+                      .toISOString()
+                      .replace("T", " ")
+                      .replace(".999Z", " UTC"),
+                  });
                 })()
           }
           withLabel
@@ -314,21 +318,21 @@ function PATModal({
             onValueChange={setExpirationDays}
             disabled={isCreating}
           >
-            <InputSelect.Trigger placeholder="Select expiration" />
+            <InputSelect.Trigger placeholder={t("accessToken.selectExpiration")} />
             <InputSelect.Content>
-              <InputSelect.Item value="7">7 days</InputSelect.Item>
-              <InputSelect.Item value="30">30 days</InputSelect.Item>
-              <InputSelect.Item value="365">365 days</InputSelect.Item>
-              <InputSelect.Item value="null">No expiration</InputSelect.Item>
+              <InputSelect.Item value="7">{t("accessToken.days7")}</InputSelect.Item>
+              <InputSelect.Item value="30">{t("accessToken.days30")}</InputSelect.Item>
+              <InputSelect.Item value="365">{t("accessToken.days365")}</InputSelect.Item>
+              <InputSelect.Item value="null">{t("accessToken.noExpiration")}</InputSelect.Item>
             </InputSelect.Content>
           </InputSelect>
         </InputVertical>
         <InputVertical
-          title="Permissions"
+          title={t("accessToken.permissions")}
           subDescription={
             accessMode === "full"
-              ? "Inherits all of your permissions."
-              : "Limit this token to specific capabilities."
+              ? t("accessToken.fullAccessDescription")
+              : t("accessToken.limitedAccessDescription")
           }
           withLabel
         >
@@ -337,11 +341,11 @@ function PATModal({
             onValueChange={(value) => setAccessMode(value as AccessMode)}
             disabled={isCreating}
           >
-            <InputSelect.Trigger placeholder="Select permissions" />
+            <InputSelect.Trigger placeholder={t("accessToken.selectPermissions")} />
             <InputSelect.Content>
-              <InputSelect.Item value="full">Full access</InputSelect.Item>
+              <InputSelect.Item value="full">{t("accessToken.fullAccess")}</InputSelect.Item>
               <InputSelect.Item value="limited">
-                Limited access
+                {t("accessToken.limitedAccess")}
               </InputSelect.Item>
             </InputSelect.Content>
           </InputSelect>
@@ -361,6 +365,7 @@ function PATModal({
 }
 
 function GeneralSettings() {
+  const t = useTranslations("userSettings");
   const {
     user,
     updateUserPersonalization,
@@ -397,8 +402,8 @@ function GeneralSettings() {
     updatePersonalizationField,
     handleSavePersonalization,
   } = useUserPersonalization(user, updateUserPersonalization, {
-    onSuccess: () => toast.success("Personalization updated successfully"),
-    onError: () => toast.error("Failed to update personalization"),
+    onSuccess: () => toast.success(t("toasts.personalizationUpdated")),
+    onError: () => toast.error(t("toasts.personalizationFailed")),
   });
 
   // Track initial values to detect changes
@@ -416,14 +421,14 @@ function GeneralSettings() {
     try {
       const response = await deleteAllChatSessions();
       if (response.ok) {
-        toast.success("All your chat sessions have been deleted.");
+        toast.success(t("toasts.deleteAllChatsSuccess"));
         await refreshChatSessions();
         setShowDeleteConfirmation(false);
       } else {
         throw new Error("Failed to delete all chat sessions");
       }
     } catch (error) {
-      toast.error("Failed to delete all chat sessions");
+      toast.error(t("toasts.deleteAllChatsFailed"));
     } finally {
       setIsDeleting(false);
     }
@@ -434,7 +439,7 @@ function GeneralSettings() {
       {showDeleteConfirmation && (
         <ConfirmationModalLayout
           icon={SvgTrash}
-          title="Delete All Chats"
+          title={t("dangerZone.deleteAllChats")}
           onClose={() => setShowDeleteConfirmation(false)}
           submit={
             <Button
@@ -444,17 +449,16 @@ function GeneralSettings() {
                 void handleDeleteAllChats();
               }}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? t("dangerZone.deleting") : t("dangerZone.delete")}
             </Button>
           }
         >
           <Section gap={0.5} alignItems="start">
             <Text color="text-05">
-              All your chat sessions and history will be permanently deleted.
-              Deletion cannot be undone.
+              {t("dangerZone.deleteAllChatsWarning")}
             </Text>
             <Text color="text-05">
-              Are you sure you want to delete all chats?
+              {t("dangerZone.deleteAllChatsConfirm")}
             </Text>
           </Section>
         </ConfirmationModalLayout>
@@ -463,21 +467,21 @@ function GeneralSettings() {
       <Section gap={2}>
         <Section gap={0.75}>
           <Content
-            title="Profile"
+            title={t("profile.title")}
             sizePreset="main-content"
             variant="section"
             width="full"
           />
           <Card>
             <InputHorizontal
-              title="Full Name"
-              description="We'll display this name in the app."
+              title={t("profile.fullName")}
+              description={t("profile.fullNameDescription")}
               center
               withLabel
               responsive
             >
               <InputTypeIn
-                placeholder="Your name"
+                placeholder={t("profile.fullNamePlaceholder")}
                 value={personalizationValues.name}
                 onChange={(e) =>
                   updatePersonalizationField("name", e.target.value)
@@ -497,14 +501,14 @@ function GeneralSettings() {
               />
             </InputHorizontal>
             <InputHorizontal
-              title="Work Role"
-              description="Share your role to better tailor responses."
+              title={t("profile.workRole")}
+              description={t("profile.workRoleDescription")}
               center
               withLabel
               responsive
             >
               <InputTypeIn
-                placeholder="Your role"
+                placeholder={t("profile.workRolePlaceholder")}
                 value={personalizationValues.role}
                 onChange={(e) =>
                   updatePersonalizationField("role", e.target.value)
@@ -528,15 +532,15 @@ function GeneralSettings() {
 
         <Section gap={0.75}>
           <Content
-            title="Appearance"
+            title={t("appearance.title")}
             sizePreset="main-content"
             variant="section"
             width="full"
           />
           <Card>
             <InputHorizontal
-              title="Color Mode"
-              description="Select your preferred color mode for the UI."
+              title={t("appearance.colorMode")}
+              description={t("appearance.colorModeDescription")}
               center
               withLabel
             >
@@ -564,25 +568,25 @@ function GeneralSettings() {
                         : undefined
                     }
                   >
-                    Auto
+                    {t("appearance.colorModeAuto")}
                   </InputSelect.Item>
                   <InputSelect.Separator />
                   <InputSelect.Item
                     value={ThemePreference.LIGHT}
                     icon={() => <ColorSwatch light />}
                   >
-                    Light
+                    {t("appearance.colorModeLight")}
                   </InputSelect.Item>
                   <InputSelect.Item
                     value={ThemePreference.DARK}
                     icon={() => <ColorSwatch dark />}
                   >
-                    Dark
+                    {t("appearance.colorModeDark")}
                   </InputSelect.Item>
                 </InputSelect.Content>
               </InputSelect>
             </InputHorizontal>
-            <InputVertical title="Chat Background">
+            <InputVertical title={t("appearance.chatBackground")}>
               <div className="flex flex-wrap gap-2">
                 {CHAT_BACKGROUND_OPTIONS.map((bg) => {
                   const currentBackgroundId =
@@ -635,15 +639,15 @@ function GeneralSettings() {
 
         <Section gap={0.75}>
           <Content
-            title="Danger Zone"
+            title={t("dangerZone.title")}
             sizePreset="main-content"
             variant="section"
             width="full"
           />
           <Card>
             <InputHorizontal
-              title="Delete All Chats"
-              description="Permanently delete all your chat sessions."
+              title={t("dangerZone.deleteAllChats")}
+              description={t("dangerZone.deleteAllChatsDescription")}
               center
             >
               <Button
@@ -653,7 +657,7 @@ function GeneralSettings() {
                 icon={SvgTrash}
                 interaction={showDeleteConfirmation ? "hover" : "rest"}
               >
-                Delete All Chats
+                {t("dangerZone.deleteAllChats")}
               </Button>
             </InputHorizontal>
           </Card>
@@ -668,6 +672,7 @@ interface LocalShortcut extends InputPrompt {
 }
 
 function PromptShortcuts() {
+  const t = useTranslations("userSettings");
   const { promptShortcuts, isLoading, error, refresh } = usePromptShortcuts();
   const [shortcuts, setShortcuts] = useState<LocalShortcut[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -703,7 +708,7 @@ function PromptShortcuts() {
   // Show error popup if fetch fails
   useEffect(() => {
     if (!error) return;
-    toast.error("Failed to load shortcuts");
+    toast.error(t("toasts.loadShortcutsFailed"));
   }, [error]);
 
   const handleUpdateShortcut = useCallback(
@@ -776,12 +781,12 @@ function PromptShortcuts() {
         if (response.ok) {
           setShortcuts((prev) => prev.filter((_, i) => i !== index));
           await refresh();
-          toast.success("Shortcut deleted");
+          toast.success(t("toasts.shortcutDeleted"));
         } else {
           throw new Error("Failed to delete shortcut");
         }
       } catch (error) {
-        toast.error("Failed to delete shortcut");
+        toast.error(t("toasts.shortcutDeleteFailed"));
       }
     },
     [shortcuts, refresh]
@@ -791,7 +796,7 @@ function PromptShortcuts() {
     async (index: number) => {
       const shortcut = shortcuts[index];
       if (!shortcut || !shortcut.prompt.trim() || !shortcut.content.trim()) {
-        toast.error("Both shortcut and expansion are required");
+        toast.error(t("toasts.shortcutRequired"));
         return;
       }
 
@@ -811,7 +816,7 @@ function PromptShortcuts() {
 
           if (response.ok) {
             await refresh();
-            toast.success("Shortcut created");
+            toast.success(t("toasts.shortcutCreated"));
           } else {
             throw new Error("Failed to create shortcut");
           }
@@ -830,13 +835,13 @@ function PromptShortcuts() {
 
           if (response.ok) {
             await refresh();
-            toast.success("Shortcut updated");
+            toast.success(t("toasts.shortcutUpdated"));
           } else {
             throw new Error("Failed to update shortcut");
           }
         }
       } catch (error) {
-        toast.error("Failed to save shortcut");
+        toast.error(t("toasts.shortcutSaveFailed"));
       }
     },
     [shortcuts, refresh]
@@ -945,6 +950,7 @@ function PromptShortcuts() {
 }
 
 function ChatPreferencesSettings() {
+  const t = useTranslations("userSettings");
   const {
     user,
     updateUserPersonalization,
@@ -970,8 +976,8 @@ function ChatPreferencesSettings() {
     updateUserPreferences,
     handleSavePersonalization,
   } = useUserPersonalization(user, updateUserPersonalization, {
-    onSuccess: () => toast.success("Preferences saved"),
-    onError: () => toast.error("Failed to save preferences"),
+    onSuccess: () => toast.success(t("toasts.preferencesSaved")),
+    onError: () => toast.error(t("toasts.preferencesFailed")),
   });
   const [draftVoicePlaybackSpeed, setDraftVoicePlaybackSpeed] = useState(
     user?.preferences.voice_playback_speed ?? 1
@@ -989,9 +995,9 @@ function ChatPreferencesSettings() {
     }) => {
       try {
         await updateUserVoiceSettings(settings);
-        toast.success("Preferences saved");
+        toast.success(t("toasts.preferencesSaved"));
       } catch {
-        toast.error("Failed to save preferences");
+        toast.error(t("toasts.preferencesFailed"));
       }
     },
     [updateUserVoiceSettings]
@@ -1034,8 +1040,8 @@ function ChatPreferencesSettings() {
         />
         <Card>
           <InputHorizontal
-            title="Default Model"
-            description="This model will be used by Onyx by default in your chats."
+            title={t("chatPreferences.defaultModel")}
+            description={t("chatPreferences.defaultModelDescription")}
             withLabel
           >
             <ModelSelector
@@ -1069,8 +1075,8 @@ function ChatPreferencesSettings() {
           </InputHorizontal>
 
           <InputHorizontal
-            title="Chat Auto-scroll"
-            description="Automatically scroll to new content as chat generates response."
+            title={t("chatPreferences.chatAutoScroll")}
+            description={t("chatPreferences.chatAutoScrollDescription")}
             withLabel
           >
             <Switch
@@ -1082,8 +1088,8 @@ function ChatPreferencesSettings() {
           </InputHorizontal>
 
           <InputHorizontal
-            title="Smooth Streaming"
-            description="Animate streamed responses character-by-character. Disable to render chunks as they arrive."
+            title={t("chatPreferences.smoothStreaming")}
+            description={t("chatPreferences.smoothStreamingDescription")}
             withLabel
           >
             <Switch
@@ -1093,8 +1099,8 @@ function ChatPreferencesSettings() {
           </InputHorizontal>
 
           <InputHorizontal
-            title="Collapse Large Pastes"
-            description="When pasting text longer than 3 lines or 200 characters, collapse it into a compact tile instead of inserting it inline. Click the tile to view or edit the full text."
+            title={t("chatPreferences.collapseLargePastes")}
+            description={t("chatPreferences.collapseLargePastesDescription")}
             withLabel
           >
             <Switch
@@ -1110,13 +1116,13 @@ function ChatPreferencesSettings() {
               tooltip={
                 searchUiEnabled
                   ? undefined
-                  : "Search UI is disabled and can only be enabled by an admin."
+                  : t("chatPreferences.searchUiDisabledTooltip")
               }
               side="top"
             >
               <InputHorizontal
-                title="Default App Mode"
-                description="Choose whether new sessions start in Search or Chat mode."
+                title={t("chatPreferences.defaultAppMode")}
+                description={t("chatPreferences.defaultAppModeDescription")}
                 center
                 disabled={!searchUiEnabled}
                 withLabel
@@ -1130,8 +1136,8 @@ function ChatPreferencesSettings() {
                 >
                   <InputSelect.Trigger />
                   <InputSelect.Content>
-                    <InputSelect.Item value="CHAT">Chat</InputSelect.Item>
-                    <InputSelect.Item value="SEARCH">Search</InputSelect.Item>
+                    <InputSelect.Item value="CHAT">{t("chatPreferences.chat")}</InputSelect.Item>
+                    <InputSelect.Item value="SEARCH">{t("chatPreferences.search")}</InputSelect.Item>
                   </InputSelect.Content>
                 </InputSelect>
               </InputHorizontal>
@@ -1142,12 +1148,12 @@ function ChatPreferencesSettings() {
 
       <Section gap={0.75}>
         <InputVertical
-          title="Personal Preferences"
-          description="Provide your custom preferences in natural language."
+          title={t("personalPreferences.title")}
+          description={t("personalPreferences.description")}
           withLabel
         >
           <InputTextArea
-            placeholder="Describe how you want the system to behave and the tone it should use."
+            placeholder={t("personalPreferences.placeholder")}
             value={personalizationValues.user_preferences}
             onChange={(e) => updateUserPreferences(e.target.value)}
             onBlur={() => void handleSavePersonalization()}
@@ -1162,15 +1168,15 @@ function ChatPreferencesSettings() {
           />
         </InputVertical>
         <Content
-          title="Memory"
+          title={t("memory.title")}
           sizePreset="main-content"
           variant="section"
           width="full"
         />
         <Card>
           <InputHorizontal
-            title="Reference Stored Memories"
-            description="Let Onyx reference stored memories in chats."
+            title={t("memory.referenceStored")}
+            description={t("memory.referenceStoredDescription")}
             withLabel
           >
             <Switch
@@ -1182,8 +1188,8 @@ function ChatPreferencesSettings() {
             />
           </InputHorizontal>
           <InputHorizontal
-            title="Update Memories"
-            description="Let Onyx generate and update stored memories."
+            title={t("memory.updateMemories")}
+            description={t("memory.updateMemoriesDescription")}
             withLabel
           >
             <Switch
@@ -1210,15 +1216,15 @@ function ChatPreferencesSettings() {
 
       <Section gap={0.75}>
         <Content
-          title="Prompt Shortcuts"
+          title={t("promptShortcuts.title")}
           sizePreset="main-content"
           variant="section"
           width="full"
         />
         <Card>
           <InputHorizontal
-            title="Use Prompt Shortcuts"
-            description="Enable shortcuts to quickly insert common prompts."
+            title={t("promptShortcuts.useShortcuts")}
+            description={t("promptShortcuts.useShortcutsDescription")}
             withLabel
           >
             <Switch
@@ -1268,8 +1274,8 @@ function ChatPreferencesSettings() {
           </InputHorizontal>
 
           <InputHorizontal
-            title="Playback Speed"
-            description="Adjust the speed of voice playback."
+            title={t("promptShortcuts.playbackSpeed")}
+            description={t("promptShortcuts.playbackSpeedDescription")}
             withLabel
           >
             <div className="flex items-center gap-3">
@@ -1303,6 +1309,7 @@ function ChatPreferencesSettings() {
 }
 
 function AccountsAccessSettings() {
+  const t = useTranslations("userSettings");
   const { user, authTypeMetadata } = useUser();
   const isMultiTenant = useIsMultiTenant();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -1311,16 +1318,16 @@ function AccountsAccessSettings() {
   // constraints (max length, uppercase, lowercase, digit, special char) will be
   // wired up when this form is refreshed as part of auth-refresh.
   const passwordValidationSchema = Yup.object().shape({
-    currentPassword: Yup.string().required("Current password is required"),
+    currentPassword: Yup.string().required(t("validation.currentPasswordRequired")),
     newPassword: Yup.string()
       .min(
         authTypeMetadata?.passwordMinLength ?? 0,
         `Password must be at least ${authTypeMetadata?.passwordMinLength ?? 0} characters`
       )
-      .required("New password is required"),
+      .required(t("validation.newPasswordRequired")),
     confirmPassword: Yup.string()
-      .oneOf([Yup.ref("newPassword")], "Passwords do not match")
-      .required("Please confirm your new password"),
+      .oneOf([Yup.ref("newPassword")], t("validation.passwordsMustMatch"))
+      .required(t("validation.confirmPasswordRequired")),
   });
 
   // PAT state

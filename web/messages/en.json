@@ -323,5 +323,121 @@
     "logIn": "Log in",
     "logOut": "Log Out",
     "failedToLogout": "Failed to logout"
+  },
+  "welcomeMessage": {
+    "greetings": [
+      "How can I help?",
+      "Let's get started."
+    ]
+  },
+  "userSettings": {
+    "profile": {
+      "title": "Profile",
+      "fullName": "Full Name",
+      "fullNameDescription": "We'll display this name in the app.",
+      "fullNamePlaceholder": "Your name",
+      "workRole": "Work Role",
+      "workRoleDescription": "Share your role to better tailor responses.",
+      "workRolePlaceholder": "Your role"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "colorMode": "Color Mode",
+      "colorModeDescription": "Select your preferred color mode for the UI.",
+      "chatBackground": "Chat Background",
+      "colorModeAuto": "Auto",
+      "colorModeLight": "Light",
+      "colorModeDark": "Dark"
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "deleteAllChats": "Delete All Chats",
+      "deleteAllChatsDescription": "Permanently delete all your chat history.",
+      "deleteAllChatsWarning": "All your chat sessions and history will be permanently deleted. Deletion cannot be undone.",
+      "deleteAllChatsConfirm": "Are you sure you want to delete all chats?",
+      "deleting": "Deleting...",
+      "delete": "Delete"
+    },
+    "accessToken": {
+      "title": "Access Token",
+      "createTitle": "Create Access Token",
+      "tokenName": "Token Name",
+      "expiresIn": "Expires in",
+      "permissions": "Permissions",
+      "creating": "Creating Token...",
+      "create": "Create Token",
+      "saveWarning": "Save this token before continuing. It won't be shown again.",
+      "copyToken": "Copy Token",
+      "description": "All API requests using this token will inherit your access permissions and be attributed to you as an individual.",
+      "namePlaceholder": "Name your token",
+      "expiresDescription": "This token will expire at: {date}",
+      "selectExpiration": "Select expiration",
+      "days7": "7 days",
+      "days30": "30 days",
+      "days365": "365 days",
+      "noExpiration": "No expiration",
+      "selectPermissions": "Select permissions",
+      "fullAccess": "Full access",
+      "fullAccessDescription": "Inherits all of your permissions.",
+      "limitedAccess": "Limited access",
+      "limitedAccessDescription": "Limit this token to specific capabilities."
+    },
+    "chatPreferences": {
+      "defaultModel": "Default Model",
+      "smoothStreaming": "Smooth Streaming",
+      "collapseLargePastes": "Collapse Large Pastes",
+      "defaultAppMode": "Default App Mode",
+      "chat": "Chat",
+      "search": "Search",
+      "defaultModelDescription": "This model will be used by Onyx by default in your chats.",
+      "chatAutoScroll": "Chat Auto-scroll",
+      "chatAutoScrollDescription": "Automatically scroll to new content as chat generates response.",
+      "smoothStreamingDescription": "Animate streamed responses character-by-character. Disable to render chunks as they arrive.",
+      "collapseLargePastesDescription": "When pasting text longer than 3 lines or 200 characters, collapse it into a compact tile instead of inserting it inline. Click the tile to view or edit the full text.",
+      "defaultAppModeDescription": "Choose whether new sessions start in Search or Chat mode.",
+      "searchUiDisabledTooltip": "Search UI is disabled and can only be enabled by an admin."
+    },
+    "personalPreferences": {
+      "title": "Personal Preferences",
+      "description": "Provide your custom preferences in natural language.",
+      "placeholder": "Describe how you want the system to behave and the tone it should use."
+    },
+    "memory": {
+      "title": "Memory",
+      "referenceStored": "Reference Stored Memories",
+      "referenceStoredDescription": "Let Onyx reference stored memories in chats.",
+      "updateMemories": "Update Memories",
+      "updateMemoriesDescription": "Let Onyx generate and update stored memories."
+    },
+    "promptShortcuts": {
+      "title": "Prompt Shortcuts",
+      "useShortcuts": "Use Prompt Shortcuts",
+      "useShortcutsDescription": "Enable shortcuts to quickly insert common prompts.",
+      "playbackSpeed": "Playback Speed",
+      "playbackSpeedDescription": "Adjust the speed of voice playback."
+    },
+    "toasts": {
+      "personalizationUpdated": "Personalization updated successfully",
+      "personalizationFailed": "Failed to update personalization",
+      "deleteAllChatsFailed": "Failed to delete all chat sessions",
+      "shortcutDeleted": "Shortcut deleted",
+      "shortcutDeleteFailed": "Failed to delete shortcut",
+      "shortcutRequired": "Both shortcut and expansion are required",
+      "shortcutCreated": "Shortcut created",
+      "shortcutCreateFailed": "Failed to create shortcut",
+      "shortcutUpdated": "Shortcut updated",
+      "shortcutUpdateFailed": "Failed to update shortcut",
+      "shortcutSaveFailed": "Failed to save shortcut",
+      "preferencesSaved": "Preferences saved",
+      "preferencesFailed": "Failed to save preferences",
+      "loadShortcutsFailed": "Failed to load shortcuts",
+      "deleteAllChatsSuccess": "All your chat sessions have been deleted."
+    },
+    "validation": {
+      "currentPasswordRequired": "Current password is required",
+      "newPasswordRequired": "New password is required",
+      "passwordsMustMatch": "Passwords do not match",
+      "confirmPasswordRequired": "Please confirm your new password"
+    }
   }
 }

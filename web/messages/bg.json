@@ -323,5 +323,121 @@
     "logIn": "Влезте",
     "logOut": "Излезте",
     "failedToLogout": "Неуспешно излизане"
+  },
+  "welcomeMessage": {
+    "greetings": [
+      "Как мога да помогна?",
+      "Да започнем."
+    ]
+  },
+  "userSettings": {
+    "profile": {
+      "title": "Профил",
+      "fullName": "Пълно ime",
+      "fullNameDescription": "Ще покажем това ime в приложението.",
+      "fullNamePlaceholder": "Вашето ime",
+      "workRole": "Работна роля",
+      "workRoleDescription": "Споделете ролята си за по-добро персонализиране.",
+      "workRolePlaceholder": "Вашата роля"
+    },
+    "appearance": {
+      "title": "Изглед",
+      "colorMode": "Цветови режим",
+      "colorModeDescription": "Изберете предпочитания цветови режим на интерфейса.",
+      "chatBackground": "Фон на чата",
+      "colorModeAuto": "Автоматично",
+      "colorModeLight": "Светъл",
+      "colorModeDark": "Тъмен"
+    },
+    "dangerZone": {
+      "title": "Опасна зона",
+      "deleteAllChats": "Изтрий всички чатове",
+      "deleteAllChatsDescription": "Трайно изтриване на цялата история на чатовете.",
+      "deleteAllChatsWarning": "Всички сесии и история на чатовете ви ще бъдат трайно изтрити. Изтриването не може да бъде отменено.",
+      "deleteAllChatsConfirm": "Сигурни ли сте, че искате да изтриете всички чатове?",
+      "deleting": "Изтриване...",
+      "delete": "Изтрий"
+    },
+    "accessToken": {
+      "title": "Токен за достъп",
+      "createTitle": "Създаване на токен за достъп",
+      "tokenName": "Ime на токена",
+      "expiresIn": "Изтича след",
+      "permissions": "Разрешения",
+      "creating": "Създаване на токен...",
+      "create": "Създай токен",
+      "saveWarning": "Запазете токена преди да продължите. Той няма да бъде показан отново.",
+      "copyToken": "Копирай токен",
+      "description": "Всички API заявки с използване на този токен ще наследят вашите права за достъп и ще бъдат приписани на вас лично.",
+      "namePlaceholder": "Наименувайте токена",
+      "expiresDescription": "Токенът ще изтече на: {date}",
+      "selectExpiration": "Изберете срок на валидност",
+      "days7": "7 дни",
+      "days30": "30 дни",
+      "days365": "365 дни",
+      "noExpiration": "Без изтичане",
+      "selectPermissions": "Изберете разрешения",
+      "fullAccess": "Пълен достъп",
+      "fullAccessDescription": "Наследява всичките ви разрешения.",
+      "limitedAccess": "Ограничен достъп",
+      "limitedAccessDescription": "Ограничете токена до конкретни възможности."
+    },
+    "chatPreferences": {
+      "defaultModel": "Модел по подразбиране",
+      "smoothStreaming": "Плавно стрийминг",
+      "collapseLargePastes": "Сгъване на големи поставяния",
+      "defaultAppMode": "Режим на приложението по подразбиране",
+      "chat": "Чат",
+      "search": "Търсене",
+      "defaultModelDescription": "Този модел ще се използва от Onyx по подразбиране в чатовете ви.",
+      "chatAutoScroll": "Автоматично превъртане в чата",
+      "chatAutoScrollDescription": "Автоматично превъртане към ново съдържание при генериране на отговор.",
+      "smoothStreamingDescription": "Анимиране на стрийм отговорите символ по символ. Деактивирайте за незабавно показване на фрагментите.",
+      "collapseLargePastesDescription": "При поставяне на текст по-дълъг от 3 реда или 200 символа, той се свива в компактно поле вместо да се вмъква директно. Кликнете върху полето, за да видите или редактирате пълния текст.",
+      "defaultAppModeDescription": "Изберете дали новите сесии да започват в режим Търсене или Чат.",
+      "searchUiDisabledTooltip": "Интерфейсът за търсене е деактивиран и може да се активира само от администратор."
+    },
+    "personalPreferences": {
+      "title": "Лични предпочитания",
+      "description": "Посочете вашите персонализирани предпочитания на естествен език.",
+      "placeholder": "Опишете как искате системата да се държи и тона, който трябва да използва."
+    },
+    "memory": {
+      "title": "Памет",
+      "referenceStored": "Препратка към съхранени спомени",
+      "referenceStoredDescription": "Позволява на Onyx да препраща към съхранени спомени в чатовете.",
+      "updateMemories": "Актуализиране на спомени",
+      "updateMemoriesDescription": "Позволява на Onyx да генерира и актуализира съхранени спомени."
+    },
+    "promptShortcuts": {
+      "title": "Бързи команди",
+      "useShortcuts": "Използване на бързи команди",
+      "useShortcutsDescription": "Активирайте бързи клавиши за бързо вмъкване на общи команди.",
+      "playbackSpeed": "Скорост на възпроизвеждане",
+      "playbackSpeedDescription": "Регулирайте скоростта на гласовото възпроизвеждане."
+    },
+    "toasts": {
+      "personalizationUpdated": "Персонализацията е актуализирана успешно",
+      "personalizationFailed": "Неуспешна актуализация на персонализацията",
+      "deleteAllChatsFailed": "Неуспешно изтриване на всички чат сесии",
+      "shortcutDeleted": "Бързата команда е изтрита",
+      "shortcutDeleteFailed": "Неуспешно изтриване на бързата команда",
+      "shortcutRequired": "Необходими са и бъ рзата команда, и разширението",
+      "shortcutCreated": "Бързата команда е създадена",
+      "shortcutCreateFailed": "Неуспешно създаване на бързата команда",
+      "shortcutUpdated": "Бързата команда е актуализирана",
+      "shortcutUpdateFailed": "Неуспешна актуализация на бързата команда",
+      "shortcutSaveFailed": "Неуспешно запазване на бързата команда",
+      "preferencesSaved": "Предпочитанията са запазени",
+      "preferencesFailed": "Неуспешно запазване на предпочитанията",
+      "loadShortcutsFailed": "Неуспешно зареждане на бързите команди",
+      "deleteAllChatsSuccess": "Всички ваши чат сесии бяха изтрити."
+    },
+    "validation": {
+      "currentPasswordRequired": "Изисква се текущата парола",
+      "newPasswordRequired": "Изисква се нова парола",
+      "passwordsMustMatch": "Паролите трябва да съвпадат",
+      "confirmPasswordRequired": "Моля, потвърдете новата парола"
+    }
   }
 }
