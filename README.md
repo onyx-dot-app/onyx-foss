@@ -1,17 +1,25 @@
 <a name="readme-top"></a>
 
+> [!NOTE]
+> **This is the FOSS (Free and Open Source Software) version of Onyx**
+> 
+> This repository is 100% MIT-licensed and automatically synced with the [main Onyx repository](https://github.com/onyx-dot-app/onyx). The [main repository](https://github.com/onyx-dot-app/onyx) is recommended for most users. This FOSS version is maintained for users with strict open-source licensing requirements.
+> 
+> ---
+
+
 <h2 align="center">
-    <a href="https://www.onyx.app/?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme"> <img width="50%" src="https://github.com/onyx-dot-app/onyx/blob/logo/OnyxLogoCropped.jpg?raw=true" /></a>
+    <a href="https://www.onyx.app/?utm_source=foss_repo&utm_medium=github&utm_campaign=readme"> <img width="50%" src="https://github.com/onyx-dot-app/onyx/blob/logo/OnyxLogoCropped.jpg?raw=true" /></a>
 </h2>
 
 <p align="center">
     <a href="https://discord.gg/TDJ59cGV2X" target="_blank">
         <img src="https://img.shields.io/badge/discord-join-blue.svg?logo=discord&logoColor=white" alt="Discord" />
     </a>
-    <a href="https://docs.onyx.app/?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme" target="_blank">
+    <a href="https://docs.onyx.app/?utm_source=foss_repo&utm_medium=github&utm_campaign=readme" target="_blank">
         <img src="https://img.shields.io/badge/docs-view-blue" alt="Documentation" />
     </a>
-    <a href="https://www.onyx.app/?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme" target="_blank">
+    <a href="https://www.onyx.app/?utm_source=foss_repo&utm_medium=github&utm_campaign=readme" target="_blank">
         <img src="https://img.shields.io/website?url=https://www.onyx.app&up_message=visit&up_color=blue" alt="Website" />
     </a>
     <a href="https://github.com/onyx-dot-app/onyx/blob/main/LICENSE" target="_blank">
@@ -29,7 +37,7 @@
 
 > "LLMs know about everything public, but what if it could also know what's going on in our team? I want an AI coworker, not an AI new hire."
 
-**[Onyx](https://www.onyx.app/?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme)** is the knowledge/context layer for your team and AI agents.
+**[Onyx](https://www.onyx.app/?utm_source=foss_repo&utm_medium=github&utm_campaign=readme)** is the knowledge/context layer for your team and AI agents.
 
 Onyx connects to your application to index and surface knowledge from 50+ applications while protecting your data sovereignty through flexible self-hosted deployments.
 
@@ -69,7 +77,7 @@ Instead of an agent coordinating and iteratively searching dozens of MCP and bur
 
 Onyx supports all major LLM providers, both self-hosted (like Ollama, LiteLLM, vLLM, etc.) and proprietary (like Anthropic, OpenAI, Gemini, etc.).
 
-To learn more - check out our [docs](https://docs.onyx.app/welcome?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme)!
+To learn more - check out our [docs](https://docs.onyx.app/welcome?utm_source=foss_repo&utm_medium=github&utm_campaign=readme)!
 
 ---
 
@@ -118,7 +126,7 @@ The Lite mode can be thought of as a lightweight AI Chat UI. It requires less re
 It is great for users who want to test out the Onyx UI quickly or for teams who are only interested in the Chat UI and Agents functionalities.
 
 > [!TIP]  
-> **To try Onyx for free without deploying, visit [Onyx Cloud](https://cloud.onyx.app/signup?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme)**.
+> **To try Onyx for free without deploying, visit [Onyx Cloud](https://cloud.onyx.app/signup?utm_source=foss_repo&utm_medium=github&utm_campaign=readme)**.
 
 ---
 
@@ -140,7 +148,7 @@ There are two editions of Onyx:
 - Onyx Community Edition (CE) is available freely under the MIT license and covers all of the core features for RAG, AI Chat, Agents, and Actions.
 - Onyx Enterprise Edition (EE) includes extra features that are primarily useful for larger organizations.
 
-For feature details, check out [our website](https://www.onyx.app/pricing?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme).
+For feature details, check out [our website](https://www.onyx.app/pricing?utm_source=foss_repo&utm_medium=github&utm_campaign=readme).
 
 ## 👪 Community
 
